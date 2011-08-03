@@ -55,8 +55,8 @@ int main() {
 
         // Iniciar estructura para almacenar las Capas
 
-                         //Capa es un puntero a una estructura de tipo STCapas
-                        // Asignamos espacio a la estructura
+        //Capa es un puntero a una estructura de tipo STCapas
+        // Asignamos espacio a la estructura
         Capa = ( STCapas *) malloc( sizeof( STCapas));
 
         // Iniciar estructura para almacerar datos de blobs
