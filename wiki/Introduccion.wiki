@@ -1,0 +1,19 @@
+#summary One-sentence summary of this page.
+
+= Introducción =
+
+El presente proyecto trata de desarrollar un algoritmo capaz de monitorizar y rastrear grupos de _Drosophila melanogaster_ interactuando en una superficie planar con fondo unimodal.
+El algoritmo está escrito prácticamente en su totalidad en c, con algunas partes en c++.
+Para el desarrollo del proyecto se hará uso de las siguientes herramientas:
+
+ * *S.O Ubuntu* 10.04
+ * *SDK Eclipse* 3.5.2 con pluging *CDT* para el desrrollo de proyectos en c/c++ y pluging *Subeclipse* con subversion para control de versiones.
+ * Librerías de visión por computador *OpenCV*.
+ * ( Librerías *Qt* para desarrollo de interfaz gráfica ). 
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
