@@ -57,6 +57,9 @@ using namespace std;
 
 	// Modelado de fondo
 	int fr = 0;
+	// Umbrales modelo de fondo estático 32 bit 1 canal
+	IplImage *ImHiThr;
+	IplImage *ImLowThr;
 	// Crea las imagenes que se usarán en el programa
 
 	// CAPTURA
@@ -72,9 +75,7 @@ using namespace std;
 //	IplImage *ImFilter;
 	IplImage *ImROI;
 
-	// Umbrales modelo de fondo estático 32 bit 1 canal
-	IplImage *ImHiThr;
-	IplImage *ImLowThr;
+
 
 	// SEGMENTACION
 	IplImage *ImBlobs;
