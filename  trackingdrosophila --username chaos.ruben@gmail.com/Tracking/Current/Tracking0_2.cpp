@@ -134,7 +134,7 @@ int main() {
                         printf( "Creando modelo de fondo..." );
 
 
-                      bg_model = cvCreateGaussianBGModel( frame );
+   //                   bg_model = cvCreateGaussianBGModel( frame );
                 //    bg_model = cvCreateFGDStatModel( frame );
                         GlobalTime = (double)cvGetTickCount() - InitialTime;
                         printf( " %.1f Seg\n", GlobalTime/(cvGetTickFrequency()*1000000.) );
@@ -155,7 +155,7 @@ int main() {
 // Establecer ROI
                 ImROI = cvCloneImage( Imagen );
                 cvSetImageROI( ImROI, cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ) );
-                //cvAddS( ImROI, cvScalar(0), ImROI);
+                cvAddS( ImROI, cvScalar(0), ImROI);
 
 
 ////////////// PROCESADO ///////////////
@@ -174,7 +174,7 @@ int main() {
                  //      segments - pointer to result of segmentation (for example MeanShiftSegmentation)
                  //      bg_model - pointer to CvBGStatModel structure
 //              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
-               cvUpdateBGStatModel( frame, bg_model, update_bg_model ? -1 : 0 );
+   //            cvUpdateBGStatModel( frame, bg_model, update_bg_model ? -1 : 0 );
                  t = (double)cvGetTickCount() - t;
                  printf( "%d. %.1f ms\n", fr, t/(cvGetTickFrequency()*1000.) );
 //               char k = cvWaitKey(5);
@@ -258,7 +258,7 @@ int main() {
 //              cvShowImage( "ROI", ImROI );
 
 //              cvShowImage("BG", bg_model->background);
-                cvShowImage("FG", bg_model->foreground);
+  //              cvShowImage("FG", bg_model->foreground);
 //              cvShowImage( "Blobs",ImBlobs);
 //              cvShowImage("Bina",ImThres);
 
