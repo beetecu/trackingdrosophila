@@ -1,4 +1,4 @@
-/*
+/*!
  * Tracking.h
  *
  *  Created on: 19/07/2011
@@ -34,16 +34,18 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
-#define SHOW_BG_REMOVAL 1  //<- switch from 0 to 1
-// VARIABLES GLOBALES DE PROGRAMA //
+#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
 
+#define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
+
+// VARIABLES GLOBALES DE PROGRAMA
 #ifndef VARIABLES_GLOBALES_PROGRAMA
 	#define VARIABLES_GLOBALES_PROGRAMA
 
 
-	double GlobalTime ; // Medida de tiempos
+	double GlobalTime ; /// Medida de tiempos
 	double InitialTime;
-	CvCapture *g_capture ; //puntero a una estructura de tipo CvCapture
+	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
 	static int hecho = 0;
 
 	//HightGui
@@ -57,19 +59,19 @@ using namespace std;
 
 	// Modelado de fondo
 	int fr = 0;
-	// Umbrales modelo de fondo estático 32 bit 1 canal
+	/// Umbrales modelo de fondo estático 32 bit 1 canal
 	IplImage *ImHiThr;
 	IplImage *ImLowThr;
-	// Crea las imagenes que se usarán en el programa
 
-	// CAPTURA
-	// Imagenes RGB 3 canales
+	/// Imagenes que se usarán en el programa principal
+	/// CAPTURA
+	/// Imagenes RGB 3 canales
 	IplImage* frame;
 	IplImage *Imagen;
 	IplImage *ImVisual;
 
-	// PREPROCESADO
-	// Imagenes 8 bits niveles de gris 1 canal
+	/// PREPROCESADO
+	/// Imagenes 8 bits niveles de gris 1 canal
 
 //	IplImage *ImGris;
 //	IplImage *ImFilter;
@@ -77,7 +79,7 @@ using namespace std;
 
 
 
-	// SEGMENTACION
+	/// SEGMENTACION
 	IplImage *ImBlobs;
 	IplImage *ImThres;
 
@@ -92,10 +94,10 @@ using namespace std;
 
 	// Capas
 	typedef struct {
-		IplImage* BGModel;  //BackGround Model
-		IplImage* OldFG; //OldForeGround
-		IplImage* FG;  //Foreground
-		IplImage* ImFMask; // Mascara del plato
+		IplImage* BGModel;  ///BackGround Model
+		IplImage* OldFG; ///OldForeGround
+		IplImage* FG;  ///Foreground
+		IplImage* ImFMask; /// Mascara del plato
 		IplImage* ImRois;
 	}STCapas;
 
@@ -119,48 +121,45 @@ using namespace std;
 //#define PROTOTIPOS_DE_FUNCIONES
 
 
-	// Crea las ventanas de visualización
+	/// Crea las ventanas de visualización
 	void CreateWindows();
 
-	// localiza en memoria las imágenes necesarias para la ejecución
+	/// localiza en memoria las imágenes necesarias para la ejecución
 	void AllocateImages( IplImage* );
 
-	// Busca el plato y crea la máscara
+	/// Busca el plato y crea la máscara
 	void MascaraPlato(CvCapture*,IplImage*, int*, int*, int*);
 
-	// Recibe la imagen del video y devuelve la imagen en un canal de niveles
-	// de gris filtrada con el plato extraido
+	/** Recibe la imagen del video y devuelve la imagen en un canal de niveles
+	    de gris filtrada con el plato extraido **/
 	void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask, bool);
 
-	// Para invertir mascaras
+	/// Para invertir mascaras
 	void invertirBW( IplImage* Imagen);
-	// Crea un modelo de fondo gaussiano usando la mediana. Establece los umbrales
-	// de binarización.
-	void initBackgroundModel(CvBGStatModel ** bgmodel, IplImage* tmp_frame,
-							CvGaussBGStatModelParams* paramMoG);
-	int BGGModel( CvCapture* t_capture, IplImage* BGModel, IplImage* IhiF,
-			IplImage* IlowF, IplImage* ImMask);
+	/** Crea un modelo de fondo gaussiano usando la mediana. Establece los umbrales
+	 de binarización. **/
+	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
 	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STMoscas**, Lista );
 
 	void mostrarLista(Lista);
 
-	// Crea la capa de ROIS de cada objeto
+	/// Crea la capa de ROIS de cada objeto
 	void CreateRois( IplImage*, IplImage*);
 
-	// Limpia de la memoria las imagenes usadas durante la ejecución
+	/// Limpia de la memoria las imagenes usadas durante la ejecución
 	void DeallocateImages( void );
 
-	//contiene los tipos de errores
+	/// Contiene los tipos de errores
 	void error(int);
 
-	// Función para obtener el número de frames en algunos S.O Linux
+	/// Función para obtener el número de frames en algunos S.O Linux
 	int getAVIFrames( char* );
 
-	// Crea una trackbar para posicionarse en puntos concretos del video
+	/// Crea una trackbar para posicionarse en puntos concretos del video
 	void onTrackbarSlider(  int  );
 
-	// destruye las ventanas
+	/// destruye las ventanas
 	void DestroyWindows( );
 
 //#endif
