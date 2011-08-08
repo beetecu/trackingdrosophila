@@ -8,7 +8,7 @@
  */
 
 #include "Tracking.h"
-#include "BGModel.h"
+//#include "BGModel.h"
 
 using namespace cv;
 using namespace std;
