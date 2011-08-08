@@ -9,7 +9,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <stdio.h>
 #include "Interfaz_Lista.h"
-//#include "Tracking.h"
+
 
 void invertirBW( IplImage* Imagen ){
 	for( int y=0;  y< Imagen->height ; y++){
@@ -25,37 +25,25 @@ void invertirBW( IplImage* Imagen ){
 // de gris con el plato extraido
 void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask,bool bin){
 
-	// Imagenes 8 bits niveles de gris 1 canal
-
-	IplImage *ImGris;
-	IplImage *ImFilter;
-
-	ImGris = cvCreateImage( cvSize(frame->width,frame->height),8,1);
-	ImFilter = cvCreateImage( cvSize(frame->width,frame->height),8,1);
-
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
 	// Imagen a un canal de niveles de gris
-	cvCvtColor( frame, ImGris, CV_BGR2GRAY);
+	cvCvtColor( frame, Im, CV_BGR2GRAY);
 	if (bin == true){
-		cvAdaptiveThreshold( ImGris, ImGris,
+		cvAdaptiveThreshold( Im, Im,
 			255, CV_ADAPTIVE_THRESH_MEAN_C,CV_THRESH_BINARY,75,40);
 		//bin = false;
 	}
 // Filtrado gaussiano 5x
-	cvSmooth(ImGris,ImFilter,CV_GAUSSIAN,5,0,0,0);
+	cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
 
 // Obtención de Imagen a procesar
-	cvCopy( ImFilter, Im );
+	cvCopy( Im, Im );
 
 // Extraccion del plato
-	cvAndS(ImFilter, cvRealScalar( 0 ) , Im, ImFMask );
-
+	cvAndS(Im, cvRealScalar( 0 ) , Im, ImFMask );
 
 //			cvShowImage( "Im",Im );
 //			cvWaitKey(0);
-	cvReleaseImage( &ImGris );
-	cvReleaseImage( &ImFilter );
-
 }
 //#endif
 
