@@ -22,6 +22,8 @@
 #include <math.h>
 
 #include "Interfaz_Lista.h"
+#include "Libreria.h"
+
 
 using namespace cv;
 using namespace std;
@@ -132,17 +134,18 @@ using namespace std;
 
 	/** Recibe la imagen del video y devuelve la imagen en un canal de niveles
 	    de gris filtrada con el plato extraido **/
-	void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask, bool);
+//	void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask, bool);
 
-	/// Para invertir mascaras
-	void invertirBW( IplImage* Imagen);
+	// Para invertir mascaras
+//	void invertirBW( IplImage* Imagen);
 	/** Crea un modelo de fondo gaussiano usando la mediana. Establece los umbrales
 	 de binarización. **/
+
 	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
 	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STMoscas**, Lista );
 
-	void mostrarLista(Lista);
+//	void mostrarLista(Lista);
 
 	/// Crea la capa de ROIS de cada objeto
 	void CreateRois( IplImage*, IplImage*);
