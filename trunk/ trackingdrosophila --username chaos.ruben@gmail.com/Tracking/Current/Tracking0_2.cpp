@@ -75,6 +75,8 @@ int main() {
 
 	// creación de imagenes a utilizar
 	AllocateImages( frame );
+	AllocateImagesBGM( frame );
+
 	Capa->BGModel = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 	Capa->FG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 	Capa->ImFMask = cvCreateImage(cvSize(frame->width,frame->height),8,1);
@@ -122,8 +124,8 @@ int main() {
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
 			hecho = initBGGModel( g_capture , Capa->BGModel, Capa->ImFMask);
-			cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
-			continue;
+			//cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
+			//continue;
 		}
 		//              // Modelo de fondo para detección de movimiento
 		bool update_bg_model = true;
@@ -147,6 +149,8 @@ int main() {
 		//                 }
 
 		PreProcesado( frame, Imagen, Capa->ImFMask, 0);
+
+		UpdateBackground( Imagen, Capa->BGModel);
 
 		//              cvWaitKey(0);
 		//              invertirBW( Capa->ImFMask);
@@ -253,10 +257,7 @@ int main() {
 		// Mostramos imagenes
 
 		cvShowImage( "Drosophila.avi", frame );
-
 		//
-
-
 		cvShowImage("BG", Capa->BGModel);
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
@@ -273,6 +274,7 @@ int main() {
 	// LIMPIAR MEMORIA
 
 	DeallocateImages( );
+	DeallocateImagesBGM();
 	cvReleaseImage( &Capa->BGModel );
 	cvReleaseImage( &Capa->FG );
 	cvReleaseImage( &Capa->ImFMask );
@@ -329,8 +331,8 @@ void CreateWindows( ){
 #if SHOW_BG_REMOVAL == 1
         cvNamedWindow( "BG",CV_WINDOW_AUTOSIZE);
         cvNamedWindow( "FG",CV_WINDOW_AUTOSIZE);
-        cvMoveWindow("BG", 350, 500 );
-        cvMoveWindow("FG", 10, 500);
+        cvMoveWindow("BG", 640, 0 );
+        cvMoveWindow("FG", 640, 0);
 #endif
         cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
 //        cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
