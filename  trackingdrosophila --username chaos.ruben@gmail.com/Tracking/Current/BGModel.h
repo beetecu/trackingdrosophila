@@ -18,15 +18,22 @@
 #include <fstream>
 #include <math.h>
 
+#include "Libreria.h"
+
 #define FRAMES_TRAINING 20
 
 // VARIABLES GLOBALES DE PROGRAMA //
 
 	// Float 1-Channel
-	IplImage *IavgF, *IvarF, *IdiffF, *IprevF, *IhiF, *IlowF;
-	IplImage *Iscratch, *Iscratch2;
-	IplImage *ImGray;
+	IplImage *IdiffF;
+	IplImage *IvarF; /// Varianza
+	IplImage *IhiF; /// La mediana mas x veces la desviación típica
+	IplImage *IlowF; /// La mediana menos x veces la desviación típica
+	IplImage *Iscratch; /// Imagen preprocesada en float 32 bit
+	IplImage *Iscratch2; /// Contendrá la mediana. Float 32 bit
+
 	//Byte 1-Channel
+	IplImage *ImGray;
 	IplImage temp_frame;
 	IplImage *Imaskt;
 
@@ -42,9 +49,9 @@ IplImage* getBinaryImage(IplImage * image);
 
 void accumulateBackground( CvCapture* t_cap, IplImage* BGMod, IplImage* Mask);
 
-void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask,bool bin);
+//void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask,bool bin);
 
-void invertirBW( IplImage* Mask  );
+//void invertirBW( IplImage* Mask  );
 void error(int err);
 void AllocateImagesBGM( IplImage *I );
 void DeallocateImagesBGM();

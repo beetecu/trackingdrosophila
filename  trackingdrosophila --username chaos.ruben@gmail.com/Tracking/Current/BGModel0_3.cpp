@@ -55,7 +55,7 @@ void accumulateBackground( CvCapture* t_cap, IplImage* BGMod, IplImage* Mask) {
 			error(2);
 			break;
 		}
-
+		printf(" Porcentaje completado: %f \r",(float) num_frames/(FRAMES_TRAINING-1) );
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
 		PreProcesado( frame, ImGray, Mask, false);
@@ -64,25 +64,27 @@ void accumulateBackground( CvCapture* t_cap, IplImage* BGMod, IplImage* Mask) {
 		cvConvertScale( ImGray, Iscratch,1,0 );
 		cvConvertScale( BGMod, Iscratch2,1,0 );
 	// Invertimos la mascara para operar solo en el plato.
-		invertirBW( Mask  );
+//		invertirBW( Mask  );
 	// Inicializamos el fondo con la primera imagen
 		if ( num_frames == 0 ){
-			cvCopy( Iscratch, BGMod ); // si inicializamos a cero seria la normal tipificada
+			cvCopy( Iscratch, Iscratch2 ); // si inicializamos a cero seria la normal tipificada
 
 		}
+		cvShowImage("BG", Iscratch);
+				cvWaitKey();
 	// Estimamos la mediana y la varianza
 		for (int y = 0; y< Iscratch->height; y++){
 			// Nos movemos en altura
-			        uchar* ptr = (uchar*) ( BGMod->imageData + y*BGMod->widthStep);
-					uchar* ptr2 = (uchar*) ( Iscratch->imageData + y*Iscratch->widthStep);
+			        uchar* ptr = (uchar*) ( Iscratch->imageData + y*Iscratch->widthStep);
+					uchar* ptr2 = (uchar*) ( Iscratch2->imageData + y*Iscratch2->widthStep);
 
 					for (int x= 0; x<Iscratch->width; x++){ // Nos movemos en anchura
 						// Incrementar o decrementar fondo en una unidad
-						if ( ptr2[x] < ptr[x] ) ptr[x] = ptr[x]-1;
-						if ( ptr2[x] > ptr[x] ) ptr[x] = ptr[x]+1;
+						if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
+						if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
 					}
 		}
-		cvAbsDiff( Iscratch, BGMod, IdiffF);
+		cvAbsDiff( Iscratch, Iscratch2, IdiffF);
 		if ( num_frames == 0 )  cvCopy( IdiffF, IvarF);
 		else {
 			for (int y = 0; y< IdiffF->height; y++){
@@ -100,7 +102,6 @@ void accumulateBackground( CvCapture* t_cap, IplImage* BGMod, IplImage* Mask) {
 		Time = (double)cvGetTickCount() - Time;
 		printf( "Frame  %.1f Seg / Frame \n", Time/(cvGetTickFrequency()*1000000.) );
 
-
 		//Obtenemos el vector recorriendo la matriz primero en profundidad con el bucle interno
 	}
 }
@@ -111,15 +112,15 @@ void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation pu
 
         CvSize sz = cvGetSize( I );
 
-        IavgF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
+
         IvarF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
         IdiffF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-        IprevF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 
-        cvZero( IavgF );
+
+
         cvZero( IvarF );
         cvZero( IdiffF );
-        cvZero( IprevF );
+
         cvZero( IhiF );
         cvZero( IlowF );
 
@@ -133,10 +134,10 @@ void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation pu
 }
 
 void DeallocateImagesBGM() {
-        cvReleaseImage( &IavgF );
+
         cvReleaseImage( &IvarF );
         cvReleaseImage( &IdiffF );
-        cvReleaseImage( &IprevF );
+
 
         cvReleaseImage( &Iscratch );
         cvReleaseImage( &Iscratch2 );

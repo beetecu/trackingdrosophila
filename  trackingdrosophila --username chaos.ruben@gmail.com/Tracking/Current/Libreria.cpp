@@ -4,12 +4,8 @@
  *  Created on: 12/07/2011
  *      Author: chao
  */
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <stdio.h>
-#include "Interfaz_Lista.h"
 
+#include "Libreria.h"
 
 void invertirBW( IplImage* Imagen ){
 	for( int y=0;  y< Imagen->height ; y++){
@@ -23,27 +19,21 @@ void invertirBW( IplImage* Imagen ){
 }
 // Recibe la imagen del video y devuelve la imagen en un canal de niveles
 // de gris con el plato extraido
-void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask,bool bin){
+void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin){
 
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
 	// Imagen a un canal de niveles de gris
-	cvCvtColor( frame, Im, CV_BGR2GRAY);
+	cvCvtColor( src, dst, CV_BGR2GRAY);
 	if (bin == true){
-		cvAdaptiveThreshold( Im, Im,
+		cvAdaptiveThreshold( dst, dst,
 			255, CV_ADAPTIVE_THRESH_MEAN_C,CV_THRESH_BINARY,75,40);
 		//bin = false;
 	}
 // Filtrado gaussiano 5x
-	cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
-
-// Obtención de Imagen a procesar
-	cvCopy( Im, Im );
+	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
 
 // Extraccion del plato
-	cvAndS(Im, cvRealScalar( 0 ) , Im, ImFMask );
-
-//			cvShowImage( "Im",Im );
-//			cvWaitKey(0);
+	cvAndS(dst, cvRealScalar( 0 ) , dst, ImFMask );
 }
 //#endif
 

@@ -8,7 +8,7 @@
  */
 
 #include "Tracking.h"
-//#include "BGModel.h"
+//
 
 using namespace cv;
 using namespace std;
@@ -257,8 +257,8 @@ int main() {
 		//
 
 
-		cvShowImage("BG", bg_model->background);
-		cvShowImage("FG", bg_model->foreground);
+		cvShowImage("BG", Capa->BGModel);
+//		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
 
