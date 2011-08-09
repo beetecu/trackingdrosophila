@@ -141,7 +141,13 @@ using namespace std;
 	/** Crea un modelo de fondo gaussiano usando la mediana. Establece los umbrales
 	 de binarización. **/
 
+	void AllocateImagesBGM( IplImage *I );
+
 	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
+
+	void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model );
+
+	void DeallocateImagesBGM();
 
 	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STMoscas**, Lista );
 
