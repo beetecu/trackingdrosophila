@@ -22,7 +22,7 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 
 	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 
-	printf(" Rellenando matriz de estados...\n");
+	printf(" Creando modelo de fondo...\n");
 	while( num_frames < FRAMES_TRAINING ){
 		IplImage* frame = cvQueryFrame( t_capture );
 		if ( !frame ) {
@@ -34,10 +34,10 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 
 		PreProcesado( frame, ImGray, ImMask, false);
 
-		// Inicializamos el fondo con la primera imagen
-		if ( num_frames == 0 ){
-			cvCopy( ImGray, BG ); // si inicializamos a cero seria la normal tipificada
-		}
+
+
+			 // si inicializamos a cero seria la normal tipificada
+
 
 		accumulateBackground( ImGray, BG );
 
@@ -58,10 +58,16 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 	return 1;
 }
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod) {
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod ) {
 
 	static int first = 1;
-	// Estimamos la mediana y la desviación típica
+	// Estimamos la mediana
+
+	// Inicializamos el fondo con la primera imagen
+	if ( first == 1 ){
+			cvCopy( ImGray, BGMod );
+			first = 0;
+		}
 	for (int y = 0; y< ImGray->height; y++){
 		// Nos movemos en altura
 		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep);
@@ -73,6 +79,9 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod) {
 		}
 	}
 	cvAbsDiff( ImGray, BGMod, IdiffF);
+	//Estimamos la desviación típica
+	// La primera vez iniciamos la varianza al valor IdiffF, que será un valor
+	//muy pequeño. Esto permitirá discernir
 	if ( first == 1 ){
 		cvCopy( IdiffF, IvarF);
 		first = 0;
@@ -89,6 +98,8 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod) {
 			}
 		}
 	}
+
+	cvConvertScale(IvarF,IvarF,1.4826,0);
 }
 
 void UpdateBackground( IplImage * tmp_frame, IplImage* bg_model){
@@ -97,6 +108,21 @@ void UpdateBackground( IplImage * tmp_frame, IplImage* bg_model){
 
 }
 
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,
+		IplImage fg,  int HiF, int LowF ){
+// estableceremos un unico umbral basado en la dif abs
+// ya que todas las moscas son mas oscuras
+//	setHighThreshold( bg_model, HiF );
+	setLowThreshold( bg_model, LowF );
+
+}
+
+void setHighThreshold( IplImage* BG, int HiF ){
+
+}
+void setLowThreshold( IplImage* BG, int LowF ){
+	cvConvertScale( BG, IlowF, LowF,0 );
+}
 void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation purposes
 
         CvSize sz = cvGetSize( I );
