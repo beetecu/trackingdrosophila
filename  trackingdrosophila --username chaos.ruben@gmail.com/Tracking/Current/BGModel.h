@@ -36,17 +36,28 @@
 
 // PROTOTIPOS DE FUNCIONES //
 
-void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model );
+
+
 
 int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
 IplImage* getBinaryImage(IplImage * image);
+//! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
+//!	en BGMod y la varianza en IvarF según:
+/*! Mediana:
+//!	\f[
+//!		mu(p)= median\I_t(p)
+//!		\f]
+    /*
+      \param ImGray : Imagen fuente de 8 bit niveles de gris.
+      \param BGMod : Imagen de fondo sobre la que se estima la mediana
+    */
 
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod);
-
-//void PreProcesado( IplImage* frame,IplImage* Im, IplImage* ImFMask,bool bin);
-
-//void invertirBW( IplImage* Mask  );
+void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model );
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, int HiF, int LowF );
+void setHighThreshold( IplImage* BG, int HiF );
+void setLowThreshold( IplImage* BG, int LowF );
 void error(int err);
 void AllocateImagesBGM( IplImage *I );
 void DeallocateImagesBGM();

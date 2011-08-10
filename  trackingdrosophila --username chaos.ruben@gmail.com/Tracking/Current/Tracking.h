@@ -36,6 +36,8 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
+#define HIGHT_THRESHOLD 3
+#define LOW_ THRESHOLD 3
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
 
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
@@ -62,8 +64,8 @@ using namespace std;
 	// Modelado de fondo
 	int fr = 0;
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
-	IplImage *ImHiThr;
-	IplImage *ImLowThr;
+//	IplImage *ImHiThr;
+//	IplImage *ImLowThr;
 
 	/// Imagenes que se usarán en el programa principal
 	/// CAPTURA
@@ -146,6 +148,8 @@ using namespace std;
 	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
 	void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model );
+
+	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, int HiF, int LowF );
 
 	void DeallocateImagesBGM();
 

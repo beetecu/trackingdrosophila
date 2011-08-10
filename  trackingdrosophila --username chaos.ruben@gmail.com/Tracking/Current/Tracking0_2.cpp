@@ -34,7 +34,7 @@ int main() {
 
 	// Creación de ventanas de visualizacion
 	CreateWindows( );
-	//      cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
+	//      cvSetCaptureProperty( g_capture	cvResetImageROI(Capa->BGModel);, CV_CAP_PROP_POS_AVI_RATIO,0 );
 	//      Añadimos un slider a la ventana del video Drosophila.avi
 
 
@@ -65,14 +65,6 @@ int main() {
 	Lista llse; // Apuntará al primer elemento de la lista lineal
 	iniciarLista(&llse);
 
-
-	// Iniciar modelo de fondo
-
-	CvBGStatModel *bg_model = NULL;
-	CvGaussBGStatModelParams paramMoG;
-
-	//      CvPixelBackgroundGMM* pGMM=0;
-
 	// creación de imagenes a utilizar
 	AllocateImages( frame );
 	AllocateImagesBGM( frame );
@@ -85,6 +77,7 @@ int main() {
 
 	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
 	int NumFrame = 0;
+
 	////////////////////////////////////////////////
 	///////// BUCLE PRINCIPAL DEL ALGORITMO ////////
 
@@ -101,26 +94,19 @@ int main() {
 		//              TotalFrames += 1 ;
 		//              cvSetTrackbarPos( "Posicion","Drosophila.avi",TotalFrames);
 		//              onTrackbarSlider(TotalFrames);
+
 		////////// PREPROCESADO ///////////////
 
-
 		// Obtencion de mascara del plato
-
 		if( !hecho ){
 			MascaraPlato( g_capture, Capa->ImFMask, &PCentroX, &PCentroY, &PRadio );
 			GlobalTime = (double)cvGetTickCount() - InitialTime;
 			printf( " %.1f Seg\n", GlobalTime/(cvGetTickFrequency()*1000000.) );
-
-			//                      cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
-			//                      NumFrame = 0;
-			//                      TotalFrames -=1;
 			if ( PRadio == 0  ) {
 				error(3);
 				break;
 			}
-			//                      hecho = 1;
 		}
-
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
 			hecho = initBGGModel( g_capture , Capa->BGModel, Capa->ImFMask);
@@ -128,38 +114,25 @@ int main() {
 			//continue;
 		}
 		//              // Modelo de fondo para detección de movimiento
-		bool update_bg_model = true;
-		fr +=1;
-		//                if(!hecho){
-		//                        //create BG model
-		//                        initBackgroundModel(g_capture, &Capa.BGModel, ImMask);
-		//                        printf( "Creando modelo de fondo..." );
-		//
-		//
-		//         //             bg_model = cvCreateGaussianBGModel( frame );
-		//                //    bg_model = cvCreateFGDStatModel( frame );
-		//                        GlobalTime = (double)cvGetTickCount() - InitialTime;
-		//                        printf( " %.1f Seg\n", GlobalTime/(cvGetTickFrequency()*1000000.) );
-		//                        printf( "Identificando objetos ...\n" );
-		//                        hecho = 1;
-		//                        cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
-		//                        NumFrame = 0;
-		//                        TotalFrames -=1;
-		//                        continue;
-		//                 }
 
 		PreProcesado( frame, Imagen, Capa->ImFMask, 0);
 
+		double t = (double)cvGetTickCount();
+
 		UpdateBackground( Imagen, Capa->BGModel);
 
-		//              cvWaitKey(0);
-		//              invertirBW( Capa->ImFMask);
+//		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG,
+//								HIGHT_THRESHOLD, LOW_THRESHOLD);
+
+		t = (double)cvGetTickCount() - t;
+		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
 
 		// Establecer ROI
-		//                ImROI = cvCloneImage( Imagen );
-		cvSetImageROI( Imagen, cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ) );
+
+	//	cvSetImageROI( Imagen, cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ) );
 		cvShowImage( "ROI", Imagen );
 		cvResetImageROI(Imagen);
+
 		////////////// PROCESADO ///////////////
 
 		// Segmentacion basada en COLOR
@@ -168,7 +141,7 @@ int main() {
 		//               cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
 
 		// Actualizar fondo
-		double t = (double)cvGetTickCount();
+
 		//               Capa-> FG =  updateBackground(bg_model, frame);
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
@@ -176,22 +149,7 @@ int main() {
 		//      segments - pointer to result of segmentation (for example MeanShiftSegmentation)
 		//      bg_model - pointer to CvBGStatModel structure
 		//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
-		cvUpdateBGStatModel( frame, bg_model, update_bg_model ? -1 : 0 );
-		t = (double)cvGetTickCount() - t;
-		printf( "%d. %.1f ms\n", fr, t/(cvGetTickFrequency()*1000.) );
-		//               char k = cvWaitKey(5);
-		//               if( k == 27 ) break;
-		//               if( k == ' ' )
-		//               {
-		//                       update_bg_model = !update_bg_model;
-		//                       if(update_bg_model)
-		//                              printf("Background update is on\n");
-		//                       else
-		//                              printf("Background update is off\n");
-		//               }
-		t = (double)cvGetTickCount();
-		t = (double)cvGetTickCount() - t; //tiempo transcurrido
-		printf( "Tiempo transcurrido %.1f\n",  t/(cvGetTickFrequency()*1000.) );
+
 
 		/////// SEGMENTACION
 
@@ -283,26 +241,26 @@ int main() {
 
 	free(Capa);
 	cvReleaseCapture(&g_capture);
-	cvReleaseBGStatModel( &bg_model );
+
 
 	DestroyWindows( );
 }
 
 void AllocateImages( IplImage* I){
-        CvSize sz = cvGetSize( I );
+	CvSize sz = cvGetSize( I );
 
-        Imagen = cvCreateImage( sz ,8,1);
+	Imagen = cvCreateImage( sz ,8,1);
 
-        ImHiThr= cvCreateImage( sz ,IPL_DEPTH_32F,1);
-        ImLowThr= cvCreateImage( sz ,IPL_DEPTH_32F,1);
+//	ImHiThr= cvCreateImage( sz ,IPL_DEPTH_32F,1);
+//	ImLowThr= cvCreateImage( sz ,IPL_DEPTH_32F,1);
 
-//    ImGris = cvCreateImage( sz ,8,1);
-//      ImFilter = cvCreateImage( sz,8,1);
+	//    ImGris = cvCreateImage( sz ,8,1);
+	//      ImFilter = cvCreateImage( sz,8,1);
 
-//        ImROI = cvCreateImage( sz, 8, 1);
-        ImBlobs = cvCreateImage( sz,8,1 );
-        ImThres = cvCreateImage( sz,8,1 );
-        ImVisual = cvCreateImage( sz,8,1);
+	//        ImROI = cvCreateImage( sz, 8, 1);
+	ImBlobs = cvCreateImage( sz,8,1 );
+	ImThres = cvCreateImage( sz,8,1 );
+	ImVisual = cvCreateImage( sz,8,1);
 
 
 }
@@ -311,16 +269,16 @@ void AllocateImages( IplImage* I){
 
 void DeallocateImages( ){
 
-//      cvReleaseImage( &ImGris );
-//      cvReleaseImage( &ImFilter );
-        cvReleaseImage( &Imagen );
-//        cvReleaseImage( &ImROI );
+	//      cvReleaseImage( &ImGris );
+	//      cvReleaseImage( &ImFilter );
+	cvReleaseImage( &Imagen );
+	//        cvReleaseImage( &ImROI );
 
-        cvReleaseImage( &ImHiThr );
-        cvReleaseImage( &ImLowThr );
+//	cvReleaseImage( &ImHiThr );
+//	cvReleaseImage( &ImLowThr );
 
-        cvReleaseImage( &ImBlobs );
-        cvReleaseImage( &ImVisual );
+	cvReleaseImage( &ImBlobs );
+	cvReleaseImage( &ImVisual );
 
 
 }
@@ -329,68 +287,68 @@ void DeallocateImages( ){
 void CreateWindows( ){
 
 #if SHOW_BG_REMOVAL == 1
-        cvNamedWindow( "BG",CV_WINDOW_AUTOSIZE);
-        cvNamedWindow( "FG",CV_WINDOW_AUTOSIZE);
-        cvMoveWindow("BG", 640, 0 );
-        cvMoveWindow("FG", 640, 0);
+	cvNamedWindow( "BG",CV_WINDOW_AUTOSIZE);
+	cvNamedWindow( "FG",CV_WINDOW_AUTOSIZE);
+	cvMoveWindow("BG", 640, 0 );
+	cvMoveWindow("FG", 640, 0);
 #endif
-        cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
-//        cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
-//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
-        cvNamedWindow( "ROI", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
+	//        cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
+	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow( "ROI", CV_WINDOW_AUTOSIZE);
 
-//        cvNamedWindow("Bina",1);
-//        cvNamedWindow("Blobs",1);
+	//        cvNamedWindow("Bina",1);
+	//        cvNamedWindow("Blobs",1);
 }
 
 
 // Destruccion de ventanas
 void DestroyWindows( ){
-        cvDestroyWindow( "Drosophila.avi" );
-//        cvDestroyWindow( "Visualización" );
-//        cvDestroyWindow( "Imagen" );
-        cvDestroyWindow( "ROI" );
+	cvDestroyWindow( "Drosophila.avi" );
+	//        cvDestroyWindow( "Visualización" );
+	//        cvDestroyWindow( "Imagen" );
+	cvDestroyWindow( "ROI" );
 #if SHOW_BG_REMOVAL == 1
-        cvDestroyWindow( "BG");
-        cvDestroyWindow( "FG");
+	cvDestroyWindow( "BG");
+	cvDestroyWindow( "FG");
 #endif
-//        cvDestroyWindow( "Bina" );
-//        cvDestroyWindow( "Blobs" );
+	//        cvDestroyWindow( "Bina" );
+	//        cvDestroyWindow( "Blobs" );
 }
 
 void onTrackbarSlider(  int pos ){
 
-        cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_FRAMES, pos );
+	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_FRAMES, pos );
 }
 
 int getAVIFrames(char * fname) {
-    char tempSize[4];
-    // Trying to open the video file
-    ifstream  videoFile( fname , ios::in | ios::binary );
-    // Checking the availablity of the file
-    if ( !videoFile ) {
-                cout << "Couldn’t open the input file " << fname << endl;
-                exit( 1 );
-    }
-    // get the number of frames
-    videoFile.seekg( 0x30 , ios::beg );
-    videoFile.read( tempSize , 4 );
-    int frames = (unsigned char ) tempSize[0] + 0x100*(unsigned char ) tempSize[1] + 0x10000*(unsigned char ) tempSize[2] +    0x1000000*(unsigned char ) tempSize[3];
-    videoFile.close(  );
-    return frames;
+	char tempSize[4];
+	// Trying to open the video file
+	ifstream  videoFile( fname , ios::in | ios::binary );
+	// Checking the availablity of the file
+	if ( !videoFile ) {
+		cout << "Couldn’t open the input file " << fname << endl;
+		exit( 1 );
+	}
+	// get the number of frames
+	videoFile.seekg( 0x30 , ios::beg );
+	videoFile.read( tempSize , 4 );
+	int frames = (unsigned char ) tempSize[0] + 0x100*(unsigned char ) tempSize[1] + 0x10000*(unsigned char ) tempSize[2] +    0x1000000*(unsigned char ) tempSize[3];
+	videoFile.close(  );
+	return frames;
 }
 
 void mostrarLista(Lista *lista)
 {
-  // Mostrar todos los elementos de la lista
+	// Mostrar todos los elementos de la lista
 
-        int i = 0;
-        STMoscas *Mosca = NULL;
+	int i = 0;
+	STMoscas *Mosca = NULL;
 
-        while (i < lista->numeroDeElementos)
-        {
-                Mosca = (STMoscas *)obtener(i, lista);
-                printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Mosca->VV,Mosca->VH,Mosca->punto1.x );
-                i++;
-        }
+	while (i < lista->numeroDeElementos)
+	{
+		Mosca = (STMoscas *)obtener(i, lista);
+		printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Mosca->VV,Mosca->VH,Mosca->punto1.x );
+		i++;
+	}
 }
