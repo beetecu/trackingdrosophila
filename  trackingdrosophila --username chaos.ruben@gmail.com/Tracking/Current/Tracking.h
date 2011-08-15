@@ -27,8 +27,7 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
-#define HIGHT_THRESHOLD 3
-#define LOW_THRESHOLD 3
+
 #define INTERVAL_BACKGROUND_UPDATE 1
 
 
@@ -142,7 +141,7 @@ using namespace std;
 
 	void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI );
 
-	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg, int HiF, int LowF );
+	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg );
 
 	void DeallocateImagesBGM();
 

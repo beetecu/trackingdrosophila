@@ -11,10 +11,17 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 
-#define FRAMES_TRAINING 20
-#define ALPHA 0.5
+//#define FRAMES_TRAINING 20 // Nº de frames para el aprendizaje del fondo
+//#define HIGHT_THRESHOLD 3 // Umbral para la resta de fondo
+//#define LOW_THRESHOLD 3
+//#define ALPHA 0.5	// Parámetro para actualización dinámica del modelo
 
 // VARIABLES GLOBALES DE PROGRAMA //
+
+int FRAMES_TRAINING = 20;
+int HIGHT_THRESHOLD = 3;
+int LOW_THRESHOLD = 3;
+double ALPHA = 0.5;
 
 	// Float 1-Channel
 	IplImage *IdiffF;
@@ -75,7 +82,7 @@ void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI);
       \param LowF: : Umbral bajo.
     */
 
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, double alpha, CvRect dataroi );
+void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRect dataroi );
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
 /*!
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
