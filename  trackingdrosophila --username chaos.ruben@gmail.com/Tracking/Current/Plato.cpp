@@ -1,8 +1,6 @@
 /*
  * Plato.cpp
  *
- *
- *
  * Recibe una imagen de un canal en niveles de gris
  * Detecta el plato y crea una máscara: pone a 255 los pixeles que estén fuera
  *
@@ -42,7 +40,7 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 		return ;
 	}
 
-	// Obtención del centro de máximo radio del plato en 200 frames
+	// Obtención del centro de máximo radio del plato en 50 frames
 	printf("Localizando plato... ");
 //	GlobalTime = (double)cvGetTickCount() - GlobalTime;
 //	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );

@@ -8,13 +8,9 @@
  */
 
 #include "Tracking.h"
-//
 
 using namespace cv;
 using namespace std;
-
-
-
 
 int main() {
 
@@ -54,13 +50,9 @@ int main() {
 
 
 	// Iniciar estructura para almacenar las Capas
-
-	//Capa es un puntero a una estructura de tipo STCapas
-	// Asignamos espacio a la estructura
 	Capa = ( STCapas *) malloc( sizeof( STCapas));
 
 	// Iniciar estructura para almacerar datos de blobs
-
 	STMoscas *mosca=NULL;
 	Lista llse; // Apuntará al primer elemento de la lista lineal
 	iniciarLista(&llse);
@@ -69,17 +61,13 @@ int main() {
 	AllocateImages( frame );
 	AllocateImagesBGM( frame );
 
-	Capa->BGModel = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->FG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->ImFMask = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->ImRois = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->OldFG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-
 	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
-	int NumFrame = 0;
 
-	////////////////////////////////////////////////
-	///////// BUCLE PRINCIPAL DEL ALGORITMO ////////
+	int FrameCount = 0; // contador de frames para la actualización del fondo
+
+	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
+	 ////// BUCLE PRINCIPAL DEL ALGORITMO \\\\\\\
+	  /////////////////////\\\\\\\\\\\\\\\\\\\\\
 
 	while ( g_capture ) {
 
@@ -106,6 +94,7 @@ int main() {
 				error(3);
 				break;
 			}
+			DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
 		}
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
@@ -113,43 +102,41 @@ int main() {
 			//cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
 			//continue;
 		}
-		//              // Modelo de fondo para detección de movimiento
+		// Modelo de fondo para detección de movimiento
 
 		PreProcesado( frame, Imagen, Capa->ImFMask, 0);
 
-		double t = (double)cvGetTickCount();
-
-		UpdateBackground( Imagen, Capa->BGModel);
-
-//		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG,
-//								HIGHT_THRESHOLD, LOW_THRESHOLD);
-
-		t = (double)cvGetTickCount() - t;
-		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
-
 		// Establecer ROI
 
-	//	cvSetImageROI( Imagen, cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ) );
-		cvShowImage( "ROI", Imagen );
+		cvSetImageROI( Imagen, DataFROI );
+//		cvShowImage( "Region_Of_Interest", Imagen );
 		cvResetImageROI(Imagen);
 
 		////////////// PROCESADO ///////////////
 
-		// Segmentacion basada en COLOR
+		double t = (double)cvGetTickCount();
 
+		FrameCount += 1;
 
-		//               cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
+		if ( FrameCount == INTERVAL_BACKGROUND_UPDATE ){
+			UpdateBackground( Imagen, Capa->BGModel, DataFROI);
+			FrameCount = 0;
+		}
 
-		// Actualizar fondo
+		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG,
+								HIGHT_THRESHOLD, LOW_THRESHOLD);
 
-		//               Capa-> FG =  updateBackground(bg_model, frame);
+		t = (double)cvGetTickCount() - t;
+		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
+
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
 		// parameters:
 		//      segments - pointer to result of segmentation (for example MeanShiftSegmentation)
 		//      bg_model - pointer to CvBGStatModel structure
 		//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
-
+		// Segmentacion basada en COLOR
+		// cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
 
 		/////// SEGMENTACION
 
@@ -216,37 +203,53 @@ int main() {
 
 		cvShowImage( "Drosophila.avi", frame );
 		//
-		cvShowImage("BG", Capa->BGModel);
+		cvShowImage("Background", Capa->BGModel);
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
-
+//		cvShowImage( "Foreground",Capa->FG);
 
 
 
 	}
-	/////////// OBTENCIÓN DE DATOS ESTADÍSTICOS ////////////
+
+	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
+	 ////////// ANALISIS ESTADÍSTICO \\\\\\\\\\\\
+	  /////////////////////\\\\\\\\\\\\\\\\\\\\\
+
 	printf( "Comenzando análisis estadístico ...\n" );
 	printf( "Análisis finalizado ...\n" );
 
 	// LIMPIAR MEMORIA
 
+	free(Capa);
 	DeallocateImages( );
 	DeallocateImagesBGM();
-	cvReleaseImage( &Capa->BGModel );
-	cvReleaseImage( &Capa->FG );
-	cvReleaseImage( &Capa->ImFMask );
-	cvReleaseImage( &Capa->OldFG );
-	cvReleaseImage( &Capa->ImRois);
 
-	free(Capa);
+
+
 	cvReleaseCapture(&g_capture);
 
 
 	DestroyWindows( );
 }
 
-void AllocateImages( IplImage* I){
+void AllocateImages( IplImage* I ){
+
+//	typedef struct {
+//		IplImage* BGModel;  ///BackGround Model
+//		IplImage* OldFG; ///OldForeGround
+//		IplImage* FG;  ///Foreground
+//		IplImage* ImFMask; /// Mascara del plato
+//		IplImage* ImRois;
+//	}STCapas;
+
+	Capa->BGModel = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+	Capa->FG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+	Capa->ImFMask = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+	Capa->ImRois = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+	Capa->OldFG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+
 	CvSize sz = cvGetSize( I );
 
 	Imagen = cvCreateImage( sz ,8,1);
@@ -269,33 +272,26 @@ void AllocateImages( IplImage* I){
 
 void DeallocateImages( ){
 
-	//      cvReleaseImage( &ImGris );
-	//      cvReleaseImage( &ImFilter );
 	cvReleaseImage( &Imagen );
-	//        cvReleaseImage( &ImROI );
-
-//	cvReleaseImage( &ImHiThr );
-//	cvReleaseImage( &ImLowThr );
-
 	cvReleaseImage( &ImBlobs );
 	cvReleaseImage( &ImVisual );
-
 
 }
 
 // Creación de ventanas
 void CreateWindows( ){
 
-#if SHOW_BG_REMOVAL == 1
-	cvNamedWindow( "BG",CV_WINDOW_AUTOSIZE);
-	cvNamedWindow( "FG",CV_WINDOW_AUTOSIZE);
-	cvMoveWindow("BG", 640, 0 );
-	cvMoveWindow("FG", 640, 0);
-#endif
 	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
+#if SHOW_BG_REMOVAL == 1
+	cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
+	cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
+	cvMoveWindow("Background", 0, 0 );
+	cvMoveWindow("Foreground", 640, 0);
+#endif
+
 	//        cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
 	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
-	cvNamedWindow( "ROI", CV_WINDOW_AUTOSIZE);
+//	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);
 
 	//        cvNamedWindow("Bina",1);
 	//        cvNamedWindow("Blobs",1);
@@ -307,10 +303,10 @@ void DestroyWindows( ){
 	cvDestroyWindow( "Drosophila.avi" );
 	//        cvDestroyWindow( "Visualización" );
 	//        cvDestroyWindow( "Imagen" );
-	cvDestroyWindow( "ROI" );
+//	cvDestroyWindow( "Region_Of_Interest" );
 #if SHOW_BG_REMOVAL == 1
-	cvDestroyWindow( "BG");
-	cvDestroyWindow( "FG");
+	cvDestroyWindow( "Background");
+	cvDestroyWindow( "Foreground");
 #endif
 	//        cvDestroyWindow( "Bina" );
 	//        cvDestroyWindow( "Blobs" );

@@ -13,10 +13,10 @@ void DestroyWindows( );
 void error(int err){
 	switch( err ){
 		case 1:
-			fprintf( stderr, "ERROR: capture is NULL \n" );	getchar();
+			fprintf( stderr, "ERROR: capture is NULL \n" );	//getchar();
 			DestroyWindows( );
 		case 2:
-			fprintf( stderr, "ERROR: frame is null...\n" ); getchar();
+			fprintf( stderr, "ERROR: frame is null...\n" ); //getchar();
 			DestroyWindows( );
 		case 3:
 
