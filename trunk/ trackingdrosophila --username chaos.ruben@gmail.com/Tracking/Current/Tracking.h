@@ -8,21 +8,12 @@
 #ifndef TRACKING_H_
 #define TRACKING_H_
 
-#include <opencv2/video/background_segm.hpp>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-#include <stdio.h>
+#include "VideoTracker.hpp"
 
 #include <BlobResult.h>
-
-#include <iostream>
-#include <fstream>
-#include <math.h>
-
 #include "Interfaz_Lista.h"
 #include "Libreria.h"
+
 
 
 using namespace cv;
@@ -37,9 +28,11 @@ using namespace std;
 #define CVX_BLACK CV_RGB(0,0,0)
 
 #define HIGHT_THRESHOLD 3
-#define LOW_ THRESHOLD 3
-#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
+#define LOW_THRESHOLD 3
+#define INTERVAL_BACKGROUND_UPDATE 1
 
+
+#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
 
 // VARIABLES GLOBALES DE PROGRAMA
@@ -59,7 +52,7 @@ using namespace std;
 	int PCentroX;
 	int PCentroY;
 	int PRadio;
-
+	static CvRect DataFROI;
 
 	// Modelado de fondo
 	int fr = 0;
@@ -147,9 +140,9 @@ using namespace std;
 
 	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
-	void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model );
+	void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI );
 
-	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, int HiF, int LowF );
+	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg, int HiF, int LowF );
 
 	void DeallocateImagesBGM();
 
