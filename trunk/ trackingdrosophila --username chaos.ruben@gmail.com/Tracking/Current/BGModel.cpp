@@ -75,16 +75,17 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod ) {
 	}
 	// Corregimos la estimación de la desviación mediante la función de error
 //	cvConvertScale(IvarF,IvarF,1.4826,0);
+
 }
 
 void UpdateBackground( IplImage* tmp_frame, IplImage* bg_model, CvRect DataROI){
 
 	accumulateBackground( tmp_frame, bg_model );
-	RunningBGGModel( tmp_frame, bg_model, IvarF, ALPHA, DataROI );
+	RunningBGGModel( tmp_frame, bg_model, IvarF, DataROI );
 //	RunningVariance
 
 }
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesvt, double alpha, CvRect dataroi ){
+void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesvt, CvRect dataroi ){
 
 	IplImage* ImTemp;
 	CvSize sz = cvGetSize( Image );
@@ -95,16 +96,16 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesvt, doubl
 	cvSetImageROI( ImTemp, dataroi );
 	cvSetImageROI( median, dataroi );
 	cvSetImageROI( IdiffF, dataroi );
-	cvSetImageROI( Idesvt, dataroi );b
+	cvSetImageROI( Idesvt, dataroi );
 
 	// Para la mediana
-	cvConvertScale(ImTemp, ImTemp, alpha,0);
-	cvConvertScale( median, median, (1 - alpha),0);
+	cvConvertScale(ImTemp, ImTemp, ALPHA,0);
+	cvConvertScale( median, median, (1 - ALPHA),0);
 	cvAdd(ImTemp , median , median );
 
 	// Para la desviación típica
-	cvConvertScale(IdiffF, ImTemp, alpha,0);
-    cvConvertScale( Idesvt, Idesvt, (1 - alpha),0);
+	cvConvertScale(IdiffF, ImTemp, ALPHA,0);
+    cvConvertScale( Idesvt, Idesvt, (1 - ALPHA),0);
 	cvAdd(ImTemp , Idesvt , Idesvt );
 
 	cvResetImageROI( median );
@@ -112,14 +113,25 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesvt, doubl
 	cvResetImageROI( Idesvt );
 
 	cvReleaseImage( &ImTemp );
+
+//		cvCreateTrackbar( "HighT",
+//					  "Foreground",
+//					  &g_slider_position,
+//					  HIGHT_THRESHOLD,
+//					  onTrackbarSlider );
+//		cvCreateTrackbar( "ALPHA",
+//							  "Foreground",
+//							  &g_slider_position,
+//							  ALPHA,
+//							  onTrackbarSlider );
 }
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,
-		IplImage* fg,  int HiF, int LowF ){
+		IplImage* fg ){
 
 	cvZero(fg); // Iniciamos el nuevo primer plano a cero
 
-	setHighThreshold( bg_model, HiF );
-	setLowThreshold( bg_model, LowF );
+	setHighThreshold( bg_model, HIGHT_THRESHOLD );
+	setLowThreshold( bg_model, LOW_THRESHOLD );
 
 //	cvInRange( ImGray, IhiF,IlowF, Imaskt);
 
@@ -133,12 +145,12 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,
 			// Si la desviación tipica del pixel supera en HiF veces la
 			// desviación típica del modelo, el pixel se clasifica como
 			//foreground ( 255 ), en caso contrario como background
-			if ( ptr3[x] >= HiF*ptr4[x] ) ptr5[x] = 255;
+			if ( ptr3[x] >= HIGHT_THRESHOLD*ptr4[x] ) ptr5[x] = 255;
 			else ptr5[x] = 0;
 		}
 	}
 	invertirBW( fg );
-		cvShowImage( "Foreground",fg);
+	cvShowImage( "Foreground",fg);
 }
 // Establece el Umbral alto como la mediana mas HiF veces la desviación típica
 void setHighThreshold( IplImage* BG, int HiF ){

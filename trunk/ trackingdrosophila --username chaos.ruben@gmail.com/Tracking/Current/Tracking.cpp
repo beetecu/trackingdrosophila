@@ -123,8 +123,7 @@ int main() {
 			FrameCount = 0;
 		}
 
-		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG,
-								HIGHT_THRESHOLD, LOW_THRESHOLD);
+		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG );
 
 		t = (double)cvGetTickCount() - t;
 		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
@@ -285,6 +284,7 @@ void CreateWindows( ){
 #if SHOW_BG_REMOVAL == 1
 	cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
 	cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
+
 	cvMoveWindow("Background", 0, 0 );
 	cvMoveWindow("Foreground", 640, 0);
 #endif
