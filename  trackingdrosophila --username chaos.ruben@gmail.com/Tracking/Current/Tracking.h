@@ -28,7 +28,7 @@ using namespace std;
 #define CVX_BLACK CV_RGB(0,0,0)
 
 
-#define INTERVAL_BACKGROUND_UPDATE 1
+//#define INTERVAL_BACKGROUND_UPDATE 10000
 
 
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
@@ -45,7 +45,7 @@ using namespace std;
 	static int hecho = 0;
 
 	//HightGui
-	int g_slider_position = 0;
+//	int g_slider_position = 0;
 
 	// Plato
 	int PCentroX;
@@ -55,6 +55,7 @@ using namespace std;
 
 	// Modelado de fondo
 	int fr = 0;
+	int BGUpdate = 1;
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
 //	IplImage *ImHiThr;
 //	IplImage *ImLowThr;

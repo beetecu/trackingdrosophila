@@ -118,15 +118,19 @@ int main() {
 
 		FrameCount += 1;
 
-		if ( FrameCount == INTERVAL_BACKGROUND_UPDATE ){
+		if ( FrameCount == BGUpdate ){
 			UpdateBackground( Imagen, Capa->BGModel, DataFROI);
 			FrameCount = 0;
 		}
+		cvCreateTrackbar( "BGUpdate",
+						  "Foreground",
+						  &BGUpdate,
+						  100  );
 
 		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG );
 
 		t = (double)cvGetTickCount() - t;
-		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
+//		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
 
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
@@ -135,7 +139,7 @@ int main() {
 		//      bg_model - pointer to CvBGStatModel structure
 		//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
 		// Segmentacion basada en COLOR
-		// cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
+//		 cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
 
 		/////// SEGMENTACION
 
