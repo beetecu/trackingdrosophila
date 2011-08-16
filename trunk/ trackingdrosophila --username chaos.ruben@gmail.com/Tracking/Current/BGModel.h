@@ -15,23 +15,27 @@
 //#define HIGHT_THRESHOLD 3 // Umbral para la resta de fondo
 //#define LOW_THRESHOLD 3
 //#define ALPHA 0.5	// Parámetro para actualización dinámica del modelo
-
+#define CVCLOSE_ITR 2
 // VARIABLES GLOBALES DE PROGRAMA //
 
 int FRAMES_TRAINING = 20;
 int HIGHT_THRESHOLD = 3;
 int LOW_THRESHOLD = 3;
-double ALPHA = 0.5;
+double ALPHA = 0.5 ;
+
+int g_slider_position = 50;
 
 	// Float 1-Channel
 	IplImage *IdiffF;
+	IplImage *IdesF; /// Desviación típica
 	IplImage *IvarF; /// Varianza
+	IplImage *Ivar;
 	IplImage *IhiF; /// La mediana mas x veces la desviación típica
 	IplImage *IlowF; /// La mediana menos x veces la desviación típica
 
 
 	//Byte 1-Channel
-	IplImage *ImGray;
+	IplImage *ImGray; /// Imagen preprocesada
 	IplImage *Imaskt;
 
 // PROTOTIPOS DE FUNCIONES //
@@ -106,6 +110,7 @@ void setHighThreshold( IplImage* BG, int HiF );
       \param LowF: : Umbral bajo.
     */
 void setLowThreshold( IplImage* BG, int LowF );
+void onTrackbarSlide(int pos);
 void error(int err);
 void AllocateImagesBGM( IplImage *I );
 void DeallocateImagesBGM();
