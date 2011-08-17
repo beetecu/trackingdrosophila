@@ -15,19 +15,25 @@
 //#define HIGHT_THRESHOLD 3 // Umbral para la resta de fondo
 //#define LOW_THRESHOLD 3
 //#define ALPHA 0.5	// Parámetro para actualización dinámica del modelo
-#define CVCLOSE_ITR 2
+#define CVCLOSE_ITR 1
+#define MAX_CONTOUR_AREA  200
+#define MIN_CONTOUR_AREA  4
 // VARIABLES GLOBALES DE PROGRAMA //
 
-int FRAMES_TRAINING = 20;
-int HIGHT_THRESHOLD = 3;
-int LOW_THRESHOLD = 3;
+int FRAMES_TRAINING = 60;
+int HIGHT_THRESHOLD = 4;
+//int LOW_THRESHOLD = 3;
 double ALPHA = 0.5 ;
 
 int g_slider_position = 50;
 
 	// Float 1-Channel
+    IplImage *Imedian;
+    IplImage *ImedianF;
 	IplImage *IdiffF;
-	IplImage *IdesF; /// Desviación típica
+	IplImage *Idiff;
+	IplImage *IdesF; /// Desviación típica. Coma flotante 32 bit
+	IplImage *Ides; /// Desviación típica.
 	IplImage *IvarF; /// Varianza
 	IplImage *Ivar;
 	IplImage *IhiF; /// La mediana mas x veces la desviación típica
@@ -36,8 +42,17 @@ int g_slider_position = 50;
 
 	//Byte 1-Channel
 	IplImage *ImGray; /// Imagen preprocesada
+	IplImage *ImGrayF; /// Imagen preprocesada float
 	IplImage *Imaskt;
 
+
+	typedef struct {
+		IplImage* BGModel;  ///BackGround Model
+		IplImage* OldFG; ///OldForeGround
+		IplImage* FG;  ///Foreground
+		IplImage* ImFMask; /// Mascara del plato
+		IplImage* ImRois;
+	}STCapas;
 // PROTOTIPOS DE FUNCIONES //
 
 
@@ -75,7 +90,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod);
       \param ImGray : Imagen fuente de 8 bit niveles de gris.
       \param BGMod : Imagen de fondo sobre la que se estima la mediana
     */
-void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI);
+void UpdateBGModel(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI);
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
 /*!
@@ -95,9 +110,15 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRec
       \param HiF: : Umbral alto.
       \param LowF: : Umbral bajo.
     */
-
-
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg, int HiF, int LowF );
+
+//! \brief Aplica Componentes conexas para limpieza de la imagen
+/*!
+      \param FG : Imagen fuente de 8 bit de niveles de gris que contine la imagen a limpiar
+
+    */
+void FGCleanup( IplImage* FG);
+
 //! \brief Establece el Umbral alto como la mediana mas HiF veces la desviación típica
 /*!
       \param BG : Imagen fuente de 8 bit de niveles de gris que contine la estimación de la mediana de cada píxel.

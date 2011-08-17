@@ -21,11 +21,6 @@ using namespace std;
 
 // DEFINICIONES
 
-#define CVX_RED CV_RGB(255,0,0)
-#define CVX_BLUE CV_RGB(0,0,255)
-#define CVX_GREEN CV_RGB(0,255,0)
-#define CVX_WHITE CV_RGB(255,255,255)
-#define CVX_BLACK CV_RGB(0,0,0)
 
 
 //#define INTERVAL_BACKGROUND_UPDATE 10000
@@ -140,7 +135,7 @@ using namespace std;
 
 	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
-	void UpdateBackground(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI );
+	void UpdateBGModel(IplImage * tmp_frame,STCapas* Cap, CvRect DataROI );
 
 	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg );
 

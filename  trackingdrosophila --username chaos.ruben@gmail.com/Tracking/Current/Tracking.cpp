@@ -119,7 +119,7 @@ int main() {
 		FrameCount += 1;
 
 		if ( FrameCount == BGUpdate ){
-			UpdateBackground( Imagen, Capa->BGModel, DataFROI);
+			UpdateBGModel( Imagen, Capa, DataFROI);
 			FrameCount = 0;
 		}
 		cvCreateTrackbar( "BGUpdate",
