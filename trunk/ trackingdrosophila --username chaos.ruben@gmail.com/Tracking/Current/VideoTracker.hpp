@@ -18,4 +18,10 @@
 
 #include <opencv2/video/background_segm.hpp>
 
+#define CVX_RED CV_RGB(255,0,0)
+#define CVX_BLUE CV_RGB(0,0,255)
+#define CVX_GREEN CV_RGB(0,255,0)
+#define CVX_WHITE CV_RGB(255,255,255)
+#define CVX_BLACK CV_RGB(0,0,0)
+
 #endif /* VIDEOTRACKER_HPP_ */
