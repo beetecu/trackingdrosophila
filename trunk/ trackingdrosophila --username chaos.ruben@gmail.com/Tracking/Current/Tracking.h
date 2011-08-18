@@ -21,8 +21,6 @@ using namespace std;
 
 // DEFINICIONES
 
-
-
 //#define INTERVAL_BACKGROUND_UPDATE 10000
 
 

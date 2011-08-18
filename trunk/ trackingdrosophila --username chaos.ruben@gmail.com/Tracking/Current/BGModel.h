@@ -112,7 +112,11 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRec
     */
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg, int HiF, int LowF );
 
-//! \brief Aplica Componentes conexas para limpieza de la imagen
+//! \brief Aplica Componentes conexas para limpieza de la imagen:
+//! - Realiza operaciones de morphologia para elimirar ruido.
+//! - Establece un tamaño máximo y mínimo para que el contorno no sea borrado
+//! (- Establece el nº máximo de contornos a devolver )
+//!
 /*!
       \param FG : Imagen fuente de 8 bit de niveles de gris que contine la imagen a limpiar
 
