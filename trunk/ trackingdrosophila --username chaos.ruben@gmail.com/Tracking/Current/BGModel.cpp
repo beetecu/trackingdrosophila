@@ -171,11 +171,6 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg ){
 //			if ( x== 300 && y == 200) printf( "Ides = %d, IvarF = %d\n",ptr4[x],ptr5[x]);
 //		}
 //	}
-
-
-
-
-
 	cvCreateTrackbar( "HighT",
 				  "Foreground",
 				  &HIGHT_THRESHOLD,
