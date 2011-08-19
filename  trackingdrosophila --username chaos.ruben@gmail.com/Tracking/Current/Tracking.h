@@ -49,6 +49,8 @@ using namespace std;
 	// Modelado de fondo
 	int fr = 0;
 	int BGUpdate = 1;
+	IplImage* BGTemp;
+
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
 //	IplImage *ImHiThr;
 //	IplImage *ImLowThr;
