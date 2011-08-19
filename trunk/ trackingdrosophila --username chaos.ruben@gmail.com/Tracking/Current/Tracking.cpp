@@ -114,6 +114,7 @@ int main() {
 
 		////////////// PROCESADO ///////////////
 
+		cvCopy( Capa->BGModel, BGTemp);
 		double t = (double)cvGetTickCount();
 
 		FrameCount += 1;
