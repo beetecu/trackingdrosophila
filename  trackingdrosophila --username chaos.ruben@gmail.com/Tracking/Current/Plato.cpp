@@ -1,5 +1,5 @@
 /*
- * Plato.cpp
+ * Plato.cpp PUM
  *
  * Recibe una imagen de un canal en niveles de gris
  * Detecta el plato y crea una máscara: pone a 255 los pixeles que estén fuera
