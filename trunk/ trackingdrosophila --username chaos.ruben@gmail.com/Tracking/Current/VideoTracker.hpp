@@ -6,7 +6,7 @@
  */
 
 #ifndef VIDEOTRACKER_HPP_
-#define VIDEOTRACKER_HPP_
+#define VIDEOTRACKER_HPP_ //Modifica
 
 #include <opencv2/imgproc/imgproc_c.h>
 #include <opencv2/imgproc/imgproc.hpp>
