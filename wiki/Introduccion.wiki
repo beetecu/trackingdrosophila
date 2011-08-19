@@ -2,7 +2,7 @@
 
 = Introducción =
 
- El presente proyecto trata de desarrollar un algoritmo capaz de monitorizar y rastrear grupos de _Drosophila melanogaster_ interactuando en una superficie planar con fondo unimodal.
+ El presente proyecto trata de desarrollar un algoritmo capaz de monitorizar y rastrear de forma automática grupos de _Drosophila melanogaster_ interactuando en una superficie planar con fondo unimodal mediante técnicas de Inteligencia Artificial y Visión por Computador.
  El algoritmo está escrito prácticamente en su totalidad en c, con algunas partes en c++.
  Para el desarrollo del proyecto se hará uso de las siguientes herramientas:
 
@@ -11,7 +11,7 @@
  * Librerías de visión por computador *OpenCV*.
  * ( Librerías *Qt* para desarrollo de interfaz gráfica ). 
 
-= Details =
+= Detalles =
 
 Add your content here.  Format your content with:
   * Text in *bold* or _italic_
