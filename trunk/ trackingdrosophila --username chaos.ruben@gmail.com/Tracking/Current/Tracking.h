@@ -135,7 +135,7 @@ using namespace std;
 
 	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
 
-	void UpdateBGModel(IplImage * tmp_frame,STCapas* Cap, CvRect DataROI );
+	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel, CvRect DataROI,IplImage* Mask );
 
 	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg );
 
