@@ -27,8 +27,8 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
-		int max_buffer;
-		IplImage* rawImage;
+//		int max_buffer;
+//		IplImage* rawImage;
 
 		PreProcesado( frame, ImGray, ImMask, false);
 
@@ -224,7 +224,7 @@ void FGCleanup( IplImage* FG){
 	contours = cvEndFindContours( & scanner );
 	// Dibujamos los contornos
 	cvZero ( FG );
-	IplImage* maskTemp;
+//	IplImage* maskTemp;
 	int i = 0;
 	for( i = 0, c = contours; c != NULL; c = c->h_next, i++){
 		cvDrawContours( FG, c, CVX_WHITE,CVX_WHITE,-1,CV_FILLED,8 );
