@@ -114,24 +114,29 @@ int main() {
 
 		////////////// PROCESADO ///////////////
 
-		cvCopy( Capa->BGModel, BGTemp);
+//		BGTemp = cvCloneImage( Capa->BGModel );
 		double t = (double)cvGetTickCount();
-
+		// Primera actualización del fondo
 		FrameCount += 1;
 
 		if ( FrameCount == BGUpdate ){
-			UpdateBGModel( Imagen, Capa, DataFROI);
+			UpdateBGModel( Imagen, Capa->BGModel, DataFROI, 0 );
 			FrameCount = 0;
 		}
 		cvCreateTrackbar( "BGUpdate",
 						  "Foreground",
 						  &BGUpdate,
 						  100  );
-
+		// Obtención de la máscara del foreground
 		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG );
 
 		t = (double)cvGetTickCount() - t;
-//		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
+		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
+
+		// Actualizamos el fondo haciendo uso de la máscara del foreground
+		if ( FrameCount == 0 ){
+	//				UpdateBGModel( Imagen, BGTemp, DataFROI, Capa->FG );
+		}
 
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).

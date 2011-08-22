@@ -79,7 +79,7 @@ IplImage* getBinaryImage(IplImage * image);
       \param BGMod : Imagen de fondo sobre la que se estima la mediana
     */
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod);
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask  );
 //! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
 //!	en BGMod y la varianza en IvarF según:
 /*! Mediana:
@@ -87,15 +87,17 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod);
 //!		mu(p)= median\I_t(p)
 //!		\f]
     /*
-      \param ImGray : Imagen fuente de 8 bit niveles de gris.
-      \param BGMod : Imagen de fondo sobre la que se estima la mediana
+      \param tmp_frame : Imagen fuente de 8 bit niveles de gris.
+      \param *Cap Puntero a estructura que almacena las distintas capas del modelo de fondo.
+      \param DataROI: Contiene los datos para establecer la ROI
+      \param Mask: Nos permite actualizar el fondo de forma selectiva.
     */
-void UpdateBGModel(IplImage * tmp_frame, IplImage* bg_model, CvRect DataROI);
+void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel, CvRect DataROI, IplImage* Mask = NULL);
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
 /*!
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
-      \param bg_model : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
+      \param Cap : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
       \param HiF: : Umbral alto.
       \param LowF: : Umbral bajo.

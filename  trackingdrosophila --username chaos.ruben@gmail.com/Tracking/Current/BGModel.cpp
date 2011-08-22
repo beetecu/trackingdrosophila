@@ -32,14 +32,14 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 
 		PreProcesado( frame, ImGray, ImMask, false);
 
-		accumulateBackground( ImGray, BG );
+		accumulateBackground( ImGray, BG , 0);
 
 		num_frames += 1;
 	}
 	return 1;
 }
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod ) {
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = NULL ) {
 
 	static int first = 1;
 	// Estimamos la mediana
@@ -62,7 +62,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod ) {
 			// Incrementar o decrementar fondo en una unidad
 			if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
 			if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
-			if ( x == 300 && y == 200 ) printf( "Pixel Mediana: %d\n", ptr2[x]);
+
 		}
 	}
 	cvAbsDiff( ImGray, BGMod, Idiff);
@@ -81,7 +81,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod ) {
 				// Incrementar o decrementar desviación típica en una unidad
 				if ( ptr3[x] < ptr4[x] ) ptr4[x] = ptr4[x]-1;
 				if ( ptr3[x] > ptr4[x] ) ptr4[x] = ptr4[x]+1;
-				if ( x == 300 && y == 200 ) printf( "Pixel varianza: %d\n", ptr4[x]);
+
 			}
 		}
 	}
@@ -95,9 +95,9 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod ) {
 
 }
 
-void UpdateBGModel( IplImage* tmp_frame, STCapas* Cap, CvRect DataROI){
+void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel, CvRect DataROI, IplImage* Mask){
 
-	accumulateBackground( tmp_frame, Cap->BGModel );
+	accumulateBackground( tmp_frame, BGModel, Mask );
 //	RunningBGGModel( tmp_frame, bg_model, Ides, DataROI );
 //	RunningVariance
 
@@ -188,7 +188,7 @@ void FGCleanup( IplImage* FG){
 	static CvMemStorage* mem_storage = NULL;
 	static CvSeq* contours = NULL;
 
-	// Aplicamos morflogia: Erosión y dilatación
+	// Aplicamos morfologia: Erosión y dilatación
 	IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
 
 	cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , CVCLOSE_ITR);
