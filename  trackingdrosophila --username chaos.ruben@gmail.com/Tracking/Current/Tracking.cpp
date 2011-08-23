@@ -34,15 +34,7 @@ int main() {
 	//      Añadimos un slider a la ventana del video Drosophila.avi
 
 
-	int TotalFrames = (int) cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT );
-	//      int     TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
-	//      if ( TotalFrames != 0 ){
-	//      cvCreateTrackbar( "Posicion",
-	//                              "Drosophila.avi",
-	//                              &g_slider_position,
-	//                              TotalFrames,
-	//                              onTrackbarSlider );
-	//      }
+
 
 
 	//              int TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
@@ -67,7 +59,7 @@ int main() {
 
 	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
 	 ////// BUCLE PRINCIPAL DEL ALGORITMO \\\\\\\
-	  /////////////////////\\\\\\\\\\\\\\\\\\\\\
+	  /////////////////////\\\\\\\\\\\\\\\\\\\\
 
 	while ( g_capture ) {
 
@@ -78,15 +70,11 @@ int main() {
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
-		//              int TotalFrames = (int) cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT );
-		//              TotalFrames += 1 ;
-		//              cvSetTrackbarPos( "Posicion","Drosophila.avi",TotalFrames);
-		//              onTrackbarSlider(TotalFrames);
-
 		////////// PREPROCESADO ///////////////
 
 		// Obtencion de mascara del plato
 		if( !hecho ){
+	//		static int num_iter = 0;
 			MascaraPlato( g_capture, Capa->ImFMask, &PCentroX, &PCentroY, &PRadio );
 			GlobalTime = (double)cvGetTickCount() - InitialTime;
 			printf( " %.1f Seg\n", GlobalTime/(cvGetTickFrequency()*1000000.) );
@@ -94,8 +82,10 @@ int main() {
 				error(3);
 				break;
 			}
-			DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
+
+//			num_iter +=1;
 		}
+		DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
 			hecho = initBGGModel( g_capture , Capa->BGModel, Capa->ImFMask);
@@ -114,7 +104,7 @@ int main() {
 
 		////////////// PROCESADO ///////////////
 
-//		BGTemp = cvCloneImage( Capa->BGModel );
+		BGTemp = cvCloneImage( Capa->BGModel );
 		double t = (double)cvGetTickCount();
 		// Primera actualización del fondo
 		FrameCount += 1;
@@ -123,21 +113,41 @@ int main() {
 			UpdateBGModel( Imagen, Capa->BGModel, DataFROI, 0 );
 			FrameCount = 0;
 		}
+		cvShowImage( "Foreground",Capa->BGModel);
 		cvCreateTrackbar( "BGUpdate",
 						  "Foreground",
 						  &BGUpdate,
 						  100  );
 		// Obtención de la máscara del foreground
-		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG );
+		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);
 
 		t = (double)cvGetTickCount() - t;
 		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( FrameCount == 0 ){
-	//				UpdateBGModel( Imagen, BGTemp, DataFROI, Capa->FG );
+					UpdateBGModel( Imagen, BGTemp, DataFROI, Capa->FG );
 		}
 
+//		IplImage *Imtemp = cvCreateImage( cvGetSize(Imagen),8,1);
+//		cvAbsDiff( BGTemp, Capa->BGModel, Imtemp);
+//
+//			for (int y = 0; y< Imtemp->height; y++){
+//				uchar* ptr3 = (uchar*) (Imtemp->imageData + y*Imtemp->widthStep);
+//
+//				for (int x= 0; x<Imtemp->width; x++){
+//					// Si la desviación tipica del pixel supera en HiF veces la
+//					// desviación típica del modelo, el pixel se clasifica como
+//					//foreground ( 255 ), en caso contrario como background
+//					if ( ptr3[x] > 0 ) ptr3[x] = 255;
+//					else ptr3[x] = 0;
+//				}
+//			}
+//		cvShowImage("Foreground", Imtemp);
+//		cvWaitKey(0);
+
+
+		cvCopy( BGTemp, Capa->BGModel);
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
 		// parameters:
@@ -212,11 +222,13 @@ int main() {
 
 		cvShowImage( "Drosophila.avi", frame );
 		//
+
 		cvShowImage("Background", Capa->BGModel);
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
-//		cvShowImage( "Foreground",Capa->FG);
+		cvShowImage( "Foreground",Capa->FG);
+//		cvWaitKey(0);
 
 
 
