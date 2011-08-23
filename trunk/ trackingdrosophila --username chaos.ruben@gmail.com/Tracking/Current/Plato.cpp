@@ -22,6 +22,8 @@
 using namespace cv;
 using namespace std;
 
+#define MAX_FRAMES_LEARNING
+
 void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 				int* centro_x, int* centro_y, int* radio){
 

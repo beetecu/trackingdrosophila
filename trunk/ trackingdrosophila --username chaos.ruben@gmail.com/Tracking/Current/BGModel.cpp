@@ -40,14 +40,21 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 }
 
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = NULL ) {
-
-	static int first = 1;
-	// Estimamos la mediana
+	// si la máscara es null, se crea una inicializada a cero, lo que implicará
+	// la actualización de todos los pixeles del background
+	int flag;
+	if (mask == NULL){
+		mask = cvCreateImage(cvGetSize( ImGray ), 8, 1 );
+		cvZero( mask );
+		flag = 1;
+	}
+	static int first = 1; // solo para el modelo inicial
+	// Se estima la mediana
 
 	cvConvertScale(BGMod ,ImedianF,1,0); // A float
 	cvConvertScale(ImGray ,ImGrayF,1,0); // A float
 
-	// Inicializamos el fondo con la primera imagen
+	// Se inicializa el fondo con la primera imagen
 	if ( first == 1 ){
 			cvCopy( ImGray, BGMod );
 			first = 0;
@@ -55,13 +62,17 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = N
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
 //	cvShowImage( "Foreground",BGMod);
 //	cvWaitKey(0);
+	// Se actualiza el fondo según la máscara.
 	for (int y = 0; y< ImGray->height; y++){
 		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep);
+		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep);
 		uchar* ptr2 = (uchar*) ( BGMod->imageData + y*BGMod->widthStep);
 		for (int x= 0; x<ImGray->width; x++){
 			// Incrementar o decrementar fondo en una unidad
-			if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
-			if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
+			if ( ptr1[x] == 0 ){ // si el pixel de la mascara es 0 actualizamos
+				if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
+				if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
+			}
 
 		}
 	}
@@ -75,20 +86,22 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = N
 	}
 	else {
 		for (int y = 0; y< Idiff->height; y++){
+			uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep);
 			uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep);
 			uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep);
 			for (int x= 0; x<Idiff->width; x++){
+				if ( ptr1[x] == 0 ){
 				// Incrementar o decrementar desviación típica en una unidad
-				if ( ptr3[x] < ptr4[x] ) ptr4[x] = ptr4[x]-1;
-				if ( ptr3[x] > ptr4[x] ) ptr4[x] = ptr4[x]+1;
-
+					if ( ptr3[x] < ptr4[x] ) ptr4[x] = ptr4[x]-1;
+					if ( ptr3[x] > ptr4[x] ) ptr4[x] = ptr4[x]+1;
+				}
 			}
 		}
 	}
-
+	if (flag == 1) cvReleaseImage( &mask );
 //	cvShowImage( "Foreground",fg);
 	// Corregimos la estimación de la desviación mediante la función de error
-//	cvConvertScale(Ides,Ides,1.4826,0);
+	cvConvertScale(Ides,Ides,0.9,0);
 
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
 //	cvConvertScale(ImGrayF ,ImGray,1,0); // A int
@@ -97,7 +110,9 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = N
 
 void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel, CvRect DataROI, IplImage* Mask){
 
-	accumulateBackground( tmp_frame, BGModel, Mask );
+	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel, 0 );
+	else accumulateBackground( tmp_frame, BGModel, Mask );
+
 //	RunningBGGModel( tmp_frame, bg_model, Ides, DataROI );
 //	RunningVariance
 
@@ -132,11 +147,19 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 	cvReleaseImage( &ImTemp );
 
 }
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg ){
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvRect dataroi){
+
+	cvSetImageROI( ImGray, dataroi );
+	cvSetImageROI( bg_model, dataroi );
+	cvSetImageROI( fg, dataroi );
+	cvSetImageROI( Idiff, dataroi );
+	cvSetImageROI( fg, dataroi );
+    cvSetImageROI( Ides, dataroi );
+
 
 	cvZero(fg); // Iniciamos el nuevo primer plano a cero
 
-	setHighThreshold( bg_model, HIGHT_THRESHOLD );
+//	setHighThreshold( bg_model, HIGHT_THRESHOLD );
 //	setLowThreshold( bg_model, LOW_THRESHOLD );
 
 //	cvInRange( ImGray, IhiF,IlowF, Imaskt);
@@ -156,6 +179,12 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg ){
 		}
 	}
 	FGCleanup( fg );
+	cvResetImageROI( ImGray );
+	cvResetImageROI( bg_model );
+	cvResetImageROI( fg );
+	cvResetImageROI( Idiff );
+	cvResetImageROI( fg );
+	cvResetImageROI( Ides );
 //	invertirBW( fg );
 //cvAnd(Ides, Ides, IvarF);
 //
@@ -181,7 +210,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg ){
 						  100,
 						  onTrackbarSlide );
 //	printf(" Alpha = %f\n",ALPHA);
-	cvShowImage( "Foreground",fg);
+//	cvShowImage( "Foreground",fg);
 }
 void FGCleanup( IplImage* FG){
 

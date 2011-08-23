@@ -17,11 +17,11 @@
 //#define ALPHA 0.5	// Parámetro para actualización dinámica del modelo
 #define CVCLOSE_ITR 1
 #define MAX_CONTOUR_AREA  200
-#define MIN_CONTOUR_AREA  4
+#define MIN_CONTOUR_AREA  5
 // VARIABLES GLOBALES DE PROGRAMA //
 
 int FRAMES_TRAINING = 60;
-int HIGHT_THRESHOLD = 4;
+int HIGHT_THRESHOLD = 1;
 //int LOW_THRESHOLD = 3;
 double ALPHA = 0.5 ;
 
@@ -99,8 +99,7 @@ void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel, CvRect DataROI, IplI
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
       \param Cap : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
-      \param HiF: : Umbral alto.
-      \param LowF: : Umbral bajo.
+
     */
 
 void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRect dataroi );
@@ -109,10 +108,9 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRec
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
       \param bg_model : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
-      \param HiF: : Umbral alto.
-      \param LowF: : Umbral bajo.
+      \param DataROI: Contiene los datos para establecer la ROI
     */
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg, int HiF, int LowF );
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg, CvRect dataroi);
 
 //! \brief Aplica Componentes conexas para limpieza de la imagen:
 //! - Realiza operaciones de morphologia para elimirar ruido.

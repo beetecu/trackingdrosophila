@@ -27,6 +27,7 @@ using namespace std;
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
 
+
 // VARIABLES GLOBALES DE PROGRAMA
 #ifndef VARIABLES_GLOBALES_PROGRAMA
 	#define VARIABLES_GLOBALES_PROGRAMA
@@ -34,11 +35,13 @@ using namespace std;
 
 	double GlobalTime ; /// Medida de tiempos
 	double InitialTime;
+
+	int FrameCount = 0;
 	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
 	static int hecho = 0;
 
 	//HightGui
-//	int g_slider_position = 0;
+	int g_slider_pos = 0;
 
 	// Plato
 	int PCentroX;
@@ -137,7 +140,7 @@ using namespace std;
 
 	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel, CvRect DataROI,IplImage* Mask );
 
-	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg );
+	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg, CvRect dataroi );
 
 	void DeallocateImagesBGM();
 
