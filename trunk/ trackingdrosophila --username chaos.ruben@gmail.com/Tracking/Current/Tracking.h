@@ -90,6 +90,7 @@ using namespace std;
 	// Capas
 	typedef struct {
 		IplImage* BGModel;  ///BackGround Model
+		IplImage* IDesv; /// Desviación tipica
 		IplImage* OldFG; ///OldForeGround
 		IplImage* FG;  ///Foreground
 		IplImage* ImFMask; /// Mascara del plato
