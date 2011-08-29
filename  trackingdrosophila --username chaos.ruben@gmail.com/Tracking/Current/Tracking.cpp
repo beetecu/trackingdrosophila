@@ -82,10 +82,10 @@ int main() {
 				error(3);
 				break;
 			}
-
 //			num_iter +=1;
+			DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
 		}
-		DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
+
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
 			hecho = initBGGModel( g_capture , Capa->BGModel, Capa->ImFMask);
@@ -104,7 +104,7 @@ int main() {
 
 		////////////// PROCESADO ///////////////
 
-		BGTemp = cvCloneImage( Capa->BGModel );
+		cvCopy( Capa->BGModel, BGTemp);
 		double t = (double)cvGetTickCount();
 		// Primera actualización del fondo
 		FrameCount += 1;
@@ -120,7 +120,6 @@ int main() {
 						  100  );
 		// Resta de fondo. Obtención de la máscara del foreground
 		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);
-
 
 		t = (double)cvGetTickCount() - t;
 		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
@@ -258,32 +257,17 @@ int main() {
 
 void AllocateImages( IplImage* I ){
 
-//	typedef struct {
-//		IplImage* BGModel;  ///BackGround Model
-//		IplImage* OldFG; ///OldForeGround
-//		IplImage* FG;  ///Foreground
-//		IplImage* ImFMask; /// Mascara del plato
-//		IplImage* ImRois;
-//	}STCapas;
-
-	Capa->BGModel = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->FG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->IDesv = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->ImFMask = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->ImRois = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-	Capa->OldFG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-
 	CvSize sz = cvGetSize( I );
 
+	Capa->BGModel = cvCreateImage(sz,8,1);
+	Capa->FG = cvCreateImage(sz,8,1);
+	Capa->IDesv = cvCreateImage(sz,8,1);
+	Capa->ImFMask = cvCreateImage(sz,8,1);
+	Capa->ImRois = cvCreateImage(sz,8,1);
+	Capa->OldFG = cvCreateImage(sz,8,1);
+
+	BGTemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
-
-//	ImHiThr= cvCreateImage( sz ,IPL_DEPTH_32F,1);
-//	ImLowThr= cvCreateImage( sz ,IPL_DEPTH_32F,1);
-
-	//    ImGris = cvCreateImage( sz ,8,1);
-	//      ImFilter = cvCreateImage( sz,8,1);
-
-	//        ImROI = cvCreateImage( sz, 8, 1);
 	ImBlobs = cvCreateImage( sz,8,1 );
 	ImThres = cvCreateImage( sz,8,1 );
 	ImVisual = cvCreateImage( sz,8,1);
