@@ -118,8 +118,9 @@ int main() {
 						  "Foreground",
 						  &BGUpdate,
 						  100  );
-		// Obtención de la máscara del foreground
+		// Resta de fondo. Obtención de la máscara del foreground
 		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);
+
 
 		t = (double)cvGetTickCount() - t;
 		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
@@ -227,7 +228,7 @@ int main() {
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
-		cvShowImage( "Foreground",Capa->FG);
+//		cvShowImage( "Foreground",Capa->FG);
 //		cvWaitKey(0);
 
 
@@ -267,6 +268,7 @@ void AllocateImages( IplImage* I ){
 
 	Capa->BGModel = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 	Capa->FG = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+	Capa->IDesv = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 	Capa->ImFMask = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 	Capa->ImRois = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 	Capa->OldFG = cvCreateImage(cvSize(frame->width,frame->height),8,1);

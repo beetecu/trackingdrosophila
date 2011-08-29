@@ -42,7 +42,7 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = NULL ) {
 	// si la máscara es null, se crea una inicializada a cero, lo que implicará
 	// la actualización de todos los pixeles del background
-	int flag;
+	int flag = 0;
 	if (mask == NULL){
 		mask = cvCreateImage(cvGetSize( ImGray ), 8, 1 );
 		cvZero( mask );
@@ -99,9 +99,10 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = N
 		}
 	}
 	if (flag == 1) cvReleaseImage( &mask );
+
 //	cvShowImage( "Foreground",fg);
 	// Corregimos la estimación de la desviación mediante la función de error
-	cvConvertScale(Ides,Ides,0.9,0);
+//	cvConvertScale(Ides,Ides,0.9,0);
 
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
 //	cvConvertScale(ImGrayF ,ImGray,1,0); // A int
@@ -113,7 +114,7 @@ void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel, CvRect DataROI, IplI
 	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel, 0 );
 	else accumulateBackground( tmp_frame, BGModel, Mask );
 
-//	RunningBGGModel( tmp_frame, bg_model, Ides, DataROI );
+//	RunningBGGModel( tmp_frame, BGModel, Ides, DataROI );
 //	RunningVariance
 
 }
@@ -149,12 +150,12 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 }
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvRect dataroi){
 
-	cvSetImageROI( ImGray, dataroi );
-	cvSetImageROI( bg_model, dataroi );
-	cvSetImageROI( fg, dataroi );
-	cvSetImageROI( Idiff, dataroi );
-	cvSetImageROI( fg, dataroi );
-    cvSetImageROI( Ides, dataroi );
+//	cvSetImageROI( ImGray, dataroi );
+//	cvSetImageROI( bg_model, dataroi );
+//	cvSetImageROI( fg, dataroi );
+//	cvSetImageROI( Idiff, dataroi );
+//	cvSetImageROI( fg, dataroi );
+//    cvSetImageROI( Ides, dataroi );
 
 
 	cvZero(fg); // Iniciamos el nuevo primer plano a cero
@@ -178,13 +179,14 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvR
 			else ptr5[x] = 0;
 		}
 	}
+
 	FGCleanup( fg );
-	cvResetImageROI( ImGray );
-	cvResetImageROI( bg_model );
-	cvResetImageROI( fg );
-	cvResetImageROI( Idiff );
-	cvResetImageROI( fg );
-	cvResetImageROI( Ides );
+//	cvResetImageROI( ImGray );
+//	cvResetImageROI( bg_model );
+//	cvResetImageROI( fg );
+//	cvResetImageROI( Idiff );
+//	cvResetImageROI( fg );
+//	cvResetImageROI( Ides );
 //	invertirBW( fg );
 //cvAnd(Ides, Ides, IvarF);
 //
@@ -210,7 +212,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvR
 						  100,
 						  onTrackbarSlide );
 //	printf(" Alpha = %f\n",ALPHA);
-//	cvShowImage( "Foreground",fg);
+	cvShowImage( "Foreground",Idiff);
+//	cvWaitKey(0);
 }
 void FGCleanup( IplImage* FG){
 

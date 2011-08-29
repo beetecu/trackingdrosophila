@@ -23,7 +23,7 @@
 int FRAMES_TRAINING = 60;
 int HIGHT_THRESHOLD = 1;
 //int LOW_THRESHOLD = 3;
-double ALPHA = 0.5 ;
+double ALPHA = 0 ;
 
 int g_slider_position = 50;
 
@@ -48,6 +48,7 @@ int g_slider_position = 50;
 
 	typedef struct {
 		IplImage* BGModel;  ///BackGround Model
+		IplImage* IDesv;
 		IplImage* OldFG; ///OldForeGround
 		IplImage* FG;  ///Foreground
 		IplImage* ImFMask; /// Mascara del plato
