@@ -150,12 +150,12 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 }
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvRect dataroi){
 
-//	cvSetImageROI( ImGray, dataroi );
-//	cvSetImageROI( bg_model, dataroi );
-//	cvSetImageROI( fg, dataroi );
-//	cvSetImageROI( Idiff, dataroi );
-//	cvSetImageROI( fg, dataroi );
-//    cvSetImageROI( Ides, dataroi );
+	cvSetImageROI( ImGray, dataroi );
+	cvSetImageROI( bg_model, dataroi );
+	cvSetImageROI( fg, dataroi );
+	cvSetImageROI( Idiff, dataroi );
+	cvSetImageROI( fg, dataroi );
+    cvSetImageROI( Ides, dataroi );
 
 
 	cvZero(fg); // Iniciamos el nuevo primer plano a cero
@@ -181,12 +181,12 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvR
 	}
 
 	FGCleanup( fg );
-//	cvResetImageROI( ImGray );
-//	cvResetImageROI( bg_model );
-//	cvResetImageROI( fg );
-//	cvResetImageROI( Idiff );
-//	cvResetImageROI( fg );
-//	cvResetImageROI( Ides );
+	cvResetImageROI( ImGray );
+	cvResetImageROI( bg_model );
+	cvResetImageROI( fg );
+	cvResetImageROI( Idiff );
+	cvResetImageROI( fg );
+	cvResetImageROI( Ides );
 //	invertirBW( fg );
 //cvAnd(Ides, Ides, IvarF);
 //
@@ -212,7 +212,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvR
 						  100,
 						  onTrackbarSlide );
 //	printf(" Alpha = %f\n",ALPHA);
-	cvShowImage( "Foreground",Idiff);
+//	cvShowImage( "Foreground",Idiff);
 //	cvWaitKey(0);
 }
 void FGCleanup( IplImage* FG){

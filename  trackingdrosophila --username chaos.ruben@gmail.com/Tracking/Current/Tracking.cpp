@@ -32,14 +32,7 @@ int main() {
 	CreateWindows( );
 	//      cvSetCaptureProperty( g_capture	cvResetImageROI(Capa->BGModel);, CV_CAP_PROP_POS_AVI_RATIO,0 );
 	//      Añadimos un slider a la ventana del video Drosophila.avi
-
-
-
-
-
 	//              int TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
-
-
 
 	// Iniciar estructura para almacenar las Capas
 	Capa = ( STCapas *) malloc( sizeof( STCapas));
@@ -113,7 +106,7 @@ int main() {
 			UpdateBGModel( Imagen, Capa->BGModel, DataFROI, 0 );
 			FrameCount = 0;
 		}
-		cvShowImage( "Foreground",Capa->BGModel);
+//		cvShowImage( "Foreground",Capa->BGModel);
 		cvCreateTrackbar( "BGUpdate",
 						  "Foreground",
 						  &BGUpdate,
@@ -128,7 +121,8 @@ int main() {
 		if ( FrameCount == 0 ){
 					UpdateBGModel( Imagen, BGTemp, DataFROI, Capa->FG );
 		}
-
+		cvCopy( BGTemp, Capa->BGModel);
+		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);
 //		IplImage *Imtemp = cvCreateImage( cvGetSize(Imagen),8,1);
 //		cvAbsDiff( BGTemp, Capa->BGModel, Imtemp);
 //
@@ -147,7 +141,7 @@ int main() {
 //		cvWaitKey(0);
 
 
-		cvCopy( BGTemp, Capa->BGModel);
+
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
 		// parameters:
@@ -227,7 +221,7 @@ int main() {
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
-//		cvShowImage( "Foreground",Capa->FG);
+		cvShowImage( "Foreground",Capa->FG);
 //		cvWaitKey(0);
 
 
