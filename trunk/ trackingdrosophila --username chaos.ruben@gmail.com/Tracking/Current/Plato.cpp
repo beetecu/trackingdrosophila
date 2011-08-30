@@ -1,5 +1,5 @@
 /*
- * Plato.cpp PUM
+ * Plato.cpp
  *
  * Recibe una imagen de un canal en niveles de gris
  * Detecta el plato y crea una máscara: pone a 255 los pixeles que estén fuera
@@ -61,6 +61,7 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 //
 		// Imagen a un canal de niveles de gris
 		cvCvtColor( frame , Im, CV_BGR2GRAY);
+
 		// Filtrado gaussiano 5x
 		cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
 

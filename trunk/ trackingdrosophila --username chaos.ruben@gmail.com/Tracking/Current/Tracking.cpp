@@ -8,6 +8,7 @@
  */
 
 #include "Tracking.h"
+#include "segmentacion.h"
 
 using namespace cv;
 using namespace std;
@@ -112,7 +113,7 @@ int main() {
 						  &BGUpdate,
 						  100  );
 		// Resta de fondo. Obtención de la máscara del foreground
-		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);
+		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);		
 
 		t = (double)cvGetTickCount() - t;
 		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
@@ -152,6 +153,8 @@ int main() {
 //		 cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
 
 		/////// SEGMENTACION
+
+		segmentacion(Imagen,Capa->BGModel,Capa->IDesv);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -251,7 +254,9 @@ int main() {
 
 void AllocateImages( IplImage* I ){
 
+
 	CvSize sz = cvGetSize( I );
+
 
 	Capa->BGModel = cvCreateImage(sz,8,1);
 	Capa->FG = cvCreateImage(sz,8,1);
@@ -262,6 +267,7 @@ void AllocateImages( IplImage* I ){
 
 	BGTemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
+
 	ImBlobs = cvCreateImage( sz,8,1 );
 	ImThres = cvCreateImage( sz,8,1 );
 	ImVisual = cvCreateImage( sz,8,1);

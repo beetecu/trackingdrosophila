@@ -75,7 +75,7 @@ IplImage* getBinaryImage(IplImage * image);
 //!	\f[
 //!		mu(p)= median\I_t(p)
 //!		\f]
-    /*
+    /*!
       \param ImGray : Imagen fuente de 8 bit niveles de gris.
       \param BGMod : Imagen de fondo sobre la que se estima la mediana
     */
@@ -135,6 +135,9 @@ void setHighThreshold( IplImage* BG, int HiF );
       \param BG : Imagen fuente de 8 bit de niveles de gris que contine la estimación de la mediana de cada píxel.
       \param LowF: : Umbral bajo.
     */
+
+
+
 void setLowThreshold( IplImage* BG, int LowF );
 void onTrackbarSlide(int pos);
 void error(int err);
