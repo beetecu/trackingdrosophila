@@ -82,7 +82,7 @@ int main() {
 
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
-			hecho = initBGGModel( g_capture , Capa->BGModel, Capa->ImFMask);
+			hecho = initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask);
 			//cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
 			//continue;
 		}
@@ -99,12 +99,14 @@ int main() {
 		////////////// PROCESADO ///////////////
 
 		cvCopy( Capa->BGModel, BGTemp);
+		cvCopy(Capa->IDesv,DETemp);
+
 		double t = (double)cvGetTickCount();
 		// Primera actualización del fondo
 		FrameCount += 1;
 
 		if ( FrameCount == BGUpdate ){
-			UpdateBGModel( Imagen, Capa->BGModel, DataFROI, 0 );
+			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, DataFROI, 0 );
 			FrameCount = 0;
 		}
 //		cvShowImage( "Foreground",Capa->BGModel);
@@ -113,17 +115,17 @@ int main() {
 						  &BGUpdate,
 						  100  );
 		// Resta de fondo. Obtención de la máscara del foreground
-		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);		
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
 
 		t = (double)cvGetTickCount() - t;
 		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( FrameCount == 0 ){
-					UpdateBGModel( Imagen, BGTemp, DataFROI, Capa->FG );
+					UpdateBGModel( Imagen, BGTemp,DETemp, DataFROI, Capa->FG );
 		}
 		cvCopy( BGTemp, Capa->BGModel);
-		BackgroundDifference( Imagen, Capa->BGModel, Capa->FG , DataFROI);
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
 //		IplImage *Imtemp = cvCreateImage( cvGetSize(Imagen),8,1);
 //		cvAbsDiff( BGTemp, Capa->BGModel, Imtemp);
 //
@@ -266,6 +268,7 @@ void AllocateImages( IplImage* I ){
 	Capa->OldFG = cvCreateImage(sz,8,1);
 
 	BGTemp = cvCreateImage( sz,8,1);
+	DETemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
 
 	ImBlobs = cvCreateImage( sz,8,1 );
@@ -282,6 +285,9 @@ void DeallocateImages( ){
 	cvReleaseImage( &Imagen );
 	cvReleaseImage( &ImBlobs );
 	cvReleaseImage( &ImVisual );
+	cvReleaseImage( &BGTemp);
+	cvReleaseImage( &DETemp);
+
 
 }
 

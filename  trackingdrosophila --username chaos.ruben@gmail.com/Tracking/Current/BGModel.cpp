@@ -12,7 +12,7 @@
 
 #include "BGModel.h"
 
-int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
+int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask){
 
 	int num_frames = 0;
 
@@ -32,14 +32,14 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask){
 
 		PreProcesado( frame, ImGray, ImMask, false);
 
-		accumulateBackground( ImGray, BG , 0);
+		accumulateBackground( ImGray, BG ,DE, 0);
 
 		num_frames += 1;
 	}
 	return 1;
 }
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = NULL ) {
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides, IplImage* mask = NULL ) {
 	// si la máscara es null, se crea una inicializada a cero, lo que implicará
 	// la actualización de todos los pixeles del background
 	int flag = 0;
@@ -98,6 +98,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = N
 			}
 		}
 	}
+
 	if (flag == 1) cvReleaseImage( &mask );
 
 //	cvShowImage( "Foreground",fg);
@@ -109,10 +110,10 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask = N
 
 }
 
-void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel, CvRect DataROI, IplImage* Mask){
+void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, CvRect DataROI, IplImage* Mask){
 
-	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel, 0 );
-	else accumulateBackground( tmp_frame, BGModel, Mask );
+	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,DESVI, 0 );
+	else accumulateBackground( tmp_frame, BGModel,DESVI, Mask );
 
 //	RunningBGGModel( tmp_frame, BGModel, Ides, DataROI );
 //	RunningVariance
@@ -148,7 +149,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 	cvReleaseImage( &ImTemp );
 
 }
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg,CvRect dataroi){
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,CvRect dataroi){
 
 	cvSetImageROI( ImGray, dataroi );
 	cvSetImageROI( bg_model, dataroi );
@@ -288,7 +289,6 @@ void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation pu
         IvarF = cvCreateImage( sz, 8, 1 );
         Ivar =  cvCreateImage( sz, 8, 1 );
         IdesF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-        Ides = cvCreateImage( sz, 8, 1 );
         IdiffF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
         Idiff = cvCreateImage( sz, 8, 1 );
         IhiF = cvCreateImage( sz, 8, 1 );

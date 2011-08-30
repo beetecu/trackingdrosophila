@@ -66,7 +66,7 @@ int g_slider_position = 50;
 	  \param BG : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
 	  \param ImMask : Máscara  de 8 bit de niveles de gris para el preprocesdo (extraccion del plato).
 	*/
-int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
+int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask);
 
 IplImage* getBinaryImage(IplImage * image);
 //! \brief Recibe una imagen en escala de grises preprocesada. En la primera ejecución inicializa el modelo. Estima a la mediana
@@ -80,7 +80,7 @@ IplImage* getBinaryImage(IplImage * image);
       \param BGMod : Imagen de fondo sobre la que se estima la mediana
     */
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask  );
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides, IplImage* mask  );
 //! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
 //!	en BGMod y la varianza en IvarF según:
 /*! Mediana:
@@ -93,7 +93,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod, IplImage* mask  );
       \param DataROI: Contiene los datos para establecer la ROI
       \param Mask: Nos permite actualizar el fondo de forma selectiva.
     */
-void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel, CvRect DataROI, IplImage* Mask = NULL);
+void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI, CvRect DataROI, IplImage* Mask = NULL);
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
 /*!
@@ -111,7 +111,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRec
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
       \param DataROI: Contiene los datos para establecer la ROI
     */
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* fg, CvRect dataroi);
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg, CvRect dataroi);
 
 //! \brief Aplica Componentes conexas para limpieza de la imagen:
 //! - Realiza operaciones de morphologia para elimirar ruido.
