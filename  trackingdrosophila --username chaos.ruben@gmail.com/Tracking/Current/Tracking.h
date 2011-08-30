@@ -145,6 +145,7 @@ using namespace std;
 
 	void DeallocateImagesBGM();
 
+
 	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STMoscas**, Lista );
 
 //	void mostrarLista(Lista);
