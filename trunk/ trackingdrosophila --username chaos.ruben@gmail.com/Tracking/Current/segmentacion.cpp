@@ -10,15 +10,15 @@
 void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion){
 
 	cvNamedWindow("Segmentacion",1);
-	IplImage *IDif=cvCloneImage(mediana); // imagen diferencia abs(I(pi)-u(p(i))
-	IplImage *IDifm=cvCloneImage(mediana);// IDif en punto flotante
-	IplImage *pesos=cvCloneImage(mediana);//Imagen resultado wi ( pesos)
+	IplImage *IDif=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
+	IplImage *IDifm=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
+	IplImage *pesos=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
 
 	cvAbsDiff(Brillo,mediana,IDif);
 	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv(IDifm,desviacion,pesos);
 
-	cvShowImage("Segmentacion",IDifm);
+	cvShowImage("Segmentacion",pesos);
 
 
 }

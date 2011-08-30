@@ -53,6 +53,7 @@ using namespace std;
 	int fr = 0;
 	int BGUpdate = 1;
 	IplImage* BGTemp;
+	IplImage* DETemp;
 
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
 //	IplImage *ImHiThr;
@@ -137,11 +138,11 @@ using namespace std;
 
 	void AllocateImagesBGM( IplImage *I );
 
-	int initBGGModel( CvCapture* t_capture, IplImage* BG, IplImage* ImMask);
+	int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask);
 
-	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel, CvRect DataROI,IplImage* Mask );
+	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel,IplImage* DESVI, CvRect DataROI,IplImage* Mask );
 
-	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model, IplImage* fg, CvRect dataroi );
+	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides, IplImage* fg, CvRect dataroi );
 
 	void DeallocateImagesBGM();
 
