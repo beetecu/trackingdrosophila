@@ -103,7 +103,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides, Ipl
 
 //	cvShowImage( "Foreground",fg);
 	// Corregimos la estimación de la desviación mediante la función de error
-//	cvConvertScale(Ides,Ides,0.9,0);
+	cvConvertScale(Ides,Ides,0.7,0);
 
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
 //	cvConvertScale(ImGrayF ,ImGray,1,0); // A int
@@ -151,6 +151,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 }
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,CvRect dataroi){
 
+
 	cvSetImageROI( ImGray, dataroi );
 	cvSetImageROI( bg_model, dataroi );
 	cvSetImageROI( fg, dataroi );
@@ -176,18 +177,27 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 			// Si la desviación tipica del pixel supera en HiF veces la
 			// desviación típica del modelo, el pixel se clasifica como
 			//foreground ( 255 ), en caso contrario como background
-			if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ) ptr5[x] = 255;
+			if ( ptr3[x] > LOW_THRESHOLD*ptr4[x] ) ptr5[x] = 255;
 			else ptr5[x] = 0;
 		}
 	}
 
-	FGCleanup( fg );
+	cvCreateTrackbar( "HighT",
+				  "Foreground",
+				  &HIGHT_THRESHOLD,
+				  100  );
+	cvCreateTrackbar( "LowT",
+					  "Foreground",
+					  &LOW_THRESHOLD,
+					  100  );
 	cvResetImageROI( ImGray );
-	cvResetImageROI( bg_model );
-	cvResetImageROI( fg );
-	cvResetImageROI( Idiff );
-	cvResetImageROI( fg );
-	cvResetImageROI( Ides );
+		cvResetImageROI( bg_model );
+		cvResetImageROI( fg );
+		cvResetImageROI( Idiff );
+		cvResetImageROI( fg );
+		cvResetImageROI( Ides );
+	FGCleanup( fg, Ides );
+
 //	invertirBW( fg );
 //cvAnd(Ides, Ides, IvarF);
 //
@@ -203,10 +213,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //			if ( x== 300 && y == 200) printf( "Ides = %d, IvarF = %d\n",ptr4[x],ptr5[x]);
 //		}
 //	}
-	cvCreateTrackbar( "HighT",
-				  "Foreground",
-				  &HIGHT_THRESHOLD,
-				  100  );
+
 	cvCreateTrackbar( "ALPHA",
 						  "Foreground",
 						  &g_slider_position,
@@ -216,7 +223,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //	cvShowImage( "Foreground",Idiff);
 //	cvWaitKey(0);
 }
-void FGCleanup( IplImage* FG){
+void FGCleanup( IplImage* FG, IplImage* DES){
 
 	static CvMemStorage* mem_storage = NULL;
 	static CvSeq* contours = NULL;
@@ -241,12 +248,37 @@ void FGCleanup( IplImage* FG){
 	int numCont = 0;
 	while( (c = cvFindNextContour( scanner )) != NULL ) {
 		CvSeq* c_new;
+		int flag = 1;
 		double area = cvContourArea( c );
 		area = fabs( area );
 
 		if ( (area < MIN_CONTOUR_AREA) || (area > MAX_CONTOUR_AREA) ) {
-			cvSubstituteContour( scanner, NULL ); // eliminamos el contorno
-		}else{
+			flag = 1;
+		}
+		else{
+			// Eliminamos los contornos que no sobrevivan al HIGHT_THRESHOLD
+			// Primero obtenermos ROI del contorno del LOW_THRESHOLD
+			CvRect ContROI = cvBoundingRect( c );
+			cvSetImageROI( Idiff, ContROI );
+			cvSetImageROI( DES , ContROI );
+
+			for (int y = 0; y< Idiff->height; y++){
+					uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep);
+					uchar* ptr4 = (uchar*) ( DES->imageData + y*DES->widthStep);
+					for (int x= 0; x<Idiff->width; x++){
+						// Si alguno de los pixeles del blob supera en HiF veces la
+						// desviación típica del modelo,desactivamos el flag para no
+						// eliminar el contorno
+						if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ) flag = 0;
+					}
+			}
+			cvResetImageROI( Idiff);
+			cvResetImageROI( DES );
+		}
+		if ( flag == 1 ) {
+					cvSubstituteContour( scanner, NULL ); // eliminamos el contorno
+		}
+		else{ //pasamos al siguiente contorno
 
 			c_new = cvConvexHull2( c, mem_storage, CV_CLOCKWISE, 1);
 
@@ -264,19 +296,6 @@ void FGCleanup( IplImage* FG){
 	}
 
 
-}
-// Establece el Umbral alto como la mediana mas HiF veces la desviación típica
-void setHighThreshold( IplImage* BG, int HiF ){
-	cvConvertScale( Ides, IhiF, HiF,0 );
-//	cvAdd(BG, IhiF, IhiF);
-//	cvShowImage( "Foreground",IhiF);
-
-}
-// Establece el Umbral bajo como la mediana menos LowF veces la desviación típica
-void setLowThreshold( IplImage* BG, int LowF ){
-	cvConvertScale( Ides, IlowF, LowF,0 );
-//	cvSub(BG, IlowF, IlowF);
-//	cvShowImage( "Foreground",IlowF);
 }
 
 void onTrackbarSlide(int pos) {

@@ -125,6 +125,7 @@ int main() {
 					UpdateBGModel( Imagen, BGTemp,DETemp, DataFROI, Capa->FG );
 		}
 		cvCopy( BGTemp, Capa->BGModel);
+		cvCopy( DETemp, Capa->IDesv);
 		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
 //		IplImage *Imtemp = cvCreateImage( cvGetSize(Imagen),8,1);
 //		cvAbsDiff( BGTemp, Capa->BGModel, Imtemp);
@@ -156,7 +157,7 @@ int main() {
 
 		/////// SEGMENTACION
 
-		segmentacion(Imagen,Capa->BGModel,Capa->IDesv);
+//		segmentacion(Imagen,Capa->BGModel,Capa->IDesv);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );

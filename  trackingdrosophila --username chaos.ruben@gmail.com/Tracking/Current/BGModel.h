@@ -21,8 +21,8 @@
 // VARIABLES GLOBALES DE PROGRAMA //
 
 int FRAMES_TRAINING = 60;
-int HIGHT_THRESHOLD = 1;
-//int LOW_THRESHOLD = 3;
+int HIGHT_THRESHOLD = 10;
+int LOW_THRESHOLD = 2;
 double ALPHA = 0 ;
 
 int g_slider_position = 50;
@@ -104,7 +104,9 @@ void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI, CvRe
     */
 
 void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRect dataroi );
-//! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
+//! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano.
+//! Se establece un umbral bajo ( LOW_THRESHOLD ) para los valores de la normal
+//! tipificada a partir del cual el píxel es foreground ( 255 )
 /*!
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
       \param bg_model : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
@@ -115,30 +117,18 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 //! \brief Aplica Componentes conexas para limpieza de la imagen:
 //! - Realiza operaciones de morphologia para elimirar ruido.
-//! - Establece un tamaño máximo y mínimo para que el contorno no sea borrado
+//! - Establece un área máxima y mínimo para que el contorno no sea borrado
+//! - Aplica un umbral alto para los valores de la normal tipificada. Si alguno
+//! de los píxeles del blob clasificado como foreground con el LOW_THRESHOLD no
+//! desaparece al aplicar el HIGHT_THRESHOLD, es un blob válido.
 //! (- Establece el nº máximo de contornos a devolver )
 //!
 /*!
       \param FG : Imagen fuente de 8 bit de niveles de gris que contine la imagen a limpiar
 
     */
-void FGCleanup( IplImage* FG);
+void FGCleanup( IplImage* FG, IplImage* DES);
 
-//! \brief Establece el Umbral alto como la mediana mas HiF veces la desviación típica
-/*!
-      \param BG : Imagen fuente de 8 bit de niveles de gris que contine la estimación de la mediana de cada píxel.
-      \param HiF: : Umbral alto.
-    */
-void setHighThreshold( IplImage* BG, int HiF );
-//! \brief Establece el Umbral bajo como la mediana menos LowF veces la desviación típica
-/*!
-      \param BG : Imagen fuente de 8 bit de niveles de gris que contine la estimación de la mediana de cada píxel.
-      \param LowF: : Umbral bajo.
-    */
-
-
-
-void setLowThreshold( IplImage* BG, int LowF );
 void onTrackbarSlide(int pos);
 void error(int err);
 void AllocateImagesBGM( IplImage *I );
