@@ -13,7 +13,9 @@
 
 
 
-void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion );
+
+
+void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi);
 
 
 #endif /* SEGMENTACION_H_ */

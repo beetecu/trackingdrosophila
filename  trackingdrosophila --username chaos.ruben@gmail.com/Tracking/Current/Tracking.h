@@ -48,11 +48,13 @@ using namespace std;
 	int PCentroY;
 	int PRadio;
 	static CvRect DataFROI;
+	static CvRect SegROI;
 
 	// Modelado de fondo
 	int fr = 0;
 	int BGUpdate = 1;
 	IplImage* BGTemp;
+	IplImage* FOTemp;
 	IplImage* DETemp;
 
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
