@@ -157,7 +157,13 @@ int main() {
 
 		/////// SEGMENTACION
 
-//		segmentacion(Imagen,Capa->BGModel,Capa->IDesv);
+
+		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
+	
+
+
+
+
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -270,6 +276,7 @@ void AllocateImages( IplImage* I ){
 
 	BGTemp = cvCreateImage( sz,8,1);
 	DETemp = cvCreateImage( sz,8,1);
+	FOTemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
 
 	ImBlobs = cvCreateImage( sz,8,1 );
