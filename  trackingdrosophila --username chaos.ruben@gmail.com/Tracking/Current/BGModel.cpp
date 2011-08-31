@@ -269,8 +269,13 @@ void FGCleanup( IplImage* FG, IplImage* DES){
 						// Si alguno de los pixeles del blob supera en HiF veces la
 						// desviación típica del modelo,desactivamos el flag para no
 						// eliminar el contorno
-						if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ) flag = 0;
+						if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ){
+							flag = 0;
+							break;
+						}
+
 					}
+					if (flag == 0) break;
 			}
 			cvResetImageROI( Idiff);
 			cvResetImageROI( DES );
