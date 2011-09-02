@@ -23,5 +23,5 @@
 #define CVX_GREEN CV_RGB(0,255,0)
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
-
+#define CREATE_TRACKBARS 0
 #endif /* VIDEOTRACKER_HPP_ */
