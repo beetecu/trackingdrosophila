@@ -181,15 +181,22 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 			else ptr5[x] = 0;
 		}
 	}
+#if CREATE_TRACKBARS == 1
+		cvCreateTrackbar( "HighT",
+						  "Foreground",
+						  &HIGHT_THRESHOLD,
+						  100  );
+		cvCreateTrackbar( "LowT",
+						  "Foreground",
+						  &LOW_THRESHOLD,
+						  100  );
+		cvCreateTrackbar( "ALPHA",
+						  "Foreground",
+						  &g_slider_position,
+						  100,
+						  onTrackbarSlide );
+#endif
 
-	cvCreateTrackbar( "HighT",
-				  "Foreground",
-				  &HIGHT_THRESHOLD,
-				  100  );
-	cvCreateTrackbar( "LowT",
-					  "Foreground",
-					  &LOW_THRESHOLD,
-					  100  );
 	cvResetImageROI( ImGray );
 		cvResetImageROI( bg_model );
 		cvResetImageROI( fg );
@@ -214,11 +221,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //		}
 //	}
 
-	cvCreateTrackbar( "ALPHA",
-						  "Foreground",
-						  &g_slider_position,
-						  100,
-						  onTrackbarSlide );
+
 //	printf(" Alpha = %f\n",ALPHA);
 //	cvShowImage( "Foreground",Idiff);
 //	cvWaitKey(0);
@@ -273,7 +276,6 @@ void FGCleanup( IplImage* FG, IplImage* DES){
 							flag = 0;
 							break;
 						}
-
 					}
 					if (flag == 0) break;
 			}

@@ -21,8 +21,8 @@
 // VARIABLES GLOBALES DE PROGRAMA //
 
 int FRAMES_TRAINING = 60;
-int HIGHT_THRESHOLD = 10;
-int LOW_THRESHOLD = 2;
+int HIGHT_THRESHOLD = 20;
+int LOW_THRESHOLD = 10;
 double ALPHA = 0 ;
 
 int g_slider_position = 50;
@@ -53,6 +53,7 @@ int g_slider_position = 50;
 		IplImage* FG;  ///Foreground
 		IplImage* ImFMask; /// Mascara del plato
 		IplImage* ImRois;
+		IplImage* ImMotion;
 	}STCapas;
 // PROTOTIPOS DE FUNCIONES //
 
