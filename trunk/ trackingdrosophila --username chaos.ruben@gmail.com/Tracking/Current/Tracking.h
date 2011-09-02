@@ -81,6 +81,7 @@ using namespace std;
 	IplImage *ImBlobs;
 	IplImage *ImThres;
 
+
 	int spatialRad = 10, colorRad = 10 , maxPyrLevel = 1;
 
 #endif
@@ -98,6 +99,7 @@ using namespace std;
 		IplImage* FG;  ///Foreground
 		IplImage* ImFMask; /// Mascara del plato
 		IplImage* ImRois;
+		IplImage* ImMotion;
 	}STCapas;
 
 	STCapas* Capa = NULL;
@@ -145,6 +147,8 @@ using namespace std;
 	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel,IplImage* DESVI, CvRect DataROI,IplImage* Mask );
 
 	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides, IplImage* fg, CvRect dataroi );
+
+	void MotionTemplate( IplImage* img, IplImage* dst);
 
 	void DeallocateImagesBGM();
 
