@@ -98,6 +98,7 @@ int main() {
 
 		////////////// PROCESADO ///////////////
 
+		//// BACKGROUND UPDATE
 		cvCopy( Capa->BGModel, BGTemp);
 		cvCopy(Capa->IDesv,DETemp);
 
@@ -110,15 +111,16 @@ int main() {
 			FrameCount = 0;
 		}
 //		cvShowImage( "Foreground",Capa->BGModel);
-		cvCreateTrackbar( "BGUpdate",
-						  "Foreground",
-						  &BGUpdate,
-						  100  );
-		// Resta de fondo. Obtención de la máscara del foreground
+#if CREATE_TRACKBARS == 1
+	cvCreateTrackbar( "BGUpdate",
+					  "Foreground",
+					  &BGUpdate,
+					  100  );
+#endif
+
+		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
 
-		t = (double)cvGetTickCount() - t;
-		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( FrameCount == 0 ){
@@ -182,8 +184,11 @@ int main() {
 		// Creación de mascara de ROIS para cada objeto
 		//       CreateRois( Imagen, Capa->ImRois);
 
+		/////// VALIDACIÓN
 
 		/////// TRACKING
+		cvZero( Capa->ImMotion);
+		MotionTemplate( Capa->FG, Capa->ImMotion);
 		//               printf( "Iniciando rastreo ..." ); // añadir tanto por ciento del video analizado
 		//               GlobalTime = (double)cvGetTickCount() - GlobalTime;
 		//                      printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
@@ -191,7 +196,8 @@ int main() {
 		//               printf( "Rastreo finalizado con éxito ..." );
 		//               GlobalTime = (double)cvGetTickCount() - GlobalTime;
 		//                      printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-
+		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
+		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );
 
 
 		/*                                                              */
@@ -200,7 +206,7 @@ int main() {
 
 #if SHOW_VISUALIZATION == 1
 		//Obtenemos la Imagen donde se visualizarán los resultados
-		ImVisual = cvCloneImage(frame);
+		cvCopy(frame, ImVisual);
 
 		//Dibujamos el plato en la imagen de visualizacion
 		cvCircle( ImVisual, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
@@ -235,8 +241,10 @@ int main() {
 		//              cvShowImage("Bina",ImThres);
 		cvShowImage( "Foreground",Capa->FG);
 //		cvWaitKey(0);
+		cvShowImage( "Motion",Capa->ImMotion);
 
-
+		t = (double)cvGetTickCount() - t;
+		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
 
 	}
 
@@ -259,6 +267,8 @@ int main() {
 
 
 	DestroyWindows( );
+
+
 }
 
 void AllocateImages( IplImage* I ){
@@ -273,6 +283,18 @@ void AllocateImages( IplImage* I ){
 	Capa->ImFMask = cvCreateImage(sz,8,1);
 	Capa->ImRois = cvCreateImage(sz,8,1);
 	Capa->OldFG = cvCreateImage(sz,8,1);
+	Capa->ImMotion = cvCreateImage( sz, 8, 3 );
+
+	cvZero( Capa->BGModel );
+	cvZero( Capa->FG );
+	cvZero( Capa->IDesv );
+	cvZero( Capa->ImFMask );
+	cvZero( Capa->ImRois );
+	cvZero( Capa->OldFG );
+	cvZero( Capa->ImMotion );
+	Capa->ImMotion->origin = I->origin;
+
+
 
 	BGTemp = cvCreateImage( sz,8,1);
 	DETemp = cvCreateImage( sz,8,1);
@@ -281,7 +303,7 @@ void AllocateImages( IplImage* I ){
 
 	ImBlobs = cvCreateImage( sz,8,1 );
 	ImThres = cvCreateImage( sz,8,1 );
-	ImVisual = cvCreateImage( sz,8,1);
+	ImVisual = cvCreateImage( sz,8,3);
 
 
 }
@@ -310,7 +332,7 @@ void CreateWindows( ){
 	cvMoveWindow("Background", 0, 0 );
 	cvMoveWindow("Foreground", 640, 0);
 #endif
-
+	 cvNamedWindow( "Motion", 1 );
 	//        cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
 	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
 //	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);
@@ -330,6 +352,7 @@ void DestroyWindows( ){
 	cvDestroyWindow( "Background");
 	cvDestroyWindow( "Foreground");
 #endif
+	cvDestroyWindow( "Motion" );
 	//        cvDestroyWindow( "Bina" );
 	//        cvDestroyWindow( "Blobs" );
 }
