@@ -8,8 +8,9 @@
 #ifndef TRACKING_H_
 #define TRACKING_H_
 
+#include <time.h>
 #include "VideoTracker.hpp"
-
+#include <sys/time.h>
 #include <BlobResult.h>
 #include "Interfaz_Lista.h"
 #include "Libreria.h"
@@ -20,7 +21,9 @@ using namespace cv;
 using namespace std;
 
 // DEFINICIONES
-
+#ifndef CLK_TCK
+#define CLK_TCK CLOCKS_PER_SEC
+#endif
 //#define INTERVAL_BACKGROUND_UPDATE 10000
 
 
@@ -32,11 +35,16 @@ using namespace std;
 #ifndef VARIABLES_GLOBALES_PROGRAMA
 	#define VARIABLES_GLOBALES_PROGRAMA
 
+/// Medida de tiempos
+struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
-	double GlobalTime ; /// Medida de tiempos
-	double InitialTime;
+	float TiempoInicial;
+	float TiempoParcial;
+	float TiempoFrame;
+	float TiempoGlobal;
 
-	int FrameCount = 0;
+	double FrameCount = 0;
+	double TotalFrames = 0;
 	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
 	static int hecho = 0;
 
@@ -121,6 +129,8 @@ using namespace std;
 //#ifndef PROTOTIPOS_DE_FUNCIONES
 //#define PROTOTIPOS_DE_FUNCIONES
 
+	/// Medida de tiempos
+	int gettimeofday( struct timeval *tv, struct timezone *tz );
 
 	/// Crea las ventanas de visualización
 	void CreateWindows();
