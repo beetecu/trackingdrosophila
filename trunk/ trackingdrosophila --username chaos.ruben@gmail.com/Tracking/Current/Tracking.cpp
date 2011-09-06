@@ -18,15 +18,13 @@ int main() {
 	/////////// CAPTURA DE IMAGENES E INICIALIZACIÓN ////////////
 	gettimeofday(&ti, NULL);  //para obtener el tiempo
 	TiempoInicial= ti.tv_sec*1000 + ti.tv_usec/1000.0;
-//	InitialTime = (double)clock()/CLOCKS_PER_SEC;
+
 	printf( "Iniciando captura..." );
-//	InitialTime = (double)cvGetTickCount();
-//	GlobalTime = (double)clock()/CLOCKS_PER_SEC - InitialTime;
 	gettimeofday(&tf, NULL);
 	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 			(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g milisegundos\n", TiempoParcial);
-//	printf( " %.1f Seg\n", GlobalTime/(cvGetTickFrequency()*1000000.) );
+
 	g_capture = NULL;
 	g_capture = cvCaptureFromAVI( "Drosophila.avi" );
 	if ( !g_capture ) {
@@ -55,7 +53,6 @@ int main() {
 
 	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
-//	int FrameCount = 0; // contador de frames para la actualización del fondo
 
 	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
 	 ////// BUCLE PRINCIPAL DEL ALGORITMO \\\\\\\
@@ -70,23 +67,21 @@ int main() {
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		FrameCount += 1;
+		UpdateCount += 1;
 		gettimeofday(&tif, NULL);
+
 		////////// PREPROCESADO ///////////////
 
 		// Obtencion de mascara del plato
 		if( !hecho ){
-	//		static int num_iter = 0;
 			MascaraPlato( g_capture, Capa->ImFMask, &PCentroX, &PCentroY, &PRadio );
 			gettimeofday(&tf, NULL);
 			TiempoGlobal=  (tf.tv_sec + (tf.tv_usec /1000000.0)) - TiempoInicial ;
 			printf(" %5.4g segundos\n", TiempoGlobal);
-//			GlobalTime = (double)cvGetTickCount() - InitialTime;
-//			printf( " %.1f Seg\n", GlobalTime/(cvGetTickFrequency()*1000000.) );
 			if ( PRadio == 0  ) {
 				error(3);
 				break;
 			}
-//			num_iter +=1;
 			DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
 		}
 
@@ -94,19 +89,15 @@ int main() {
 		if (!hecho) {
 			hecho = initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask);
 			FrameCount = cvGetCaptureProperty( g_capture, 1 );
-			//continue;
 			gettimeofday(&tf, NULL);
 			TiempoGlobal=  (tf.tv_sec + tf.tv_usec /1000000.0) - TiempoInicial ;
 			printf(" %5.4g segundos\n", TiempoGlobal);
 			printf("Iniciando rastreo...\n");
 		}
 
-
 		// Modelo de fondo para detección de movimiento
 		gettimeofday(&ti, NULL);
-
 		PreProcesado( frame, Imagen, Capa->ImFMask, 0);
-
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -119,14 +110,12 @@ int main() {
 		cvCopy( Capa->BGModel, BGTemp);
 		cvCopy(Capa->IDesv,DETemp);
 
-//		double t = (double)cvGetTickCount();
 		// Primera actualización del fondo
 
-
-//		if ( FrameCount == BGUpdate ){
+		if ( UpdateCount == BGUpdate ){
 			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, DataFROI, 0 );
-//			FrameCount = 0;
-//		}
+			UpdateCount = 0;
+		}
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -146,9 +135,9 @@ int main() {
 
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
-//		if ( FrameCount == 0 ){
+		if ( UpdateCount == 0 ){
 				UpdateBGModel( Imagen, BGTemp,DETemp, DataFROI, Capa->FG );
-//		}
+		}
 		cvCopy( BGTemp, Capa->BGModel);
 		cvCopy( DETemp, Capa->IDesv);
 		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
@@ -198,7 +187,7 @@ int main() {
 		/////// TRACKING
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
-		MotionTemplate( Capa->FG, Capa->ImMotion);
+//		MotionTemplate( Capa->FG, Capa->ImMotion);
 		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );
 		gettimeofday(&tf, NULL);
@@ -237,7 +226,6 @@ int main() {
 
 #endif
 		// Mostramos imagenes
-
 		cvShowImage( "Drosophila.avi", frame );
 		//
 
@@ -253,18 +241,16 @@ int main() {
 		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
 				(tff.tv_usec - tif.tv_usec)/1000.0;
 		printf("Tiempo procesado Frame %.0f : %5.4g milisegundos\n",FrameCount, TiempoFrame);
-		printf("Porcentaje completado: %f.1 % \n",(FrameCount/TotalFrames)*100 );
-//		t = (double)cvGetTickCount() - t;
-//		printf( "%d. %.1f ms\r", fr, t/(cvGetTickFrequency()*1000.) );
+		printf("Porcentaje completado: %.2f % \n",(FrameCount/TotalFrames)*100 );
 
 	}
 
-	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
-	 ////////// ANALISIS ESTADÍSTICO \\\\\\\\\\\\
-	  /////////////////////\\\\\\\\\\\\\\\\\\\\\
+	/********************************************
+	 /			 ANALISIS ESTADÍSTICO 			/
+	  /****************************************/
 
 	printf( "Rastreo finalizado con éxito ..." );
-	printf( "Comenzando análisis estadístico ...\n" );
+	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
 	printf( "Análisis finalizado ...\n" );
 
 	// LIMPIAR MEMORIA
@@ -273,13 +259,9 @@ int main() {
 	DeallocateImages( );
 	DeallocateImagesBGM();
 
-
-
 	cvReleaseCapture(&g_capture);
 
-
 	DestroyWindows( );
-
 
 }
 

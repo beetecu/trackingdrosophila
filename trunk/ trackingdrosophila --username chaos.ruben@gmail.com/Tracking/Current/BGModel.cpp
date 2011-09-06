@@ -203,6 +203,9 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 		cvResetImageROI( Idiff );
 		cvResetImageROI( fg );
 		cvResetImageROI( Ides );
+
+//	cvShowImage( "Foreground",fg);
+//	cvWaitKey(0);
 	FGCleanup( fg, Ides );
 
 //	invertirBW( fg );
@@ -223,7 +226,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 
 //	printf(" Alpha = %f\n",ALPHA);
-//	cvShowImage( "Foreground",Idiff);
+//	cvShowImage( "Foreground",fg);
 //	cvWaitKey(0);
 }
 void FGCleanup( IplImage* FG, IplImage* DES){
