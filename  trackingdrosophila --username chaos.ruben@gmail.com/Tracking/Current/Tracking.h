@@ -26,11 +26,6 @@ using namespace std;
 #endif
 //#define INTERVAL_BACKGROUND_UPDATE 10000
 
-
-#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background
-#define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
-
-
 // VARIABLES GLOBALES DE PROGRAMA
 #ifndef VARIABLES_GLOBALES_PROGRAMA
 	#define VARIABLES_GLOBALES_PROGRAMA
@@ -61,6 +56,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	// Modelado de fondo
 	int fr = 0;
 	int BGUpdate = 1;
+	int UpdateCount = 0;
 	IplImage* BGTemp;
 	IplImage* FOTemp;
 	IplImage* DETemp;

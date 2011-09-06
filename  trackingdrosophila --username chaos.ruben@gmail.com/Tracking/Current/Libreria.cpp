@@ -31,7 +31,10 @@ void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin){
 	}
 // Filtrado gaussiano 5x
 	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
-
+	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
+	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
+	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
+	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
 // Extraccion del plato
 	cvAndS(dst, cvRealScalar( 0 ) , dst, ImFMask );
 }
