@@ -22,15 +22,15 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 	CvScalar color;
 
 	if( !mhi || mhi->width != size.width || mhi->height != size.height ) {
-	        if( buf == 0 ) {
-	            buf = (IplImage**)malloc(N*sizeof(buf[0]));
-	            memset( buf, 0, N*sizeof(buf[0]));
-	        }
-	        for( i = 0; i < N; i++ ) {
-	            cvReleaseImage( &buf[i] );
-	            buf[i] = cvCreateImage( size, IPL_DEPTH_8U, 1 );
-	            cvZero( buf[i] );
-	        }
+//	        if( buf == 0 ) {
+//	            buf = (IplImage**)malloc(N*sizeof(buf[0]));
+//	            memset( buf, 0, N*sizeof(buf[0]));
+//	        }
+//	        for( i = 0; i < N; i++ ) {
+//	            cvReleaseImage( &buf[i] );
+//	            buf[i] = cvCreateImage( size, IPL_DEPTH_8U, 1 );
+//	            cvZero( buf[i] );
+//	        }
 	        cvReleaseImage( &mhi );
 	        cvReleaseImage( &orient );
 	        cvReleaseImage( &segmask );
@@ -44,9 +44,9 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 	        segmask = cvCreateImage( size, IPL_DEPTH_32F, 1 );
 	        mask = cvCreateImage( size, IPL_DEPTH_8U, 1 );
 	    }
-	cvCopy( img, buf[last]);
-	idx2 = (last + 1) % N; // index of (last - (N-1))th frame
-	last = idx2;
+//	cvCopy( img, buf[last]);
+//	idx2 = (last + 1) % N; // index of (last - (N-1))th frame
+//	last = idx2;
 	cvCopy( img, silh);
 	cvUpdateMotionHistory( silh, mhi, timestamp, MHI_DURATION ); // update MHI
 
@@ -111,6 +111,7 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 		cvCircle( dst, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
 		cvLine( dst, center, cvPoint( cvRound( center.x + magnitude*cos(angle*CV_PI/180)),
 				cvRound( center.y - magnitude*sin(angle*CV_PI/180))), color, 3, CV_AA, 0 );
+//		cvWaitKey(0);
 		}
 	}
 }
