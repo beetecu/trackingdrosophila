@@ -43,7 +43,7 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 	}
 
 	// Obtención del centro de máximo radio del plato en 50 frames
-	printf("Localizando plato... ");
+
 //	GlobalTime = (double)cvGetTickCount() - GlobalTime;
 //	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
 
@@ -91,7 +91,7 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 	}
 	cvReleaseMemStorage( &storage );
 
-	printf("	Plato localizado : ");
+	printf("\nPlato localizado : ");
 	printf("Centro x : %d , Centro y %d : , Radio: %d \n"
 			,*centro_x,*centro_y, *radio);
 

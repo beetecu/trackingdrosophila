@@ -74,30 +74,45 @@ int main() {
 
 		// Obtencion de mascara del plato
 		if( !hecho ){
+			printf("Localizando plato... ");
+			gettimeofday(&ti, NULL);
+
 			MascaraPlato( g_capture, Capa->ImFMask, &PCentroX, &PCentroY, &PRadio );
-			gettimeofday(&tf, NULL);
-			TiempoGlobal=  (tf.tv_sec + (tf.tv_usec /1000000.0)) - TiempoInicial ;
-			printf(" %5.4g segundos\n", TiempoGlobal);
+
 			if ( PRadio == 0  ) {
 				error(3);
 				break;
 			}
 			DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
+			gettimeofday(&tf, NULL);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+														(tf.tv_usec - ti.tv_usec)/1000.0;
+			TiempoGlobal= TiempoGlobal + TiempoParcial ;
+			printf(" %5.4g segundos\n", TiempoGlobal/1000);
 		}
 
 		// Crear Modelo de fondo estático .Solo en la primera ejecución
 		if (!hecho) {
-			hecho = initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask);
+			printf("Creando modelo de fondo..... ");
+			gettimeofday(&ti, NULL);
+
+			hecho = initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, DataFROI);
 			FrameCount = cvGetCaptureProperty( g_capture, 1 );
+
 			gettimeofday(&tf, NULL);
-			TiempoGlobal=  (tf.tv_sec + tf.tv_usec /1000000.0) - TiempoInicial ;
-			printf(" %5.4g segundos\n", TiempoGlobal);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+											(tf.tv_usec - ti.tv_usec)/1000.0;
+			TiempoGlobal= TiempoGlobal + TiempoParcial ;
+			printf(" %5.4g segundos\n", TiempoGlobal/1000);
+			TiempoGlobal = 0; // inicializamos el tiempo global
 			printf("Iniciando rastreo...\n");
 		}
 
 		// Modelo de fondo para detección de movimiento
 		gettimeofday(&ti, NULL);
-		PreProcesado( frame, Imagen, Capa->ImFMask, 0);
+
+		PreProcesado( frame, Imagen, Capa->ImFMask, 0, DataFROI);
+
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -132,7 +147,6 @@ int main() {
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
 		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
-
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( UpdateCount == 0 ){
@@ -240,7 +254,9 @@ int main() {
 		gettimeofday(&tff, NULL);
 		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
 				(tff.tv_usec - tif.tv_usec)/1000.0;
-		printf("Tiempo procesado Frame %.0f : %5.4g milisegundos\n",FrameCount, TiempoFrame);
+		TiempoGlobal = TiempoGlobal + TiempoFrame;
+		printf("Tiempo de procesado del Frame %.0f : %5.4g ms\n",FrameCount, TiempoFrame);
+		printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
 		printf("Porcentaje completado: %.2f % \n",(FrameCount/TotalFrames)*100 );
 
 	}

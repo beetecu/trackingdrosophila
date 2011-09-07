@@ -19,11 +19,13 @@ void invertirBW( IplImage* Imagen ){
 }
 // Recibe la imagen del video y devuelve la imagen en un canal de niveles
 // de gris con el plato extraido
-void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin){
+void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI){
 
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
 	// Imagen a un canal de niveles de gris
 	cvCvtColor( src, dst, CV_BGR2GRAY);
+	cvSetImageROI( dst, ROI );
+
 	if (bin == true){
 		cvAdaptiveThreshold( dst, dst,
 			255, CV_ADAPTIVE_THRESH_MEAN_C,CV_THRESH_BINARY,75,40);
@@ -31,11 +33,8 @@ void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin){
 	}
 // Filtrado gaussiano 5x
 	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
-	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
-	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
-	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
-	cvSmooth(dst,dst,CV_GAUSSIAN,5,0,0,0);
 // Extraccion del plato
+	cvResetImageROI( dst );
 	cvAndS(dst, cvRealScalar( 0 ) , dst, ImFMask );
 }
 //#endif
