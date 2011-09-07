@@ -67,7 +67,7 @@ typedef struct {
 	  \param BG : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
 	  \param ImMask : Máscara  de 8 bit de niveles de gris para el preprocesdo (extraccion del plato).
 	*/
-int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask);
+int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,CvRect ROI);
 
 IplImage* getBinaryImage(IplImage * image);
 //! \brief Recibe una imagen en escala de grises preprocesada. En la primera ejecución inicializa el modelo. Estima a la mediana
@@ -81,7 +81,7 @@ IplImage* getBinaryImage(IplImage * image);
       \param BGMod : Imagen de fondo sobre la que se estima la mediana
     */
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides, IplImage* mask  );
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRect DataROI, IplImage* mask );
 //! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
 //!	en BGMod y la varianza en IvarF según:
 /*! Mediana:

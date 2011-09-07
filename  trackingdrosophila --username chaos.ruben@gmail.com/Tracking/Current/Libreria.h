@@ -21,7 +21,7 @@
       \param bin: : Si está activo se aplica un adaptiveTreshold a la imagen antes de filtrar.
       \return Imagen preprocesada
     */
-void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin);
+void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI);
 void invertirBW( IplImage* Imagen );
 Elemento *nuevoElemento();
 void iniciarLista(Lista *lista);
