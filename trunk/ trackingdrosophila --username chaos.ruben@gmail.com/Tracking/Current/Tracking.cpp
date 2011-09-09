@@ -172,7 +172,7 @@ int main() {
 		/////// SEGMENTACION
 
 
-//		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
+		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
 	
 
 
