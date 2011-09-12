@@ -159,7 +159,7 @@ int main() {
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 						(tf.tv_usec - ti.tv_usec)/1000.0;
 		printf("Obtención de máscara de Foreground : %5.4g milisegundos\n", TiempoParcial);
-
+		/////// EIMINACIÓN DE SOMBRAS
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
 		// parameters:
@@ -168,6 +168,9 @@ int main() {
 		//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
 		// Segmentacion basada en COLOR
 //		 cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
+//		cvPyrSegmentation(Imagen, ImPyr, storage, &comp,
+//        level, threshold1+1, threshold2+1);
+
 
 		/////// SEGMENTACION
 
@@ -201,7 +204,7 @@ int main() {
 		/////// TRACKING
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
-//		MotionTemplate( Capa->FG, Capa->ImMotion);
+		MotionTemplate( Capa->FG, Capa->ImMotion);
 		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );
 		gettimeofday(&tf, NULL);
@@ -310,6 +313,7 @@ void AllocateImages( IplImage* I ){
 	DETemp = cvCreateImage( sz,8,1);
 	FOTemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
+	ImPyr = cvCreateImage( sz ,8,1);
 
 	ImBlobs = cvCreateImage( sz,8,1 );
 	ImThres = cvCreateImage( sz,8,1 );
@@ -323,6 +327,7 @@ void AllocateImages( IplImage* I ){
 void DeallocateImages( ){
 
 	cvReleaseImage( &Imagen );
+	cvReleaseImage( &ImPyr);
 	cvReleaseImage( &ImBlobs );
 	cvReleaseImage( &ImVisual );
 	cvReleaseImage( &BGTemp);
