@@ -79,6 +79,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 //	IplImage *ImFilter;
 	IplImage *ImROI;
 
+	/// Sombras
+	IplImage* ImPyr;
+
 
 
 	/// SEGMENTACION
