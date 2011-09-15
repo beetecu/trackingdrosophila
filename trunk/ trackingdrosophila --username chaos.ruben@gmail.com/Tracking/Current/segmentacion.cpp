@@ -11,7 +11,7 @@
 void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi){
 
 
-	cvNamedWindow("Segmentacion",1);
+//	cvNamedWindow("Segmentacion",1);
 
 	IplImage *IDif=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
 	IplImage *IDifm=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
@@ -21,7 +21,10 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 	cvCopy(Foreg,FGTemp);
 
 	//Crear storage y secuencia de los contornos
-
+//	if( !storage )
+//		CvMemStorage* storage = cvCreateMemStorage(0);
+//	else
+//		cvClearMemStorage(storage);
 	CvMemStorage* storage = cvCreateMemStorage();
 	CvSeq* first_contour=NULL;
 

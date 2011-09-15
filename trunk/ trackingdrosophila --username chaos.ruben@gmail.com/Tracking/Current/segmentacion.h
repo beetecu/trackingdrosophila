@@ -13,7 +13,7 @@
 
 
 
-
+//CvMemStorage* storage = 0;
 
 void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi);
 

@@ -23,8 +23,8 @@ const double MIN_TIME_DELTA = 0.05;
 const int N = 4;
 
 // ring image buffer
-IplImage **buf = 0;
-int last = 0;
+//IplImage **buf = 0;
+//int last = 0;
 
 // temporary images
 IplImage* silh; // Imagen con las siluetas

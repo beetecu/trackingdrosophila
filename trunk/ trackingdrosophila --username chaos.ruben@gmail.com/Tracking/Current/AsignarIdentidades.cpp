@@ -11,7 +11,8 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 
 	double timestamp = (double)clock()/CLOCKS_PER_SEC; // get current time in seconds
 	CvSize size = cvSize(img->width,img->height); // get current frame size
-	int i, idx1 = last, idx2;
+	int i, idx2;
+//	int  idx1 = last;
 
 	CvSeq* seq;
 	CvRect comp_rect;
