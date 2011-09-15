@@ -175,12 +175,7 @@ int main() {
 		/////// SEGMENTACION
 
 
-		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
-	
-
-
-
-
+//		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -204,7 +199,11 @@ int main() {
 		/////// TRACKING
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
+
 		MotionTemplate( Capa->FG, Capa->ImMotion);
+
+		OpticalFlowLK( Capa->FG, ImOpFlowX, ImOpFlowY );
+
 		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );
 		gettimeofday(&tf, NULL);
@@ -245,13 +244,19 @@ int main() {
 		// Mostramos imagenes
 		cvShowImage( "Drosophila.avi", frame );
 		//
-
+#if SHOW_BG_REMOVAL == 1
 		cvShowImage("Background", Capa->BGModel);
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
 		cvShowImage( "Foreground",Capa->FG);
 //		cvWaitKey(0);
+#endif
+#if SHOW_OPTICAL_FLOW == 1
+		cvShowImage( "Flujo Optico X", ImOpFlowX );
+		cvShowImage( "Flujo Optico Y", ImOpFlowY);
+#endif
+
 		cvShowImage( "Motion",Capa->ImMotion);
 
 		gettimeofday(&tff, NULL);
@@ -314,7 +319,8 @@ void AllocateImages( IplImage* I ){
 	FOTemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
 	ImPyr = cvCreateImage( sz ,8,1);
-
+	ImOpFlowX = cvCreateImage( sz ,IPL_DEPTH_32F,1 );
+	ImOpFlowY = cvCreateImage( sz ,IPL_DEPTH_32F,1 );
 	ImBlobs = cvCreateImage( sz,8,1 );
 	ImThres = cvCreateImage( sz,8,1 );
 	ImVisual = cvCreateImage( sz,8,3);
@@ -328,6 +334,8 @@ void DeallocateImages( ){
 
 	cvReleaseImage( &Imagen );
 	cvReleaseImage( &ImPyr);
+	cvReleaseImage( &ImOpFlowX);
+	cvReleaseImage( &ImOpFlowY);
 	cvReleaseImage( &ImBlobs );
 	cvReleaseImage( &ImVisual );
 	cvReleaseImage( &BGTemp);
@@ -347,29 +355,41 @@ void CreateWindows( ){
 	cvMoveWindow("Background", 0, 0 );
 	cvMoveWindow("Foreground", 640, 0);
 #endif
-	 cvNamedWindow( "Motion", 1 );
-	//        cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
-	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
-//	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);
 
-	//        cvNamedWindow("Bina",1);
-	//        cvNamedWindow("Blobs",1);
+	 cvNamedWindow( "Motion", 1 );
+
+#if SHOW_OPTICAL_FLOW == 1
+	cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
+	cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
+	cvMoveWindow("Flujo Optico X", 0, 0 );
+	cvMoveWindow("Flujo Optico Y", 640, 0);
+#endif
+#if SHOW_VISUALIZATION == 1
+	cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
+#endif
+	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
+    //	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);
+
 }
 
 
 // Destruccion de ventanas
 void DestroyWindows( ){
 	cvDestroyWindow( "Drosophila.avi" );
-	//        cvDestroyWindow( "Visualización" );
-	//        cvDestroyWindow( "Imagen" );
-//	cvDestroyWindow( "Region_Of_Interest" );
+
+
 #if SHOW_BG_REMOVAL == 1
 	cvDestroyWindow( "Background");
 	cvDestroyWindow( "Foreground");
 #endif
+#if SHOW_OPTICAL_FLOW == 1
+	cvDestroyWindow( "Flujo Optico X");
+	cvDestroyWindow( "Flujo Optico Y");
+#endif
+#if SHOW_VISUALIZATION == 1
+	cvDestroyWindow( "Visualización" );
+#endif
 	cvDestroyWindow( "Motion" );
-	//        cvDestroyWindow( "Bina" );
-	//        cvDestroyWindow( "Blobs" );
 }
 
 void onTrackbarSlider(  int pos ){

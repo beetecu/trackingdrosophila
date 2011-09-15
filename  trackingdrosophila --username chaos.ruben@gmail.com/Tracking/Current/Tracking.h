@@ -88,6 +88,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	IplImage *ImBlobs;
 	IplImage *ImThres;
 
+	/// TRACKING
+	IplImage *ImOpFlowX;
+	IplImage *ImOpFlowY;
 
 	int spatialRad = 10, colorRad = 10 , maxPyrLevel = 1;
 
@@ -158,6 +161,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides, IplImage* fg, CvRect dataroi );
 
 	void MotionTemplate( IplImage* img, IplImage* dst);
+
+	void OpticalFlowLK( IplImage* ImLast, IplImage* velX, IplImage* velY);
 
 	void DeallocateImagesBGM();
 
