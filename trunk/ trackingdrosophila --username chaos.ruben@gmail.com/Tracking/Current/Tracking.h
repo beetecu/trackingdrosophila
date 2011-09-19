@@ -41,7 +41,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	double FrameCount = 0;
 	double TotalFrames = 0;
 	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
-	static int hecho = 0;
+
 
 	//HightGui
 	int g_slider_pos = 0;
@@ -60,6 +60,10 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	IplImage* BGTemp;
 	IplImage* FOTemp;
 	IplImage* DETemp;
+
+	// Modelado de forma
+
+	int FlyAreaMed, FlyAreaDes;
 
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
 //	IplImage *ImHiThr;
@@ -154,7 +158,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void AllocateImagesBGM( IplImage *I );
 
-	int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask, CvRect ROI);
+	void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask, CvRect ROI);
 
 	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel,IplImage* DESVI, CvRect DataROI,IplImage* Mask );
 

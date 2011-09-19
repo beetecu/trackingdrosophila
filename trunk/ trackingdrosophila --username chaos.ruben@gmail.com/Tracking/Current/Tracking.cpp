@@ -71,7 +71,7 @@ int main() {
 		gettimeofday(&tif, NULL);
 
 		////////// PREPROCESADO ///////////////
-
+		static int hecho = 0;
 		// Obtencion de mascara del plato
 		if( !hecho ){
 			printf("Localizando plato... ");
@@ -96,7 +96,7 @@ int main() {
 			printf("Creando modelo de fondo..... ");
 			gettimeofday(&ti, NULL);
 
-			hecho = initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, DataFROI);
+			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, DataFROI);
 			FrameCount = cvGetCaptureProperty( g_capture, 1 );
 
 			gettimeofday(&tf, NULL);
@@ -106,9 +106,14 @@ int main() {
 			printf(" %5.4g segundos\n", TiempoGlobal/1000);
 			TiempoGlobal = 0; // inicializamos el tiempo global
 			printf("Iniciando rastreo...\n");
+			hecho = 1;
 		}
+		// Modelado de la forma de los objetos.
+//		if( !hecho){
+//			ShapeModel( g_capture, FlyAreaMed, FlyAreaDes )
+//		}
 
-		// Modelo de fondo para detección de movimiento
+		// Modelado de fondo para detección de movimiento
 		gettimeofday(&ti, NULL);
 
 		PreProcesado( frame, Imagen, Capa->ImFMask, 0, DataFROI);
@@ -200,9 +205,9 @@ int main() {
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
 
-		MotionTemplate( Capa->FG, Capa->ImMotion);
+//		MotionTemplate( Capa->FG, Capa->ImMotion);
 
-		OpticalFlowLK( Capa->FG, ImOpFlowX, ImOpFlowY );
+//		OpticalFlowLK( Capa->FG, ImOpFlowX, ImOpFlowY );
 
 		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );

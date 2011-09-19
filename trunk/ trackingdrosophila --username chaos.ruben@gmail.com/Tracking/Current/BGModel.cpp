@@ -3,8 +3,8 @@
  *
  * Modelado de fondo mediante distribución Gaussiana
  *
- * Recibe un puntero tipo cv_Capture a la secuencia a modelar
- * Devuelve un puntero IplImage al modelo de fondo
+ *
+ *
  *
  *  Created on: 27/06/2011
  *      Author: chao
@@ -12,7 +12,7 @@
 
 #include "BGModel.h"
 
-int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,CvRect ROI){
+void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,CvRect ROI){
 
 	int num_frames = 0;
 
@@ -35,7 +35,7 @@ int initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImM
 
 		num_frames += 1;
 	}
-	return 1;
+	return;
 }
 
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRect ROI , IplImage* mask = NULL ) {
@@ -79,7 +79,6 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 				if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
 				if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
 			}
-
 		}
 	}
 	cvAbsDiff( ImGray, BGMod, Idiff);
@@ -103,9 +102,9 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 		}
 	}
 
-
-//	cvShowImage( "Foreground",fg);
 	// Corregimos la estimación de la desviación mediante la función de error
+	// Así se asegura que la fracción correcta de datos esté dentro de una desvición estándar
+	// ( escalado horizontal de la normal.
 	cvConvertScale(Ides,Ides,0.7,0);
 
 	cvResetImageROI( ImGray );
@@ -115,8 +114,6 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 	cvResetImageROI( Ides );
 
 	if (flag == 1) cvReleaseImage( &mask );
-//	cvConvertScale( ImedianF,BGMod,1,0); // A int
-//	cvConvertScale(ImGrayF ,ImGray,1,0); // A int
 
 }
 
