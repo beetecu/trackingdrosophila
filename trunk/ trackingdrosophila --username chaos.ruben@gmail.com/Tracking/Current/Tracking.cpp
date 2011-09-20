@@ -8,7 +8,7 @@
  */
 
 #include "Tracking.h"
-#include "segmentacion.h"
+//#include "segmentacion.h"
 
 using namespace cv;
 using namespace std;
@@ -217,7 +217,7 @@ int main() {
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
 
-		MotionTemplate( Capa->FG, Capa->ImMotion);
+//		MotionTemplate( Capa->FG, Capa->ImMotion);
 
 //		OpticalFlowLK( Capa->FG, ImOpFlowX, ImOpFlowY );
 

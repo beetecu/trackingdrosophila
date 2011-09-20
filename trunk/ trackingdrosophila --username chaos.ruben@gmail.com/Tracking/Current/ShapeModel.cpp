@@ -58,7 +58,7 @@ void ShapeModel( CvCapture* g_capture, int* FlyAreaMed, int* FlyAreaDes,IplImage
 			cvShowImage("Foreground", Imblob);
 
 		}
-					cvWaitKey(0);
+//					cvWaitKey(0);
 		num_frames += 1;
 		cvResetImageROI(ImGray);
 	}
