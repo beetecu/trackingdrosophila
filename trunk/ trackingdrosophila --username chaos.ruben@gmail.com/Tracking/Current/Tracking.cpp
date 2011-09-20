@@ -106,12 +106,24 @@ int main() {
 			printf(" %5.4g segundos\n", TiempoGlobal/1000);
 			TiempoGlobal = 0; // inicializamos el tiempo global
 			printf("Iniciando rastreo...\n");
+
+		}
+		// Modelado de la forma de los objetos a rastrear.
+		if( !hecho){
+			printf("Creando modelo de forma..... ");
+			gettimeofday(&ti, NULL);
+
+			ShapeModel( g_capture, &FlyAreaMed, & FlyAreaDes, Capa->ImFMask, DataFROI );
+
+			FrameCount = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
+			gettimeofday(&tf, NULL);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+											(tf.tv_usec - ti.tv_usec)/1000.0;
+			TiempoGlobal= TiempoGlobal + TiempoParcial ;
+			printf(" %5.4g seg\n", TiempoGlobal/1000);
+			TiempoGlobal = 0;
 			hecho = 1;
 		}
-		// Modelado de la forma de los objetos.
-//		if( !hecho){
-//			ShapeModel( g_capture, FlyAreaMed, FlyAreaDes )
-//		}
 
 		// Modelado de fondo para detección de movimiento
 		gettimeofday(&ti, NULL);
@@ -205,7 +217,7 @@ int main() {
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
 
-//		MotionTemplate( Capa->FG, Capa->ImMotion);
+		MotionTemplate( Capa->FG, Capa->ImMotion);
 
 //		OpticalFlowLK( Capa->FG, ImOpFlowX, ImOpFlowY );
 

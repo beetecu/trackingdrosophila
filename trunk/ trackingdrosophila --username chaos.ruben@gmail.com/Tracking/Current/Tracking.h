@@ -160,6 +160,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask, CvRect ROI);
 
+	void ShapeModel( CvCapture* g_capture, int* FlyAreaMed, int* FlyAreaDes, IplImage* ImMask,CvRect ROI );
+
 	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel,IplImage* DESVI, CvRect DataROI,IplImage* Mask );
 
 	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides, IplImage* fg, CvRect dataroi );
