@@ -68,12 +68,12 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
 //	cvShowImage( "Foreground",BGMod);
 //	cvWaitKey(0);
-	// Se actualiza el fondo según la máscara.
-	for (int y = 0; y< ImGray->height; y++){
-		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep);
-		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep);
-		uchar* ptr2 = (uchar*) ( BGMod->imageData + y*BGMod->widthStep);
-		for (int x= 0; x<ImGray->width; x++){
+	// Se actualiza el fondo usando la máscara.
+	for (int y = ImGray->roi->yOffset; y< ImGray->roi->yOffset + ImGray->roi->height; y++){
+		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ImGray->roi->xOffset);
+		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*mask->roi->xOffset);
+		uchar* ptr2 = (uchar*) ( BGMod->imageData + y*BGMod->widthStep + 1*BGMod->roi->xOffset);
+		for (int x = 0; x < ImGray->roi->width; x++){
 			// Incrementar o decrementar fondo en una unidad
 			if ( ptr1[x] == 0 ){ // si el pixel de la mascara es 0 actualizamos
 				if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
@@ -81,19 +81,21 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 			}
 		}
 	}
-	cvAbsDiff( ImGray, BGMod, Idiff);
+
 	//Estimamos la desviación típica
 	// La primera vez iniciamos la varianza al valor Idiff, que será un valor
 	//muy pequeño apropiado para fondos con poco movimiento (unimodales).
+	cvAbsDiff( ImGray, BGMod, Idiff);
+
 	if ( first == 1 ){
 		cvCopy( Idiff, Ides);
 		first = 0;
 	}
-	for (int y = 0; y< Idiff->height; y++){
-		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep);
-		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep);
-		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep);
-		for (int x= 0; x<Idiff->width; x++){
+	for (int y = Idiff->roi->yOffset; y< Idiff->roi->yOffset + Idiff->roi->height; y++){
+		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*mask->roi->xOffset);
+		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*Idiff->roi->xOffset);
+		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep + 1*Ides->roi->xOffset);
+		for (int x= 0; x<Idiff->roi->width; x++){
 			if ( ptr1[x] == 0 ){
 			// Incrementar o decrementar desviación típica en una unidad
 				if ( ptr3[x] < ptr4[x] ) ptr4[x] = ptr4[x]-1;
@@ -163,7 +165,6 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 	cvSetImageROI( bg_model, dataroi );
 	cvSetImageROI( fg, dataroi );
 	cvSetImageROI( Idiff, dataroi );
-	cvSetImageROI( fg, dataroi );
     cvSetImageROI( Ides, dataroi );
 
 
@@ -175,12 +176,24 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //	cvInRange( ImGray, IhiF,IlowF, Imaskt);
 	cvAbsDiff( ImGray, bg_model, Idiff);
 //	cvOr( fg, Imaskt, fg);
+//	for (int y = ImGray->roi->yOffset; y< ImGray->roi->yOffset + ImGray->roi->height; y++){
+//		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ImGray->roi->xOffset);
+//		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*mask->roi->xOffset);
+//		uchar* ptr2 = (uchar*) ( BGMod->imageData + y*BGMod->widthStep + 1*BGMod->roi->xOffset);
+//		for (int x = 0; x < ImGray->roi->width; x++){
+//			// Incrementar o decrementar fondo en una unidad
+//			if ( ptr1[x] == 0 ){ // si el pixel de la mascara es 0 actualizamos
+//				if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
+//				if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
+//			}
+//		}
+//	}
 
-	for (int y = 0; y< Idiff->height; y++){
-		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep);
-		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep);
-		uchar* ptr5 =  (uchar*) ( fg->imageData + y*fg->widthStep);
-		for (int x= 0; x<Idiff->width; x++){
+	for (int y = Idiff->roi->yOffset; y < Idiff->roi->yOffset + Idiff->roi->height; y++){
+		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*Idiff->roi->xOffset);
+		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep + 1*Ides->roi->xOffset);
+		uchar* ptr5 =  (uchar*) ( fg->imageData + y*fg->widthStep + 1*fg->roi->xOffset);
+		for (int x= 0; x<Idiff->roi->width; x++){
 			// Si la desviación tipica del pixel supera en HiF veces la
 			// desviación típica del modelo, el pixel se clasifica como
 			//foreground ( 255 ), en caso contrario como background
@@ -188,6 +201,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 			else ptr5[x] = 0;
 		}
 	}
+
 #if CREATE_TRACKBARS == 1
 		cvCreateTrackbar( "HighT",
 						  "Foreground",
@@ -204,18 +218,15 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 						  onTrackbarSlide );
 #endif
 
+	   	cvResetImageROI( ImGray );
+		cvResetImageROI( bg_model );
+		cvResetImageROI( fg );
+		cvResetImageROI( Idiff );
+		cvResetImageROI( Ides );
 
-
-//	cvShowImage( "Foreground",fg);
-//	cvWaitKey(0);
 	FGCleanup( fg, Ides );
 
-   	cvResetImageROI( ImGray );
-	cvResetImageROI( bg_model );
-	cvResetImageROI( fg );
-	cvResetImageROI( Idiff );
-	cvResetImageROI( fg );
-	cvResetImageROI( Ides );
+
 
 //	printf(" Alpha = %f\n",ALPHA);
 //	cvShowImage( "Foreground",fg);
@@ -256,36 +267,39 @@ void FGCleanup( IplImage* FG, IplImage* DES){
 		else{
 			// Eliminamos los contornos que no sobrevivan al HIGHT_THRESHOLD
 			// Primero obtenermos ROI del contorno del LOW_THRESHOLD
-			CvRect ContROI = cvBoundingRect( c );
-			cvSetImageROI( Idiff, ContROI );
-			cvSetImageROI( DES , ContROI );
+//			cvResetImageROI(Idiff);
+//			cvResetImageROI(DES);
 
-			for (int y = 0; y< Idiff->height; y++){
-					uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep);
-					uchar* ptr4 = (uchar*) ( DES->imageData + y*DES->widthStep);
-					for (int x= 0; x<Idiff->width; x++){
-						// Si alguno de los pixeles del blob supera en HiF veces la
-						// desviación típica del modelo,desactivamos el flag para no
-						// eliminar el contorno
-						if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ){
-							flag = 0;
-							break;
-						}
+
+			CvRect ContROI = cvBoundingRect( c );
+//			cvSetImageROI( Idiff, ContROI );
+//			cvSetImageROI( DES , ContROI );
+
+			for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
+				uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*ContROI.x);
+				uchar* ptr4 = (uchar*) ( DES->imageData + y*DES->widthStep + 1*ContROI.x);
+				for (int x= 0; x<ContROI.width; x++){
+					// Si alguno de los pixeles del blob supera en HiF veces la
+					// desviación típica del modelo,desactivamos el flag para no
+					// eliminar el contorno
+					if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ){
+						flag = 0;
+						break;
 					}
-					if (flag == 0) break;
+				}
+				if (flag == 0) break;
 			}
-			cvResetImageROI( Idiff);
-			cvResetImageROI( DES );
+//			cvResetImageROI( Idiff);
+//			cvResetImageROI( DES );
 		}
 		if ( flag == 1 ) {
 					cvSubstituteContour( scanner, NULL ); // eliminamos el contorno
 		}
 		else{ //pasamos al siguiente contorno
 
-			c_new = cvConvexHull2( c, mem_storage, CV_CLOCKWISE, 1);
-
-		cvSubstituteContour( scanner, c_new );
-		numCont++;
+			c_new = cvConvexHull2( c, mem_storage, CV_CLOCKWISE, 1); //
+			cvSubstituteContour( scanner, c_new );
+			numCont++;
 		}
 	}
 	contours = cvEndFindContours( & scanner );
