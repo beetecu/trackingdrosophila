@@ -166,9 +166,13 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides, IplImage* fg, CvRect dataroi );
 
+	void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi);
+
 	void MotionTemplate( IplImage* img, IplImage* dst);
 
 	void OpticalFlowLK( IplImage* ImLast, IplImage* velX, IplImage* velY);
+
+
 
 	void DeallocateImagesBGM();
 

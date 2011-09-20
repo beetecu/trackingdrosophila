@@ -13,12 +13,23 @@
 void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi){
 
 
-	// CREAR IMAGENES
 
-	IplImage *IDif=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
-	IplImage *IDifm=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
-	IplImage *pesos=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-	IplImage *FGTemp=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// Imagen copia del foreground
+	// CREAR IMAGENES
+	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
+
+	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
+
+	        cvReleaseImage( &IDif );
+	        cvReleaseImage( &IDifm );
+	        cvReleaseImage( &pesos );
+	        cvReleaseImage( &FGTemp );
+
+	        IDif=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
+	        IDifm=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
+	        pesos=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
+	        FGTemp=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// Imagen copia del foreground
+
+	}
 
 	cvCopy(Foreg,FGTemp);
 
