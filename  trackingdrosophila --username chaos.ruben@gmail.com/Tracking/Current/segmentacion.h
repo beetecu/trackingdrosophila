@@ -11,6 +11,8 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 
+#define PI 3.14159265
+
 //CvMemStorage* storage = 0;
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;

@@ -21,8 +21,8 @@
 // VARIABLES GLOBALES DE PROGRAMA //
 
 int FRAMES_TRAINING = 60;
-int HIGHT_THRESHOLD = 25;
-int LOW_THRESHOLD = 15;
+int HIGHT_THRESHOLD = 20;
+int LOW_THRESHOLD = 10;
 double ALPHA = 0 ;
 
 int g_slider_position = 50;

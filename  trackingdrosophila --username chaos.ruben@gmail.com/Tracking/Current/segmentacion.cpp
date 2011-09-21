@@ -32,7 +32,7 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 	}
 
 	cvCopy(Foreg,FGTemp);
-
+//	cvZero(FGTemp);
 	CvScalar w; // valor del brillo pixel w
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores, ejes de la elipse.
@@ -45,7 +45,10 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 
 	cvAbsDiff(Brillo,mediana,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
-	cvDiv(IDifm,desviacion,pesos);// Calcular wi
+	cvDiv(IDifm,desviacion,pesos);// Calcular
+
+//	cvShowImage("Foreground", Foreg);
+//	cvWaitKey(0);
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
@@ -58,29 +61,28 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		float zx=0;
 		float zy=0;
 
-		float ejemenor; // eje menor
-		float ejemayor; // eje mayor
+		/// Parámetros elipse
+		float semiejemenor; // semieje menor
+		float semiejemayor; // semieje mayor
+		CvSize axes;
+		CvPoint centro;
 		float tita; // orientación
 
 
 		CvScalar p; // valor del peso del pixel p
 
 		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
-		Segroi=cvRect(rect.x,rect.y,rect.width,rect.height);
-
-		cvSetImageROI( FGTemp, Segroi );
-		cvSetImageROI( pesos,Segroi);
 
 		// CREAR MATRICES
 
-		float mult[2][1];
-		int posiciones[2][1];
-		float vector_wp[2][1];
-
-		float matrix_covar11=0;
-		float matrix_covar12=0;
-		float matrix_covar21=0;
-		float matrix_covar22=0;
+//		float mult[2][1];
+//		int posiciones[2][1];
+//		float vector_wp[2][1];
+//
+//		float matrix_covar11=0;
+//		float matrix_covar12=0;
+//		float matrix_covar21=0;
+//		float matrix_covar22=0;
 
 		CvMat *vector_p=cvCreateMat(2,1,CV_32FC1); // Matriz de posiciones
 		CvMat *vector_u=cvCreateMat(2,1,CV_32FC1); // Matriz de medias
@@ -96,82 +98,53 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		CvMat *RT=cvCreateMat(2,2,CV_32FC1);
 
 
-		CvScalar elemento11;
-		CvScalar elemento12;
-		CvScalar elemento21;
-		CvScalar elemento22;
+//		CvScalar elemento11;
+//		CvScalar elemento12;
+//		CvScalar elemento21;
+//		CvScalar elemento22;
+//		cvShowImage("Foreground", Foreg);
+//		cvWaitKey(0);
 
+		// Hallar Z y u={ux,uy}
+		for (int y = rect.y; y< rect.y + rect.height; y++){
+			uchar* ptr1 = (uchar*) ( Foreg->imageData + y*Foreg->widthStep + 1*rect.x);
+			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
+			printf(" \n");
+			for (int x= 0; x<rect.width; x++){
+				printf(" %d ", ptr2[x]);
+				if ( ptr1[x] == 255 ){
 
-		// Hallar Z
-
-		for (int x= 0; x<pesos->roi->height; x++){ // Recorrer la Roi
-			for (int y= 0; y<pesos->roi->width; y++){
-
-				w=cvGet2D(pesos,x,y); // Sacar el valor del brillo de cada pixel
-				z=z + w.val[0]; // Sumatorio Z, Parametro Z
-
-				posiciones[0][0]=x;
-				posiciones[1][0]=y;
-
-				mult[0][0]=posiciones[0][0]*w.val[0];
-				mult[1][0]=posiciones[1][0]*w.val[0];
-
-				zx=zx+mult[0][0];
-				zy=zy+mult[1][0];
-
-				vector_wp[0][0]=zx;
-				vector_wp[1][0]=zy;
-
+					z = z + ptr2[x]; // Sumatorio de los pesos
+					*((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) = CV_MAT_ELEM( *vector_u, float, 0,0 )+ (x + rect.x)*ptr2[x];
+					*((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) = CV_MAT_ELEM( *vector_u, float, 1,0 )+ y*ptr2[x];
+//					vector_u[0][0] = vector_u[0][0] + x*ptr2[x]; // sumatorio del peso por la pos x
+//					vector_u[1][0] = vector_u[1][0] + y*ptr2[x]; // sumatorio del peso por la pos y
+				}
 			}
 		}
+		if ( z != 0) cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
+		printf("\nvector u:\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
 
-		for(int i=0;i<2;i++){
-			for(int j=0;j<1;j++){
+//		cvShowImage("Foreground", FGTemp);
+//		cvWaitKey(0);
 
+		for (int y = rect.y; y< rect.y + rect.height; y++){
+			uchar* ptr1 = (uchar*) ( Foreg->imageData + y*Foreg->widthStep + 1*rect.x);
+			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
+			for (int x= 0; x<rect.width; x++){
 
-				float elemento_p=posiciones[i][j];
-				*((float*)CV_MAT_ELEM_PTR( *vector_p, i, j ))=elemento_p; // vector p
+				if ( ptr1[x] == 255 ){
 
-				float elemento=(vector_wp[i][j]/z);
-				*((float*)CV_MAT_ELEM_PTR( *vector_u, i, j ))=elemento; // vector u = (u1,u2)T
+					//					vector_resta[0][0] = x - vector_u[0][0];
+					//					vector_resta[1][0] = y - vector_u[1][0];
+					*((float*)CV_MAT_ELEM_PTR( *vector_resta, 0, 0 )) = (x + rect.x) - CV_MAT_ELEM( *vector_u, float, 0,0 );
+					*((float*)CV_MAT_ELEM_PTR( *vector_resta, 1, 0 )) = y - CV_MAT_ELEM( *vector_u, float, 1,0 );
+					cvGEMM(vector_resta, vector_resta, ptr2[x] , NULL, 0, matrix_mul,CV_GEMM_B_T);// Multiplicar Matrices (pi-u)(pi-u)T
+					cvAdd( MATRIX_C, matrix_mul	, MATRIX_C ); // sumatorio
+				}
 			}
 		}
-
-		cvSub(vector_p,vector_u,vector_resta);//Resta de matrices, (pi-u)
-
-		cvGEMM(vector_resta, vector_resta,1, NULL, 0, matrix_mul,CV_GEMM_B_T);// Multiplicar Matrices (pi-u)(pi-u)T
-
-		elemento11=cvGet2D(matrix_mul,0,0);
-		elemento12=cvGet2D(matrix_mul,0,1);
-		elemento21=cvGet2D(matrix_mul,1,0);
-		elemento22=cvGet2D(matrix_mul,1,1);
-
-		for (int X= 0; X<pesos->roi->height; X++){ // sumatorio wi(pi-u)(pi-u)T
-			for (int Y= 0; Y<pesos->roi->width; Y++){
-
-			p=cvGet2D(pesos,X,Y);
-
-			matrix_covar11=matrix_covar11+(elemento11.val[0]*p.val[0]);//elemento 11 de la matriz de covarianza.
-			matrix_covar12=matrix_covar12+(elemento12.val[0]*p.val[0]);//idem
-			matrix_covar21=matrix_covar21+(elemento21.val[0]*p.val[0]);//idem
-			matrix_covar22=matrix_covar22+(elemento22.val[0]*p.val[0]);//idem
-
-		}
-			}
-
-		//Establecer la matriz de covarianza como estructura CVMat
-
-		*( (float*)CV_MAT_ELEM_PTR( *MATRIX_C, 0, 0 ) ) = matrix_covar11/z;
-		*( (float*)CV_MAT_ELEM_PTR( *MATRIX_C, 0, 1 ) ) = matrix_covar12/z;
-		*( (float*)CV_MAT_ELEM_PTR( *MATRIX_C, 1, 0 ) ) = matrix_covar21/z;
-		*( (float*)CV_MAT_ELEM_PTR( *MATRIX_C, 1, 1 ) ) = matrix_covar22/z;
-
-
-		// EXTRAER LOS EIGEN VALORES Y EIGEN VECTORES
-
-		cvEigenVV(MATRIX_C,evects,evals,2);// Hallar los EigenVectores
-		cvSVD(MATRIX_C,Diagonal,R,RT,0); // Hallar lo EigenValores, MATRIX_C=R*Diagonal*RT
-
+		if ( z != 0) cvConvertScale(MATRIX_C, MATRIX_C, 1/z,0); // Matriz de covarianza
 
 		// Mostrar matriz de covarianza
 
@@ -182,7 +155,12 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 						v=cvGet2D(MATRIX_C,i,j);
 						printf("\t%f",v.val[0]);
 					}
-				}
+		}
+
+		// EXTRAER LOS EIGENVALORES Y EIGENVECTORES
+
+		cvEigenVV(MATRIX_C,evects,evals,2);// Hallar los EigenVectores
+		cvSVD(MATRIX_C,Diagonal,R,RT,0); // Hallar los EigenValores, MATRIX_C=R*Diagonal*RT
 
 		//Extraer valores de los EigenVectores y EigenValores
 
@@ -191,16 +169,32 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		r1=cvGet2D(R,0,0);
 		r2=cvGet2D(R,0,1);
 
-		//Hallar los ejes y la orientación
+		//Hallar los semiejes y la orientación
 
-		ejemayor=2*(sqrt(d1.val[0]));
-		ejemenor=2*(sqrt(d2.val[0]));
+		semiejemayor=2*(sqrt(d1.val[0]));
+		semiejemenor=2*(sqrt(d2.val[0]));
 		tita=atan(r2.val[0]/r1.val[0]);
 
-		printf("\n EJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",ejemayor,ejemenor,tita);
+		printf("\n EJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",2*semiejemayor,2*semiejemenor,tita);
 
-		cvResetImageROI(FGTemp);
-		cvResetImageROI(pesos);
+		// Dibujar elipse
+
+		//Eliminamos el blob
+		Segroi=cvRect(rect.x,rect.y,rect.width,rect.height);
+		cvSetImageROI( FGTemp, Segroi );
+		cvZero( FGTemp );
+		cvResetImageROI( FGTemp);
+		// Obtenemos el centro de la elipse
+		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
+				cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
+		// Obtenemos los ejes y la orientacion en radianes
+		axes = cvSize( 2*cvRound(semiejemayor) , 2*cvRound(semiejemenor) );
+		tita = (tita*180)/PI;
+		cvEllipse( FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
+		cvShowImage("Foreground", FGTemp);
+//		cvWaitKey(0);
+//		cvResetImageROI(FGTemp);
+//		cvResetImageROI(pesos);
 
 		cvReleaseMat(&vector_p);
 		cvReleaseMat(&vector_resta);
@@ -212,10 +206,6 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		cvReleaseMat(&Diagonal);
 		cvReleaseMat(&R);
 		cvReleaseMat(&RT);
-
-
-
-
 
 	}// Fin de contornos
 

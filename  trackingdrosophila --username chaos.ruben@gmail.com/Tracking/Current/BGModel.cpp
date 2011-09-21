@@ -175,19 +175,6 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 //	cvInRange( ImGray, IhiF,IlowF, Imaskt);
 	cvAbsDiff( ImGray, bg_model, Idiff);
-//	cvOr( fg, Imaskt, fg);
-//	for (int y = ImGray->roi->yOffset; y< ImGray->roi->yOffset + ImGray->roi->height; y++){
-//		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ImGray->roi->xOffset);
-//		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*mask->roi->xOffset);
-//		uchar* ptr2 = (uchar*) ( BGMod->imageData + y*BGMod->widthStep + 1*BGMod->roi->xOffset);
-//		for (int x = 0; x < ImGray->roi->width; x++){
-//			// Incrementar o decrementar fondo en una unidad
-//			if ( ptr1[x] == 0 ){ // si el pixel de la mascara es 0 actualizamos
-//				if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
-//				if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
-//			}
-//		}
-//	}
 
 	for (int y = Idiff->roi->yOffset; y < Idiff->roi->yOffset + Idiff->roi->height; y++){
 		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*Idiff->roi->xOffset);
