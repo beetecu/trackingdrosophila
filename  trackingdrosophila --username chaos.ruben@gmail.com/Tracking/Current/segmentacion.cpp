@@ -10,7 +10,7 @@
 #include "math.h"
 
 
-void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, IplImage *Foreg, CvRect Segroi){
+void segmentacion( IplImage *Brillo, STCapas* Capa, CvRect Segroi){
 
 //IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi
 
@@ -22,16 +22,15 @@ void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, Ip
 	        cvReleaseImage( &IDif );
 	        cvReleaseImage( &IDifm );
 	        cvReleaseImage( &pesos );
-	        cvReleaseImage( &FGTemp );
 
-	        IDif=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
-	        IDifm=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
-	        pesos=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-	        FGTemp=cvCreateImage(cvSize(mediana->width,mediana->height), IPL_DEPTH_8U, 1);// Imagen copia del foreground
+	        IDif=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
+	        IDifm=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
+	        pesos=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
+
 
 	}
 
-	cvCopy(Foreg,FGTemp);
+	cvCopy(Capa->FG,Capa->FGTemp);
 
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores, ejes de la elipse.
@@ -42,16 +41,16 @@ void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, Ip
 	CvMemStorage* storage = cvCreateMemStorage();
 	CvSeq* first_contour=NULL;
 
-	cvAbsDiff(Brillo,mediana,IDif);// |I(p)-u(p)|/0(p)
+	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
-	cvDiv(IDifm,desviacion,pesos);// Calcular
+	cvDiv(IDifm,Capa->IDesv,pesos);// Calcular
 
-//	cvShowImage("Foreground", Foreg);
+//	cvShowImage("Foreground", Capa->FG);
 //	cvWaitKey(0);
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
-	int Nc = cvFindContours(FGTemp,storage,&first_contour,sizeof(CvContour),CV_RETR_EXTERNAL);
+	int Nc = cvFindContours(Capa->FGTemp,storage,&first_contour,sizeof(CvContour),CV_RETR_EXTERNAL);
 	printf( "\n Total Contornos Detectados: %d\n", Nc );
 
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
@@ -80,12 +79,12 @@ void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, Ip
 		CvMat *R=cvCreateMat(2,2,CV_32FC1);// Matriz EigenVectores.
 		CvMat *RT=cvCreateMat(2,2,CV_32FC1);
 
-//		cvShowImage("Foreground", Foreg);
+//		cvShowImage("Foreground", Capa->FG);
 //		cvWaitKey(0);
 
 		// Hallar Z y u={ux,uy}
 		for (int y = rect.y; y< rect.y + rect.height; y++){
-			uchar* ptr1 = (uchar*) ( Foreg->imageData + y*Foreg->widthStep + 1*rect.x);
+			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
 			//printf(" \n");
 			for (int x= 0; x<rect.width; x++){
@@ -103,11 +102,11 @@ void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, Ip
 		if ( z != 0) cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
 		printf("\n\nCentro (vector u):\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
 
-//		cvShowImage("Foreground", FGTemp);
+//		cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
 
 		for (int y = rect.y; y< rect.y + rect.height; y++){
-			uchar* ptr1 = (uchar*) ( Foreg->imageData + y*Foreg->widthStep + 1*rect.x);
+			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
 			for (int x= 0; x<rect.width; x++){
 
@@ -158,17 +157,17 @@ void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, Ip
 
 		//Eliminamos el blob
 		Segroi=cvRect(rect.x,rect.y,rect.width,rect.height);
-		cvSetImageROI( FGTemp, Segroi );
-		cvZero( FGTemp );
-		cvResetImageROI( FGTemp);
+		cvSetImageROI( Capa->FGTemp, Segroi );
+		cvZero( Capa->FGTemp );
+		cvResetImageROI( Capa->FGTemp);
 		// Obtenemos el centro de la elipse
 		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
 				cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
 		// Obtenemos los ejes y la orientacion en radianes
 		axes = cvSize( 2*cvRound(semiejemayor) , 2*cvRound(semiejemenor) );
 		tita = (tita*180)/PI;
-		cvEllipse( FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
-		cvShowImage("Foreground", FGTemp);
+		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
+		cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
 
 		cvReleaseMat(&vector_resta);
