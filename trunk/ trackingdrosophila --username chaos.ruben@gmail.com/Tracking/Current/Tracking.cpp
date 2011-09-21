@@ -194,7 +194,7 @@ int main() {
 
 		gettimeofday(&ti, NULL);
 		printf( " Iniciando segmentación...\n");
-		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
+		segmentacion(Imagen, Capa ,SegROI);
 
 		gettimeofday(&tf, NULL);
 				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -226,7 +226,7 @@ int main() {
 
 //		MotionTemplate( Capa->FG, Capa->ImMotion);
 
-//		OpticalFlowLK( Capa->FG, ImOpFlowX, ImOpFlowY );
+//		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
 
 		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );

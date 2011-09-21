@@ -29,7 +29,7 @@
 		IplImage* ImMotion;
 	}STCapas;
 
-void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi);
+void  segmentacion(IplImage *Brillo,STCapas* Capa,CvRect Segroi);
 
 
 #endif /* SEGMENTACION_H_ */
