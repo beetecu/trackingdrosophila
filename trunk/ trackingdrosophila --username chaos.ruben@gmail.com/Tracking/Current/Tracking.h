@@ -108,9 +108,10 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	// Capas
 	typedef struct {
 		IplImage* BGModel;  ///BackGround Model
-		IplImage* IDesv; /// Desviación tipica
-		IplImage* OldFG; ///OldForeGround
-		IplImage* FG;  ///Foreground
+		IplImage* IDesv;
+		IplImage* OldFG; ///OldForeGround ( objetos estáticos )
+		IplImage* FGTemp; /// Imagen a segmentar y validar
+		IplImage* FG;  ///Foreground ( objetos en movimiento )
 		IplImage* ImFMask; /// Mascara del plato
 		IplImage* ImRois;
 		IplImage* ImMotion;
@@ -121,8 +122,11 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	typedef struct Moscas{
 
 			int etiqueta;
-			float velocidad;
+			CvPoint posicion;
 			float area;
+			float orientacion;
+			CvRect DataRoi;
+			float velocidad;
 			float VV,VH;
 			CvPoint moment[8000];
 			CvPoint2D32f punto1,punto2;

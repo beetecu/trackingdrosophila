@@ -67,6 +67,7 @@ int main() {
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		FrameCount += 1;
+		printf( "\n\t\t\tFRAME %.0f\n", FrameCount);
 		UpdateCount += 1;
 		gettimeofday(&tif, NULL);
 
@@ -191,9 +192,14 @@ int main() {
 
 		/////// SEGMENTACION
 
-
-
+		gettimeofday(&ti, NULL);
+		printf( " Iniciando segmentación...\n");
 		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
+
+		gettimeofday(&tf, NULL);
+				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+								(tf.tv_usec - ti.tv_usec)/1000.0;
+				printf("\n\nSegmentación finalizada : %5.4g milisegundos\n", TiempoParcial);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -227,7 +233,7 @@ int main() {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 												(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Tracking: %5.4g milisegundos\n", TiempoParcial);
+		printf("\nTracking: %5.4g milisegundos\n", TiempoParcial);
 
 		/*                                                              */
 		/////// VISUALIZACION ////////////
@@ -281,10 +287,11 @@ int main() {
 		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
 				(tff.tv_usec - tif.tv_usec)/1000.0;
 		TiempoGlobal = TiempoGlobal + TiempoFrame;
-		printf("Tiempo de procesado del Frame %.0f : %5.4g ms\n",FrameCount, TiempoFrame);
+		printf("\n//////////////////////////////////////////////////\n");
+		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",FrameCount, TiempoFrame);
 		printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
 		printf("Porcentaje completado: %.2f % \n",(FrameCount/TotalFrames)*100 );
-
+		printf("\n//////////////////////////////////////////////////\n");
 	}
 
 	/********************************************
@@ -315,6 +322,7 @@ void AllocateImages( IplImage* I ){
 
 	Capa->BGModel = cvCreateImage(sz,8,1);
 	Capa->FG = cvCreateImage(sz,8,1);
+	Capa->FGTemp = cvCreateImage(sz,8,1);
 	Capa->IDesv = cvCreateImage(sz,8,1);
 	Capa->ImFMask = cvCreateImage(sz,8,1);
 	Capa->ImRois = cvCreateImage(sz,8,1);
@@ -323,6 +331,7 @@ void AllocateImages( IplImage* I ){
 
 	cvZero( Capa->BGModel );
 	cvZero( Capa->FG );
+	cvZero( Capa->FGTemp );
 	cvZero( Capa->IDesv );
 	cvZero( Capa->ImFMask );
 	cvZero( Capa->ImRois );

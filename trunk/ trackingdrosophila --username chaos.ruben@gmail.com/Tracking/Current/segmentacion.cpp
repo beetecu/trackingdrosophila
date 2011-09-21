@@ -10,9 +10,9 @@
 #include "math.h"
 
 
-void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi){
+void segmentacion( IplImage *Brillo, IplImage *mediana, IplImage *desviacion, IplImage *Foreg, CvRect Segroi){
 
-
+//IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi
 
 	// CREAR IMAGENES
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
@@ -32,8 +32,7 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 	}
 
 	cvCopy(Foreg,FGTemp);
-//	cvZero(FGTemp);
-	CvScalar w; // valor del brillo pixel w
+
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores, ejes de la elipse.
 	CvScalar r1,r2; // valores de la matriz de los eigen vectores, orientación.
@@ -57,38 +56,22 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
-		float z=0;
-		float zx=0;
-		float zy=0;
+		float z=0;  // parámetro para el cálculo de la matriz de covarianza
 
 		/// Parámetros elipse
-		float semiejemenor; // semieje menor
-		float semiejemayor; // semieje mayor
+		float semiejemenor;
+		float semiejemayor;
 		CvSize axes;
 		CvPoint centro;
 		float tita; // orientación
-
-
-		CvScalar p; // valor del peso del pixel p
 
 		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
 
 		// CREAR MATRICES
 
-//		float mult[2][1];
-//		int posiciones[2][1];
-//		float vector_wp[2][1];
-//
-//		float matrix_covar11=0;
-//		float matrix_covar12=0;
-//		float matrix_covar21=0;
-//		float matrix_covar22=0;
-
-		CvMat *vector_p=cvCreateMat(2,1,CV_32FC1); // Matriz de posiciones
 		CvMat *vector_u=cvCreateMat(2,1,CV_32FC1); // Matriz de medias
-		CvMat *vector_resta=cvCreateMat(2,1,CV_32FC1); //Matriz (pi-u)
-		CvMat *vector_tras=cvCreateMat(1,2,CV_32FC1);// Matriz  de la traspuesta (pi-u)T
-		CvMat *matrix_mul=cvCreateMat(vector_resta->rows,vector_tras->cols,CV_32FC1);// Matriz (pi-u)(pi-u)T
+		CvMat *vector_resta=cvCreateMat(2,1,CV_32FC1); // (pi-u)
+		CvMat *matrix_mul=cvCreateMat(2,2,CV_32FC1);// Matriz (pi-u)(pi-u)T
 		CvMat *MATRIX_C=cvCreateMat(matrix_mul->rows,matrix_mul->cols,CV_32FC1);// MATRIZ DE COVARIANZA
 		CvMat *evects=cvCreateMat(2,2,CV_32FC1);// Matriz de EigenVectores
 		CvMat *evals=cvCreateMat(2,2,CV_32FC1);// Matriz de EigenValores
@@ -97,11 +80,6 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		CvMat *R=cvCreateMat(2,2,CV_32FC1);// Matriz EigenVectores.
 		CvMat *RT=cvCreateMat(2,2,CV_32FC1);
 
-
-//		CvScalar elemento11;
-//		CvScalar elemento12;
-//		CvScalar elemento21;
-//		CvScalar elemento22;
 //		cvShowImage("Foreground", Foreg);
 //		cvWaitKey(0);
 
@@ -109,9 +87,9 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		for (int y = rect.y; y< rect.y + rect.height; y++){
 			uchar* ptr1 = (uchar*) ( Foreg->imageData + y*Foreg->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
-			printf(" \n");
+			//printf(" \n");
 			for (int x= 0; x<rect.width; x++){
-				printf(" %d ", ptr2[x]);
+				//printf(" %d ", ptr2[x]);
 				if ( ptr1[x] == 255 ){
 
 					z = z + ptr2[x]; // Sumatorio de los pesos
@@ -123,7 +101,7 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 			}
 		}
 		if ( z != 0) cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
-		printf("\nvector u:\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
+		printf("\n\nCentro (vector u):\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
 
 //		cvShowImage("Foreground", FGTemp);
 //		cvWaitKey(0);
@@ -134,9 +112,8 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 			for (int x= 0; x<rect.width; x++){
 
 				if ( ptr1[x] == 255 ){
-
-					//					vector_resta[0][0] = x - vector_u[0][0];
-					//					vector_resta[1][0] = y - vector_u[1][0];
+					//vector_resta[0][0] = x - vector_u[0][0];
+					//vector_resta[1][0] = y - vector_u[1][0];
 					*((float*)CV_MAT_ELEM_PTR( *vector_resta, 0, 0 )) = (x + rect.x) - CV_MAT_ELEM( *vector_u, float, 0,0 );
 					*((float*)CV_MAT_ELEM_PTR( *vector_resta, 1, 0 )) = y - CV_MAT_ELEM( *vector_u, float, 1,0 );
 					cvGEMM(vector_resta, vector_resta, ptr2[x] , NULL, 0, matrix_mul,CV_GEMM_B_T);// Multiplicar Matrices (pi-u)(pi-u)T
@@ -148,7 +125,7 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 
 		// Mostrar matriz de covarianza
 
-		printf("\n*****************************************");
+		printf("\nMatriz de covarianza");
 				for(int i=0;i<2;i++){
 					printf("\n");
 					for(int j=0;j<2;j++){
@@ -175,7 +152,7 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		semiejemenor=2*(sqrt(d2.val[0]));
 		tita=atan(r2.val[0]/r1.val[0]);
 
-		printf("\n EJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",2*semiejemayor,2*semiejemenor,tita);
+		printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",2*semiejemayor,2*semiejemenor,tita);
 
 		// Dibujar elipse
 
@@ -193,12 +170,8 @@ void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplIma
 		cvEllipse( FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
 		cvShowImage("Foreground", FGTemp);
 //		cvWaitKey(0);
-//		cvResetImageROI(FGTemp);
-//		cvResetImageROI(pesos);
 
-		cvReleaseMat(&vector_p);
 		cvReleaseMat(&vector_resta);
-		cvReleaseMat(&vector_tras);
 		cvReleaseMat(&matrix_mul);
 		cvReleaseMat(&MATRIX_C);
 		cvReleaseMat(&evects);
