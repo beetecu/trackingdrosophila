@@ -192,7 +192,8 @@ int main() {
 		/////// SEGMENTACION
 
 
-//		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
+
+		segmentacion(Imagen,Capa->BGModel,Capa->IDesv,Capa->FG,SegROI);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -266,7 +267,7 @@ int main() {
 //		cvShowImage("FG", bg_model->foreground);
 		//              cvShowImage( "Blobs",ImBlobs);
 		//              cvShowImage("Bina",ImThres);
-		cvShowImage( "Foreground",Capa->FG);
+//		cvShowImage( "Foreground",Capa->FG);
 //		cvWaitKey(0);
 #endif
 #if SHOW_OPTICAL_FLOW == 1
