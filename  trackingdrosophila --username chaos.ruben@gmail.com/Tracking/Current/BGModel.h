@@ -20,7 +20,7 @@
 #define MIN_CONTOUR_AREA  5
 // VARIABLES GLOBALES DE PROGRAMA //
 
-int FRAMES_TRAINING = 60;
+int FRAMES_TRAINING = 20;
 int HIGHT_THRESHOLD = 20;
 int LOW_THRESHOLD = 10;
 double ALPHA = 0 ;
@@ -49,8 +49,9 @@ IplImage *Imaskt;
 typedef struct {
 	IplImage* BGModel;  ///BackGround Model
 	IplImage* IDesv;
-	IplImage* OldFG; ///OldForeGround
-	IplImage* FG;  ///Foreground
+	IplImage* OldFG; ///OldForeGround ( objetos estáticos )
+	IplImage* FGTemp; /// Imagen a segmentar y validar
+	IplImage* FG;  ///Foreground ( objetos en movimiento )
 	IplImage* ImFMask; /// Mascara del plato
 	IplImage* ImRois;
 	IplImage* ImMotion;

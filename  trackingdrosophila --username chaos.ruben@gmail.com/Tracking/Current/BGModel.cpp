@@ -66,9 +66,10 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 
 
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
-//	cvShowImage( "Foreground",BGMod);
+//	cvShowImage( "Foreground",mask);
 //	cvWaitKey(0);
 	// Se actualiza el fondo usando la máscara.
+
 	for (int y = ImGray->roi->yOffset; y< ImGray->roi->yOffset + ImGray->roi->height; y++){
 		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ImGray->roi->xOffset);
 		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*mask->roi->xOffset);
@@ -85,10 +86,11 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 	//Estimamos la desviación típica
 	// La primera vez iniciamos la varianza al valor Idiff, que será un valor
 	//muy pequeño apropiado para fondos con poco movimiento (unimodales).
-	cvAbsDiff( ImGray, BGMod, Idiff);
 
+	cvAbsDiff( ImGray, BGMod, Idiff);
 	if ( first == 1 ){
 		cvCopy( Idiff, Ides);
+		cvAbsDiff( ImGray, BGMod, Idiff);
 		first = 0;
 	}
 	for (int y = Idiff->roi->yOffset; y< Idiff->roi->yOffset + Idiff->roi->height; y++){
@@ -158,7 +160,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 	cvReleaseImage( &ImTemp );
 
 }
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,CvRect dataroi){
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg, CvRect dataroi){
 
 
 	cvSetImageROI( ImGray, dataroi );

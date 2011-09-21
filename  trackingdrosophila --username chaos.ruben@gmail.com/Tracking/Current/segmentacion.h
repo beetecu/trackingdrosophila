@@ -18,6 +18,16 @@
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
 	IplImage *FGTemp = 0;
+	typedef struct {
+		IplImage* BGModel;  ///BackGround Model
+		IplImage* IDesv;
+		IplImage* OldFG; ///OldForeGround ( objetos estáticos )
+		IplImage* FGTemp; /// Imagen a segmentar y validar
+		IplImage* FG;  ///Foreground ( objetos en movimiento )
+		IplImage* ImFMask; /// Mascara del plato
+		IplImage* ImRois;
+		IplImage* ImMotion;
+	}STCapas;
 
 void segmentacion(IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi);
 
