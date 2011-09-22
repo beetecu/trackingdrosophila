@@ -53,6 +53,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	// Modelado de fondo
 
 	STCapas* Capa = NULL;
+	BGModelParams *BGParams = NULL;
 	int fr = 0;
 	int BGUpdate = 1;
 	int UpdateCount = 0;
@@ -112,7 +113,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	/// localiza en memoria las imágenes necesarias para la ejecución
 	void AllocateImages( IplImage* );
 
-
+	void SetBGModelParams( BGModelParams* Params);
 
 	/** Recibe la imagen del video y devuelve la imagen en un canal de niveles
 	    de gris filtrada con el plato extraido **/
