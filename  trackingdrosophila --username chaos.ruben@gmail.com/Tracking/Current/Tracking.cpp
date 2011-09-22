@@ -202,7 +202,7 @@ int main() {
 
 		gettimeofday(&ti, NULL);
 		printf( " Iniciando segmentación...\n");
-		segmentacion(Imagen, Capa);
+		segmentacion(Imagen, Capa, Flat->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
