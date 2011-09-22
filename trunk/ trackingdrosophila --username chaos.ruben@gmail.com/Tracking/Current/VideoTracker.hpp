@@ -26,10 +26,10 @@
 #define CVX_BLACK CV_RGB(0,0,0)
 
 //Opciones de visualización
-#define CREATE_TRACKBARS 1 ///<- switch from 0 to 1 para visualizar trackbars
-#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground
-#define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
-#define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico
+#define CREATE_TRACKBARS 0 ///<- switch from 0 to 1 para visualizar trackbars.
+#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
+#define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado.
+#define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
 
 #ifndef DEFINICION_DE_ESTRUCTURAS
 #define DEFINICION_DE_ESTRUCTURAS

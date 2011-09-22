@@ -12,9 +12,9 @@
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
-	IplImage *FGTemp = 0;
 
-void segmentacion( IplImage *Brillo, STCapas* Capa){
+
+void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 
 	// CREAR IMAGENES
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
@@ -33,6 +33,15 @@ void segmentacion( IplImage *Brillo, STCapas* Capa){
 
 	cvCopy(Capa->FG,Capa->FGTemp);
 
+	cvSetImageROI( Brillo , Roi);
+		cvSetImageROI( Capa->BGModel, Roi );
+		cvSetImageROI( Capa->IDesv, Roi );
+		cvSetImageROI( Capa->FG, Roi );
+		cvSetImageROI( Capa->FGTemp, Roi );
+		cvSetImageROI( IDif, Roi );
+		cvSetImageROI( IDifm, Roi );
+		cvSetImageROI( pesos, Roi );
+
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores, ejes de la elipse.
 	CvScalar r1,r2; // valores de la matriz de los eigen vectores, orientación.
@@ -41,7 +50,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa){
 
 	CvMemStorage* storage = cvCreateMemStorage();
 	CvSeq* first_contour=NULL;
-
+	// Distancia normalizada de cada pixel a su modelo de fondo.
 	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv(IDifm,Capa->IDesv,pesos);// Calcular
@@ -51,7 +60,13 @@ void segmentacion( IplImage *Brillo, STCapas* Capa){
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
-	int Nc = cvFindContours(Capa->FGTemp,storage,&first_contour,sizeof(CvContour),CV_RETR_EXTERNAL);
+	int Nc = cvFindContours(Capa->FGTemp,
+			storage,
+			&first_contour,
+			sizeof(CvContour),
+			CV_RETR_EXTERNAL,
+			CV_CHAIN_APPROX_SIMPLE,
+			cvPoint(Roi.x,Roi.y));
 	printf( "\n Total Contornos Detectados: %d\n", Nc );
 
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
@@ -157,19 +172,27 @@ void segmentacion( IplImage *Brillo, STCapas* Capa){
 		// Dibujar elipse
 
 		//Eliminamos el blob
-//		Segroi=cvRect(rect.x,rect.y,rect.width,rect.height);
-		cvSetImageROI( Capa->FGTemp, rect );
-		cvZero( Capa->FGTemp );
-		cvResetImageROI( Capa->FGTemp);
+
+		for (int y = rect.y; y< rect.y + rect.height; y++){
+					uchar* ptr1 = (uchar*) ( Capa->FGTemp->imageData + y*Capa->FGTemp->widthStep + 1*rect.x);
+					for (int x= 0; x<rect.width; x++){
+						ptr1[x] = 0;
+					}
+		}
+//		cvSetImageROI( Capa->FGTemp, rect );
+//		cvZero( Capa->FGTemp );
+//		cvResetImageROI( Capa->FGTemp);
 		// Obtenemos el centro de la elipse
+		cvResetImageROI( Capa->FGTemp ); // para evitar el offset de find contours
 		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
 				cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
-		// Obtenemos los ejes y la orientacion en radianes
+		// Obtenemos los ejes y la orientacion en grados
 		axes = cvSize( 2*cvRound(semiejemayor) , 2*cvRound(semiejemenor) );
 		tita = (tita*180)/PI;
 		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
-		cvShowImage("Foreground", Capa->FGTemp);
+//		cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
+		cvSetImageROI( Capa->FGTemp, Roi );
 
 		cvReleaseMat(&vector_resta);
 		cvReleaseMat(&matrix_mul);
@@ -185,6 +208,15 @@ void segmentacion( IplImage *Brillo, STCapas* Capa){
 	cvReleaseImage(&IDif);
 	cvReleaseImage(&IDifm);
 	cvReleaseImage(&pesos);
+
+
+	cvResetImageROI( Brillo );
+	cvResetImageROI( Capa->BGModel );
+	cvResetImageROI( Capa->IDesv );
+	cvResetImageROI( Capa->FG );
+	cvResetImageROI( Capa->FGTemp );
+
+	cvShowImage("Foreground", Capa->FGTemp);
 
 }//Fin de la función
 

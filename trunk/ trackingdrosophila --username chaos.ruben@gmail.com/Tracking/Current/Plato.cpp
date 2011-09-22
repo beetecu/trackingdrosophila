@@ -59,8 +59,7 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 		// Filtrado gaussiano 5x
 		cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
 
-		cvShowImage("Foreground",Im);
-		cvWaitKey(0);
+
 		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,300, 150,
 				cvRound( Im->height/2 ));
 		int i;
