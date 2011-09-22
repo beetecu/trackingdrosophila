@@ -29,4 +29,34 @@
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico
 
+#ifndef DEFINICION_DE_ESTRUCTURAS
+#define DEFINICION_DE_ESTRUCTURAS
+
+	typedef struct Moscas{
+
+		int etiqueta;
+		CvPoint posicion;
+		float area;
+		float orientacion;
+		CvRect DataRoi;
+		float velocidad;
+		float VV,VH;
+		CvPoint moment[8000];
+		CvPoint2D32f punto1,punto2;
+
+	}STMoscas;
+
+	typedef struct {
+		IplImage* BGModel;  ///BackGround Model
+		IplImage* IDesv;
+		IplImage* OldFG; ///OldForeGround ( objetos estáticos )
+		IplImage* FGTemp; /// Imagen a segmentar y validar
+		IplImage* FG;  ///Foreground ( objetos en movimiento )
+		IplImage* ImFMask; /// Mascara del plato
+		IplImage* ImRois;
+		IplImage* ImMotion;
+	}STCapas;
+
+#endif
+
 #endif /* VIDEOTRACKER_HPP_ */

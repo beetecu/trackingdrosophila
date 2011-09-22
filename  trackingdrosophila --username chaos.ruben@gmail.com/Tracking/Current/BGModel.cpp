@@ -12,6 +12,32 @@
 
 #include "BGModel.h"
 
+int FRAMES_TRAINING = 20;
+int HIGHT_THRESHOLD = 20;
+int LOW_THRESHOLD = 10;
+double ALPHA = 0 ;
+
+int g_slider_position = 50;
+
+// Float 1-Channel
+IplImage *Imedian;
+IplImage *ImedianF;
+IplImage *IdiffF;
+IplImage *Idiff;
+IplImage *IdesF; /// Desviación típica. Coma flotante 32 bit
+IplImage *Ides; /// Desviación típica.
+IplImage *IvarF; /// Varianza
+IplImage *Ivar;
+IplImage *IhiF; /// La mediana mas x veces la desviación típica
+IplImage *IlowF; /// La mediana menos x veces la desviación típica
+
+
+//Byte 1-Channel
+IplImage *ImGray; /// Imagen preprocesada
+IplImage *ImGrayF; /// Imagen preprocesada float
+IplImage *Imaskt;
+
+
 void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,CvRect ROI){
 
 	int num_frames = 0;

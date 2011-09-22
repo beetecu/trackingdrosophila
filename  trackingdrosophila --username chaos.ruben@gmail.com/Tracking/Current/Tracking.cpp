@@ -7,8 +7,11 @@
  *      Author: chao
  */
 
+#include "VideoTracker.hpp"
+#include "BGModel.h"
 #include "Tracking.h"
-//#include "segmentacion.h"
+#include "segmentacion.h"
+#include "ShapeModel.hpp"
 
 using namespace cv;
 using namespace std;
@@ -23,7 +26,7 @@ int main() {
 	gettimeofday(&tf, NULL);
 	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 			(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf(" %5.4g milisegundos\n", TiempoParcial);
+	printf(" %5.4g ms\n", TiempoParcial);
 
 	g_capture = NULL;
 	g_capture = cvCaptureFromAVI( "Drosophila.avi" );
@@ -134,7 +137,7 @@ int main() {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\nPreprocesado: %5.4g milisegundos\n", TiempoParcial);
+		printf("\nPreprocesado: %5.4g ms\n", TiempoParcial);
 
 		////////////// PROCESADO ///////////////
 
@@ -152,7 +155,7 @@ int main() {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Background update: %5.4g milisegundos\n", TiempoParcial);
+		printf("Background update: %5.4g ms\n", TiempoParcial);
 
 //		cvShowImage( "Foreground",Capa->BGModel);
 #if CREATE_TRACKBARS == 1
@@ -176,7 +179,7 @@ int main() {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 						(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Obtención de máscara de Foreground : %5.4g milisegundos\n", TiempoParcial);
+		printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
 		/////// EIMINACIÓN DE SOMBRAS
 		// Performs FG post-processing using segmentation
 		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
@@ -197,9 +200,9 @@ int main() {
 		segmentacion(Imagen, Capa ,SegROI);
 
 		gettimeofday(&tf, NULL);
-				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
-				printf("\n\nSegmentación finalizada : %5.4g milisegundos\n", TiempoParcial);
+		printf("\n\nSegmentación finalizada : %5.4g milisegundos\n", TiempoParcial);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -219,6 +222,13 @@ int main() {
 		//       CreateRois( Imagen, Capa->ImRois);
 
 		/////// VALIDACIÓN
+		gettimeofday(&ti, NULL);
+		printf( " Iniciando validación...\n");
+//		validacion(Imagen, Capa ,SegROI);
+		gettimeofday(&tf, NULL);
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+								(tf.tv_usec - ti.tv_usec)/1000.0;
+		printf("\n\nValidación finalizada : %5.4g ms\n", TiempoParcial);
 
 		/////// TRACKING
 		gettimeofday(&ti, NULL);
@@ -233,7 +243,7 @@ int main() {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 												(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\nTracking: %5.4g milisegundos\n", TiempoParcial);
+		printf("\nTracking: %5.4g ms\n", TiempoParcial);
 
 		/*                                                              */
 		/////// VISUALIZACION ////////////
@@ -294,9 +304,9 @@ int main() {
 		printf("\n//////////////////////////////////////////////////\n");
 	}
 
-	/********************************************
-	 /			 ANALISIS ESTADÍSTICO 			/
-	  /****************************************/
+	/*oooooooooooooooooooooooooooooooooooooooooo*/
+	 /*o			ANALISIS ESTADÍSTICO      o*/
+	  /*oooooooooooooooooooooooooooooooooooooo*/
 
 	printf( "Rastreo finalizado con éxito ..." );
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
@@ -319,7 +329,6 @@ void AllocateImages( IplImage* I ){
 
 	CvSize sz = cvGetSize( I );
 
-
 	Capa->BGModel = cvCreateImage(sz,8,1);
 	Capa->FG = cvCreateImage(sz,8,1);
 	Capa->FGTemp = cvCreateImage(sz,8,1);
@@ -338,8 +347,6 @@ void AllocateImages( IplImage* I ){
 	cvZero( Capa->OldFG );
 	cvZero( Capa->ImMotion );
 	Capa->ImMotion->origin = I->origin;
-
-
 
 	BGTemp = cvCreateImage( sz,8,1);
 	DETemp = cvCreateImage( sz,8,1);
@@ -398,8 +405,6 @@ void CreateWindows( ){
     //	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);
 
 }
-
-
 // Destruccion de ventanas
 void DestroyWindows( ){
 	cvDestroyWindow( "Drosophila.avi" );
