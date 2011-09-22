@@ -9,6 +9,10 @@
 #include "segmentacion.h"
 #include "math.h"
 
+	IplImage *IDif = 0;
+	IplImage *IDifm = 0;
+	IplImage *pesos = 0;
+	IplImage *FGTemp = 0;
 
 void segmentacion( IplImage *Brillo, STCapas* Capa, CvRect Segroi){
 

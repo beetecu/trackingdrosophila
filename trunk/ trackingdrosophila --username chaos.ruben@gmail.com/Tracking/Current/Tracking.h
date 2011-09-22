@@ -9,13 +9,10 @@
 #define TRACKING_H_
 
 #include <time.h>
-#include "VideoTracker.hpp"
 #include <sys/time.h>
 #include <BlobResult.h>
 #include "Interfaz_Lista.h"
 #include "Libreria.h"
-
-
 
 using namespace cv;
 using namespace std;
@@ -42,7 +39,6 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	double TotalFrames = 0;
 	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
 
-
 	//HightGui
 	int g_slider_pos = 0;
 
@@ -54,6 +50,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	static CvRect SegROI;
 
 	// Modelado de fondo
+
+	STCapas* Capa = NULL;
 	int fr = 0;
 	int BGUpdate = 1;
 	int UpdateCount = 0;
@@ -100,41 +98,6 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 #endif
 
-// DEFINICIÓN DE ESTRUCTURAS
-
-#ifndef DEFINICION_DE_ESTRUCTURAS
-#define DEFINICION_DE_ESTRUCTURAS
-
-	// Capas
-	typedef struct {
-		IplImage* BGModel;  ///BackGround Model
-		IplImage* IDesv;
-		IplImage* OldFG; ///OldForeGround ( objetos estáticos )
-		IplImage* FGTemp; /// Imagen a segmentar y validar
-		IplImage* FG;  ///Foreground ( objetos en movimiento )
-		IplImage* ImFMask; /// Mascara del plato
-		IplImage* ImRois;
-		IplImage* ImMotion;
-	}STCapas;
-
-	STCapas* Capa = NULL;
-
-	typedef struct Moscas{
-
-			int etiqueta;
-			CvPoint posicion;
-			float area;
-			float orientacion;
-			CvRect DataRoi;
-			float velocidad;
-			float VV,VH;
-			CvPoint moment[8000];
-			CvPoint2D32f punto1,punto2;
-
-	}STMoscas;
-
-#endif
-
 //PROTOTIPOS DE FUNCIONES
 //#ifndef PROTOTIPOS_DE_FUNCIONES
 //#define PROTOTIPOS_DE_FUNCIONES
@@ -160,26 +123,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	/** Crea un modelo de fondo gaussiano usando la mediana. Establece los umbrales
 	 de binarización. **/
 
-	void AllocateImagesBGM( IplImage *I );
-
-	void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask, CvRect ROI);
-
-	void ShapeModel( CvCapture* g_capture, int* FlyAreaMed, int* FlyAreaDes, IplImage* ImMask,CvRect ROI );
-
-	void UpdateBGModel(IplImage * tmp_frame,IplImage* BGModel,IplImage* DESVI, CvRect DataROI,IplImage* Mask );
-
-	void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides, IplImage* fg, CvRect dataroi );
-
-	void segmentacion(IplImage *Brillo,STCapas* Capa,CvRect Segroi);
-
 	void MotionTemplate( IplImage* img, IplImage* dst);
 
 	void OpticalFlowLK( IplImage* ImLast, IplImage* velX, IplImage* velY);
-
-
-
-	void DeallocateImagesBGM();
-
 
 	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STMoscas**, Lista );
 
