@@ -10,14 +10,7 @@
  *      Author: chao
  */
 
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-#include <stdio.h>
-#include <math.h>
-
-//#include "Tracking0_2.h"
+#include "Plato.hpp"
 
 using namespace cv;
 using namespace std;
@@ -25,8 +18,9 @@ using namespace std;
 #define MAX_FRAMES_LEARNING
 
 void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
-				int* centro_x, int* centro_y, int* radio){
+				STFlat* Flat){
 
+	//int* centro_x, int* centro_y, int* radio
 	CvMemStorage* storage = cvCreateMemStorage(0);
 	CvSeq* circles = NULL;
 	IplImage* Im;
@@ -65,6 +59,8 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 		// Filtrado gaussiano 5x
 		cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
 
+		cvShowImage("Foreground",Im);
+		cvWaitKey(0);
 		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,300, 150,
 				cvRound( Im->height/2 ));
 		int i;
@@ -80,10 +76,10 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 				) continue;
 
 			 // Buscamos el de mayor radio de entre todos los frames;
-			 if (  *radio < cvRound( p[2] ) ){
-				 *radio = cvRound( p[2] );
-				 *centro_x = cvRound( p[0] );
-				 *centro_y = cvRound( p[1] );
+			 if (  Flat->PRadio < cvRound( p[2] ) ){
+				 Flat->PRadio = cvRound( p[2] );
+				 Flat->PCentroX = cvRound( p[0] );
+				 Flat->PCentroY = cvRound( p[1] );
 			 }
 		}
 		num_frames +=1;
@@ -93,8 +89,11 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 
 	printf("\nPlato localizado : ");
 	printf("Centro x : %d , Centro y %d : , Radio: %d \n"
-			,*centro_x,*centro_y, *radio);
-
+			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
+	Flat->DataFROI = cvRect(Flat->PCentroX-Flat->PRadio,
+					Flat->PCentroY-Flat->PRadio,
+					2*Flat->PRadio,
+					2*Flat->PRadio ); // Datos para establecer ROI del plato
 	// Creacion de mascara
 
 	printf("Creando máscara del plato... ");
@@ -105,9 +104,9 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 		uchar* ptr = (uchar*) ( Cap->imageData + y*Cap->widthStep);
 		// Los pixeles fuera del plato se ponen a 0;
 		for (int x= 0; x<Cap->width; x++){
-			if ( sqrt( pow( abs( x - *centro_x ) ,2 )
-					+ pow( abs( y - *centro_y ), 2 ) )
-					> *radio) ptr[x] = 255;
+			if ( sqrt( pow( abs( x - Flat->PCentroX ) ,2 )
+					+ pow( abs( y - Flat->PCentroY  ), 2 ) )
+					> Flat->PRadio) ptr[x] = 255;
 			else	ptr[x] = 0;
 		}
 	}

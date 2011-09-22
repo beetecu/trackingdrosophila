@@ -16,6 +16,8 @@
 #include <fstream>
 #include <math.h>
 #include <opencv2/video/background_segm.hpp>
+#include "Errores.hpp"
+#include "Libreria.h"
 
 #define CVX_RED CV_RGB(255,0,0)
 #define CVX_BLUE CV_RGB(0,0,255)
@@ -33,7 +35,6 @@
 #define DEFINICION_DE_ESTRUCTURAS
 
 	typedef struct Moscas{
-
 		int etiqueta;
 		CvPoint posicion;
 		float area;
@@ -43,12 +44,11 @@
 		float VV,VH;
 		CvPoint moment[8000];
 		CvPoint2D32f punto1,punto2;
-
 	}STMoscas;
 
 	typedef struct {
 		IplImage* BGModel;  ///BackGround Model
-		IplImage* IDesv;
+		IplImage* IDesv;	/// Desviación tipica del modelo de fondo
 		IplImage* OldFG; ///OldForeGround ( objetos estáticos )
 		IplImage* FGTemp; /// Imagen a segmentar y validar
 		IplImage* FG;  ///Foreground ( objetos en movimiento )
@@ -56,6 +56,21 @@
 		IplImage* ImRois;
 		IplImage* ImMotion;
 	}STCapas;
+
+	/// Estructura para el modelo del plato
+
+	typedef struct {
+		int PCentroX ;
+		int PCentroY ;
+		int PRadio ;
+		CvRect DataFROI;
+	}STFlat;
+
+		/// Estructura para el modelo de forma
+	typedef struct {
+		int FlyAreaMed ;
+		int FlyAreaDes ;
+	}SHModel;
 
 #endif
 

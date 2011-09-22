@@ -8,11 +8,15 @@
 #ifndef TRACKING_H_
 #define TRACKING_H_
 
+#include "VideoTracker.hpp"
+#include "BGModel.h"
 #include <time.h>
 #include <sys/time.h>
 #include <BlobResult.h>
 #include "Interfaz_Lista.h"
-#include "Libreria.h"
+#include "segmentacion.h"
+#include "ShapeModel.hpp"
+#include "Plato.hpp"
 
 using namespace cv;
 using namespace std;
@@ -42,11 +46,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	//HightGui
 	int g_slider_pos = 0;
 
-	// Plato
-	int PCentroX;
-	int PCentroY;
-	int PRadio;
-	static CvRect DataFROI;
+	// Modelo del Plato
+	STFlat* Flat;
 	static CvRect SegROI;
 
 	// Modelado de fondo
@@ -61,7 +62,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	// Modelado de forma
 
-	int FlyAreaMed, FlyAreaDes;
+	SHModel* Shape;
 
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
 //	IplImage *ImHiThr;
@@ -111,8 +112,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	/// localiza en memoria las imágenes necesarias para la ejecución
 	void AllocateImages( IplImage* );
 
-	/// Busca el plato y crea la máscara
-	void MascaraPlato(CvCapture*,IplImage*, int*, int*, int*);
+
 
 	/** Recibe la imagen del video y devuelve la imagen en un canal de niveles
 	    de gris filtrada con el plato extraido **/
@@ -136,9 +136,6 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	/// Limpia de la memoria las imagenes usadas durante la ejecución
 	void DeallocateImages( void );
-
-	/// Contiene los tipos de errores
-	void error(int);
 
 	/// Función para obtener el número de frames en algunos S.O Linux
 	int getAVIFrames( char* );

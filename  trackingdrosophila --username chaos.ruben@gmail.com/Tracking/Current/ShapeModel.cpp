@@ -7,7 +7,7 @@
 
 #include "ShapeModel.hpp"
 
-void ShapeModel( CvCapture* g_capture, int* FlyAreaMed, int* FlyAreaDes,IplImage* ImMask, CvRect ROI ){
+void ShapeModel( CvCapture* g_capture, SHModel* SH,IplImage* ImMask, CvRect ROI ){
 
 	int num_frames = 0;
 
