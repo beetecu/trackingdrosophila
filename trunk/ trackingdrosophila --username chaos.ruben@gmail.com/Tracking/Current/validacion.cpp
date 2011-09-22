@@ -4,7 +4,8 @@
  *  Created on: 22/09/2011
  *      Author: chao
  */
-
+// OJO en limpieza de foreground se hace un filtrado por area
+// Creo que hay que añadir en limpieza de fg el uso de roi.
 #include "validacion.hpp"
 
 void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi){
@@ -47,4 +48,6 @@ void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi){
 		//			cvResetImageROI( Idiff);
 		//			cvResetImageROI( DES );
 		//		}
+
+
 }

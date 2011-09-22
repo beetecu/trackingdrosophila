@@ -50,6 +50,9 @@ int main() {
 	Shape = ( SHModel *) malloc( sizeof( SHModel));
 	Shape->FlyAreaDes = 0;
 	Shape->FlyAreaMed = 0;
+	// Iniciar estructura para parametros del modelo de fondo
+	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
+
 	// Iniciar estructura para almacerar datos de blobs
 	STMoscas *mosca=NULL;
 	Lista llse; // Apuntará al primer elemento de la lista lineal
@@ -104,8 +107,9 @@ int main() {
 		if (!hecho) {
 			printf("Creando modelo de fondo..... ");
 			gettimeofday(&ti, NULL);
-
-			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, Flat->DataFROI);
+			// establecer parametros
+			SetBGModelParams( BGParams);
+			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, BGParams, Flat->DataFROI);
 			FrameCount = cvGetCaptureProperty( g_capture, 1 );
 
 			gettimeofday(&tf, NULL);
@@ -152,9 +156,10 @@ int main() {
 		cvCopy(Capa->IDesv,DETemp);
 
 		// Primera actualización del fondo
-
+		// establecer parametros
+		SetBGModelParams( BGParams);
 		if ( UpdateCount == BGUpdate ){
-			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, Flat->DataFROI, 0 );
+			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, 0 );
 			UpdateCount = 0;
 		}
 		gettimeofday(&tf, NULL);
@@ -172,15 +177,15 @@ int main() {
 
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , Flat->DataFROI);
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( UpdateCount == 0 ){
-				UpdateBGModel( Imagen, BGTemp,DETemp, Flat->DataFROI, Capa->FG );
+				UpdateBGModel( Imagen, BGTemp,DETemp, BGParams, Flat->DataFROI, Capa->FG );
 		}
 		cvCopy( BGTemp, Capa->BGModel);
 		cvCopy( DETemp, Capa->IDesv);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , Flat->DataFROI);
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 						(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -464,4 +469,14 @@ void mostrarLista(Lista *lista)
 		printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Mosca->VV,Mosca->VH,Mosca->punto1.x );
 		i++;
 	}
+}
+void SetBGModelParams( BGModelParams* Params){
+	 Params->FRAMES_TRAINING = 20;
+	 Params->HIGHT_THRESHOLD = 20;
+	 Params->LOW_THRESHOLD = 10;
+	 Params->ALPHA = 0 ;
+	 Params->MORFOLOGIA = 1;
+	 Params->CVCLOSE_ITR = 1;
+	 Params->MAX_CONTOUR_AREA = 200 ;
+	 Params->MIN_CONTOUR_AREA = 5;
 }

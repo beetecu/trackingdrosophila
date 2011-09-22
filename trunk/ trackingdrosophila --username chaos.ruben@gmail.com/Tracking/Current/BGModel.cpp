@@ -12,10 +12,10 @@
 
 #include "BGModel.h"
 
-int FRAMES_TRAINING = 20;
-int HIGHT_THRESHOLD = 20;
-int LOW_THRESHOLD = 10;
-double ALPHA = 0 ;
+//int FRAMES_TRAINING = 20;
+//int HIGHT_THRESHOLD = 20;
+//int LOW_THRESHOLD = 10;
+//double ALPHA = 0 ;
 
 int g_slider_position = 50;
 
@@ -38,13 +38,13 @@ IplImage *ImGrayF; /// Imagen preprocesada float
 IplImage *Imaskt;
 
 
-void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,CvRect ROI){
+void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,BGModelParams* Param,CvRect ROI){
 
 	int num_frames = 0;
 
 	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 
-	while( num_frames < FRAMES_TRAINING ){
+	while( num_frames < Param->FRAMES_TRAINING ){
 		IplImage* frame = cvQueryFrame( t_capture );
 		if ( !frame ) {
 			error(2);
@@ -147,16 +147,16 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 
 }
 
-void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, CvRect DataROI, IplImage* Mask){
+void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
 
 	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,DESVI, DataROI , 0);
 	else accumulateBackground( tmp_frame, BGModel,DESVI, DataROI ,Mask);
 
-//	RunningBGGModel( tmp_frame, BGModel, Ides, DataROI );
+//	RunningBGGModel( tmp_frame, BGModel, Ides, Param->ALPHA,DataROI );
 //	RunningVariance
 
 }
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect dataroi ){
+void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, double ALPHA,CvRect dataroi ){
 
 	IplImage* ImTemp;
 	CvSize sz = cvGetSize( Image );
@@ -186,7 +186,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, CvRect
 	cvReleaseImage( &ImTemp );
 
 }
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg, CvRect dataroi){
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,BGModelParams* Param, CvRect dataroi){
 
 
 	cvSetImageROI( ImGray, dataroi );
@@ -212,7 +212,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 			// Si la desviación tipica del pixel supera en HiF veces la
 			// desviación típica del modelo, el pixel se clasifica como
 			//foreground ( 255 ), en caso contrario como background
-			if ( ptr3[x] > LOW_THRESHOLD*ptr4[x] ) ptr5[x] = 255;
+			if ( ptr3[x] > Param->LOW_THRESHOLD*ptr4[x] ) ptr5[x] = 255;
 			else ptr5[x] = 0;
 		}
 	}
@@ -220,11 +220,11 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 #if CREATE_TRACKBARS == 1
 		cvCreateTrackbar( "HighT",
 						  "Foreground",
-						  &HIGHT_THRESHOLD,
+						  &Param->HIGHT_THRESHOLD,
 						  100  );
 		cvCreateTrackbar( "LowT",
 						  "Foreground",
-						  &LOW_THRESHOLD,
+						  &Param->LOW_THRESHOLD,
 						  100  );
 		cvCreateTrackbar( "ALPHA",
 						  "Foreground",
@@ -239,7 +239,9 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 		cvResetImageROI( Idiff );
 		cvResetImageROI( Ides );
 
-	FGCleanup( fg, Ides );
+
+		FGCleanup( fg, Ides,Param );
+
 
 
 
@@ -247,18 +249,18 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //	cvShowImage( "Foreground",fg);
 //	cvWaitKey(0);
 }
-void FGCleanup( IplImage* FG, IplImage* DES){
+void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param){
 
 	static CvMemStorage* mem_storage = NULL;
 	static CvSeq* contours = NULL;
 
 	// Aplicamos morfologia: Erosión y dilatación
-	IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
-
-	cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , CVCLOSE_ITR);
-	cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, CVCLOSE_ITR );
-	cvReleaseStructuringElement( &KernelMorph );
-
+	if( Param->MORFOLOGIA == true){
+		IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
+		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , Param->CVCLOSE_ITR );
+		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, Param->CVCLOSE_ITR );
+		cvReleaseStructuringElement( &KernelMorph );
+	}
 	// Buscamos los contornos cuya area se encuentre en un rango determinado
 	if( mem_storage == NULL ){
 		mem_storage = cvCreateMemStorage(0);
@@ -276,7 +278,7 @@ void FGCleanup( IplImage* FG, IplImage* DES){
 		double area = cvContourArea( c );
 		area = fabs( area );
 
-		if ( (area < MIN_CONTOUR_AREA) || (area > MAX_CONTOUR_AREA) ) {
+		if ( (area < Param->MIN_CONTOUR_AREA) || (area > Param->MAX_CONTOUR_AREA) ) {
 			flag = 1;
 		}
 		else{
@@ -297,7 +299,7 @@ void FGCleanup( IplImage* FG, IplImage* DES){
 					// Si alguno de los pixeles del blob supera en HiF veces la
 					// desviación típica del modelo,desactivamos el flag para no
 					// eliminar el contorno
-					if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ){
+					if ( ptr3[x] > Param->HIGHT_THRESHOLD*ptr4[x] ){
 						flag = 0;
 						break;
 					}
@@ -327,9 +329,9 @@ void FGCleanup( IplImage* FG, IplImage* DES){
 	}
 }
 
-void onTrackbarSlide(int pos) {
-   ALPHA = pos / 100;
-}
+//void onTrackbarSlide(int pos) {
+//   ALPHA = pos / 100;
+//}
 void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation purposes
 
         CvSize sz = cvGetSize( I );

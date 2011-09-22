@@ -15,9 +15,22 @@
 //#define HIGHT_THRESHOLD 3 // Umbral para la resta de fondo
 //#define LOW_THRESHOLD 3
 //#define ALPHA 0.5	// Parámetro para actualización dinámica del modelo
-#define CVCLOSE_ITR 1
-#define MAX_CONTOUR_AREA  200
-#define MIN_CONTOUR_AREA  5
+//#define CVCLOSE_ITR 1
+//#define MAX_CONTOUR_AREA  200
+//#define MIN_CONTOUR_AREA  5
+
+typedef struct{
+	//Parametros del modelo
+	int FRAMES_TRAINING ;
+	int HIGHT_THRESHOLD;
+	int LOW_THRESHOLD ;
+	double ALPHA;
+	//Parametros de limpieza de foreground
+	bool MORFOLOGIA ; // si esta a 1 se aplica erosión y cierre
+	int CVCLOSE_ITR ;
+	int MAX_CONTOUR_AREA;
+	int MIN_CONTOUR_AREA;
+}BGModelParams;
 
 // PROTOTIPOS DE FUNCIONES //
 
@@ -29,7 +42,7 @@
 	  \param BG : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
 	  \param ImMask : Máscara  de 8 bit de niveles de gris para el preprocesdo (extraccion del plato).
 	*/
-void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,CvRect ROI);
+void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,BGModelParams* Param, CvRect ROI);
 
 IplImage* getBinaryImage(IplImage * image);
 //! \brief Recibe una imagen en escala de grises preprocesada. En la primera ejecución inicializa el modelo. Estima a la mediana
@@ -56,7 +69,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
       \param DataROI: Contiene los datos para establecer la ROI
       \param Mask: Nos permite actualizar el fondo de forma selectiva.
     */
-void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI, CvRect DataROI, IplImage* Mask = NULL);
+void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI,BGModelParams* Param,  CvRect DataROI, IplImage* Mask = NULL);
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
 /*!
@@ -66,7 +79,7 @@ void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI, CvRe
 
     */
 
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRect dataroi );
+void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT,double ALPHA, CvRect dataroi );
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano.
 //! Se establece un umbral bajo ( LOW_THRESHOLD ) para los valores de la normal
 //! tipificada a partir del cual el píxel es foreground ( 255 )
@@ -76,7 +89,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT, CvRec
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
       \param DataROI: Contiene los datos para establecer la ROI
     */
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg, CvRect dataroi);
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,BGModelParams* Param, CvRect dataroi);
 
 //! \brief Aplica Componentes conexas para limpieza de la imagen:
 //! - Realiza operaciones de morphologia para elimirar ruido.
@@ -90,7 +103,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
       \param FG : Imagen fuente de 8 bit de niveles de gris que contine la imagen a limpiar
 
     */
-void FGCleanup( IplImage* FG, IplImage* DES);
+void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param);
 
 void onTrackbarSlide(int pos);
 void error(int err);
