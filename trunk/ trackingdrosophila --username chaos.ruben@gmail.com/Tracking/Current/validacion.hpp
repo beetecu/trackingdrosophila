@@ -12,6 +12,6 @@
 #include "segmentacion.h"
 #include "BGModel.h"
 
-void validacion(IplImage *Imagen, STCapas* Capa, CvRect Segroi);
+void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi);
 
 #endif /* VALIDACION_HPP_ */

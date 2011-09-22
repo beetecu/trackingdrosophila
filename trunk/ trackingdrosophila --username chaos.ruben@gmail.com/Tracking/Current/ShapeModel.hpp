@@ -15,6 +15,6 @@
 
 #define SM_FRAMES_TRAINING 50
 
-void ShapeModel( CvCapture* g_capture, int* FlyAreaMed, int* FlyAreaDes,IplImage* ImMask, CvRect ROI );
+void ShapeModel( CvCapture* g_capture, SHModel *SH,IplImage* ImMask, CvRect ROI );
 
 #endif /* SHAPEMODEL_HPP_ */

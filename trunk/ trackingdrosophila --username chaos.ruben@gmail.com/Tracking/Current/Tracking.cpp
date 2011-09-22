@@ -7,11 +7,7 @@
  *      Author: chao
  */
 
-#include "VideoTracker.hpp"
-#include "BGModel.h"
 #include "Tracking.h"
-#include "segmentacion.h"
-#include "ShapeModel.hpp"
 
 using namespace cv;
 using namespace std;
@@ -45,6 +41,15 @@ int main() {
 	// Iniciar estructura para almacenar las Capas
 	Capa = ( STCapas *) malloc( sizeof( STCapas));
 
+	// Iniciar estructura para modelo de plato
+	Flat = ( STFlat *) malloc( sizeof( STFlat));
+	Flat->PCentroX = 0;
+	Flat->PCentroY = 0;
+	Flat->PRadio = 0;
+	// Iniciar estructura para modelo de forma
+	Shape = ( SHModel *) malloc( sizeof( SHModel));
+	Shape->FlyAreaDes = 0;
+	Shape->FlyAreaMed = 0;
 	// Iniciar estructura para almacerar datos de blobs
 	STMoscas *mosca=NULL;
 	Lista llse; // Apuntará al primer elemento de la lista lineal
@@ -81,13 +86,13 @@ int main() {
 			printf("Localizando plato... ");
 			gettimeofday(&ti, NULL);
 
-			MascaraPlato( g_capture, Capa->ImFMask, &PCentroX, &PCentroY, &PRadio );
+			MascaraPlato( g_capture, Capa->ImFMask, Flat );
 
-			if ( PRadio == 0  ) {
+			if ( Flat->PRadio == 0  ) {
 				error(3);
 				break;
 			}
-			DataFROI = cvRect(PCentroX-PRadio, PCentroY-PRadio, 2* PRadio, 2*PRadio ); // Datos para establecer ROI del plato
+
 			gettimeofday(&tf, NULL);
 			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 														(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -100,7 +105,7 @@ int main() {
 			printf("Creando modelo de fondo..... ");
 			gettimeofday(&ti, NULL);
 
-			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, DataFROI);
+			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, Flat->DataFROI);
 			FrameCount = cvGetCaptureProperty( g_capture, 1 );
 
 			gettimeofday(&tf, NULL);
@@ -117,7 +122,7 @@ int main() {
 			printf("Creando modelo de forma..... ");
 			gettimeofday(&ti, NULL);
 
-			ShapeModel( g_capture, &FlyAreaMed, & FlyAreaDes, Capa->ImFMask, DataFROI );
+			ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
 
 			FrameCount = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
 			gettimeofday(&tf, NULL);
@@ -132,7 +137,7 @@ int main() {
 		// Modelado de fondo para detección de movimiento
 		gettimeofday(&ti, NULL);
 
-		PreProcesado( frame, Imagen, Capa->ImFMask, 0, DataFROI);
+		PreProcesado( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -149,7 +154,7 @@ int main() {
 		// Primera actualización del fondo
 
 		if ( UpdateCount == BGUpdate ){
-			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, DataFROI, 0 );
+			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, Flat->DataFROI, 0 );
 			UpdateCount = 0;
 		}
 		gettimeofday(&tf, NULL);
@@ -167,15 +172,15 @@ int main() {
 
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , Flat->DataFROI);
 
 		// Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( UpdateCount == 0 ){
-				UpdateBGModel( Imagen, BGTemp,DETemp, DataFROI, Capa->FG );
+				UpdateBGModel( Imagen, BGTemp,DETemp, Flat->DataFROI, Capa->FG );
 		}
 		cvCopy( BGTemp, Capa->BGModel);
 		cvCopy( DETemp, Capa->IDesv);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , DataFROI);
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG , Flat->DataFROI);
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 						(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -197,7 +202,7 @@ int main() {
 
 		gettimeofday(&ti, NULL);
 		printf( " Iniciando segmentación...\n");
-		segmentacion(Imagen, Capa ,SegROI);
+		segmentacion(Imagen, Capa);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -224,7 +229,7 @@ int main() {
 		/////// VALIDACIÓN
 		gettimeofday(&ti, NULL);
 		printf( " Iniciando validación...\n");
-//		validacion(Imagen, Capa ,SegROI);
+//		Validacion(Imagen, Capa , Shape, Flat->DataFROI);
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -238,8 +243,8 @@ int main() {
 
 //		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
 
-		cvCircle( Capa->ImMotion, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
-		cvCircle( Capa->ImMotion, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,255,0),2 );
+		cvCircle( Capa->ImMotion, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
+		cvCircle( Capa->ImMotion, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,255,0),2 );
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 												(tf.tv_usec - ti.tv_usec)/1000.0;

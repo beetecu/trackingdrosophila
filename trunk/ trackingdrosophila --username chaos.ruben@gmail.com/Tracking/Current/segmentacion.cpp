@@ -7,16 +7,14 @@
 
 
 #include "segmentacion.h"
-#include "math.h"
+
 
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
 	IplImage *FGTemp = 0;
 
-void segmentacion( IplImage *Brillo, STCapas* Capa, CvRect Segroi){
-
-//IplImage *Brillo,IplImage *mediana,IplImage *desviacion,IplImage *Foreg,CvRect Segroi
+void segmentacion( IplImage *Brillo, STCapas* Capa){
 
 	// CREAR IMAGENES
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
@@ -30,7 +28,6 @@ void segmentacion( IplImage *Brillo, STCapas* Capa, CvRect Segroi){
 	        IDif=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
 	        IDifm=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
 	        pesos=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-
 
 	}
 
@@ -160,8 +157,8 @@ void segmentacion( IplImage *Brillo, STCapas* Capa, CvRect Segroi){
 		// Dibujar elipse
 
 		//Eliminamos el blob
-		Segroi=cvRect(rect.x,rect.y,rect.width,rect.height);
-		cvSetImageROI( Capa->FGTemp, Segroi );
+//		Segroi=cvRect(rect.x,rect.y,rect.width,rect.height);
+		cvSetImageROI( Capa->FGTemp, rect );
 		cvZero( Capa->FGTemp );
 		cvResetImageROI( Capa->FGTemp);
 		// Obtenemos el centro de la elipse

@@ -9,7 +9,7 @@
 #define BGMODEL_H_
 
 #include "VideoTracker.hpp"
-#include "Libreria.h"
+
 
 //#define FRAMES_TRAINING 20 // Nº de frames para el aprendizaje del fondo
 //#define HIGHT_THRESHOLD 3 // Umbral para la resta de fondo

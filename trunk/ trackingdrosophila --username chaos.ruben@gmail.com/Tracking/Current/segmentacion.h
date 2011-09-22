@@ -9,11 +9,11 @@
 #define SEGMENTACION_H_
 
 #include "VideoTracker.hpp"
-#include "Libreria.h"
+
 
 #define PI 3.14159265
 
-void  segmentacion(IplImage *Brillo,STCapas* Capa,CvRect Segroi);
+void  segmentacion(IplImage *Brillo,STCapas* Capa);
 
 
 #endif /* SEGMENTACION_H_ */
