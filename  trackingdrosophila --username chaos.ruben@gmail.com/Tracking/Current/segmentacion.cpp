@@ -67,7 +67,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 			CV_RETR_EXTERNAL,
 			CV_CHAIN_APPROX_SIMPLE,
 			cvPoint(Roi.x,Roi.y));
-	printf( "\n Total Contornos Detectados: %d\n", Nc );
+	if( SHOW_SEGMENTATION_DATA == 1) printf( "\nTotal Contornos Detectados: %d ", Nc );
 
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
@@ -102,9 +102,11 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 		for (int y = rect.y; y< rect.y + rect.height; y++){
 			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
-			//printf(" \n");
+			if (SHOW_SEGMENTATION_DATA == 1) printf(" \n");
+
 			for (int x= 0; x<rect.width; x++){
-				//printf(" %d ", ptr2[x]);
+			if (SHOW_SEGMENTATION_DATA == 1) printf(" %d ", ptr2[x]);
+
 				if ( ptr1[x] == 255 ){
 
 					z = z + ptr2[x]; // Sumatorio de los pesos
@@ -116,7 +118,11 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 			}
 		}
 		if ( z != 0) cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
-		printf("\n\nCentro (vector u):\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
+		if (SHOW_SEGMENTATION_DATA == 1){
+			printf("\n\nCentro (vector u):\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
+		}
+
+
 
 //		cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
@@ -139,14 +145,15 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 		if ( z != 0) cvConvertScale(MATRIX_C, MATRIX_C, 1/z,0); // Matriz de covarianza
 
 		// Mostrar matriz de covarianza
-
-		printf("\nMatriz de covarianza");
-				for(int i=0;i<2;i++){
-					printf("\n");
-					for(int j=0;j<2;j++){
-						v=cvGet2D(MATRIX_C,i,j);
-						printf("\t%f",v.val[0]);
-					}
+		if (SHOW_SEGMENTATION_DATA == 1) {
+				printf("\nMatriz de covarianza");
+								for(int i=0;i<2;i++){
+									printf("\n");
+									for(int j=0;j<2;j++){
+										v=cvGet2D(MATRIX_C,i,j);
+										printf("\t%f",v.val[0]);
+									}
+						}
 		}
 
 		// EXTRAER LOS EIGENVALORES Y EIGENVECTORES
@@ -167,8 +174,12 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 		semiejemenor=2*(sqrt(d2.val[0]));
 		tita=atan(r2.val[0]/r1.val[0]);
 
-		printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",2*semiejemayor,2*semiejemenor,tita);
-
+		if (SHOW_SEGMENTATION_DATA == 1){
+			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",
+					2*semiejemayor,
+					2*semiejemenor,
+					tita);
+		}
 		// Dibujar elipse
 
 		//Eliminamos el blob

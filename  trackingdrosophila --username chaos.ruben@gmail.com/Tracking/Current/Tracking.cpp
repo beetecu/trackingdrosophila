@@ -168,12 +168,12 @@ int main() {
 		printf("Background update: %5.4g ms\n", TiempoParcial);
 
 //		cvShowImage( "Foreground",Capa->BGModel);
-#if CREATE_TRACKBARS == 1
-	cvCreateTrackbar( "BGUpdate",
+		if (CREATE_TRACKBARS == 1){
+					cvCreateTrackbar( "BGUpdate",
 					  "Foreground",
 					  &BGUpdate,
 					  100  );
-#endif
+		}
 
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
@@ -206,13 +206,13 @@ int main() {
 		/////// SEGMENTACION
 
 		gettimeofday(&ti, NULL);
-		printf( " Iniciando segmentación...\n");
+		printf( "Segmentando Foreground...");
 		segmentacion(Imagen, Capa, Flat->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\n\nSegmentación finalizada : %5.4g milisegundos\n", TiempoParcial);
+		printf(" %5.4g ms\n", TiempoParcial);
 
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
@@ -233,12 +233,12 @@ int main() {
 
 		/////// VALIDACIÓN
 		gettimeofday(&ti, NULL);
-		printf( " Iniciando validación...\n");
+		printf( "Validando contornos...");
 //		Validacion(Imagen, Capa , Shape, Flat->DataFROI);
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\n\nValidación finalizada : %5.4g ms\n", TiempoParcial);
+		printf(" %5.4g ms\n", TiempoParcial);
 
 		/////// TRACKING
 		gettimeofday(&ti, NULL);
@@ -253,22 +253,24 @@ int main() {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 												(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\nTracking: %5.4g ms\n", TiempoParcial);
+		printf("Tracking: %5.4g ms\n", TiempoParcial);
 
 		/*                                                              */
 		/////// VISUALIZACION ////////////
 		/*                                                              */
 
-#if SHOW_VISUALIZATION == 1
+		if (SHOW_VISUALIZATION == 1){
 		//Obtenemos la Imagen donde se visualizarán los resultados
 		cvCopy(frame, ImVisual);
 
 		//Dibujamos el plato en la imagen de visualizacion
-		cvCircle( ImVisual, cvPoint( PCentroX,PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-		cvCircle( ImVisual, cvPoint(PCentroX,PCentroY ),PRadio, CV_RGB(0,0,0),2 );
+		cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+		cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 		// Dibujamos la ROI
-		cvRectangle( ImVisual,cvPoint(PCentroX-PRadio, PCentroY-PRadio),
-				cvPoint(PCentroX + PRadio,PCentroY + PRadio), CV_RGB(255,0,0),2);
+		cvRectangle( ImVisual,
+				cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
+				cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
+				CV_RGB(255,0,0),2);
 
 		//Dibujamos los blobs
 
@@ -284,22 +286,22 @@ int main() {
 		//              }
 		//                cvShowImage( "Visualización", ImVisual);
 
-#endif
+		}
 		// Mostramos imagenes
 		cvShowImage( "Drosophila.avi", frame );
 		//
-#if SHOW_BG_REMOVAL == 1
-		cvShowImage("Background", Capa->BGModel);
-//		cvShowImage("FG", bg_model->foreground);
-		//              cvShowImage( "Blobs",ImBlobs);
-		//              cvShowImage("Bina",ImThres);
-//		cvShowImage( "Foreground",Capa->FG);
-//		cvWaitKey(0);
-#endif
-#if SHOW_OPTICAL_FLOW == 1
+		if (SHOW_BG_REMOVAL == 1){
+				cvShowImage("Background", Capa->BGModel);
+		//		cvShowImage("FG", bg_model->foreground);
+				//              cvShowImage( "Blobs",ImBlobs);
+				//              cvShowImage("Bina",ImThres);
+		//		cvShowImage( "Foreground",Capa->FG);
+		//		cvWaitKey(0);
+		}
+		if (SHOW_OPTICAL_FLOW == 1){
 		cvShowImage( "Flujo Optico X", ImOpFlowX );
 		cvShowImage( "Flujo Optico Y", ImOpFlowY);
-#endif
+		}
 
 		cvShowImage( "Motion",Capa->ImMotion);
 
@@ -392,25 +394,25 @@ void DeallocateImages( ){
 void CreateWindows( ){
 
 	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
-#if SHOW_BG_REMOVAL == 1
+	if (SHOW_BG_REMOVAL == 1){
 	cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
 	cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
 
 	cvMoveWindow("Background", 0, 0 );
 	cvMoveWindow("Foreground", 640, 0);
-#endif
+	}
 
 	 cvNamedWindow( "Motion", 1 );
 
-#if SHOW_OPTICAL_FLOW == 1
-	cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
-	cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
-	cvMoveWindow("Flujo Optico X", 0, 0 );
-	cvMoveWindow("Flujo Optico Y", 640, 0);
-#endif
-#if SHOW_VISUALIZATION == 1
-	cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
-#endif
+	if (SHOW_OPTICAL_FLOW == 1){
+		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
+		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
+		cvMoveWindow("Flujo Optico X", 0, 0 );
+		cvMoveWindow("Flujo Optico Y", 640, 0);
+	}
+	if (SHOW_VISUALIZATION == 1){
+			cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
+	}
 	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
     //	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);
 
@@ -420,17 +422,17 @@ void DestroyWindows( ){
 	cvDestroyWindow( "Drosophila.avi" );
 
 
-#if SHOW_BG_REMOVAL == 1
+if (SHOW_BG_REMOVAL == 1){
 	cvDestroyWindow( "Background");
 	cvDestroyWindow( "Foreground");
-#endif
-#if SHOW_OPTICAL_FLOW == 1
+}
+if (SHOW_OPTICAL_FLOW == 1){
 	cvDestroyWindow( "Flujo Optico X");
 	cvDestroyWindow( "Flujo Optico Y");
-#endif
-#if SHOW_VISUALIZATION == 1
+}
+if (SHOW_VISUALIZATION == 1) {
 	cvDestroyWindow( "Visualización" );
-#endif
+}
 	cvDestroyWindow( "Motion" );
 }
 
@@ -472,11 +474,22 @@ void mostrarLista(Lista *lista)
 }
 void SetBGModelParams( BGModelParams* Params){
 	 Params->FRAMES_TRAINING = 20;
-	 Params->HIGHT_THRESHOLD = 20;
-	 Params->LOW_THRESHOLD = 10;
 	 Params->ALPHA = 0 ;
 	 Params->MORFOLOGIA = 1;
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 200 ;
-	 Params->MIN_CONTOUR_AREA = 5;
+	 Params->MIN_CONTOUR_AREA = 2;
+	 if (CREATE_TRACKBARS == 1){
+	 			cvCreateTrackbar( "HighT",
+	 							  "Foreground",
+	 							  &Params->HIGHT_THRESHOLD,
+	 							  100  );
+	 			cvCreateTrackbar( "LowT",
+	 							  "Foreground",
+	 							  &Params->LOW_THRESHOLD,
+	 							  100  );
+	 }else{
+		 Params->HIGHT_THRESHOLD = 20;
+		 Params->LOW_THRESHOLD = 10;
+	 }
 }

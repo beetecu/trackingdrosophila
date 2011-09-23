@@ -21,7 +21,12 @@ void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi){
 //		cvClearMemStorage( mem_storage);
 //	}
 //	CvContourScanner scanner = cvStartFindContours(
-//			Capa->FG, mem_storage, sizeof(CvContour),CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
+//							Capa->FG,
+//							mem_storage,
+//							sizeof(CvContour),
+//							CV_RETR_EXTERNAL,
+//							CV_CHAIN_APPROX_SIMPLE ,
+//							cvPoint(dataroi.x,dataroi.y));
 //	CvSeq* c;
 //
 //	int numCont = 0;
@@ -31,23 +36,31 @@ void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi){
 //		//			cvSetImageROI( Idiff, ContROI );
 //		//			cvSetImageROI( DES , ContROI );
 //
-//		for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
-//			uchar* ptr1 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*ContROI.x);
-//			uchar* ptr2 = (uchar*) ( DES->imageData + y*DES->widthStep + 1*ContROI.x);
-//			for (int x= 0; x<ContROI.width; x++){
-//				// Si alguno de los pixeles del blob supera en HiF veces la
-//				// desviación típica del modelo,desactivamos el flag para no
-//				// eliminar el contorno
-//				if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ){
-//					flag = 0;
-//					break;
+////		for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
+////			uchar* ptr1 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*ContROI.x);
+////			uchar* ptr2 = (uchar*) ( DES->imageData + y*DES->widthStep + 1*ContROI.x);
+////			for (int x= 0; x<ContROI.width; x++){
+////				// Si alguno de los pixeles del blob supera en HiF veces la
+////				// desviación típica del modelo,desactivamos el flag para no
+////				// eliminar el contorno
+////				if ( ptr3[x] > HIGHT_THRESHOLD*ptr4[x] ){
+////					flag = 0;
+////					break;
+////				}
+////			}
+////			if (flag == 0) break;
+////		}
+////					cvResetImageROI( Idiff);
+//		//					cvResetImageROI( DES );
+//				if ( flag == 1 ) {
+//							cvSubstituteContour( scanner, NULL ); // eliminamos el contorno
 //				}
-//			}
-//			if (flag == 0) break;
-//		}
-		//			cvResetImageROI( Idiff);
-		//			cvResetImageROI( DES );
-		//		}
+//				else{ //pasamos al siguiente contorno
+//
+//					c_new = cvConvexHull2( c, mem_storage, CV_CLOCKWISE, 1); //
+//					cvSubstituteContour( scanner, c_new );
+//					numCont++;
+//				}
 
 
 }

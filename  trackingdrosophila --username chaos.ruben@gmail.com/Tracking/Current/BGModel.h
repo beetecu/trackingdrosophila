@@ -103,9 +103,9 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
       \param FG : Imagen fuente de 8 bit de niveles de gris que contine la imagen a limpiar
 
     */
-void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param);
+void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi);
 
-void onTrackbarSlide(int pos);
+void onTrackbarSlide(int pos, BGModelParams* Param);
 void error(int err);
 void AllocateImagesBGM( IplImage *I );
 void DeallocateImagesBGM();
