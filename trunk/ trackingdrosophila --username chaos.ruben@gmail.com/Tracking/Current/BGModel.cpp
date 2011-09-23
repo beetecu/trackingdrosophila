@@ -217,21 +217,13 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 		}
 	}
 
-#if CREATE_TRACKBARS == 1
-		cvCreateTrackbar( "HighT",
-						  "Foreground",
-						  &Param->HIGHT_THRESHOLD,
-						  100  );
-		cvCreateTrackbar( "LowT",
-						  "Foreground",
-						  &Param->LOW_THRESHOLD,
-						  100  );
-		cvCreateTrackbar( "ALPHA",
-						  "Foreground",
-						  &g_slider_position,
-						  100,
-						  onTrackbarSlide );
-#endif
+
+//			cvCreateTrackbar( "ALPHA",
+//							  "Foreground",
+//							  &g_slider_position,
+//							  100,
+//							  onTrackbarSlide ( pos, Param ) );
+
 
 	   	cvResetImageROI( ImGray );
 		cvResetImageROI( bg_model );
@@ -240,7 +232,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 		cvResetImageROI( Ides );
 
 
-		FGCleanup( fg, Ides,Param );
+		FGCleanup( fg, Ides,Param, dataroi );
 
 
 
@@ -249,11 +241,12 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //	cvShowImage( "Foreground",fg);
 //	cvWaitKey(0);
 }
-void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param){
+void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi){
 
 	static CvMemStorage* mem_storage = NULL;
 	static CvSeq* contours = NULL;
-
+	IplImage* FGTemp = cvCreateImage(cvSize(FG->width,FG->height), IPL_DEPTH_8U, 1);
+	cvSetImageROI( FG, dataroi);
 	// Aplicamos morfologia: Erosión y dilatación
 	if( Param->MORFOLOGIA == true){
 		IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
@@ -261,14 +254,22 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param){
 		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, Param->CVCLOSE_ITR );
 		cvReleaseStructuringElement( &KernelMorph );
 	}
+	cvResetImageROI( FG);
+	cvCopy(FG, FGTemp);
 	// Buscamos los contornos cuya area se encuentre en un rango determinado
 	if( mem_storage == NULL ){
 		mem_storage = cvCreateMemStorage(0);
 	} else {
 		cvClearMemStorage( mem_storage);
 	}
+	cvSetImageROI( FGTemp, dataroi);
 	CvContourScanner scanner = cvStartFindContours(
-			FG, mem_storage, sizeof(CvContour),CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
+								FGTemp,
+								mem_storage,
+								sizeof(CvContour),
+								CV_RETR_EXTERNAL,
+								CV_CHAIN_APPROX_SIMPLE,
+								cvPoint(dataroi.x,dataroi.y) );
 	CvSeq* c;
 
 	int numCont = 0;
@@ -321,16 +322,18 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param){
 	}
 	contours = cvEndFindContours( & scanner );
 	// Dibujamos los contornos
+	cvResetImageROI( FGTemp);
 	cvZero ( FG );
 //	IplImage* maskTemp;
 	int i = 0;
 	for( i = 0, c = contours; c != NULL; c = c->h_next, i++){
 		cvDrawContours( FG, c, CVX_WHITE,CVX_WHITE,-1,CV_FILLED,8 );
 	}
+	cvReleaseImage( &FGTemp );
 }
 
-//void onTrackbarSlide(int pos) {
-//   ALPHA = pos / 100;
+//void onTrackbarSlide(pos, BGModelParams* Param) {
+//   Param->ALPHA = pos / 100;
 //}
 void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation purposes
 
