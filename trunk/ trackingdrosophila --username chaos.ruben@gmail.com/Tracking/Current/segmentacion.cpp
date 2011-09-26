@@ -208,6 +208,12 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 		tita = (tita*180)/PI;
 		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
 		cvEllipse( FGMask, centro , axes, tita, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+		// Dibujar Roi para pruebas
+		cvRectangle( Capa->FGTemp,
+				cvPoint( rect.x, rect.y),
+				cvPoint( rect.x + rect.width , rect.y + rect.height ),
+				cvScalar(255,0,0,0),
+				1);
 //		cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
 		cvSetImageROI( Capa->FGTemp, Roi );
@@ -225,15 +231,22 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	}// Fin de contornos
 
 	cvSetImageROI( Capa->ImFMask,Roi);
-//	invertirBW(  Capa->ImFMask );
-//	/*En la imagen resultante se ve la elipse rellenada con la imagen real
-//	 * de las moscas usando como máscara el foreground
-//	 */
-//	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
-//
-//	invertirBW(  Capa->ImFMask );
-//	cvCopy( FGMask, Capa->FGTemp);
-//	cvWaitKey(0);
+	invertirBW(  Capa->ImFMask );
+	/*En la imagen resultante se ve la elipse rellenada con la imagen real
+	 * de las moscas usando como máscara el foreground
+	 */
+	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
+
+	invertirBW(  Capa->ImFMask );
+//	cvShowImage("Foreground", Capa->FGTemp);
+//		cvWaitKey(0);
+
+	cvAdd ( Capa->FG, Capa->FGTemp, Capa->FGTemp);
+//	cvShowImage("Foreground", Capa->FGTemp);
+//			cvWaitKey(0);
+
+	cvCopy( FGMask, Capa->FGTemp);
+
 
 	cvResetImageROI( Brillo );
 	cvResetImageROI( Capa->BGModel );
@@ -243,7 +256,8 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	cvResetImageROI( Capa->ImFMask );
 //	cvResetImageROI( FGMask);
 
-	cvShowImage("Foreground", Capa->FGTemp);
+//	cvShowImage("Foreground", Capa->FGTemp);
+//	cvWaitKey(0);
 	// Liberar memoria
 	cvReleaseImage(&IDif);
 	cvReleaseImage(&IDifm);

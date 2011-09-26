@@ -61,6 +61,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	IplImage* FOTemp;
 	IplImage* DETemp;
 
+
 	// Modelado de forma
 
 	SHModel* Shape;
@@ -128,7 +129,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void OpticalFlowLK( IplImage* ImLast, IplImage* velX, IplImage* velY);
 
-	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STMoscas**, Lista );
+	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STFlies**, Lista );
 
 //	void mostrarLista(Lista);
 

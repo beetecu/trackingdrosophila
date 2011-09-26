@@ -114,9 +114,11 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 	//muy pequeño apropiado para fondos con poco movimiento (unimodales).
 
 	cvAbsDiff( ImGray, BGMod, Idiff);
+
 	if ( first == 1 ){
 		cvCopy( Idiff, Ides);
 		cvAbsDiff( ImGray, BGMod, Idiff);
+		cvConvertScale( Idiff, Idiff, 0.25, 0);
 		first = 0;
 	}
 	for (int y = Idiff->roi->yOffset; y< Idiff->roi->yOffset + Idiff->roi->height; y++){
@@ -152,11 +154,11 @@ void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, BGMo
 	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,DESVI, DataROI , 0);
 	else accumulateBackground( tmp_frame, BGModel,DESVI, DataROI ,Mask);
 
-//	RunningBGGModel( tmp_frame, BGModel, Ides, Param->ALPHA,DataROI );
+	RunningBGGModel( tmp_frame, BGModel, DESVI, Param->ALPHA,DataROI );
 //	RunningVariance
 
 }
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, double ALPHA,CvRect dataroi ){
+void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesv, double ALPHA,CvRect dataroi ){
 
 	IplImage* ImTemp;
 	CvSize sz = cvGetSize( Image );
@@ -167,7 +169,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, double
 	cvSetImageROI( ImTemp, dataroi );
 	cvSetImageROI( median, dataroi );
 	cvSetImageROI( Idiff, dataroi );
-	cvSetImageROI( Idest, dataroi );
+	cvSetImageROI( Idesv, dataroi );
 
 	// Para la mediana
 	cvConvertScale(ImTemp, ImTemp, ALPHA,0);
@@ -176,12 +178,12 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idest, double
 
 	// Para la desviación típica
 	cvConvertScale(Idiff, ImTemp, ALPHA,0);
-    cvConvertScale( Idest, Idest, (1 - ALPHA),0);
-	cvAdd(ImTemp , Idest , Idest );
+    cvConvertScale( Idesv, Idesv, (1 - ALPHA),0);
+	cvAdd(ImTemp , Idesv , Idesv );
 
 	cvResetImageROI( median );
 	cvResetImageROI( Idiff );
-	cvResetImageROI( Idest );
+	cvResetImageROI( Idesv );
 
 	cvReleaseImage( &ImTemp );
 
