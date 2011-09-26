@@ -35,17 +35,14 @@
 #ifndef DEFINICION_DE_ESTRUCTURAS
 #define DEFINICION_DE_ESTRUCTURAS
 
-	typedef struct Moscas{
+	typedef struct Flies{
 		int etiqueta;
-		CvPoint posicion;
-		float area;
-		float orientacion;
+		CvScalar Color;
+		CvPoint posicion[];
+		float a[],b[];
+		float orientacion[];
 		CvRect DataRoi;
-		float velocidad;
-		float VV,VH;
-		CvPoint moment[8000];
-		CvPoint2D32f punto1,punto2;
-	}STMoscas;
+	}STFlies;
 
 	typedef struct {
 		IplImage* BGModel;  ///BackGround Model

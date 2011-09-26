@@ -12,6 +12,7 @@
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
+	IplImage *FGMask = 0;
 
 
 void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
@@ -28,19 +29,22 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	        IDif=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
 	        IDifm=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
 	        pesos=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-
+	        FGMask=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
+	        cvZero( FGMask);
 	}
 
 	cvCopy(Capa->FG,Capa->FGTemp);
 
 	cvSetImageROI( Brillo , Roi);
-		cvSetImageROI( Capa->BGModel, Roi );
-		cvSetImageROI( Capa->IDesv, Roi );
-		cvSetImageROI( Capa->FG, Roi );
-		cvSetImageROI( Capa->FGTemp, Roi );
-		cvSetImageROI( IDif, Roi );
-		cvSetImageROI( IDifm, Roi );
-		cvSetImageROI( pesos, Roi );
+	cvSetImageROI( Capa->BGModel, Roi );
+	cvSetImageROI( Capa->IDesv, Roi );
+	cvSetImageROI( Capa->FG, Roi );
+	cvSetImageROI( Capa->FGTemp, Roi );
+
+	cvSetImageROI( IDif, Roi );
+	cvSetImageROI( IDifm, Roi );
+	cvSetImageROI( pesos, Roi );
+	cvSetImageROI( FGMask, Roi );
 
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores, ejes de la elipse.
@@ -195,15 +199,19 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 //		cvResetImageROI( Capa->FGTemp);
 		// Obtenemos el centro de la elipse
 		cvResetImageROI( Capa->FGTemp ); // para evitar el offset de find contours
+		cvResetImageROI( FGMask);
+
 		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
 				cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
 		// Obtenemos los ejes y la orientacion en grados
 		axes = cvSize( 2*cvRound(semiejemayor) , 2*cvRound(semiejemenor) );
 		tita = (tita*180)/PI;
 		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
+		cvEllipse( FGMask, centro , axes, tita, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 //		cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
 		cvSetImageROI( Capa->FGTemp, Roi );
+		cvSetImageROI( FGMask, Roi );
 
 		cvReleaseMat(&vector_resta);
 		cvReleaseMat(&matrix_mul);
@@ -216,18 +224,32 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 
 	}// Fin de contornos
 
-	cvReleaseImage(&IDif);
-	cvReleaseImage(&IDifm);
-	cvReleaseImage(&pesos);
-
+	cvSetImageROI( Capa->ImFMask,Roi);
+//	invertirBW(  Capa->ImFMask );
+//	/*En la imagen resultante se ve la elipse rellenada con la imagen real
+//	 * de las moscas usando como máscara el foreground
+//	 */
+//	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
+//
+//	invertirBW(  Capa->ImFMask );
+//	cvCopy( FGMask, Capa->FGTemp);
+//	cvWaitKey(0);
 
 	cvResetImageROI( Brillo );
 	cvResetImageROI( Capa->BGModel );
 	cvResetImageROI( Capa->IDesv );
 	cvResetImageROI( Capa->FG );
 	cvResetImageROI( Capa->FGTemp );
+	cvResetImageROI( Capa->ImFMask );
+//	cvResetImageROI( FGMask);
 
 	cvShowImage("Foreground", Capa->FGTemp);
+	// Liberar memoria
+	cvReleaseImage(&IDif);
+	cvReleaseImage(&IDifm);
+	cvReleaseImage(&pesos);
+	cvReleaseImage(&FGMask);
+	cvReleaseMemStorage( &storage);
 
 }//Fin de la función
 

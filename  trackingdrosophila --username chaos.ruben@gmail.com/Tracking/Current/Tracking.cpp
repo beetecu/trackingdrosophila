@@ -126,7 +126,7 @@ int main() {
 			printf("Creando modelo de forma..... ");
 			gettimeofday(&ti, NULL);
 
-			ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
+//			ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
 
 			FrameCount = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
 			gettimeofday(&tf, NULL);
