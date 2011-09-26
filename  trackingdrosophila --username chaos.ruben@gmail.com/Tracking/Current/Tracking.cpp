@@ -54,7 +54,7 @@ int main() {
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 
 	// Iniciar estructura para almacerar datos de blobs
-	STMoscas *mosca=NULL;
+	STFlies *flie=NULL;
 	Lista llse; // Apuntará al primer elemento de la lista lineal
 	iniciarLista(&llse);
 
@@ -155,6 +155,7 @@ int main() {
 		cvCopy( Capa->BGModel, BGTemp);
 		cvCopy(Capa->IDesv,DETemp);
 
+
 		// Primera actualización del fondo
 		// establecer parametros
 		SetBGModelParams( BGParams);
@@ -217,7 +218,7 @@ int main() {
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
 		//               if (!ok) break;
-		//               mosca = (STMoscas *)obtenerPrimero(&llse);
+		//               mosca = (STFlies *)obtenerPrimero(&llse);
 		//               if ( mosca )
 		//                       printf("Primero: etiqueta: %d area %f ", mosca->etiqueta, mosca->area);
 		//               mostrarLista(llse);
@@ -292,10 +293,8 @@ int main() {
 		//
 		if (SHOW_BG_REMOVAL == 1){
 				cvShowImage("Background", Capa->BGModel);
-		//		cvShowImage("FG", bg_model->foreground);
-				//              cvShowImage( "Blobs",ImBlobs);
-				//              cvShowImage("Bina",ImThres);
-		//		cvShowImage( "Foreground",Capa->FG);
+				cvShowImage( "Foreground",Capa->FG);
+
 		//		cvWaitKey(0);
 		}
 		if (SHOW_OPTICAL_FLOW == 1){
@@ -463,12 +462,12 @@ void mostrarLista(Lista *lista)
 	// Mostrar todos los elementos de la lista
 
 	int i = 0;
-	STMoscas *Mosca = NULL;
+	STFlies *Flie = NULL;
 
 	while (i < lista->numeroDeElementos)
 	{
-		Mosca = (STMoscas *)obtener(i, lista);
-		printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Mosca->VV,Mosca->VH,Mosca->punto1.x );
+		Flie = (STFlies *)obtener(i, lista);
+		//printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Mosca->VV,Mosca->VH,Mosca->punto1.x );
 		i++;
 	}
 }
