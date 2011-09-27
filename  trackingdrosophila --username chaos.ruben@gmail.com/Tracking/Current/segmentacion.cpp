@@ -68,6 +68,9 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	        IDifm=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
 	        pesos=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
 	        FGMask=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
+	        cvZero( IDif);
+	        cvZero( IDifm);
+	        cvZero(pesos);
 	        cvZero( FGMask);
 	}
 
@@ -100,8 +103,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv(IDifm,Capa->IDesv,pesos);// Calcular
 
-//	cvShowImage("Foreground", Capa->FG);
-//	cvWaitKey(0);
+
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
@@ -122,7 +124,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
 		Anyadir(id,FLIE); // Función para añadir una nueva mosca a la lista
-
+		printf("\n BLOB %d\n",FLIE->etiqueta);
 		id++; //incrmentar el Id de las moscas
 
 		float z=0;  // parámetro para el cálculo de la matriz de covarianza
@@ -150,6 +152,17 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 		CvMat *R=cvCreateMat(2,2,CV_32FC1);// Matriz EigenVectores.
 		CvMat *RT=cvCreateMat(2,2,CV_32FC1);
 
+		cvZero( vector_u);
+		cvZero( vector_resta);
+		cvZero( matrix_mul);
+		cvZero( MATRIX_C);
+		cvZero( evects);
+		cvZero( evals);
+		cvZero( Diagonal);
+		cvZero( R);
+		cvZero( RT);
+
+
 //		cvShowImage("Foreground", Capa->FG);
 //		cvWaitKey(0);
 		if (SHOW_SEGMENTATION_DATA == 1) {
@@ -160,13 +173,13 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
 			if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
+
 			for (int x = 0; x<rect.width; x++){
 				if (SHOW_SEGMENTATION_DATA == 1) {
 					if( ( y == rect.y) && ( x == 0) ){
 						printf("\n Origen: ( %d , %d )\n\n",(x + rect.x),y);
 					}
 					printf("%d\t", ptr2[x]);
-
 				}
 
 				if ( ptr1[x] == 255 ){
@@ -176,19 +189,25 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 					*((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) = CV_MAT_ELEM( *vector_u, float, 1,0 )+ y*ptr2[x];
 	//					vector_u[0][0] = vector_u[0][0] + x*ptr2[x]; // sumatorio del peso por la pos x
 	//					vector_u[1][0] = vector_u[1][0] + y*ptr2[x]; // sumatorio del peso por la pos y
+
 				}
 			}
 		}
-
-		if ( z != 0) cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
 		if (SHOW_SEGMENTATION_DATA == 1){
-			printf("\n\nCentro (vector u):\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
+					printf( "\n\nSumatorio de pesos:\n Z = %f",z);
+					printf( "\n Sumatorio (wi*pi) = [ %f , %f ]",
+							CV_MAT_ELEM( *vector_u, float, 0,0 ),
+							CV_MAT_ELEM( *vector_u, float, 1,0 ));
 		}
-
-
-
-//		cvShowImage("Foreground", Capa->FGTemp);
-//		cvWaitKey(0);
+		if ( z != 0) {
+			cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
+		}
+		else {
+			error(5);
+		}
+		if (SHOW_SEGMENTATION_DATA == 1){
+			printf("\n\nCentro (vector u)\n u = [ %f , %f ]\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
+		}
 
 		for (int y = rect.y; y< rect.y + rect.height; y++){
 			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
@@ -237,12 +256,6 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 		semiejemenor=2*(sqrt(d2.val[0]));
 		tita=atan(r2.val[0]/r1.val[0]);
 
-		if (SHOW_SEGMENTATION_DATA == 1){
-			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",
-					2*semiejemayor,
-					2*semiejemenor,
-					tita);
-		}
 		// Dibujar elipse
 
 		//Eliminamos el blob
@@ -253,9 +266,6 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 						ptr1[x] = 0;
 					}
 		}
-//		cvSetImageROI( Capa->FGTemp, rect );
-//		cvZero( Capa->FGTemp );
-//		cvResetImageROI( Capa->FGTemp);
 
 		// Obtenemos el centro de la elipse
 
@@ -269,8 +279,13 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 
 		axes = cvSize( cvRound(semiejemayor) , cvRound(semiejemenor) );
 		tita = (tita*180)/PI;
+		if (SHOW_SEGMENTATION_DATA == 1){
+			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",
+					2*semiejemayor,
+					2*semiejemenor,
+					tita);
+		}
 
-		printf("\n BLOB %d",FLIE->etiqueta);
 
 		Param_Flies(tita,semiejemayor,semiejemenor,FLIE);// Llenar los campos de la estructura Flies
 
@@ -289,7 +304,6 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 				cvPoint( rect.x + rect.width , rect.y + rect.height ),
 				cvScalar(255,0,0,0),
 				1);
-
 		cvSetImageROI( Capa->FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
 
@@ -304,7 +318,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 
 	}// Fin de contornos
 
-
+// PRUEBAS visualizacion
 //	cvShowImage("Foreground", Capa->FGTemp);
 //			cvWaitKey(0);
 	cvSetImageROI( Capa->ImFMask,Roi);
@@ -315,13 +329,15 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
 
 	invertirBW(  Capa->ImFMask );
+	cvResetImageROI( Capa->FGTemp);
 	cvShowImage("Foreground", Capa->FGTemp);
+	cvSetImageROI( Capa->FGTemp,Roi);
 //		cvWaitKey(0);
 
 	cvAdd ( Capa->FG, Capa->FGTemp, Capa->FGTemp);
 //	cvShowImage("Foreground", Capa->FGTemp);
 // 			cvWaitKey(0);
-//
+// FIN PRUEBAS
 	cvCopy( FGMask, Capa->FGTemp);
 
 
