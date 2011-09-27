@@ -250,12 +250,13 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 	IplImage* FGTemp = cvCreateImage(cvSize(FG->width,FG->height), IPL_DEPTH_8U, 1);
 	cvSetImageROI( FG, dataroi);
 	// Aplicamos morfologia: Erosión y dilatación
-//	if( Param->MORFOLOGIA == true){
-//		IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
-//		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , Param->CVCLOSE_ITR );
-//		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, Param->CVCLOSE_ITR );
-//		cvReleaseStructuringElement( &KernelMorph );
-//	}
+	if( Param->MORFOLOGIA == true){
+		IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
+		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, Param->CVCLOSE_ITR );
+		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , Param->CVCLOSE_ITR );
+
+		cvReleaseStructuringElement( &KernelMorph );
+	}
 
 	cvResetImageROI( FG);
 	cvCopy(FG, FGTemp);

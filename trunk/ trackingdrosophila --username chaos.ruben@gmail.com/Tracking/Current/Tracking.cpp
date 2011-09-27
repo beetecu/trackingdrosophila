@@ -223,17 +223,17 @@ int main() {
 			//Prueba segunda actualizacion de fondo
 
 
-		// Segunda actualización de fondo
-		//Actualizamos el fondo haciendo uso de la máscara de las elipses generada en segmentacion
-//		cvCopy( BGTemp1, Capa->BGModel);
-//		cvCopy( DETemp1, Capa->IDesv);
-//		if ( UpdateCount == 0 ){
-//				UpdateBGModel( Imagen, BGTemp1,DETemp1, BGParams, Flat->DataFROI, Capa->FGTemp );
-//		}
-//		cvCopy( BGTemp1, Capa->BGModel);
-//				cvCopy( DETemp1, Capa->IDesv);
-//		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
-//		segmentacion(Imagen, Capa, Flat->DataFROI);
+//		 Segunda actualización de fondo
+//		Actualizamos el fondo haciendo uso de la máscara de las elipses generada en segmentacion
+		cvCopy( BGTemp1, Capa->BGModel);
+		cvCopy( DETemp1, Capa->IDesv);
+		if ( UpdateCount == 0 ){
+				UpdateBGModel( Imagen, BGTemp1,DETemp1, BGParams, Flat->DataFROI, Capa->FGTemp );
+		}
+		cvCopy( BGTemp1, Capa->BGModel);
+		cvCopy( DETemp1, Capa->IDesv);
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+		segmentacion(Imagen, Capa, Flat->DataFROI, Flie);
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
 		//               if (!ok) break;
@@ -498,19 +498,18 @@ void mostrarLista(Lista *lista)
 	}
 }
 void SetBGModelParams( BGModelParams* Params){
-	 static int first;
+	 static int first = 1;
 	 Params->FRAMES_TRAINING = 20;
 	 Params->ALPHA = 0 ;
-	 Params->MORFOLOGIA = 1;
+	 Params->MORFOLOGIA = 0;
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 200 ;
-	 Params->MIN_CONTOUR_AREA = 5;
+	 Params->MIN_CONTOUR_AREA = 20;
 	 if (CREATE_TRACKBARS == 1){
 				 // La primera vez inicializamos los valores.
-				 first = 1;
 				 if (first == 1){
-					 Params->HIGHT_THRESHOLD = 30;
-					 Params->LOW_THRESHOLD = 2;
+					 Params->HIGHT_THRESHOLD = 20;
+					 Params->LOW_THRESHOLD = 10;
 					 first = 0;
 				 }
 	 			cvCreateTrackbar( "HighT",

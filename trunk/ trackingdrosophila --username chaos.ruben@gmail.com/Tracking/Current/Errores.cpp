@@ -31,6 +31,9 @@ void error(int err){
 		case 4:
 			fprintf( stderr, "ERROR: Memoria insuficiente\n" );
 			DestroyWindows( );
+		case 5:
+			fprintf( stderr, "ERROR: División por 0 \n" );
+			DestroyWindows( );
 
 	}
 }
