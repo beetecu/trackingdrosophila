@@ -9,15 +9,53 @@
 #include "segmentacion.h"
 
 
+void Anyadir(int idd,STFlies* flie){ //Añadir una mosca a la lista
+
+	STFlies* nuevo=flie;
+	//nuevo = (STFlies *) malloc(sizeof(STFlies));
+	nuevo->etiqueta= idd;
+
+	nuevo->siguiente=flie;
+	flie = nuevo;
+}
+
+void Param_Flies(float tita,float semieje_a,float semieje_b,STFlies* flie){//Llenar la estructura Flies
+
+	STFlies* angulo=flie;
+	STFlies* semieje_m=flie;
+	STFlies* semieje_M=flie;
+
+	angulo->orientacion=tita;
+	semieje_M->a=semieje_a;
+	semieje_m->b=semieje_b;
+
+	angulo=angulo->siguiente;
+	semieje_M=semieje_M->siguiente;
+	semieje_m=semieje_m->siguiente;
+}
+
+
+
+
+
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
 	IplImage *FGMask = 0;
 
 
-void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
+void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
+
+
+	//Inicializar estructura para almacenar los datos de las moscas
+	IplImage *FGMask = 0;
+
+
+	FLIE = ( STFlies *) malloc( sizeof( STFlies));
+
 
 	// CREAR IMAGENES
+
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
 
 	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
@@ -46,15 +84,18 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	cvSetImageROI( pesos, Roi );
 	cvSetImageROI( FGMask, Roi );
 
+
 	CvScalar v;
-	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores, ejes de la elipse.
+	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores,semiejes de la elipse.
 	CvScalar r1,r2; // valores de la matriz de los eigen vectores, orientación.
 
 	//Crear storage y secuencia de los contornos
 
 	CvMemStorage* storage = cvCreateMemStorage();
 	CvSeq* first_contour=NULL;
+
 	// Distancia normalizada de cada pixel a su modelo de fondo.
+
 	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv(IDifm,Capa->IDesv,pesos);// Calcular
@@ -71,13 +112,23 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 			CV_RETR_EXTERNAL,
 			CV_CHAIN_APPROX_SIMPLE,
 			cvPoint(Roi.x,Roi.y));
+
+
+	int id=1; //id=etiqueta de la moca
+	
 	if( SHOW_SEGMENTATION_DATA == 1) printf( "\nTotal Contornos Detectados: %d ", Nc );
 
+
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
+
+		Anyadir(id,FLIE); // Función para añadir una nueva mosca a la lista
+
+		id++; //incrmentar el Id de las moscas
 
 		float z=0;  // parámetro para el cálculo de la matriz de covarianza
 
 		/// Parámetros elipse
+
 		float semiejemenor;
 		float semiejemayor;
 		CvSize axes;
@@ -127,6 +178,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 				}
 			}
 		}
+
 		if ( z != 0) cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
 		if (SHOW_SEGMENTATION_DATA == 1){
 			printf("\n\nCentro (vector u):\n %f \n %f\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
@@ -203,16 +255,32 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 //		cvSetImageROI( Capa->FGTemp, rect );
 //		cvZero( Capa->FGTemp );
 //		cvResetImageROI( Capa->FGTemp);
+
 		// Obtenemos el centro de la elipse
+
 		cvResetImageROI( Capa->FGTemp ); // para evitar el offset de find contours
 		cvResetImageROI( FGMask);
 
 		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
 				cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
+
 		// Obtenemos los ejes y la orientacion en grados
+
 		axes = cvSize( cvRound(semiejemayor) , cvRound(semiejemenor) );
 		tita = (tita*180)/PI;
+
+		printf("\n BLOB %d",FLIE->etiqueta);
+
+		Param_Flies(tita,semiejemayor,semiejemenor,FLIE);// Llenar los campos de la estructura Flies
+
+		//Mostrar los campos de cada mosca o blob
+
+		if(SHOW_SEGMENTACION_STRUCT == 1){
+		printf("\n EJE A : %f\t EJE B: %f\t ORIENTACION: %f",FLIE->a,FLIE->b,FLIE->orientacion);
+		}
+
 		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
+
 		cvEllipse( FGMask, centro , axes, tita, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 		// Dibujar Roi para pruebas
 		cvRectangle( Capa->FGTemp,
@@ -235,6 +303,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 
 	}// Fin de contornos
 
+
 //	cvShowImage("Foreground", Capa->FGTemp);
 //			cvWaitKey(0);
 	cvSetImageROI( Capa->ImFMask,Roi);
@@ -255,7 +324,6 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	cvCopy( FGMask, Capa->FGTemp);
 
 
-
 	cvResetImageROI( Brillo );
 	cvResetImageROI( Capa->BGModel );
 	cvResetImageROI( Capa->IDesv );
@@ -263,6 +331,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	cvResetImageROI( Capa->FGTemp );
 	cvResetImageROI( Capa->ImFMask );
 //	cvResetImageROI( FGMask);
+
 
 //	cvShowImage("Foreground", Capa->FGTemp);
 //	cvWaitKey(0);
@@ -274,5 +343,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	cvReleaseMemStorage( &storage);
 
 }//Fin de la función
+
+
 
 

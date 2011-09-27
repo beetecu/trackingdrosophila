@@ -68,6 +68,10 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	SHModel* Shape;
 
+	// Modelado segmentacion, estructura Flies
+
+	STFlies* Flie=NULL;
+
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
 //	IplImage *ImHiThr;
 //	IplImage *ImLowThr;

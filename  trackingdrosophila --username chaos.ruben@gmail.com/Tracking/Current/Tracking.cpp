@@ -50,11 +50,13 @@ int main() {
 	Shape = ( SHModel *) malloc( sizeof( SHModel));
 	Shape->FlyAreaDes = 0;
 	Shape->FlyAreaMed = 0;
+	Shape->FlyAreaMedia=0;
 	// Iniciar estructura para parametros del modelo de fondo
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 
 	// Iniciar estructura para almacerar datos de blobs
-	STFlies *flie=NULL;
+
+	//STFlies *Flies=NULL;
 	Lista llse; // Apuntará al primer elemento de la lista lineal
 	iniciarLista(&llse);
 
@@ -210,7 +212,8 @@ int main() {
 
 		gettimeofday(&ti, NULL);
 		printf( "Segmentando Foreground...");
-		segmentacion(Imagen, Capa, Flat->DataFROI);
+
+		segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -481,12 +484,16 @@ void mostrarLista(Lista *lista)
 	// Mostrar todos los elementos de la lista
 
 	int i = 0;
-	STFlies *Flie = NULL;
+
+	STFlies *Flies = NULL;
+
 
 	while (i < lista->numeroDeElementos)
 	{
-		Flie = (STFlies *)obtener(i, lista);
-		//printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Mosca->VV,Mosca->VH,Mosca->punto1.x );
+
+		Flies = (STFlies *)obtener(i, lista);
+		//printf("\n Vertical : %f, Horizontal: %f, Punto : %f",Flies->,Flies->VH,Flies->punto1.x );
+
 		i++;
 	}
 }

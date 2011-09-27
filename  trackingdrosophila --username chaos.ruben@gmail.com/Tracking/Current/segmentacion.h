@@ -13,7 +13,8 @@
 
 #define PI 3.14159265
 
-void  segmentacion(IplImage *Brillo,STCapas* Capa, CvRect Roi);
+void  segmentacion(IplImage *Brillo,STCapas* Capa, CvRect Roi,STFlies* flie);
+
 
 
 #endif /* SEGMENTACION_H_ */
