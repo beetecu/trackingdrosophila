@@ -60,6 +60,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	IplImage* BGTemp;
 	IplImage* FOTemp;
 	IplImage* DETemp;
+	IplImage* BGTemp1;
+	IplImage* DETemp1;
 
 
 	// Modelado de forma
