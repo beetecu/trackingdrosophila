@@ -154,7 +154,8 @@ int main() {
 		gettimeofday(&ti, NULL);
 		cvCopy( Capa->BGModel, BGTemp);
 		cvCopy(Capa->IDesv,DETemp);
-
+		cvCopy( Capa->BGModel, BGTemp1);
+		cvCopy(Capa->IDesv,DETemp1);
 
 		// Primera actualización del fondo
 		// establecer parametros
@@ -180,7 +181,8 @@ int main() {
 		gettimeofday(&ti, NULL);
 		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
 
-		// Actualizamos el fondo haciendo uso de la máscara del foreground
+		// Segunda actualización de fondo
+		//Actualizamos el fondo haciendo uso de la máscara del foreground
 		if ( UpdateCount == 0 ){
 				UpdateBGModel( Imagen, BGTemp,DETemp, BGParams, Flat->DataFROI, Capa->FG );
 		}
@@ -215,6 +217,20 @@ int main() {
 								(tf.tv_usec - ti.tv_usec)/1000.0;
 		printf(" %5.4g ms\n", TiempoParcial);
 
+			//Prueba segunda actualizacion de fondo
+
+
+		// Segunda actualización de fondo
+		//Actualizamos el fondo haciendo uso de la máscara de las elipses generada en segmentacion
+//		cvCopy( BGTemp1, Capa->BGModel);
+//		cvCopy( DETemp1, Capa->IDesv);
+//		if ( UpdateCount == 0 ){
+//				UpdateBGModel( Imagen, BGTemp1,DETemp1, BGParams, Flat->DataFROI, Capa->FGTemp );
+//		}
+//		cvCopy( BGTemp1, Capa->BGModel);
+//				cvCopy( DETemp1, Capa->IDesv);
+//		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+//		segmentacion(Imagen, Capa, Flat->DataFROI);
 		// Creacion de capa de blobs
 		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
 		//               if (!ok) break;
@@ -293,7 +309,7 @@ int main() {
 		//
 		if (SHOW_BG_REMOVAL == 1){
 				cvShowImage("Background", Capa->BGModel);
-				cvShowImage( "Foreground",Capa->FG);
+//				cvShowImage( "Foreground",Capa->FG);
 
 		//		cvWaitKey(0);
 		}
@@ -361,6 +377,8 @@ void AllocateImages( IplImage* I ){
 
 	BGTemp = cvCreateImage( sz,8,1);
 	DETemp = cvCreateImage( sz,8,1);
+	BGTemp1 = cvCreateImage( sz,8,1);
+	DETemp1 = cvCreateImage( sz,8,1);
 	FOTemp = cvCreateImage( sz,8,1);
 	Imagen = cvCreateImage( sz ,8,1);
 	ImPyr = cvCreateImage( sz ,8,1);
@@ -385,7 +403,8 @@ void DeallocateImages( ){
 	cvReleaseImage( &ImVisual );
 	cvReleaseImage( &BGTemp);
 	cvReleaseImage( &DETemp);
-
+	cvReleaseImage( &BGTemp1);
+		cvReleaseImage( &DETemp1);
 
 }
 
@@ -472,13 +491,21 @@ void mostrarLista(Lista *lista)
 	}
 }
 void SetBGModelParams( BGModelParams* Params){
+	 static int first;
 	 Params->FRAMES_TRAINING = 20;
 	 Params->ALPHA = 0 ;
 	 Params->MORFOLOGIA = 1;
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 200 ;
-	 Params->MIN_CONTOUR_AREA = 2;
+	 Params->MIN_CONTOUR_AREA = 5;
 	 if (CREATE_TRACKBARS == 1){
+				 // La primera vez inicializamos los valores.
+				 first = 1;
+				 if (first == 1){
+					 Params->HIGHT_THRESHOLD = 30;
+					 Params->LOW_THRESHOLD = 2;
+					 first = 0;
+				 }
 	 			cvCreateTrackbar( "HighT",
 	 							  "Foreground",
 	 							  &Params->HIGHT_THRESHOLD,
