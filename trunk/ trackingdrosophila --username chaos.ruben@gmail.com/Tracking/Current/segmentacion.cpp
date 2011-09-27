@@ -101,23 +101,29 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 
 //		cvShowImage("Foreground", Capa->FG);
 //		cvWaitKey(0);
-
+		if (SHOW_SEGMENTATION_DATA == 1) {
+			printf(" \n\nMatriz de distancia normalizada al background |I(p)-u(p)|/0(p)");
+		}
 		// Hallar Z y u={ux,uy}
 		for (int y = rect.y; y< rect.y + rect.height; y++){
 			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
-			if (SHOW_SEGMENTATION_DATA == 1) printf(" \n");
-
+			if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
 			for (int x= 0; x<rect.width; x++){
-			if (SHOW_SEGMENTATION_DATA == 1) printf(" %d ", ptr2[x]);
+				if (SHOW_SEGMENTATION_DATA == 1) {
+					printf("%d\t", ptr2[x]);
+					if( ( y == rect.y) && ( x == 0) ){
+						printf("\n Origen: ( %d , %d )",y,(x + rect.x));
+					}
+				}
 
 				if ( ptr1[x] == 255 ){
 
 					z = z + ptr2[x]; // Sumatorio de los pesos
 					*((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) = CV_MAT_ELEM( *vector_u, float, 0,0 )+ (x + rect.x)*ptr2[x];
 					*((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) = CV_MAT_ELEM( *vector_u, float, 1,0 )+ y*ptr2[x];
-//					vector_u[0][0] = vector_u[0][0] + x*ptr2[x]; // sumatorio del peso por la pos x
-//					vector_u[1][0] = vector_u[1][0] + y*ptr2[x]; // sumatorio del peso por la pos y
+	//					vector_u[0][0] = vector_u[0][0] + x*ptr2[x]; // sumatorio del peso por la pos x
+	//					vector_u[1][0] = vector_u[1][0] + y*ptr2[x]; // sumatorio del peso por la pos y
 				}
 			}
 		}
@@ -152,7 +158,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 		if (SHOW_SEGMENTATION_DATA == 1) {
 				printf("\nMatriz de covarianza");
 								for(int i=0;i<2;i++){
-									printf("\n");
+									printf("\n\n");
 									for(int j=0;j<2;j++){
 										v=cvGet2D(MATRIX_C,i,j);
 										printf("\t%f",v.val[0]);
@@ -204,7 +210,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
 				cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
 		// Obtenemos los ejes y la orientacion en grados
-		axes = cvSize( 2*cvRound(semiejemayor) , 2*cvRound(semiejemenor) );
+		axes = cvSize( cvRound(semiejemayor) , cvRound(semiejemenor) );
 		tita = (tita*180)/PI;
 		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
 		cvEllipse( FGMask, centro , axes, tita, 0, 360, cvScalar( 255,0,0,0), -1, 8);
@@ -214,8 +220,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 				cvPoint( rect.x + rect.width , rect.y + rect.height ),
 				cvScalar(255,0,0,0),
 				1);
-//		cvShowImage("Foreground", Capa->FGTemp);
-//		cvWaitKey(0);
+
 		cvSetImageROI( Capa->FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
 
@@ -230,6 +235,8 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 
 	}// Fin de contornos
 
+//	cvShowImage("Foreground", Capa->FGTemp);
+//			cvWaitKey(0);
 	cvSetImageROI( Capa->ImFMask,Roi);
 	invertirBW(  Capa->ImFMask );
 	/*En la imagen resultante se ve la elipse rellenada con la imagen real
@@ -238,14 +245,15 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi ){
 	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
 
 	invertirBW(  Capa->ImFMask );
-//	cvShowImage("Foreground", Capa->FGTemp);
+	cvShowImage("Foreground", Capa->FGTemp);
 //		cvWaitKey(0);
 
 	cvAdd ( Capa->FG, Capa->FGTemp, Capa->FGTemp);
 //	cvShowImage("Foreground", Capa->FGTemp);
-//			cvWaitKey(0);
-
+// 			cvWaitKey(0);
+//
 	cvCopy( FGMask, Capa->FGTemp);
+
 
 
 	cvResetImageROI( Brillo );
