@@ -160,12 +160,13 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
 			if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
-			for (int x= 0; x<rect.width; x++){
+			for (int x = 0; x<rect.width; x++){
 				if (SHOW_SEGMENTATION_DATA == 1) {
-					printf("%d\t", ptr2[x]);
 					if( ( y == rect.y) && ( x == 0) ){
-						printf("\n Origen: ( %d , %d )",y,(x + rect.x));
+						printf("\n Origen: ( %d , %d )\n\n",(x + rect.x),y);
 					}
+					printf("%d\t", ptr2[x]);
+
 				}
 
 				if ( ptr1[x] == 255 ){
