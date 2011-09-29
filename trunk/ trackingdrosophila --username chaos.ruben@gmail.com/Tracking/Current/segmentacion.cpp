@@ -124,7 +124,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
 		Anyadir(id,FLIE); // Función para añadir una nueva mosca a la lista
-		printf("\n BLOB %d\n",FLIE->etiqueta);
+		if( SHOW_SEGMENTATION_DATA == 1) printf("\n BLOB %d\n",FLIE->etiqueta);
 		id++; //incrmentar el Id de las moscas
 
 		float z=0;  // parámetro para el cálculo de la matriz de covarianza
@@ -329,6 +329,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
 
 	invertirBW(  Capa->ImFMask );
+
 	cvResetImageROI( Capa->FGTemp);
 	cvShowImage("Foreground", Capa->FGTemp);
 	cvSetImageROI( Capa->FGTemp,Roi);

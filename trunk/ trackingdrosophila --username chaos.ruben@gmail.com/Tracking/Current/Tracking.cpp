@@ -51,9 +51,10 @@ int main() {
 	Shape->FlyAreaDes = 0;
 	Shape->FlyAreaMed = 0;
 	Shape->FlyAreaMedia=0;
-	// Iniciar estructura para parametros del modelo de fondo
+	// Iniciar estructura para parametros del modelo de fondo en primera actualización
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
-
+	// Iniciar estructura para parámetros del modelo de fondo para validación
+//	BGForVal = ( BGModelParams *) malloc( sizeof( BGModelParams));
 	// Iniciar estructura para almacerar datos de blobs
 
 	//STFlies *Flies=NULL;
@@ -110,7 +111,7 @@ int main() {
 			printf("Creando modelo de fondo..... ");
 			gettimeofday(&ti, NULL);
 			// establecer parametros
-			SetBGModelParams( BGParams);
+			InitialBGModelParams( BGParams);
 			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, BGParams, Flat->DataFROI);
 			FrameCount = cvGetCaptureProperty( g_capture, 1 );
 
@@ -128,7 +129,7 @@ int main() {
 			printf("Creando modelo de forma..... ");
 			gettimeofday(&ti, NULL);
 
-//			ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
+			ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
 
 			FrameCount = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
 			gettimeofday(&tf, NULL);
@@ -159,88 +160,88 @@ int main() {
 		cvCopy( Capa->BGModel, BGTemp1);
 		cvCopy(Capa->IDesv,DETemp1);
 
-		// Primera actualización del fondo
-		// establecer parametros
-		SetBGModelParams( BGParams);
-		if ( UpdateCount == BGUpdate ){
-			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, 0 );
-			UpdateCount = 0;
-		}
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Background update: %5.4g ms\n", TiempoParcial);
+			// Primera actualización del fondo
+			// establecer parametros
+			InitialBGModelParams( BGParams);
+			if ( UpdateCount == BGUpdate ){
+				UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, 0 );
+				UpdateCount = 0;
+			}
+			gettimeofday(&tf, NULL);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+											(tf.tv_usec - ti.tv_usec)/1000.0;
+			printf("Background update: %5.4g ms\n", TiempoParcial);
 
-//		cvShowImage( "Foreground",Capa->BGModel);
-		if (CREATE_TRACKBARS == 1){
-					cvCreateTrackbar( "BGUpdate",
-					  "Foreground",
-					  &BGUpdate,
-					  100  );
-		}
+		//		cvShowImage( "Foreground",Capa->BGModel);
+			if (CREATE_TRACKBARS == 1){
+						cvCreateTrackbar( "BGUpdate",
+						  "Foreground",
+						  &BGUpdate,
+						  100  );
+			}
 
-		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-		gettimeofday(&ti, NULL);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+			/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
+			gettimeofday(&ti, NULL);
+			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
 
-		// Segunda actualización de fondo
-		//Actualizamos el fondo haciendo uso de la máscara del foreground
-		if ( UpdateCount == 0 ){
-				UpdateBGModel( Imagen, BGTemp,DETemp, BGParams, Flat->DataFROI, Capa->FG );
-		}
-		cvCopy( BGTemp, Capa->BGModel);
-		cvCopy( DETemp, Capa->IDesv);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-						(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
-		/////// EIMINACIÓN DE SOMBRAS
-		// Performs FG post-processing using segmentation
-		// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
-		// parameters:
-		//      segments - pointer to result of segmentation (for example MeanShiftSegmentation)
-		//      bg_model - pointer to CvBGStatModel structure
-		//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
-		// Segmentacion basada en COLOR
-//		 cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
-//		cvPyrSegmentation(Imagen, ImPyr, storage, &comp,
-//        level, threshold1+1, threshold2+1);
-
-
-		/////// SEGMENTACION
-
-		gettimeofday(&ti, NULL);
-		printf( "Segmentando Foreground...");
-
-		segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
-
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf(" %5.4g ms\n", TiempoParcial);
-
-			//Prueba segunda actualizacion de fondo
+			// Segunda actualización de fondo
+			//Actualizamos el fondo haciendo uso de la máscara del foreground
+			if ( UpdateCount == 0 ){
+					UpdateBGModel( Imagen, BGTemp,DETemp, BGParams, Flat->DataFROI, Capa->FG );
+			}
+			cvCopy( BGTemp, Capa->BGModel);
+			cvCopy( DETemp, Capa->IDesv);
+			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+			gettimeofday(&tf, NULL);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+							(tf.tv_usec - ti.tv_usec)/1000.0;
+			printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
+			/////// EIMINACIÓN DE SOMBRAS
+			// Performs FG post-processing using segmentation
+			// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
+			// parameters:
+			//      segments - pointer to result of segmentation (for example MeanShiftSegmentation)
+			//      bg_model - pointer to CvBGStatModel structure
+			//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
+			// Segmentacion basada en COLOR
+		//		 cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
+		//		cvPyrSegmentation(Imagen, ImPyr, storage, &comp,
+		//        level, threshold1+1, threshold2+1);
 
 
-//		 Segunda actualización de fondo
-//		Actualizamos el fondo haciendo uso de la máscara de las elipses generada en segmentacion
-		cvCopy( BGTemp1, Capa->BGModel);
-		cvCopy( DETemp1, Capa->IDesv);
-		if ( UpdateCount == 0 ){
-				UpdateBGModel( Imagen, BGTemp1,DETemp1, BGParams, Flat->DataFROI, Capa->FGTemp );
-		}
-		cvCopy( BGTemp1, Capa->BGModel);
-		cvCopy( DETemp1, Capa->IDesv);
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
-		segmentacion(Imagen, Capa, Flat->DataFROI, Flie);
-		// Creacion de capa de blobs
-		//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
-		//               if (!ok) break;
-		//               mosca = (STFlies *)obtenerPrimero(&llse);
-		//               if ( mosca )
-		//                       printf("Primero: etiqueta: %d area %f ", mosca->etiqueta, mosca->area);
-		//               mostrarLista(llse);
+			/////// SEGMENTACION
+
+			gettimeofday(&ti, NULL);
+			printf( "Segmentando Foreground...");
+
+			segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
+
+			gettimeofday(&tf, NULL);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+									(tf.tv_usec - ti.tv_usec)/1000.0;
+			printf(" %5.4g ms\n", TiempoParcial);
+
+				//Prueba segunda actualizacion de fondo
+
+
+		//		 Segunda actualización de fondo
+		//		Actualizamos el fondo haciendo uso de la máscara de las elipses generada en segmentacion
+			cvCopy( BGTemp1, Capa->BGModel);
+			cvCopy( DETemp1, Capa->IDesv);
+			if ( UpdateCount == 0 ){
+					UpdateBGModel( Imagen, BGTemp1,DETemp1, BGParams, Flat->DataFROI, Capa->FGTemp );
+			}
+			cvCopy( BGTemp1, Capa->BGModel);
+			cvCopy( DETemp1, Capa->IDesv);
+			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+			segmentacion(Imagen, Capa, Flat->DataFROI, Flie);
+			// Creacion de capa de blobs
+			//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
+			//               if (!ok) break;
+			//               mosca = (STFlies *)obtenerPrimero(&llse);
+			//               if ( mosca )
+			//                       printf("Primero: etiqueta: %d area %f ", mosca->etiqueta, mosca->area);
+			//               mostrarLista(llse);
 
 
 		// Creación de estructura de datos
@@ -266,7 +267,7 @@ int main() {
 
 //		MotionTemplate( Capa->FG, Capa->ImMotion);
 
-//		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
+		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
 
 		cvCircle( Capa->ImMotion, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,255,0),2 );
@@ -320,8 +321,10 @@ int main() {
 		cvShowImage( "Flujo Optico X", ImOpFlowX );
 		cvShowImage( "Flujo Optico Y", ImOpFlowY);
 		}
-
-		cvShowImage( "Motion",Capa->ImMotion);
+		if ( SHOW_MOTION_TEMPLATE == 1){
+			cvShowImage( "Motion",Capa->ImMotion);
+			}
+		;
 
 		gettimeofday(&tff, NULL);
 		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
@@ -407,7 +410,7 @@ void DeallocateImages( ){
 	cvReleaseImage( &BGTemp);
 	cvReleaseImage( &DETemp);
 	cvReleaseImage( &BGTemp1);
-		cvReleaseImage( &DETemp1);
+	cvReleaseImage( &DETemp1);
 
 }
 
@@ -416,14 +419,16 @@ void CreateWindows( ){
 
 	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
 	if (SHOW_BG_REMOVAL == 1){
-	cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
-	cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
+		cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
+		cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
 
-	cvMoveWindow("Background", 0, 0 );
-	cvMoveWindow("Foreground", 640, 0);
+		cvMoveWindow("Background", 0, 0 );
+		cvMoveWindow("Foreground", 640, 0);
+	}
+	if ( SHOW_MOTION_TEMPLATE == 1){
+		cvNamedWindow( "Motion", 1 );
 	}
 
-	 cvNamedWindow( "Motion", 1 );
 
 	if (SHOW_OPTICAL_FLOW == 1){
 		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
@@ -450,6 +455,9 @@ if (SHOW_BG_REMOVAL == 1){
 if (SHOW_OPTICAL_FLOW == 1){
 	cvDestroyWindow( "Flujo Optico X");
 	cvDestroyWindow( "Flujo Optico Y");
+}
+if ( SHOW_MOTION_TEMPLATE == 1){
+	cvDestroyWindow( "Motion");
 }
 if (SHOW_VISUALIZATION == 1) {
 	cvDestroyWindow( "Visualización" );
@@ -497,14 +505,14 @@ void mostrarLista(Lista *lista)
 		i++;
 	}
 }
-void SetBGModelParams( BGModelParams* Params){
+void InitialBGModelParams( BGModelParams* Params){
 	 static int first = 1;
 	 Params->FRAMES_TRAINING = 20;
 	 Params->ALPHA = 0 ;
 	 Params->MORFOLOGIA = 0;
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 200 ;
-	 Params->MIN_CONTOUR_AREA = 20;
+	 Params->MIN_CONTOUR_AREA = 5;
 	 if (CREATE_TRACKBARS == 1){
 				 // La primera vez inicializamos los valores.
 				 if (first == 1){

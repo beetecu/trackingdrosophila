@@ -41,7 +41,7 @@ IplImage *Imaskt;
 void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,BGModelParams* Param,CvRect ROI){
 
 	int num_frames = 0;
-
+	 SetBGModelParams( Param);
 	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 
 	while( num_frames < Param->FRAMES_TRAINING ){
@@ -284,7 +284,8 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 		double area = cvContourArea( c );
 		area = fabs( area );
 
-		if ( (area < Param->MIN_CONTOUR_AREA) || (area > Param->MAX_CONTOUR_AREA) ) {
+		if ( ( (area < Param->MIN_CONTOUR_AREA)&&Param->MIN_CONTOUR_AREA > 0) ||
+				( (area > Param->MAX_CONTOUR_AREA)&& Param->MAX_CONTOUR_AREA > 0) ) {
 			flag = 1;
 		}
 		else{
@@ -337,6 +338,28 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 //void onTrackbarSlide(pos, BGModelParams* Param) {
 //   Param->ALPHA = pos / 100;
 //}
+void SetBGModelParams( BGModelParams *Parameters){
+    //init parameters
+	 BGModelParams *Params;
+	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
+    if( Parameters == NULL )
+      {
+    	Params->FRAMES_TRAINING = 20;
+    	Params->ALPHA = 0.5 ;
+    	Params->MORFOLOGIA = 0;
+    	Params->CVCLOSE_ITR = 1;
+    	Params->MAX_CONTOUR_AREA = 1000 ;
+    	Params->MIN_CONTOUR_AREA = 5;
+    	Params->HIGHT_THRESHOLD = 20;
+    	Params->LOW_THRESHOLD = 10;
+    }
+    else
+    {
+        Params = Parameters;
+    }
+
+}
+
 void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation purposes
 
         CvSize sz = cvGetSize( I );

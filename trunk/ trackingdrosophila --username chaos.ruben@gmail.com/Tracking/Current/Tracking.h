@@ -50,10 +50,22 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	STFlat* Flat;
 	static CvRect SegROI;
 
-	// Modelado de fondo
+	/// MODELADO DE FONDO
 
 	STCapas* Capa = NULL;
 	BGModelParams *BGParams = NULL;
+	// Parámetros
+//	int FramesTrain = 20 ;/// Nº de frames para el aprendizaje del fondo
+//	int Hight_TH = 20; /// Umbral alto para la resta de fondo
+//	int Low_TH = 10; /// Umbral bajo para la resta de fondo
+//	double Alpha = 0;
+//	//Parámetros de limpieza de foreground
+//	bool Morfologia = 0; /// si esta a 1 se aplica erosión y cierre
+//	int CvcloseIters = 0; /// Número de iteraciones en op morfológicas ( no se usa )
+//	int MaxArea = 20; /// Máxima area del blob
+//	int MinArea = 200; /// Mínima area del blob
+
+	// otros parámetros
 	int fr = 0;
 	int BGUpdate = 1;
 	int UpdateCount = 0;
@@ -69,7 +81,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	SHModel* Shape;
 
 	// Modelado segmentacion, estructura Flies
-
+	BGModelParams *BGForVal = NULL;
 	STFlies* Flie=NULL;
 
 	/// Umbrales modelo de fondo estático 32 bit 1 canal
@@ -120,7 +132,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	/// localiza en memoria las imágenes necesarias para la ejecución
 	void AllocateImages( IplImage* );
 
-	void SetBGModelParams( BGModelParams* Params);
+	void InitialBGModelParams( BGModelParams* Params);
 
 	/** Recibe la imagen del video y devuelve la imagen en un canal de niveles
 	    de gris filtrada con el plato extraido **/

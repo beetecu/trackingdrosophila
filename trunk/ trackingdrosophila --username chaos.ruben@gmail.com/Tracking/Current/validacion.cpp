@@ -10,6 +10,9 @@
 
 void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi){
 
+	BGModelParams* BGParams = NULL;
+	setBGModParams( BGParams);
+
 	// Recorremos los blobs uno por uno y los validamos. La función es recursiva.
 
 	static CvMemStorage* mem_storage = NULL;
@@ -63,4 +66,24 @@ void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi){
 //				}
 
 
+}
+
+void setBGModParams( BGModelParams* Parameters){
+	BGModelParams* Params;
+	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
+	    if( Parameters == NULL )
+	      {
+	    	Params->FRAMES_TRAINING = 0;
+	    	Params->ALPHA = 0 ;
+	    	Params->MORFOLOGIA = 0;
+	    	Params->CVCLOSE_ITR = 0;
+	    	Params->MAX_CONTOUR_AREA = 0 ;
+	    	Params->MIN_CONTOUR_AREA = 0;
+	    	Params->HIGHT_THRESHOLD = 20;
+	    	Params->LOW_THRESHOLD = 10;
+	    }
+	    else
+	    {
+	        Params = Parameters;
+	    }
 }

@@ -13,5 +13,5 @@
 #include "BGModel.h"
 
 void Validacion(IplImage *Imagen, STCapas* Capa, SHModel SH, CvRect Segroi);
-
+void setBGModParams( BGModelParams* Params);
 #endif /* VALIDACION_HPP_ */

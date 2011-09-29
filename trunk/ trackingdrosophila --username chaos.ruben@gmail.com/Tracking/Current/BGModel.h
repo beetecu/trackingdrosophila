@@ -10,30 +10,21 @@
 
 #include "VideoTracker.hpp"
 
-
-//#define FRAMES_TRAINING 20 // Nº de frames para el aprendizaje del fondo
-//#define HIGHT_THRESHOLD 3 // Umbral para la resta de fondo
-//#define LOW_THRESHOLD 3
-//#define ALPHA 0.5	// Parámetro para actualización dinámica del modelo
-//#define CVCLOSE_ITR 1
-//#define MAX_CONTOUR_AREA  200
-//#define MIN_CONTOUR_AREA  5
-
 typedef struct{
 	//Parametros del modelo
-	int FRAMES_TRAINING ;
-	int HIGHT_THRESHOLD;
-	int LOW_THRESHOLD ;
+	int FRAMES_TRAINING ;/// Nº de frames para el aprendizaje del fondo
+	int HIGHT_THRESHOLD; /// Umbral alto para la resta de fondo
+	int LOW_THRESHOLD ; /// Umbral bajo para la resta de fondo
 	double ALPHA;
 	//Parametros de limpieza de foreground
-	bool MORFOLOGIA ; // si esta a 1 se aplica erosión y cierre
-	int CVCLOSE_ITR ;
-	int MAX_CONTOUR_AREA;
-	int MIN_CONTOUR_AREA;
+	bool MORFOLOGIA ; /// si esta a 1 se aplica erosión y cierre
+	int CVCLOSE_ITR ; /// Número de iteraciones en op morfológicas ( no se usa )
+	int MAX_CONTOUR_AREA; /// Máxima area del blob
+	int MIN_CONTOUR_AREA; /// Mínima area del blob
 }BGModelParams;
 
 // PROTOTIPOS DE FUNCIONES //
-
+void SetBGModelParams(BGModelParams *Parameters);
 //! \brief Inicializa el modelo de fondo como una Gaussiana con una estimación
 //! de la mediana y de la de desviación típica según:
 //! Para el aprendizaje del fondo toma un número de frames igual a FRAMES_TRAINING
@@ -104,11 +95,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
     */
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi);
-
 void onTrackbarSlide(int pos, BGModelParams* Param);
-void error(int err);
 void AllocateImagesBGM( IplImage *I );
 void DeallocateImagesBGM();
-
 
 #endif /* BGMODEL_H_ */
