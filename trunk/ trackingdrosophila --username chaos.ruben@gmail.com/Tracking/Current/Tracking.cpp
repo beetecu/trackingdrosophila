@@ -154,107 +154,55 @@ int main() {
 		////////////// PROCESADO ///////////////
 
 		//// BACKGROUND UPDATE
-		gettimeofday(&ti, NULL);
-		cvCopy( Capa->BGModel, BGTemp);
-		cvCopy(Capa->IDesv,DETemp);
-		cvCopy( Capa->BGModel, BGTemp1);
-		cvCopy(Capa->IDesv,DETemp1);
 
+		cvCopy( Capa->BGModel, BGTemp); // guardamos una copia del modelo original
+		cvCopy(Capa->IDesv,DETemp);
+		cvZero( Capa->FG);
+		for ( int i = 0; i < 3; i++){
+			gettimeofday(&ti, NULL);
+			if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
+			if ( i > 0 ) printf("\nRedefiniendo foreground %d de 2:\n\n", i);
 			// Primera actualización del fondo
 			// establecer parametros
 			InitialBGModelParams( BGParams);
-			if ( UpdateCount == BGUpdate ){
-				UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, 0 );
-				UpdateCount = 0;
-			}
+
+			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, Capa->FG );
+
 			gettimeofday(&tf, NULL);
 			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 											(tf.tv_usec - ti.tv_usec)/1000.0;
 			printf("Background update: %5.4g ms\n", TiempoParcial);
 
-		//		cvShowImage( "Foreground",Capa->BGModel);
-			if (CREATE_TRACKBARS == 1){
-						cvCreateTrackbar( "BGUpdate",
-						  "Foreground",
-						  &BGUpdate,
-						  100  );
-			}
-
 			/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 			gettimeofday(&ti, NULL);
-			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
 
-			// Segunda actualización de fondo
-			//Actualizamos el fondo haciendo uso de la máscara del foreground
-			if ( UpdateCount == 0 ){
-					UpdateBGModel( Imagen, BGTemp,DETemp, BGParams, Flat->DataFROI, Capa->FG );
-			}
-			cvCopy( BGTemp, Capa->BGModel);
-			cvCopy( DETemp, Capa->IDesv);
 			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
 			gettimeofday(&tf, NULL);
 			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-							(tf.tv_usec - ti.tv_usec)/1000.0;
+										(tf.tv_usec - ti.tv_usec)/1000.0;
 			printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
-			/////// EIMINACIÓN DE SOMBRAS
-			// Performs FG post-processing using segmentation
-			// (all pixels of a region will be classified as foreground if majority of pixels of the region are FG).
-			// parameters:
-			//      segments - pointer to result of segmentation (for example MeanShiftSegmentation)
-			//      bg_model - pointer to CvBGStatModel structure
-			//              cvRefineForegroundMaskBySegm( CvSeq* segments, bg_model );
-			// Segmentacion basada en COLOR
-		//		 cvPyrMeanShiftFiltering( ImROI, ImROI, spatialRad, colorRad, maxPyrLevel );
-		//		cvPyrSegmentation(Imagen, ImPyr, storage, &comp,
-		//        level, threshold1+1, threshold2+1);
-
-
 			/////// SEGMENTACION
+			if( i > 0 ){
+				gettimeofday(&ti, NULL);
+				printf( "Segmentando Foreground...");
 
-			gettimeofday(&ti, NULL);
-			printf( "Segmentando Foreground...");
+				segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
 
-			segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
-
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-									(tf.tv_usec - ti.tv_usec)/1000.0;
-			printf(" %5.4g ms\n", TiempoParcial);
-
-				//Prueba segunda actualizacion de fondo
-
-
-		//		 Segunda actualización de fondo
-		//		Actualizamos el fondo haciendo uso de la máscara de las elipses generada en segmentacion
-			cvCopy( BGTemp1, Capa->BGModel);
-			cvCopy( DETemp1, Capa->IDesv);
-			if ( UpdateCount == 0 ){
-					UpdateBGModel( Imagen, BGTemp1,DETemp1, BGParams, Flat->DataFROI, Capa->FGTemp );
+				gettimeofday(&tf, NULL);
+				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+										(tf.tv_usec - ti.tv_usec)/1000.0;
+				printf(" %5.4g ms\n", TiempoParcial);
 			}
-			cvCopy( BGTemp1, Capa->BGModel);
-			cvCopy( DETemp1, Capa->IDesv);
-			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
-			segmentacion(Imagen, Capa, Flat->DataFROI, Flie);
-			// Creacion de capa de blobs
-			//               int ok = CreateBlobs( ImROI, ImBlobs, &mosca ,llse );
-			//               if (!ok) break;
-			//               mosca = (STFlies *)obtenerPrimero(&llse);
-			//               if ( mosca )
-			//                       printf("Primero: etiqueta: %d area %f ", mosca->etiqueta, mosca->area);
-			//               mostrarLista(llse);
-
-
-		// Creación de estructura de datos
-		//               printf( "Creando estructura de datos ..." );
-		//               GlobalTime = (double)cvGetTickCount() - GlobalTime;
-		//               printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-
-		// Creación de mascara de ROIS para cada objeto
-		//       CreateRois( Imagen, Capa->ImRois);
+			// en la ultima iteracion nos kedamos con ultimo BGModel obtenido
+			if (i < 2 ){
+				cvCopy( BGTemp, Capa->BGModel );
+				cvCopy( DETemp, Capa->IDesv );
+			}
+		}
 
 		/////// VALIDACIÓN
 		gettimeofday(&ti, NULL);
-		printf( "Validando contornos...");
+		printf( "\nValidando contornos...");
 //		Validacion(Imagen, Capa , Shape, Flat->DataFROI);
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
