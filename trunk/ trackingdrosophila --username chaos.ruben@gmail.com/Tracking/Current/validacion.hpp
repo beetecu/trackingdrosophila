@@ -18,6 +18,7 @@ typedef struct {
 	float UmbralCirc; /// Máxima circularidad a partir de la cual un blob se considerará no válido
 	int MaxIncLTHIters; /// Número de iteraciones en las que se incrementará el umbral bajo para dividir una elipse
 	int MaxLowTH; /// Máximo valor que alcanzará el umbral mínimo para dividir elipse
+	float PxiMin; /// Probabilidad mínima admisible a partir de la cual se deja de aumentar MaxLowTH
 	int MaxDecLTHIters; //// Número de iteraciones en las que se incrementará el umbral bajo para aumentar P(xi)
 	int MinLowTH; /// Mínimo valor que alcanzará el umbral bajo para aumentar P(xi)
 

@@ -6,12 +6,13 @@
  *
  *  Cada blob se ajusta mediante una elipse. Los parámetros de la elipse se obtienen a partir de la
  *  gaussiana 2d del blob mediante la eigendescomposición de su matriz de covarianza. Los parámetros
- *  de la gaussiana guardan proporción con el peso de cada pixel. Este peso es proporcional a la
- *  distancia normalizada de la intensidad del pixel y el valor probable del fondo de ese pixel, de
- *  modo que el centro de la elipse conicidirá con el valor esperado de la gausiana 2d (la región más
- *   oscura) que a su vez coincidirá aproximadamente con el centro del blob.
+ *  de la gaussiana guardan proporción con el peso de cada pixel siendo este peso proporcional
+ *  a la distancia normalizada de la intensidad del pixel y el valor probable del fondo de ese pixel,
+ *   de modo que el centro de la elipse conicidirá con el valor esperado de la gausiana 2d (la región
+ *   más oscura) que a su vez coincidirá aproximadamente con el centro del blob.
  *  Una vez hecho el ajuste se rellena una estructura donde se almacenan los parámetros que definen
- *  las características del blob ( identificacion, posición, orientación, semieje a, semieje b y roi).
+ *  las características del blob ( identificacion, posición, orientación, semieje a, semieje b y roi
+ *  entre otras).
  */
 
 
@@ -49,7 +50,7 @@ void Param_Flies(float tita,float semieje_a,float semieje_b,STFlies* flie){//Lle
 	IplImage *FGMask = 0;
 
 
-void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
+int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 
 
 	//Inicializar estructura para almacenar los datos de las moscas
@@ -101,10 +102,8 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	// Distancia normalizada de cada pixel a su modelo de fondo.
 
 	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
-	cvConvertScale(IDif ,IDifm,1,0);// A float
-	cvDiv(IDifm,Capa->IDesv,pesos);// Calcular
-
-
+//	cvConvertScale(IDif ,IDifm,1,0);// A float
+	cvDiv( IDifm,Capa->IDesv,pesos );// Calcular
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
@@ -360,6 +359,8 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	cvReleaseImage(&pesos);
 	cvReleaseImage(&FGMask);
 	cvReleaseMemStorage( &storage);
+
+	return Nc;
 
 }//Fin de la función
 
