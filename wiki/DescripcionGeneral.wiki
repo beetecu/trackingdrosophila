@@ -1,3 +1,3 @@
-#summary 4-Partes que componen el software
+#summary 4-descripción general del algoritmo
 
 =4 Descripción general del software =
