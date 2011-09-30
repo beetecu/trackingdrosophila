@@ -1,0 +1,3 @@
+#summary Partes que componen el software
+
+=4 Descripción general del software =
