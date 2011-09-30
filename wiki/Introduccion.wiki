@@ -1,4 +1,4 @@
-#summary One-Descripcion breve del proyecto.
+#summary 1-Descripcion breve del proyecto.
 
 = Introducción =
 
@@ -10,5 +10,3 @@
  * *SDK Eclipse* 3.5.2 con pluging *CDT* para el desrrollo de proyectos en c/c++ y pluging *Subeclipse* con subversion para control de versiones.
  * Librerías de visión por computador *OpenCV* 2.2.
  * ( Librerías *Qt* para desarrollo de interfaz gráfica ). 
-
-
