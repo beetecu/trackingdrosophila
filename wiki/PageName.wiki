@@ -1,4 +1,3 @@
-#summary Algo sobre el objeto a rastrear.
+#summary 2 Sobre el objetivo del rastreo.
 
 = *Drosophila Melanogaster* =
-
