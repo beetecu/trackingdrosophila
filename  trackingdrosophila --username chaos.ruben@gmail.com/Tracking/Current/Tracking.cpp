@@ -141,7 +141,9 @@ int main() {
 			hecho = 1;
 		}
 
-		// Modelado de fondo para detección de movimiento
+		////////////// PROCESADO ///////////////
+
+
 		gettimeofday(&ti, NULL);
 
 		PreProcesado( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
@@ -151,10 +153,6 @@ int main() {
 								(tf.tv_usec - ti.tv_usec)/1000.0;
 		printf("\nPreprocesado: %5.4g ms\n", TiempoParcial);
 
-		////////////// PROCESADO ///////////////
-
-		//// BACKGROUND UPDATE
-
 		cvCopy( Capa->BGModel, BGTemp); // guardamos una copia del modelo original
 		cvCopy(Capa->IDesv,DETemp);
 		cvZero( Capa->FG);
@@ -162,6 +160,7 @@ int main() {
 			gettimeofday(&ti, NULL);
 			if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
 			if ( i > 0 ) printf("\nRedefiniendo foreground %d de 2:\n\n", i);
+			//// BACKGROUND UPDATE
 			// Primera actualización del fondo
 			// establecer parametros
 			InitialBGModelParams( BGParams);
@@ -177,6 +176,7 @@ int main() {
 			gettimeofday(&ti, NULL);
 
 			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+
 			gettimeofday(&tf, NULL);
 			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -187,7 +187,7 @@ int main() {
 				printf( "Segmentando Foreground...");
 
 				segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
-
+				cvCopy( Capa-> FGTemp, Capa->FG);
 				gettimeofday(&tf, NULL);
 				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -198,18 +198,24 @@ int main() {
 				cvCopy( BGTemp, Capa->BGModel );
 				cvCopy( DETemp, Capa->IDesv );
 			}
+			/////// VALIDACIÓN
+			// solo en la última iteracion
+			if (i > 1){
+				gettimeofday(&ti, NULL);
+				printf( "\nValidando contornos...");
+
+		//		Validacion(Imagen, Capa , Shape, Flat->DataFROI, Flie, NULL, NULL);
+
+				gettimeofday(&tf, NULL);
+				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+										(tf.tv_usec - ti.tv_usec)/1000.0;
+				printf(" %5.4g ms\n", TiempoParcial);
+			}
 		}
 
-		/////// VALIDACIÓN
-		gettimeofday(&ti, NULL);
-		printf( "\nValidando contornos...");
-//		Validacion(Imagen, Capa , Shape, Flat->DataFROI);
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf(" %5.4g ms\n", TiempoParcial);
 
-		/////// TRACKING
+
+		///////////////  TRACKING ////////////////////
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
 

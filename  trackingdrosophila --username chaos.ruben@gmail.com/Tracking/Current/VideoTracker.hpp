@@ -25,13 +25,14 @@
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
+#define PI 3.14159265
 //Opciones de visualización
 
 
-#define CREATE_TRACKBARS 0 ///<- switch from 0 to 1 para visualizar trackbars.
+#define CREATE_TRACKBARS 1 ///<- switch from 0 to 1 para visualizar trackbars.
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado.
-#define SHOW_OPTICAL_FLOW 1 ///<- switch from 0 to 1 para visualizar flujo optico.
+#define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
 #define SHOW_MOTION_TEMPLATE 0
 #define SHOW_SEGMENTATION_DATA 0
 #define SHOW_SEGMENTACION_STRUCT 0
@@ -45,6 +46,9 @@
 #ifndef DEFINICION_DE_ESTRUCTURAS
 #define DEFINICION_DE_ESTRUCTURAS
 
+//	typedef struct{
+//
+//	};
 	typedef struct Flies{
 
 		int etiqueta;  /// Identificación del blob
@@ -52,6 +56,8 @@
 		CvPoint posicion[]; /// Posición del blob
 		float a,b; /// semiejes de la elipse
 		float orientacion; /// Almacena la orientación
+		double perimetro;
+		CvRect Roi;
 		bool Static;  /// Flag para indicar que el blob permanece estático
 		int num_frame; /// Almacena el numero de frame (tiempo)
 		struct Flies* siguiente;

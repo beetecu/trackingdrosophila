@@ -3,6 +3,15 @@
  *
  *  Created on: 13/09/2011
  *      Author: german
+ *
+ *  Cada blob se ajusta mediante una elipse. Los parámetros de la elipse se obtienen a partir de la
+ *  gaussiana 2d del blob mediante la eigendescomposición de su matriz de covarianza. Los parámetros
+ *  de la gaussiana guardan proporción con el peso de cada pixel. Este peso es proporcional a la
+ *  distancia normalizada de la intensidad del pixel y el valor probable del fondo de ese pixel, de
+ *  modo que el centro de la elipse conicidirá con el valor esperado de la gausiana 2d (la región más
+ *   oscura) que a su vez coincidirá aproximadamente con el centro del blob.
+ *  Una vez hecho el ajuste se rellena una estructura donde se almacenan los parámetros que definen
+ *  las características del blob ( identificacion, posición, orientación, semieje a, semieje b y roi).
  */
 
 
@@ -34,10 +43,6 @@ void Param_Flies(float tita,float semieje_a,float semieje_b,STFlies* flie){//Lle
 	semieje_m=semieje_m->siguiente;
 }
 
-
-
-
-
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
@@ -49,11 +54,7 @@ void segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 
 	//Inicializar estructura para almacenar los datos de las moscas
 	IplImage *FGMask = 0;
-
-
 	FLIE = ( STFlies *) malloc( sizeof( STFlies));
-
-
 	// CREAR IMAGENES
 
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
