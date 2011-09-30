@@ -108,6 +108,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 
 	/// SEGMENTACION
+	int Nc; ///Numero de contornos devueltos por segmentacion
 	IplImage *ImBlobs;
 	IplImage *ImThres;
 

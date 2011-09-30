@@ -14,7 +14,7 @@
 
 
 
-void  segmentacion(IplImage *Brillo,STCapas* Capa, CvRect Roi,STFlies* FLIE);
+int  segmentacion(IplImage *Brillo,STCapas* Capa, CvRect Roi,STFlies* FLIE);
 
 
 
