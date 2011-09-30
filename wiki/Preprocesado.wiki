@@ -1,4 +1,4 @@
-#summary 6-Módulo de preprocesado
+#summary 6-Descripción del módulo de preprocesado
 
 ==5.1 Preprocesado==
 
