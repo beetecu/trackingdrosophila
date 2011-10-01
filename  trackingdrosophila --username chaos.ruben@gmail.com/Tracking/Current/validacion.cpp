@@ -8,11 +8,8 @@
  *
  */
 // OJO en limpieza de foreground se hace un filtrado por area
-// Creo que hay que añadir en limpieza de fg el uso de roi.
-// Ojo, no se puede usar find contours por que cambiaria el orden de los elementos
-// opciones: Manejarse con las estructuras o
-// almacenar la CvSec de los contornos obtenida en segmentacion
-//
+
+// Inicialmente implementar solo el aumento y disminucion del umbral sin casos especiales
 #include "validacion.hpp"
 
 void Validacion(IplImage *Imagen,
@@ -23,6 +20,12 @@ void Validacion(IplImage *Imagen,
 		BGModelParams* BGParams,
 		ValParams* VParams ){
 
+	double Pxi; // La probabilidad del blob actual
+	bool Exceso;//Flag que indica si la pxi minima no se alcanza x exceso o por defecto.
+	double Circul; // Para almacenar la circularidad del blob actual
+	int N; // Permite establecer la probabilidad minima ( Vparams->PxiMin )
+	bool segmentacion = false;
+
 	// establecemos los parámetros de validación por defecto
 	if ( VParams == NULL ){
 		setValParams( VParams);
@@ -31,25 +34,18 @@ void Validacion(IplImage *Imagen,
 	if ( BGParams == NULL){
 		setBGModParams( BGParams);
 	}
-	// Recorremos los blobs uno por uno y los validamos.
+// Recorremos los blobs uno por uno y los validamos.
 
-//		double area = cvContourArea( c );
-//		double perimetro = cvContourPerimeter( c );
+	// bucle for desde el primero hasta el ultimo individuo de la estructura mosca del frame actual
 
-		double Pxi; // La probabilidad del blob actual
-		bool Exceso;//Flag que indica si la pxi minima no se alcanza x exceso o por defecto.
-		double Circul; // Para almacenar la circularidad del blob actual
-		int N; // Permite establecer la probabilidad minima ( Vparams->PxiMin )
-		bool segmentacion = false;
-// añadir bucle for desde el primero hasta el ultimo individuo de la estructura mosca del frame actual
-
+	for( Flie; Flie->siguiente != NULL; Flie = Flie->siguiente ){
 		Pxi = CalcProbMosca( SH , Flie );
 		Circul = CalcCircul( Flie );
 		Exceso = CalcProbUmbral( SH, VParams ); /// calcula VParams->UmbralProb
 		// si no alcanza la P(xi) minima o bien tiene mucha circularidad
 		if( ( Pxi < VParams->UmbralProb) || ( Circul > VParams->UmbralCirc) ){
 			if( Pxi < VParams->UmbralProb ){
-				// comprobamos si no alcanza la probabilidad minima debido
+				// comprobamos si no alcanza la probabilidad minima devido
 				// a un area superior o inferior al rango establecido
 				if( Exceso ){
 					VParams->MaxLowTH = ObtenerMaximo(Imagen, Capa ,Flie->Roi );
@@ -57,27 +53,27 @@ void Validacion(IplImage *Imagen,
 					while( !segmentacion &&
 							BGParams->LOW_THRESHOLD < VParams->MaxLowTH &&
 							Pxi > VParams->PxiMin){
-					/* Incrementar paulatinamente el umbral de resta de fondo hasta el
-					 * máximo comprobando si hay o no segmentación, si se supera o no
-					 *  el umbral y si la pxi es inferior o superior al PxiMin
-					 */
-					/* El máximo umbral será el pixel del blob con mayor distancia normalizada
-					 * al background. En general dicho punto coincidirá aproximadamente con el
-					 * centro del blob habrá un tamaño minimo ( Pxi minima ) a partir del cual
-					 * deje de reducirse el umbral y un valor maximo para el umbral ( MaxLowTH )
-					 * Se puede ponderar con el valor del pixel del centro.
-					 */
+						/* Incrementar paulatinamente el umbral de resta de fondo hasta el
+						 * máximo comprobando si hay o no segmentación, si se supera o no
+						 *  el umbral y si la pxi es inferior o superior al PxiMin
+						 */
+						/* El máximo umbral será el pixel del blob con mayor distancia normalizada
+						 * al background. En general dicho punto coincidirá aproximadamente con el
+						 * centro del blob habrá un tamaño minimo ( Pxi minima ) a partir del cual
+						 * deje de reducirse el umbral y un valor maximo para el umbral ( MaxLowTH )
+						 * Se puede ponderar con el valor del pixel del centro.
+						 */
 
-					// Incrementar umbral
-						BGParams->LOW_THRESHOLD += 1;
-					// Resta de fondo
-					BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv,Capa->FG,BGParams, Flie->Roi);
-					// Segmentar
-					int Nc = segmentacion(Imagen, Capa, Roi, Flie);
-					// comprobar si hay segmentacion
-					if ( Nc > 1 ) segmentacion = true;
+						// Incrementar umbral
+							BGParams->LOW_THRESHOLD += 1;
+						// Resta de fondo
+						BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv,Capa->FG,BGParams, Flie->Roi);
+						// Segmentar
+						int Nc = segmentacion(Imagen, Capa, Roi, Flie);
+						// comprobar si hay segmentacion
+						if ( Nc > 1 ) segmentacion = true;
 
-					// Calcular Pxi de los blob resultantes
+						// Calcular Pxi de los blob resultantes
 
 
 					}
@@ -88,7 +84,7 @@ void Validacion(IplImage *Imagen,
 					 */
 					// Si hay segmentacion, no se alcanza el umbral y la pxi > pximin para los 2 (o mas) blobs
 
-						//Añadir a la estructura
+						//Insertar en la estructura e incrementar el puntero Flie para no volver a analizarlos
 
 					// si no hay segmentacion y se alcanza el umbral
 
@@ -98,12 +94,8 @@ void Validacion(IplImage *Imagen,
 
 						//decrementar el umbral hasta que se alcance el umbral de prob ( UmbralProb )
 
-					// si no hay segmentacion y la pxi < pximin
-
-						//aplicar algoritmo EM y añadir nuevos blobs a la estruc
-
-					/////// Casos especiales///////
-					// Si hay segmentacion pero pxi < pximin, eliminar blob que no cumple la pxi ( puede ser una sombra)
+					/////// Casos especiales/////// Cuando se cumplen a la vez dos o mas condiciones de salida.
+					// Si hay segmentacion y pxi < pximin, eliminar blob que no cumple la pxi ( puede ser una sombra)
 
 					// Si hay se consigue segmentar se continua aumentando el umbral
 
@@ -123,7 +115,7 @@ void Validacion(IplImage *Imagen,
 					 * imagen original hasta que se alcance la Pxi minima.
 					 */
 
-					/* Si Pxi continua sin alcanzar el nivel, eliminar el contorno.
+					/* Si Pxi continua sin alcanzar el nivel, eliminar el blob de la estuctura.
 					 * Esta técnica pemite eliminar los fantasmas del foreground y ruido
 					 */
 				}
@@ -136,7 +128,8 @@ void Validacion(IplImage *Imagen,
 				// si es muy pequeño ignoramos el que tenga una elevada circularidad
 			}
 		}
-
+		Flie = Flie->siguiente;
+	}
 }
 void setValParams( ValParams* Parameters){
 	ValParams* Params;
@@ -196,6 +189,7 @@ int CalcProbUmbral( SHModel* SH,ValParams* VParams ){
 }
 int ObtenerMaximo(IplImage* Imagen, STCapas* Capa,CvRect Roi ){
 	// obtener matriz de distancias normalizadas al background
+	if (SHOW_VALIDATION_DATA == 1) printf(" \n\n Busqueda del máximo umbral...");
 	IplImage* Idif = 0;
 	CvSize size = cvSize(Imagen->width,Imagen->height); // get current frame size
 	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
@@ -210,21 +204,22 @@ int ObtenerMaximo(IplImage* Imagen, STCapas* Capa,CvRect Roi ){
 	cvAbsDiff(Imagen,Capa->BGModel,IDif);
 	cvDiv(IDif,Capa->IDesv,pesos);
 	// Buscar máximo
+	int Maximo = 0;
 	for (int y = Roi.y; y< Roi.y + Roi.height; y++){
-				uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*Roi.x);
-				uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*Roi.x);
-				if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
-				for (int x = 0; x<Roi.width; x++){
-					if (SHOW_VALIDATION_DATA == 1) {
-						if( ( y == Roi.y) && ( x == 0) ){
-							printf("\n Origen: ( %d , %d )\n\n",(x + Roi.x),y);
-						}
-						printf("%d\t", ptr2[x]);
-					}
-					if ( ptr1[x] == 255 ){
-
-
-					}
+		uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*Roi.x);
+		uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*Roi.x);
+		if (SHOW_VALIDATION_DATA == 1) printf(" \n\n");
+		for (int x = 0; x<Roi.width; x++){
+			if (SHOW_VALIDATION_DATA == 1) {
+				if( ( y == Roi.y) && ( x == 0) ){
+					printf("\n Origen: ( %d , %d )\n\n",(x + Roi.x),y);
 				}
+				printf("%d\t", ptr2[x]);
 			}
+			if ( ptr1[x] == 255 ){
+				if (ptr2[x] > Maximo ) Maximo = ptr2[x];
+			}
+		}
+	}
+	printf("\n Maximo: %d ", Maximo);
 }

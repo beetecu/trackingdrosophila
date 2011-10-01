@@ -60,6 +60,7 @@
 		CvRect Roi;
 		bool Static;  /// Flag para indicar que el blob permanece estático
 		int num_frame; /// Almacena el numero de frame (tiempo)
+		int num_Flies_frame;
 		struct Flies* siguiente;
 	}STFlies;
 
