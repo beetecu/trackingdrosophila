@@ -1,5 +1,5 @@
 #summary 3-Materiales
-<wiki:toc max_depth="1" />
+<wiki:toc max_depth="4" />
 = 3 Material =
 
 == 3.1 Sistema de adquisición de imagen ==
