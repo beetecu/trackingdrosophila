@@ -1,13 +1,50 @@
 #summary 3-Sobre el material utilizado.
 
-= 3 Herramientas =
+= 3 Material =
 
-Add your content here.
+== 3.1 Sistema de adquisición de imagen ==
+
+En este apartado se realizarán una serie de recomendaciones sobre el sistema de adquisición de imagenes que pemitirán aumentar la fiabilidad y robustez del sistema.
+
+=== 3.1.1 Cámara y óptica ===
+
+El punto de partida de todo sistema de percepción visual es la captación de la imagen. Este proceso implica la utilización de algún tipo de sensor sobre el que se obtendrá la representación de la escena.
+En este capítulo se abordan las características deseables de dicho sistema.
+
+==== 3.1.1.1 Cámara. ====
+
+Con el fin de aumentar la fiabilidad y robustez del sistema, se recomienda el uso de una cámara con las siguientes características:
+
+ # Sensor:  de tipo CCD. Reduce el ruido e incrementa la sensibilidad. Ofrecen una mayor uniformidad ( respuesta de los diferentes píxeles ante la misma iluminación de entrada ).
+ # Resolución:  de 800x600 o superior, a costa de una pérdida en la velocidad de procesamiento; se conseguiría una reducción significativa en los errores de indentificación y posición de los objetos a rastrear.
+ # Tasa de fotograma: Consideramos que un ratio de 20 ó 25 frames por segundo es suficiente para un funcionamiento correcto, consiguiendo por añadidura una menor carga de procesamiento.
+ # Color: El algoritmo internamente trabaja con imagenes en 256 niveles de gris. Una cámara monocromática reduciría el tiempo de cálculo, aunque este no sería un factor determinante.
+
+==== 3.1.1.2 Óptica. ====
+
+ La distancia focal y el enfoque se encuentran íntimamente relacionados con el tamaño del sensor y la distancia de la cámara. Para su cálculo se emplea la siguiente fórmula:
+
+=== 3.1.2 Iluminación ===
+
+ La iluminación juega un papel vital en cualquier sistema de visión artificial ya que proporciona las condiciones ópticas bajo las cuales se lleva a cabo la adquisición de la imagen. Una iluminación estable y que realce las características de interés en la escena hace mucha más sencillo y fiable el posterior procesamiento de la imagen. La iluminación existente en el entorno nunca es aceptable ya que proporciona imágenes con sombras, brillos molestos o intensidad variable.
+
+ La aplicación de una iluminación adecuada es determinante para el éxito de la aplicación de rastreo automático, siendo un factor que afecta radicalmente a la complejidad del algoritmo y a la fiabilidad del sistema.
+
+==== 3.1.2.1 Características de la fuente de iluminación. ==== 
+
+ # Nivel de luz: En lo posible el sistema debe estar apantallado para evitar cualquier entrada de luz ambiente. Si no es posible un apantallamiento, la fuente de luz ha de ser de una intensidad tal que permita enmascarar las variaciones ambientales.
+ # Distribución espectral: La luz ha de ser blanca ó monocromática.
+ # Patrón de radiación: Para evitar brillos y sombras es deseable un patrón de luz hemisférico. En su defecto también sería correcto un patrón anular.
+ # Estabilidad: Siempre se debe apantallar el entorno instalando un carenado que evite las perturbaciones de la luz exterior, a fin de maximizar la estabilidad de la iluminación. Si no es posible, la fuente de luz ha de ser lo suficientemente potente para enmascarar la luz ambiente.
+
+==== 3.1.2.2 Fuentes de iluminación ====
+
+ # Tubo fluorescente: Suministra una luz difusa que minimiza las sombras. El fluorescente ha de ser circular con la cámara posicionada en el centro del anillo luminoso. Ha de funcionar a alta frecuencia ( al menos 25Khz ) para evitar parpadeo.
+ # LED: Es ampliamente utilizado en los sistemas de visión devido a que presenta una serie de características muy deseables:
+  * Funciona a baja temperatura.
+  * Tiene un bajo consumo.
+  * Pequeño tamaño y flexibilidad en el diseño.
+  * Elevada duración y fiabilidad.
 
 
-= Details =
 
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
