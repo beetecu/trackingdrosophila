@@ -1,3 +1,3 @@
-#summary 4-descripción general del algoritmo
+#summary 4-Descripción general del software
 
 =4 Descripción general del software =
