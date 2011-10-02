@@ -3,7 +3,7 @@
 = 3 Material =
 
 == 3.1 Sistema de adquisición de imagen ==
-
+<wiki:gadget url="http://example.com/gadget.xml" height="200" border="0" /> 
 En este apartado se realizarán una serie de recomendaciones sobre el sistema de adquisición de imagenes que pemitirán aumentar la fiabilidad y robustez del sistema.
 
 === 3.1.1 Cámara y óptica ===
