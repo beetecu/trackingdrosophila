@@ -1,4 +1,5 @@
 #summary 3-Materiales
+#sidebar TableOfContents
 <wiki:toc max_depth="4" />
 = 3 Material =
 
