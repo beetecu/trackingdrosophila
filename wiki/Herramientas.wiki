@@ -1,4 +1,4 @@
-##summary 3-Materiales
+#summary 3-Materiales
 
 = 3 Material =
 
@@ -53,5 +53,5 @@ La apariencia del objeto depende en gran medida de la posición de la fuente con
 
 Existen un conjunto de técnicas de iluminación basadas en distintas configuraciones geométricas de la fuente de luz con respecto al objeto. Entre entre todas las técnicas, las más adecuadas para la aplicación son las siguientes:
  # *Retroiluminación*: Se pueden obtener de forma sencilla y estable muy buenas imágenes iluminando con una fuente difusa a contraluz. Ésta técnica permite imágenes de gran contraste entre el objeto y el fondo que son fácilmente procesables. Hay que tener cuidado de no sobresaturar el sensor con una elevada iluminación, ya que el objeto parecerá más pequeño; habrá que reducir la apertura o la velocidad del obturador.
- # *Iluminación frontal*: En la configuración más típica las luces forman 45º con el eje óptico de la cámara que se encuentra sobre el objeto. Esta configuración no es deseable pues proyecta sombras, produce brillos, y hace aparecer zonas oscuras. Para evitarlo es preciso emplear fuentes de iluminación difusa con patrones anulares ó hemisféricos
+ # *Iluminación frontal*: En la configuración más típica las luces forman 45º con el eje óptico de la cámara que se encuentra sobre el objeto. Esta configuración no es deseable pues proyecta sombras, produce brillos, y hace aparecer zonas oscuras. Para evitarlo es preciso emplear fuentes de iluminación difusa con patrones anulares ó hemisféricos.
  
