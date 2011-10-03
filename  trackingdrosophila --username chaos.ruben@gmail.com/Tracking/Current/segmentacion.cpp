@@ -102,7 +102,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	// Distancia normalizada de cada pixel a su modelo de fondo.
 
 	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
-//	cvConvertScale(IDif ,IDifm,1,0);// A float
+	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv( IDifm,Capa->IDesv,pesos );// Calcular
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground

@@ -33,8 +33,8 @@
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado.
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
-#define SHOW_MOTION_TEMPLATE 0
-#define SHOW_SEGMENTATION_DATA 0
+#define SHOW_MOTION_TEMPLATE 1
+#define SHOW_SEGMENTATION_DATA 1
 #define SHOW_SEGMENTACION_STRUCT 0
 
 
