@@ -187,7 +187,7 @@ int main() {
 				printf( "Segmentando Foreground...");
 
 				segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
-				cvCopy( Capa-> FGTemp, Capa->FG);
+				cvCopy( Capa->FGTemp, Capa->FG);
 				gettimeofday(&tf, NULL);
 				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -200,17 +200,17 @@ int main() {
 			}
 			/////// VALIDACIÓN
 			// solo en la última iteracion
-			if (i > 1){
-				gettimeofday(&ti, NULL);
-				printf( "\nValidando contornos...");
-
-		//		Validacion(Imagen, Capa , Shape, Flat->DataFROI, Flie, NULL, NULL);
-
-				gettimeofday(&tf, NULL);
-				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-				printf(" %5.4g ms\n", TiempoParcial);
-			}
+//			if (i > 1){
+//				gettimeofday(&ti, NULL);
+//				printf( "\nValidando contornos...");
+//
+//		//		Validacion(Imagen, Capa , Shape, Flat->DataFROI, Flie, NULL, NULL);
+//
+//				gettimeofday(&tf, NULL);
+//				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+//										(tf.tv_usec - ti.tv_usec)/1000.0;
+//				printf(" %5.4g ms\n", TiempoParcial);
+//			}
 		}
 
 
@@ -218,10 +218,12 @@ int main() {
 		///////////////  TRACKING ////////////////////
 		gettimeofday(&ti, NULL);
 		cvZero( Capa->ImMotion);
+		if ( SHOW_MOTION_TEMPLATE == 1){
+			MotionTemplate( Capa->FG, Capa->ImMotion);
+		}
 
-//		MotionTemplate( Capa->FG, Capa->ImMotion);
 
-		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
+//		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
 
 		cvCircle( Capa->ImMotion, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
 		cvCircle( Capa->ImMotion, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,255,0),2 );
