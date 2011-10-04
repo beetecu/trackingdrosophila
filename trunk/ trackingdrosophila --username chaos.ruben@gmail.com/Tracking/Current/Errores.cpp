@@ -15,9 +15,11 @@ void error(int err){
 		case 1:
 			fprintf( stderr, "ERROR: capture is NULL \n" );	//getchar();
 			DestroyWindows( );
+			break;
 		case 2:
 			fprintf( stderr, "ERROR: frame is null...\n" ); //getchar();
 			DestroyWindows( );
+			break;
 		case 3:
 
 			fprintf( stderr, "ERROR: No se ha encontrado el plato \n" );
@@ -28,12 +30,15 @@ void error(int err){
 					"- Plato  fuera del área de visualización\n" );
 			getchar();
 			DestroyWindows( );
+			break;
 		case 4:
 			fprintf( stderr, "ERROR: Memoria insuficiente\n" );
 			DestroyWindows( );
+			break;
 		case 5:
 			fprintf( stderr, "ERROR: División por 0 \n" );
 			DestroyWindows( );
+			break;
 
 	}
 }

@@ -14,15 +14,10 @@ using namespace std;
 
 int main() {
 
-	/////////// CAPTURA DE IMAGENES E INICIALIZACIÓN ////////////
+	///////////  INICIALIZACIÓN ////////////
 	gettimeofday(&ti, NULL);  //para obtener el tiempo
 	TiempoInicial= ti.tv_sec*1000 + ti.tv_usec/1000.0;
-
 	printf( "Iniciando captura..." );
-	gettimeofday(&tf, NULL);
-	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-			(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf(" %5.4g ms\n", TiempoParcial);
 
 	g_capture = NULL;
 	g_capture = cvCaptureFromAVI( "Drosophila.avi" );
@@ -32,42 +27,13 @@ int main() {
 	}
 	frame = cvQueryFrame( g_capture );
 
-	// Creación de ventanas de visualizacion
-	CreateWindows( );
-	//      cvSetCaptureProperty( g_capture	cvResetImageROI(Capa->BGModel);, CV_CAP_PROP_POS_AVI_RATIO,0 );
-	//      Añadimos un slider a la ventana del video Drosophila.avi
-	//              int TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
+	int ok = Inicializacion(frame, &Flat, &Capa, &Shape,&BGParams);
+	if (!ok ) return -1;
 
-	// Iniciar estructura para almacenar las Capas
-	Capa = ( STCapas *) malloc( sizeof( STCapas));
-
-	// Iniciar estructura para modelo de plato
-	Flat = ( STFlat *) malloc( sizeof( STFlat));
-	Flat->PCentroX = 0;
-	Flat->PCentroY = 0;
-	Flat->PRadio = 0;
-	// Iniciar estructura para modelo de forma
-	Shape = ( SHModel *) malloc( sizeof( SHModel));
-	Shape->FlyAreaDes = 0;
-	Shape->FlyAreaMed = 0;
-	Shape->FlyAreaMedia=0;
-	// Iniciar estructura para parametros del modelo de fondo en primera actualización
-	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
-	// Iniciar estructura para parámetros del modelo de fondo para validación
-//	BGForVal = ( BGModelParams *) malloc( sizeof( BGModelParams));
-	// Iniciar estructura para almacerar datos de blobs
-
-	//STFlies *Flies=NULL;
-	Lista llse; // Apuntará al primer elemento de la lista lineal
-	iniciarLista(&llse);
-
-	// creación de imagenes a utilizar
-	AllocateImages( frame );
-	AllocateImagesBGM( frame );
-
-	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
-	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
-
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000
+			     + (tf.tv_usec - ti.tv_usec)/1000.0;
+	printf(" %5.4g ms\n", TiempoParcial);
 	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
 	 ////// BUCLE PRINCIPAL DEL ALGORITMO \\\\\\\
 	  /////////////////////\\\\\\\\\\\\\\\\\\\\
@@ -86,6 +52,7 @@ int main() {
 		gettimeofday(&tif, NULL);
 
 		////////// PREPROCESADO ///////////////
+		//PreProcesado
 		static int hecho = 0;
 		// Obtencion de mascara del plato
 		if( !hecho ){
@@ -146,7 +113,7 @@ int main() {
 
 		gettimeofday(&ti, NULL);
 
-		PreProcesado( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
+		ImPreProcess( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -304,6 +271,8 @@ int main() {
 	// LIMPIAR MEMORIA
 
 	free(Capa);
+	free(Flat);
+	free(Flie);
 	DeallocateImages( );
 	DeallocateImagesBGM();
 
@@ -313,44 +282,128 @@ int main() {
 
 }
 
-void AllocateImages( IplImage* I ){
+int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams){
+	// Creación de ventanas de visualizacion
+	CreateWindows( );
+	//      cvSetCaptureProperty( g_capture	cvResetImageROI(Capa->BGModel);, CV_CAP_PROP_POS_AVI_RATIO,0 );
+	//      Añadimos un slider a la ventana del video Drosophila.avi
+	//              int TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
+
+	// Iniciar estructura para almacenar las Capas
+	STCapas* Cap;
+	Cap = ( STCapas *) malloc( sizeof( STCapas));
+	if ( !Capa ) {
+		error(4);
+		return 0;
+	}
+	// creación de imagenes a utilizar
+	AllocateImages( frame, Cap );
+
+	*Capa = Cap;
+	// Iniciar estructura para modelo de plato
+	STFlat* flat;
+	flat = ( STFlat *) malloc( sizeof( STFlat));
+	if ( !Flat ) {
+			error(4);
+			return 0;
+		}
+	flat->PCentroX = 0;
+	flat->PCentroY = 0;
+	flat->PRadio = 0;
+	*Flat = flat;
+
+	// Iniciar estructura para modelo de forma
+	SHModel *shape;
+	shape = ( SHModel *) malloc( sizeof( SHModel));
+	if ( !shape ) {
+			error(4);
+			return 0;
+		}
+	shape->FlyAreaDes = 0;
+	shape->FlyAreaMed = 0;
+	shape->FlyAreaMedia=0;
+	*Shape = shape;
+	// Iniciar estructura para parametros del modelo de fondo en primera actualización
+	BGModelParams *bgparams;
+	bgparams = ( BGModelParams *) malloc( sizeof( BGModelParams));
+	if ( !bgparams ) {
+				error(4);
+				return 0;
+	}
+	*BGParams = bgparams;
+	// Iniciar estructura para parámetros del modelo de fondo para validación
+//	BGForVal = ( BGModelParams *) malloc( sizeof( BGModelParams));
+	// Iniciar estructura para almacerar datos de blobs
+
+	//STFlies *Flies=NULL;
+	Lista llse; // Apuntará al primer elemento de la lista lineal
+	iniciarLista(&llse);
 
 
-	CvSize sz = cvGetSize( I );
+	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
+	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
+	return 1;
+}
 
-	Capa->BGModel = cvCreateImage(sz,8,1);
-	Capa->FG = cvCreateImage(sz,8,1);
-	Capa->FGTemp = cvCreateImage(sz,8,1);
-	Capa->IDesv = cvCreateImage(sz,8,1);
-	Capa->ImFMask = cvCreateImage(sz,8,1);
-	Capa->ImRois = cvCreateImage(sz,8,1);
-	Capa->OldFG = cvCreateImage(sz,8,1);
-	Capa->ImMotion = cvCreateImage( sz, 8, 3 );
+void AllocateImages( IplImage* I ,STCapas* Capa){
 
-	cvZero( Capa->BGModel );
-	cvZero( Capa->FG );
-	cvZero( Capa->FGTemp );
-	cvZero( Capa->IDesv );
-	cvZero( Capa->ImFMask );
-	cvZero( Capa->ImRois );
-	cvZero( Capa->OldFG );
-	cvZero( Capa->ImMotion );
-	Capa->ImMotion->origin = I->origin;
+	// Crear imagenes y redimensionarlas en caso de que cambien su tamaño
 
-	BGTemp = cvCreateImage( sz,8,1);
-	DETemp = cvCreateImage( sz,8,1);
-	BGTemp1 = cvCreateImage( sz,8,1);
-	DETemp1 = cvCreateImage( sz,8,1);
-	FOTemp = cvCreateImage( sz,8,1);
-	Imagen = cvCreateImage( sz ,8,1);
-	ImPyr = cvCreateImage( sz ,8,1);
-	ImOpFlowX = cvCreateImage( sz ,IPL_DEPTH_32F,1 );
-	ImOpFlowY = cvCreateImage( sz ,IPL_DEPTH_32F,1 );
-	ImBlobs = cvCreateImage( sz,8,1 );
-	ImThres = cvCreateImage( sz,8,1 );
-	ImVisual = cvCreateImage( sz,8,3);
+	CvSize size = cvGetSize( I );
 
+//	if( !Capa->BGModel ||
+//		 Capa->BGModel->width != size.width ||
+//		 Capa->BGModel->height != size.height ) {
+//
+//		cvReleaseImage( &Capa->BGModel );
+//		cvReleaseImage( &Capa->FG );
+//		cvReleaseImage( &Capa->IDesv );
+//		cvReleaseImage( &Capa->ImFMask );
+//		cvReleaseImage( &Capa->ImRois );
+//		cvReleaseImage( &Capa->OldFG );
+//		cvReleaseImage( &Capa->ImMotion );
 
+		Capa->BGModel = cvCreateImage(size,8,1);
+		Capa->FG = cvCreateImage(size,8,1);
+		Capa->FGTemp = cvCreateImage(size,8,1);
+		Capa->IDesv = cvCreateImage(size,8,1);
+		Capa->ImFMask = cvCreateImage(size,8,1);
+		Capa->ImRois = cvCreateImage(size,8,1);
+		Capa->OldFG = cvCreateImage(size,8,1);
+		Capa->ImMotion = cvCreateImage( size, 8, 3 );
+
+		cvZero( Capa->BGModel );
+		cvZero( Capa->FG );
+		cvZero( Capa->FGTemp );
+		cvZero( Capa->IDesv );
+		cvZero( Capa->ImFMask );
+		cvZero( Capa->ImRois );
+		cvZero( Capa->OldFG );
+		cvZero( Capa->ImMotion );
+		Capa->ImMotion->origin = I->origin;
+
+		cvReleaseImage( &BGTemp );
+		cvReleaseImage( &DETemp );
+		cvReleaseImage( &Imagen );
+		cvReleaseImage( &ImOpFlowX );
+		cvReleaseImage( &ImOpFlowY );
+		cvReleaseImage( &ImVisual );
+
+		BGTemp = cvCreateImage( size,8,1);
+		DETemp = cvCreateImage( size,8,1);
+		Imagen = cvCreateImage( size ,8,1);
+		ImOpFlowX = cvCreateImage( size ,IPL_DEPTH_32F,1 );
+		ImOpFlowY = cvCreateImage( size ,IPL_DEPTH_32F,1 );
+		ImVisual = cvCreateImage( size,8,3);
+
+		cvZero( BGTemp );
+		cvZero( DETemp );
+		cvZero( Imagen );
+		cvZero( ImOpFlowX );
+		cvZero( ImOpFlowY );
+		cvZero( ImVisual );
+
+	//}
 }
 
 // Libera memoria de las imagenes creadas
@@ -358,10 +411,8 @@ void AllocateImages( IplImage* I ){
 void DeallocateImages( ){
 
 	cvReleaseImage( &Imagen );
-	cvReleaseImage( &ImPyr);
 	cvReleaseImage( &ImOpFlowX);
 	cvReleaseImage( &ImOpFlowY);
-	cvReleaseImage( &ImBlobs );
 	cvReleaseImage( &ImVisual );
 	cvReleaseImage( &BGTemp);
 	cvReleaseImage( &DETemp);

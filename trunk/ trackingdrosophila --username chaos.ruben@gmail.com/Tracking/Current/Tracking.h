@@ -43,10 +43,10 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	double TotalFrames = 0;
 	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
 
-	//HightGui
+	///HightGui
 	int g_slider_pos = 0;
 
-	// Modelo del Plato
+	/// Modelo del Plato
 	STFlat* Flat;
 	static CvRect SegROI;
 
@@ -54,23 +54,12 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	STCapas* Capa = NULL;
 	BGModelParams *BGParams = NULL;
-	// Parámetros
-//	int FramesTrain = 20 ;/// Nº de frames para el aprendizaje del fondo
-//	int Hight_TH = 20; /// Umbral alto para la resta de fondo
-//	int Low_TH = 10; /// Umbral bajo para la resta de fondo
-//	double Alpha = 0;
-//	//Parámetros de limpieza de foreground
-//	bool Morfologia = 0; /// si esta a 1 se aplica erosión y cierre
-//	int CvcloseIters = 0; /// Número de iteraciones en op morfológicas ( no se usa )
-//	int MaxArea = 20; /// Máxima area del blob
-//	int MinArea = 200; /// Mínima area del blob
 
 	// otros parámetros
 	int fr = 0;
 	int BGUpdate = 1;
 	int UpdateCount = 0;
 	IplImage* BGTemp;
-	IplImage* FOTemp;
 	IplImage* DETemp;
 	IplImage* BGTemp1;
 	IplImage* DETemp1;
@@ -80,13 +69,11 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	SHModel* Shape;
 
-	// Modelado segmentacion, estructura Flies
-	BGModelParams *BGForVal = NULL;
+	///Estructura Flies
 	STFlies* Flie=NULL;
 
-	/// Umbrales modelo de fondo estático 32 bit 1 canal
-//	IplImage *ImHiThr;
-//	IplImage *ImLowThr;
+	/// SEGMENTACION
+	int Nc; ///Numero de contornos devueltos por segmentacion
 
 	/// Imagenes que se usarán en el programa principal
 	/// CAPTURA
@@ -95,28 +82,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	IplImage *Imagen;
 	IplImage *ImVisual;
 
-	/// PREPROCESADO
-	/// Imagenes 8 bits niveles de gris 1 canal
-
-//	IplImage *ImGris;
-//	IplImage *ImFilter;
-	IplImage *ImROI;
-
-	/// Sombras
-	IplImage* ImPyr;
-
-
-
-	/// SEGMENTACION
-	int Nc; ///Numero de contornos devueltos por segmentacion
-	IplImage *ImBlobs;
-	IplImage *ImThres;
-
 	/// TRACKING
 	IplImage *ImOpFlowX;
 	IplImage *ImOpFlowY;
-
-	int spatialRad = 10, colorRad = 10 , maxPyrLevel = 1;
 
 #endif
 
@@ -124,6 +92,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 //#ifndef PROTOTIPOS_DE_FUNCIONES
 //#define PROTOTIPOS_DE_FUNCIONES
 
+	/// Inicialización
+
+	int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams);
 	/// Medida de tiempos
 	int gettimeofday( struct timeval *tv, struct timezone *tz );
 
@@ -131,13 +102,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	void CreateWindows();
 
 	/// localiza en memoria las imágenes necesarias para la ejecución
-	void AllocateImages( IplImage* );
+	void AllocateImages( IplImage*, STCapas* Capa);
 
 	void InitialBGModelParams( BGModelParams* Params);
-
-	/** Recibe la imagen del video y devuelve la imagen en un canal de niveles
-	    de gris filtrada con el plato extraido **/
-//	void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask, bool);
 
 	// Para invertir mascaras
 //	void invertirBW( IplImage* Imagen);

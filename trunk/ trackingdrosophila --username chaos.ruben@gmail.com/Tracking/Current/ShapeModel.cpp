@@ -40,7 +40,7 @@ void ShapeModel( CvCapture* g_capture, SHModel* SH,IplImage* ImMask, CvRect ROI 
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
-		PreProcesado( frame, ImGray, ImMask, true, ROI);
+		ImPreProcess( frame, ImGray, ImMask, true, ROI);
 		cvSetImageROI( ImGray, ROI);
 		cvShowImage( "Drosophila.avi", ImGray );
 
