@@ -11,8 +11,13 @@
 
 using namespace cv;
 using namespace std;
+void help(){
+	printf("\n Para ejecutar el programa escriba en la consola: "
+			"TrackingDrosophila [nombre_video.avi] \n  ");
+}
+int main(int argc, char* argv[]) {
 
-int main() {
+	if( argc<2) {help(); return -1;};
 
 	///////////  INICIALIZACIÓN ////////////
 	gettimeofday(&ti, NULL);  //para obtener el tiempo
@@ -20,7 +25,7 @@ int main() {
 	printf( "Iniciando captura..." );
 
 	g_capture = NULL;
-	g_capture = cvCaptureFromAVI( "Drosophila.avi" );
+	g_capture = cvCaptureFromAVI( argv[1] );
 	if ( !g_capture ) {
 		error( 1 );
 		return -1;
