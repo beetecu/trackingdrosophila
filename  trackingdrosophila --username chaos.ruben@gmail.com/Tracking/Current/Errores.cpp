@@ -13,11 +13,13 @@ void DestroyWindows( );
 void error(int err){
 	switch( err ){
 		case 1:
-			fprintf( stderr, "ERROR: capture is NULL \n" );	//getchar();
+			fprintf( stderr, "ERROR: No se puede abrir el video. Esto puede suceder"
+					"por:\n - El formato de video no está soportado.\n - Los códecs"
+					"no están correctamente instalados.\n - El video está corrupto.\n");
 			DestroyWindows( );
 			break;
 		case 2:
-			fprintf( stderr, "ERROR: frame is null...\n" ); //getchar();
+			fprintf( stderr, "ERROR: frame is null...Vídeo corrupto.\n" ); //getchar();
 			DestroyWindows( );
 			break;
 		case 3:
