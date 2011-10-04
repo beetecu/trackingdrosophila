@@ -95,6 +95,11 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	/// Inicialización
 
 	int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams);
+	/// Preprocesado
+
+	int PreProcesado( CvCapture*g_capture, STFlat* Flat,STCapas*  Capa,SHModel* Shape);
+
+	void Procesado();
 	/// Medida de tiempos
 	int gettimeofday( struct timeval *tv, struct timezone *tz );
 

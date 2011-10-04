@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
 	if( argc<2) {help(); return -1;};
 
-	///////////  INICIALIZACIÓN ////////////
+	///////////  CAPTURA  ////////////
 	gettimeofday(&ti, NULL);  //para obtener el tiempo
 	TiempoInicial= ti.tv_sec*1000 + ti.tv_usec/1000.0;
 	printf( "Iniciando captura..." );
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	frame = cvQueryFrame( g_capture );
-
+	///////////  INICIALIZACIÓN ////////////
 	int ok = Inicializacion(frame, &Flat, &Capa, &Shape,&BGParams);
 	if (!ok ) return -1;
 
@@ -52,70 +52,19 @@ int main(int argc, char* argv[]) {
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		FrameCount += 1;
-		printf( "\n\t\t\tFRAME %.0f\n", FrameCount);
+
 		UpdateCount += 1;
 		gettimeofday(&tif, NULL);
 
 		////////// PREPROCESADO ///////////////
-		//PreProcesado
-		static int hecho = 0;
-		// Obtencion de mascara del plato
-		if( !hecho ){
-			printf("Localizando plato... ");
-			gettimeofday(&ti, NULL);
 
-			MascaraPlato( g_capture, Capa->ImFMask, Flat );
 
-			if ( Flat->PRadio == 0  ) {
-				error(3);
-				break;
-			}
-
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-														(tf.tv_usec - ti.tv_usec)/1000.0;
-			TiempoGlobal= TiempoGlobal + TiempoParcial ;
-			printf(" %5.4g segundos\n", TiempoGlobal/1000);
-		}
-
-		// Crear Modelo de fondo estático .Solo en la primera ejecución
-		if (!hecho) {
-			printf("Creando modelo de fondo..... ");
-			gettimeofday(&ti, NULL);
-			// establecer parametros
-			InitialBGModelParams( BGParams);
-			initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, BGParams, Flat->DataFROI);
-			FrameCount = cvGetCaptureProperty( g_capture, 1 );
-
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-											(tf.tv_usec - ti.tv_usec)/1000.0;
-			TiempoGlobal= TiempoGlobal + TiempoParcial ;
-			printf(" %5.4g segundos\n", TiempoGlobal/1000);
-			TiempoGlobal = 0; // inicializamos el tiempo global
-			printf("Iniciando rastreo...\n");
-
-		}
-		// Modelado de la forma de los objetos a rastrear.
-		if( !hecho){
-			printf("Creando modelo de forma..... ");
-			gettimeofday(&ti, NULL);
-
-			ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
-
-			FrameCount = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-											(tf.tv_usec - ti.tv_usec)/1000.0;
-			TiempoGlobal= TiempoGlobal + TiempoParcial ;
-			printf(" %5.4g seg\n", TiempoGlobal/1000);
-			TiempoGlobal = 0;
-			hecho = 1;
-		}
+		int hecho = PreProcesado( g_capture, Flat, Capa, Shape) ;
+		if (!hecho) return -1;
 
 		////////////// PROCESADO ///////////////
 
-
+		Procesado();
 		gettimeofday(&ti, NULL);
 
 		ImPreProcess( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
@@ -123,7 +72,8 @@ int main(int argc, char* argv[]) {
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\nPreprocesado: %5.4g ms\n", TiempoParcial);
+		printf( "\n\t\t\tFRAME %.0f\n", FrameCount);
+		printf("\nPreprocesado de imagen: %5.4g ms\n", TiempoParcial);
 
 		cvCopy( Capa->BGModel, BGTemp); // guardamos una copia del modelo original
 		cvCopy(Capa->IDesv,DETemp);
@@ -350,6 +300,69 @@ int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Sha
 	return 1;
 }
 
+int PreProcesado( CvCapture*g_capture, STFlat* Flat,STCapas*  Capa,SHModel* Shape){
+
+	static int hecho = 0;
+	// Obtencion de mascara del plato
+	if( !hecho ){
+		printf("\nIniciando preprocesado.", TiempoParcial);
+		printf("Localizando plato... ");
+		gettimeofday(&ti, NULL);
+
+		MascaraPlato( g_capture, Capa->ImFMask, Flat );
+
+		if ( Flat->PRadio == 0  ) {
+			error(3);
+			return 0;
+		}
+
+		gettimeofday(&tf, NULL);
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+													(tf.tv_usec - ti.tv_usec)/1000.0;
+		TiempoGlobal= TiempoGlobal + TiempoParcial ;
+		printf(" %5.4g segundos\n", TiempoGlobal/1000);
+	}
+
+	// Crear Modelo de fondo estático .Solo en la primera ejecución
+	if (!hecho) {
+		printf("Creando modelo de fondo..... ");
+		gettimeofday(&ti, NULL);
+		// establecer parametros
+		InitialBGModelParams( BGParams);
+		initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, BGParams, Flat->DataFROI);
+		FrameCount = cvGetCaptureProperty( g_capture, 1 );
+
+		gettimeofday(&tf, NULL);
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+										(tf.tv_usec - ti.tv_usec)/1000.0;
+		TiempoGlobal= TiempoGlobal + TiempoParcial ;
+		printf(" %5.4g segundos\n", TiempoGlobal/1000);
+		TiempoGlobal = 0; // inicializamos el tiempo global
+
+
+	}
+	// Modelado de la forma de los objetos a rastrear.
+	if( !hecho){
+		printf("Creando modelo de forma..... ");
+		gettimeofday(&ti, NULL);
+
+		ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
+
+		FrameCount = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
+		gettimeofday(&tf, NULL);
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+										(tf.tv_usec - ti.tv_usec)/1000.0;
+		TiempoGlobal= TiempoGlobal + TiempoParcial ;
+		printf(" %5.4g seg\n", TiempoGlobal/1000);
+		printf("Fin preprocesado. Iniciando procesado...\n");
+		TiempoGlobal = 0;
+		return hecho = 1;
+	}
+}
+
+void Procesado(){
+
+}
 void AllocateImages( IplImage* I ,STCapas* Capa){
 
 	// Crear imagenes y redimensionarlas en caso de que cambien su tamaño
