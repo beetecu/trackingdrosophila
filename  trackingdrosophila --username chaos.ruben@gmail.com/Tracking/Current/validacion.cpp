@@ -59,7 +59,7 @@
 //						 */
 //						/* El máximo umbral será el pixel del blob con mayor distancia normalizada
 //						 * al background. En general dicho punto coincidirá aproximadamente con el
-//						 * centro del blob habrá un tamaño minimo ( Pxi minima ) a partir del cual
+//						 * centro del blob. Habrá un tamaño minimo ( Pxi minima ) a partir del cual
 //						 * deje de reducirse el umbral y un valor maximo para el umbral ( MaxLowTH )
 //						 * Se puede ponderar con el valor del pixel del centro.
 //						 */
@@ -184,7 +184,7 @@
 //	double Pth;
 //	area = VParams->UmbralProb*SH->FlyAreaDes + SH->FlyAreaMed;
 //	Pth = exp( -abs(area - SH->FlyAreaMed) / SH->FlyAreaDes);
-//	if ( abs(area - SH->FlyAreaMed)<0 ) return 0;
+//	if ( ( area - SH->FlyAreaMed)<0 ) return 0;
 //	else return 1;
 //}
 //int ObtenerMaximo(IplImage* Imagen, STCapas* Capa,CvRect Roi ){

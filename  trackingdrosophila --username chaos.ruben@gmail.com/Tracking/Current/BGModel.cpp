@@ -41,7 +41,7 @@ IplImage *Imaskt;
 void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,BGModelParams* Param,CvRect ROI){
 
 	int num_frames = 0;
-	 SetBGModelParams( Param);
+	 SetBGModelParams( Param );
 	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 
 	while( num_frames < Param->FRAMES_TRAINING ){
@@ -52,10 +52,11 @@ void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* Im
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
+		AllocateImagesBGM( frame );
 //		int max_buffer;
 //		IplImage* rawImage;
 
-		PreProcesado( frame, ImGray, ImMask, false, ROI);
+		ImPreProcess( frame, ImGray, ImMask, false, ROI);
 
 		accumulateBackground( ImGray, BG ,DE, ROI, 0);
 
@@ -363,27 +364,52 @@ void SetBGModelParams( BGModelParams *Parameters){
 void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation purposes
 
         CvSize sz = cvGetSize( I );
-        ImedianF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-        IvarF = cvCreateImage( sz, 8, 1 );
-        Ivar =  cvCreateImage( sz, 8, 1 );
-        IdesF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-        IdiffF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-        Idiff = cvCreateImage( sz, 8, 1 );
-        IhiF = cvCreateImage( sz, 8, 1 );
-        IlowF = cvCreateImage( sz, 8, 1 );
+        if( !Ides ||
+            Ides->width != sz.width ||
+        	Ides->height != sz.height ) {
 
-        cvZero( ImedianF );
-        cvZero( IvarF );
-        cvZero( IdesF );
-        cvZero( Ides );
-        cvZero( IdiffF );
-        cvZero( Idiff );
-        cvZero( IhiF );
-        cvZero( IlowF );
+        		cvReleaseImage( &ImedianF );
+        		cvReleaseImage( &IvarF );
+        		cvReleaseImage( &Ivar );
+        		cvReleaseImage( &Ides);
+        		cvReleaseImage( &IdesF );
+        		cvReleaseImage( &IdiffF );
+        		cvReleaseImage( &Idiff);
+        		cvReleaseImage( &IhiF );
+        		cvReleaseImage( &IlowF );
 
-        ImGray = cvCreateImage( sz, 8, 1 );
-        ImGrayF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-        Imaskt = cvCreateImage( sz, 8, 1 );
+        		cvReleaseImage( &ImGray );
+        		cvReleaseImage( &ImGrayF );
+        		cvReleaseImage( &Imaskt );
+
+
+        		ImedianF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
+				IvarF = cvCreateImage( sz, 8, 1 );
+				Ivar =  cvCreateImage( sz, 8, 1 );
+				Ides =  cvCreateImage( sz, 8, 1 );
+				IdesF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
+				IdiffF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
+				Idiff = cvCreateImage( sz, 8, 1 );
+				IhiF = cvCreateImage( sz, 8, 1 );
+				IlowF = cvCreateImage( sz, 8, 1 );
+
+			    ImGray = cvCreateImage( sz, 8, 1 );
+				ImGrayF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
+				Imaskt = cvCreateImage( sz, 8, 1 );
+
+				cvZero( ImedianF );
+				cvZero( IvarF );
+				cvZero( Ivar);
+				cvZero( IdesF );
+				cvZero( Ides );
+				cvZero( IdiffF );
+				cvZero( Idiff );
+				cvZero( IhiF );
+				cvZero( IlowF );
+				cvZero(ImGray);
+				cvZero(ImGrayF);
+				cvZero(Imaskt);
+        	}
 }
 
 void DeallocateImagesBGM() {

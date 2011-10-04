@@ -17,8 +17,8 @@ typedef struct{
 	int LOW_THRESHOLD ; /// Umbral bajo para la resta de fondo
 	double ALPHA;
 	//Parametros de limpieza de foreground
-	bool MORFOLOGIA ; /// si esta a 1 se aplica erosión y cierre
-	int CVCLOSE_ITR ; /// Número de iteraciones en op morfológicas ( no se usa )
+	bool MORFOLOGIA ; /// si esta a 1 se aplica erosión y cierre ( no se usa )
+	int CVCLOSE_ITR ; /// Número de iteraciones en op morfológicas
 	int MAX_CONTOUR_AREA; /// Máxima area del blob
 	int MIN_CONTOUR_AREA; /// Mínima area del blob
 }BGModelParams;

@@ -19,7 +19,7 @@ void invertirBW( IplImage* Imagen ){
 }
 // Recibe la imagen del video y devuelve la imagen en un canal de niveles
 // de gris con el plato extraido
-void PreProcesado( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI){
+void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI){
 
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
 	// Imagen a un canal de niveles de gris
