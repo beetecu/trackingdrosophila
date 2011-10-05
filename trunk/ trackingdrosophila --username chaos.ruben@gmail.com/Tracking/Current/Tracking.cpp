@@ -39,9 +39,8 @@ int main(int argc, char* argv[]) {
 	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000
 			     + (tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g ms\n", TiempoParcial);
-	///////////////////////\\\\\\\\\\\\\\\\\\\\\\\
-	 ////// BUCLE PRINCIPAL DEL ALGORITMO \\\\\\\
-	  /////////////////////\\\\\\\\\\\\\\\\\\\\
+
+	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
 
 	while ( g_capture ) {
 
@@ -52,176 +51,21 @@ int main(int argc, char* argv[]) {
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		FrameCount += 1;
-
 		UpdateCount += 1;
 		gettimeofday(&tif, NULL);
 
 		////////// PREPROCESADO ///////////////
-
-
-		int hecho = PreProcesado( g_capture, Flat, Capa, Shape) ;
+		int hecho = PreProcesado( ) ;
 		if (!hecho) return -1;
-
-		////////////// PROCESADO ///////////////
-
-		Procesado();
-		gettimeofday(&ti, NULL);
-
-		ImPreProcess( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
-
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-								(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf( "\n\t\t\tFRAME %.0f\n", FrameCount);
-		printf("\nPreprocesado de imagen: %5.4g ms\n", TiempoParcial);
-
-		cvCopy( Capa->BGModel, BGTemp); // guardamos una copia del modelo original
-		cvCopy(Capa->IDesv,DETemp);
-		cvZero( Capa->FG);
-		for ( int i = 0; i < 3; i++){
-			gettimeofday(&ti, NULL);
-			if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
-			if ( i > 0 ) printf("\nRedefiniendo foreground %d de 2:\n\n", i);
-			//// BACKGROUND UPDATE
-			// Primera actualización del fondo
-			// establecer parametros
-			InitialBGModelParams( BGParams);
-
-			UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, Capa->FG );
-
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-											(tf.tv_usec - ti.tv_usec)/1000.0;
-			printf("Background update: %5.4g ms\n", TiempoParcial);
-
-			/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-			gettimeofday(&ti, NULL);
-
-			BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
-
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-			printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
-			/////// SEGMENTACION
-			if( i > 0 ){
-				gettimeofday(&ti, NULL);
-				printf( "Segmentando Foreground...");
-
-				segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
-				cvCopy( Capa->FGTemp, Capa->FG);
-				gettimeofday(&tf, NULL);
-				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-				printf(" %5.4g ms\n", TiempoParcial);
-			}
-			// en la ultima iteracion nos kedamos con ultimo BGModel obtenido
-			if (i < 2 ){
-				cvCopy( BGTemp, Capa->BGModel );
-				cvCopy( DETemp, Capa->IDesv );
-			}
-			/////// VALIDACIÓN
-			// solo en la última iteracion
-//			if (i > 1){
-//				gettimeofday(&ti, NULL);
-//				printf( "\nValidando contornos...");
-//
-//		//		Validacion(Imagen, Capa , Shape, Flat->DataFROI, Flie, NULL, NULL);
-//
-//				gettimeofday(&tf, NULL);
-//				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-//										(tf.tv_usec - ti.tv_usec)/1000.0;
-//				printf(" %5.4g ms\n", TiempoParcial);
-//			}
-		}
-
-
-
-		///////////////  TRACKING ////////////////////
-		gettimeofday(&ti, NULL);
-		cvZero( Capa->ImMotion);
-		if ( SHOW_MOTION_TEMPLATE == 1){
-			MotionTemplate( Capa->FG, Capa->ImMotion);
-		}
-
-
-//		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
-
-		cvCircle( Capa->ImMotion, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
-		cvCircle( Capa->ImMotion, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,255,0),2 );
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-												(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Tracking: %5.4g ms\n", TiempoParcial);
-
-		/*                                                              */
-		/////// VISUALIZACION ////////////
-		/*                                                              */
-
-		if (SHOW_VISUALIZATION == 1){
-		//Obtenemos la Imagen donde se visualizarán los resultados
-		cvCopy(frame, ImVisual);
-
-		//Dibujamos el plato en la imagen de visualizacion
-		cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-		cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
-		// Dibujamos la ROI
-		cvRectangle( ImVisual,
-				cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
-				cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
-				CV_RGB(255,0,0),2);
-
-		//Dibujamos los blobs
-
-		//              for( int i = 0; i < blobs.GetNumBlobs(); i++){
-		//                      CurrentBlob = blobs.GetBlob( i );
-		//                      CurrentBlob -> FillBlob( ImBlobs, CVX_RED );
-		//                      CvBox2D elipse = CurrentBlob->GetEllipse();
-		//                  cvBoxPoints( elipse,pt );
-		//
-		//                                 cvEllipse(Imagen,cvPoint(cvRound(elipse.center.x),cvRound(elipse.center.y)),
-		//                                                 (cvSize(elipse.size.width,elipse.size.height)),
-		//                                                 elipse.angle,0,360,CVX_RED,-1, 8, 0);
-		//              }
-		//                cvShowImage( "Visualización", ImVisual);
-
-		}
-		// Mostramos imagenes
-		cvShowImage( "Drosophila.avi", frame );
-		//
-		if (SHOW_BG_REMOVAL == 1){
-				cvShowImage("Background", Capa->BGModel);
-//				cvShowImage( "Foreground",Capa->FG);
-
-		//		cvWaitKey(0);
-		}
-		if (SHOW_OPTICAL_FLOW == 1){
-		cvShowImage( "Flujo Optico X", ImOpFlowX );
-		cvShowImage( "Flujo Optico Y", ImOpFlowY);
-		}
-		if ( SHOW_MOTION_TEMPLATE == 1){
-			cvShowImage( "Motion",Capa->ImMotion);
-			}
-		;
-
-		gettimeofday(&tff, NULL);
-		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
-				(tff.tv_usec - tif.tv_usec)/1000.0;
-		TiempoGlobal = TiempoGlobal + TiempoFrame;
-		printf("\n//////////////////////////////////////////////////\n");
-		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",FrameCount, TiempoFrame);
-		printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
-		printf("Porcentaje completado: %.2f % \n",(FrameCount/TotalFrames)*100 );
-		printf("\n//////////////////////////////////////////////////\n");
+		////////// PROCESADO ///////////////
+		Procesado( );
+		//////////  TRACKING ////////////////////
+		Tracking( );
+		////////// VISUALIZACION ////////////
+		Visualizacion();
 	}
 
-	/*oooooooooooooooooooooooooooooooooooooooooo*/
-	 /*o			ANALISIS ESTADÍSTICO      o*/
-	  /*oooooooooooooooooooooooooooooooooooooo*/
-
-	printf( "Rastreo finalizado con éxito ..." );
-	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
-	printf( "Análisis finalizado ...\n" );
+	AnalisisEstadistico();
 
 	// LIMPIAR MEMORIA
 
@@ -237,7 +81,11 @@ int main(int argc, char* argv[]) {
 
 }
 
-int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams){
+int Inicializacion(IplImage* frame,
+					STFlat** Flat,
+					STCapas** Capa ,
+					SHModel** Shape,
+					BGModelParams** BGParams){
 	// Creación de ventanas de visualizacion
 	CreateWindows( );
 	//      cvSetCaptureProperty( g_capture	cvResetImageROI(Capa->BGModel);, CV_CAP_PROP_POS_AVI_RATIO,0 );
@@ -261,7 +109,7 @@ int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Sha
 	if ( !Flat ) {
 			error(4);
 			return 0;
-		}
+	}
 	flat->PCentroX = 0;
 	flat->PCentroY = 0;
 	flat->PRadio = 0;
@@ -300,12 +148,12 @@ int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Sha
 	return 1;
 }
 
-int PreProcesado( CvCapture*g_capture, STFlat* Flat,STCapas*  Capa,SHModel* Shape){
+int PreProcesado( ){
 
 	static int hecho = 0;
 	// Obtencion de mascara del plato
 	if( !hecho ){
-		printf("\nIniciando preprocesado.", TiempoParcial);
+		printf("\nIniciando preprocesado.");
 		printf("Localizando plato... ");
 		gettimeofday(&ti, NULL);
 
@@ -338,8 +186,6 @@ int PreProcesado( CvCapture*g_capture, STFlat* Flat,STCapas*  Capa,SHModel* Shap
 		TiempoGlobal= TiempoGlobal + TiempoParcial ;
 		printf(" %5.4g segundos\n", TiempoGlobal/1000);
 		TiempoGlobal = 0; // inicializamos el tiempo global
-
-
 	}
 	// Modelado de la forma de los objetos a rastrear.
 	if( !hecho){
@@ -356,12 +202,164 @@ int PreProcesado( CvCapture*g_capture, STFlat* Flat,STCapas*  Capa,SHModel* Shap
 		printf(" %5.4g seg\n", TiempoGlobal/1000);
 		printf("Fin preprocesado. Iniciando procesado...\n");
 		TiempoGlobal = 0;
-		return hecho = 1;
 	}
+	return hecho = 1;
 }
 
 void Procesado(){
 
+	gettimeofday(&ti, NULL);
+
+	ImPreProcess( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
+
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+							(tf.tv_usec - ti.tv_usec)/1000.0;
+	printf( "\n\t\t\tFRAME %.0f\n", FrameCount);
+	printf("\nPreprocesado de imagen: %5.4g ms\n", TiempoParcial);
+
+	cvCopy( Capa->BGModel, BGTemp); // guardamos una copia del modelo original
+	cvCopy(Capa->IDesv,DETemp);
+	cvZero( Capa->FG);
+	for ( int i = 0; i < 3; i++){
+		gettimeofday(&ti, NULL);
+		if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
+		if ( i > 0 ) printf("\nRedefiniendo foreground %d de 2:\n\n", i);
+		//// BACKGROUND UPDATE
+		// Primera actualización del fondo
+		// establecer parametros
+		InitialBGModelParams( BGParams);
+
+		UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, Capa->FG );
+
+		gettimeofday(&tf, NULL);
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+										(tf.tv_usec - ti.tv_usec)/1000.0;
+		printf("Background update: %5.4g ms\n", TiempoParcial);
+
+		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
+		gettimeofday(&ti, NULL);
+
+		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+
+		gettimeofday(&tf, NULL);
+		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+									(tf.tv_usec - ti.tv_usec)/1000.0;
+		printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
+		/////// SEGMENTACION
+		if( i > 0 ){
+			gettimeofday(&ti, NULL);
+			printf( "Segmentando Foreground...");
+
+			segmentacion(Imagen, Capa, Flat->DataFROI,Flie);
+			cvCopy( Capa->FGTemp, Capa->FG);
+			gettimeofday(&tf, NULL);
+			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+									(tf.tv_usec - ti.tv_usec)/1000.0;
+			printf(" %5.4g ms\n", TiempoParcial);
+		}
+		// en la ultima iteracion nos kedamos con ultimo BGModel obtenido
+		if (i < 2 ){
+			cvCopy( BGTemp, Capa->BGModel );
+			cvCopy( DETemp, Capa->IDesv );
+		}
+		/////// VALIDACIÓN
+		// solo en la última iteracion
+//			if (i > 1){
+//				gettimeofday(&ti, NULL);
+//				printf( "\nValidando contornos...");
+//
+//		//		Validacion(Imagen, Capa , Shape, Flat->DataFROI, Flie, NULL, NULL);
+//
+//				gettimeofday(&tf, NULL);
+//				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
+//										(tf.tv_usec - ti.tv_usec)/1000.0;
+//				printf(" %5.4g ms\n", TiempoParcial);
+//			}
+	}
+
+}
+
+void Visualizacion(){
+	if (SHOW_VISUALIZATION == 1){
+	//Obtenemos la Imagen donde se visualizarán los resultados
+	cvCopy(frame, ImVisual);
+
+	//Dibujamos el plato en la imagen de visualizacion
+	cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+	cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+	// Dibujamos la ROI
+	cvRectangle( ImVisual,
+			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
+			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
+			CV_RGB(255,0,0),2);
+
+	//Dibujamos los blobs
+
+	//              for( int i = 0; i < blobs.GetNumBlobs(); i++){
+	//                      CurrentBlob = blobs.GetBlob( i );
+	//                      CurrentBlob -> FillBlob( ImBlobs, CVX_RED );
+	//                      CvBox2D elipse = CurrentBlob->GetEllipse();
+	//                  cvBoxPoints( elipse,pt );
+	//
+	//                                 cvEllipse(Imagen,cvPoint(cvRound(elipse.center.x),cvRound(elipse.center.y)),
+	//                                                 (cvSize(elipse.size.width,elipse.size.height)),
+	//                                                 elipse.angle,0,360,CVX_RED,-1, 8, 0);
+	//              }
+	//                cvShowImage( "Visualización", ImVisual);
+
+	}
+	// Mostramos imagenes
+	cvShowImage( "Drosophila.avi", frame );
+	//
+	if (SHOW_BG_REMOVAL == 1){
+			cvShowImage("Background", Capa->BGModel);
+//				cvShowImage( "Foreground",Capa->FG);
+
+	//		cvWaitKey(0);
+	}
+	if (SHOW_OPTICAL_FLOW == 1){
+	cvShowImage( "Flujo Optico X", ImOpFlowX );
+	cvShowImage( "Flujo Optico Y", ImOpFlowY);
+	}
+	if ( SHOW_MOTION_TEMPLATE == 1){
+		cvShowImage( "Motion",Capa->ImMotion);
+		}
+	;
+
+	gettimeofday(&tff, NULL);
+	TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
+			(tff.tv_usec - tif.tv_usec)/1000.0;
+	TiempoGlobal = TiempoGlobal + TiempoFrame;
+	printf("\n//////////////////////////////////////////////////\n");
+	printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",FrameCount, TiempoFrame);
+	printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
+	printf("Porcentaje completado: %.2f % \n",(FrameCount/TotalFrames)*100 );
+	printf("\n//////////////////////////////////////////////////\n");
+}
+
+void Tracking(){
+	gettimeofday(&ti, NULL);
+	cvZero( Capa->ImMotion);
+	if ( SHOW_MOTION_TEMPLATE == 1){
+		MotionTemplate( Capa->FG, Capa->ImMotion);
+	}
+
+
+//		OpticalFlowLK( Capa->FGTemp, ImOpFlowX, ImOpFlowY );
+
+	cvCircle( Capa->ImMotion, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
+	cvCircle( Capa->ImMotion, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,255,0),2 );
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+											(tf.tv_usec - ti.tv_usec)/1000.0;
+	printf("Tracking: %5.4g ms\n", TiempoParcial);
+}
+
+void AnalisisEstadistico(){
+	printf( "Rastreo finalizado con éxito ..." );
+	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
+	printf( "Análisis finalizado ...\n" );
 }
 void AllocateImages( IplImage* I ,STCapas* Capa){
 

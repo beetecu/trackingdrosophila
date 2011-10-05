@@ -48,10 +48,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	/// Modelo del Plato
 	STFlat* Flat;
-	static CvRect SegROI;
 
 	/// MODELADO DE FONDO
-
 	STCapas* Capa = NULL;
 	BGModelParams *BGParams = NULL;
 
@@ -97,9 +95,15 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams);
 	/// Preprocesado
 
-	int PreProcesado( CvCapture*g_capture, STFlat* Flat,STCapas*  Capa,SHModel* Shape);
+	int PreProcesado( );
 
 	void Procesado();
+
+	void Tracking( );
+
+	void Visualizacion();
+
+	void AnalisisEstadistico();
 	/// Medida de tiempos
 	int gettimeofday( struct timeval *tv, struct timezone *tz );
 
