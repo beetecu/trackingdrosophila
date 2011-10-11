@@ -26,6 +26,8 @@
 #define CVX_BLACK CV_RGB(0,0,0)
 
 #define PI 3.14159265
+
+#define IMAGE_BUFFER_LENGTH 51
 //Opciones de visualización
 
 
@@ -69,16 +71,22 @@
 		struct Flies* anterior;
 	}STFlies;
 
+	typedef struct {
+		IplImage** BGMBuff;
+		IplImage** IdesBuff;
+		IplImage** FGBuff;
+		IplImage** OFGBuff;
+
+	}BufferSTCapas;
 
 	typedef struct {
 
 		IplImage* BGModel;  ///BackGround Model
 		IplImage* IDesv;	/// Desviación tipica del modelo de fondo
-		IplImage* OldFG; ///OldForeGround ( objetos estáticos )
+		IplImage* OldFG; ///OldForeGround ( blobs estáticos )
 		IplImage* FGTemp; /// Imagen a segmentar y validar
-		IplImage* FG;  ///Foreground ( objetos en movimiento )
+		IplImage* FG;  ///Foreground ( blobs en movimiento )
 		IplImage* ImFMask; /// Mascara del plato
-		IplImage* ImRois;
 		IplImage* ImMotion;
 	}STCapas;
 

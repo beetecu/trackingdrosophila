@@ -483,6 +483,7 @@ void LiberarMemoria( STFlies **Flie){
 		*Flie = flie;
 		flie = flie->siguiente;
 		free(*Flie);
+		*Flie = NULL;
 	}
 	/// reasignamos punteros del segundo frame ( ahora primero )
 	flie->anterior = NULL;
@@ -585,7 +586,7 @@ void AllocateImages( IplImage* I ,STCapas* Capa){
 		Capa->FGTemp = cvCreateImage(size,8,1);
 		Capa->IDesv = cvCreateImage(size,8,1);
 		Capa->ImFMask = cvCreateImage(size,8,1);
-		Capa->ImRois = cvCreateImage(size,8,1);
+
 		Capa->OldFG = cvCreateImage(size,8,1);
 		Capa->ImMotion = cvCreateImage( size, 8, 3 );
 
@@ -594,7 +595,7 @@ void AllocateImages( IplImage* I ,STCapas* Capa){
 		cvZero( Capa->FGTemp );
 		cvZero( Capa->IDesv );
 		cvZero( Capa->ImFMask );
-		cvZero( Capa->ImRois );
+
 		cvZero( Capa->OldFG );
 		cvZero( Capa->ImMotion );
 		Capa->ImMotion->origin = I->origin;
