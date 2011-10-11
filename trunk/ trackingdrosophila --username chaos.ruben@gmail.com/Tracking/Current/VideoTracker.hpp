@@ -33,8 +33,9 @@
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
 #define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado.
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
-#define SHOW_MOTION_TEMPLATE 1
-#define SHOW_SEGMENTATION_DATA 1
+#define SHOW_MOTION_TEMPLATE 0
+#define SHOW_BACKGROUND_DATA 1
+#define SHOW_SEGMENTATION_DATA 0
 #define SHOW_SEGMENTACION_STRUCT 0
 
 
@@ -53,15 +54,19 @@
 
 		int etiqueta;  /// Identificación del blob
 		CvScalar Color; /// Color para dibujar el blob
-		CvPoint posicion[]; /// Posición del blob
+		CvPoint posicion; /// Posición del blob
 		float a,b; /// semiejes de la elipse
 		float orientacion; /// Almacena la orientación
 		double perimetro;
 		CvRect Roi;
 		bool Static;  /// Flag para indicar que el blob permanece estático
 		int num_frame; /// Almacena el numero de frame (tiempo)
-		int num_Flies_frame;
+		int num_Flies_frame; /// Número de blobs detectados en el frame
+		int num_total_elementos; /// Número de blobs en la estructura hasta el momento.
+		struct Flies* siguiente_frame;
+		struct Flies* anterior_frame;
 		struct Flies* siguiente;
+		struct Flies* anterior;
 	}STFlies;
 
 

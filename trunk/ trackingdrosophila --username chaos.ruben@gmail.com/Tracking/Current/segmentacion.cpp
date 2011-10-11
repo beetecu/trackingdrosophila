@@ -19,30 +19,7 @@
 #include "segmentacion.h"
 
 
-void Anyadir(int idd,STFlies* flie){ //Añadir una mosca a la lista
 
-	STFlies* nuevo=flie;
-	//nuevo = (STFlies *) malloc(sizeof(STFlies));
-	nuevo->etiqueta= idd;
-
-	nuevo->siguiente=flie;
-	flie = nuevo;
-}
-
-void Param_Flies(float tita,float semieje_a,float semieje_b,STFlies* flie){//Llenar la estructura Flies
-
-	STFlies* angulo=flie;
-	STFlies* semieje_m=flie;
-	STFlies* semieje_M=flie;
-
-	angulo->orientacion=tita;
-	semieje_M->a=semieje_a;
-	semieje_m->b=semieje_b;
-
-	angulo=angulo->siguiente;
-	semieje_M=semieje_M->siguiente;
-	semieje_m=semieje_m->siguiente;
-}
 
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
@@ -50,12 +27,12 @@ void Param_Flies(float tita,float semieje_a,float semieje_b,STFlies* flie){//Lle
 	IplImage *FGMask = 0;
 
 
-int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
+int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp){
 
 
 	//Inicializar estructura para almacenar los datos de las moscas
+	*FlieTemp = NULL;
 	IplImage *FGMask = 0;
-	FLIE = ( STFlies *) malloc( sizeof( STFlies));
 	// CREAR IMAGENES
 
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
@@ -100,7 +77,8 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 	CvSeq* first_contour=NULL;
 
 	// Distancia normalizada de cada pixel a su modelo de fondo.
-
+//		cvShowImage("Foreground", Capa->FGTemp);
+//				cvWaitKey(0);
 	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv( IDifm,Capa->IDesv,pesos );// Calcular
@@ -112,19 +90,18 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 			&first_contour,
 			sizeof(CvContour),
 			CV_RETR_EXTERNAL,
-			CV_CHAIN_APPROX_SIMPLE,
+			CV_CHAIN_APPROX_NONE,
 			cvPoint(Roi.x,Roi.y));
 
 
-	int id=1; //id=etiqueta de la moca
+	int id=0; //id=etiqueta de la moca
 	
 	if( SHOW_SEGMENTATION_DATA == 1) printf( "\nTotal Contornos Detectados: %d ", Nc );
 
 
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
-		Anyadir(id,FLIE); // Función para añadir una nueva mosca a la lista
-		if( SHOW_SEGMENTATION_DATA == 1) printf("\n BLOB %d\n",FLIE->etiqueta);
+		if( SHOW_SEGMENTATION_DATA == 1) printf("\n BLOB %d\n",id);
 		id++; //incrmentar el Id de las moscas
 
 		float z=0;  // parámetro para el cálculo de la matriz de covarianza
@@ -285,9 +262,37 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 					2*semiejemenor,
 					tita);
 		}
+//		CvMat *contorno = cvCreateMat(1,c->total,CV_32FC1);
+//		cvCvtSeqToArray(c , contorno );
+		STFlies* FLIE = NULL;
+		FLIE = ( STFlies *) malloc( sizeof( STFlies));
+		if ( !FLIE ) {error(4);	return -1;}
+		FLIE->etiqueta = id  ;  /// Identificación del blob
+		FLIE->Color = cvScalar(0,0,0,0); /// Color para dibujar el blob
+		FLIE-> posicion = centro; /// Posición del blob
+		FLIE->a = semiejemayor;
+		FLIE->b = semiejemenor; /// semiejes de la elipse
+		FLIE->orientacion = tita; /// Almacena la orientación
+//		FLIE->perimetro = cv::arcLength(contorno,0);
+		FLIE->Roi = rect;
+		FLIE->Static = 0;  /// Flag para indicar que el blob permanece estático
+		FLIE->num_frame = 0; /// Almacena el numero de frame (tiempo)
+		FLIE->num_Flies_frame = Nc; /// Número de blobs detectados en el frame
+		FLIE->siguiente_frame = NULL;
+		FLIE->anterior_frame = NULL;
+		// Enlazar
+		STFlies* temp = NULL;
+		temp = *FlieTemp;
+		FLIE->siguiente = NULL;
+		FLIE->anterior = temp;
+		// el primer valor a null
+		if( temp == NULL) FLIE->anterior = NULL;
+		// En la primera iteración no habrá nada en FlieTemp (null)
+		if (temp != NULL) temp->siguiente = FLIE;
+
+		*FlieTemp = FLIE;
 
 
-		Param_Flies(tita,semiejemayor,semiejemenor,FLIE);// Llenar los campos de la estructura Flies
 
 		//Mostrar los campos de cada mosca o blob
 
@@ -317,6 +322,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies* FLIE){
 		cvReleaseMat(&RT);
 
 	}// Fin de contornos
+
 
 // PRUEBAS visualizacion
 //	cvShowImage("Foreground", Capa->FGTemp);
