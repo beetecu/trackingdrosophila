@@ -25,11 +25,18 @@ using namespace std;
 #ifndef CLK_TCK
 #define CLK_TCK CLOCKS_PER_SEC
 #endif
+
+#define STRUCT_BUFFER_LENGTH 50 /// máximo número de frames que almacenará la estructura
 //#define INTERVAL_BACKGROUND_UPDATE 10000
 
 // VARIABLES GLOBALES DE PROGRAMA
 #ifndef VARIABLES_GLOBALES_PROGRAMA
 	#define VARIABLES_GLOBALES_PROGRAMA
+
+/// Ficheros
+
+	char nombreFichero[30];
+
 
 /// Medida de tiempos
 struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -39,7 +46,8 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	float TiempoFrame;
 	float TiempoGlobal = 0;
 
-	double FrameCount = 0;
+	double FrameCountAbs = 0; /// contador de frames absolutos ( incluyendo preprocesado )
+	double FrameCountRel = 0; /// contador de frames relativos ( sin incluir preprocesado)
 	double TotalFrames = 0;
 	CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
 
@@ -68,8 +76,9 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	SHModel* Shape;
 
 	///Estructura Flies
-	STFlies* Flie=NULL;
-
+	STFlies* FlieTemp = NULL; /// Será la estructura creada en segmentación
+	STFlies* Flie = NULL; /// Aquí se irán copiando los elementos creados en segmentación...
+							// ...una vez que han sido validados.
 	/// SEGMENTACION
 	int Nc; ///Numero de contornos devueltos por segmentacion
 
@@ -90,10 +99,16 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 //#ifndef PROTOTIPOS_DE_FUNCIONES
 //#define PROTOTIPOS_DE_FUNCIONES
 
-	/// Inicialización
 
-	int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams);
+
+	///! Inicialización: Crea las ventanas, inicializa las estructuras (excepto la STFlies, que se inicia en segmentación ),
+	///! asigna espacio a las imagenes, establece los parámetros del modelo de fondo y crea el fichero de datos.
+	int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams,int argc, char* argv[]);
 	/// Preprocesado
+
+	int existe(char *nombreFichero);
+
+	void crearFichero(char *nombreFichero );
 
 	int PreProcesado( );
 
@@ -102,6 +117,14 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	void Tracking( );
 
 	void Visualizacion();
+
+	void mostrarLista(STFlies *Flie);
+
+	void AnyadirFlies( STFlies** FlieTemp, STFlies **Flie);
+
+	void AlmacenarDatos( STFlies* Flie, char* nombreFichero );
+
+	void LiberarMemoria( STFlies** Flie );
 
 	void AnalisisEstadistico();
 	/// Medida de tiempos
