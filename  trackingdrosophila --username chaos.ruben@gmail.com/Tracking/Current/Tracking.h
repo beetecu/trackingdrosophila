@@ -26,7 +26,8 @@ using namespace std;
 #define CLK_TCK CLOCKS_PER_SEC
 #endif
 
-#define STRUCT_BUFFER_LENGTH 50 /// máximo número de frames que almacenará la estructura
+#define STRUCT_BUFFER_LENGTH IMAGE_BUFFER_LENGTH /// máximo número de frames que almacenará la estructura. Impar
+								/// para trabajar en el centro con 25 frames a cada lado.
 //#define INTERVAL_BACKGROUND_UPDATE 10000
 
 // VARIABLES GLOBALES DE PROGRAMA
