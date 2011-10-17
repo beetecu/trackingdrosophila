@@ -55,12 +55,18 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	///HightGui
 	int g_slider_pos = 0;
 
+	/// MODELADO DE FONDO
+	StaticBGModel* BGModel = NULL;
+	BGModelParams *BGParams = NULL;
+
+	/// EStructura capas
+	STCapas* Capa = NULL;
+	STCapas* NewCap = NULL;
+
 	/// Modelo del Plato
 	STFlat* Flat;
 
-	/// MODELADO DE FONDO
-	STCapas* Capa = NULL;
-	BGModelParams *BGParams = NULL;
+
 
 	// otros parámetros
 	int fr = 0;
@@ -77,9 +83,11 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	SHModel* Shape;
 
 	///Estructura Flies
-	STFlies* FlieTemp = NULL; /// Será la estructura creada en segmentación
-	STFlies* Flie = NULL; /// Aquí se irán copiando los elementos creados en segmentación...
-							// ...una vez que han sido validados.
+	STFlies* FlieTemp = NULL; /// Puntero a la estructura creada en segmentación. Una lista lineal doblemente en lazada
+							  /// que contiene los parámetros de cada uno de los blobs del frame nuevo
+							/// esta lista se crea nueva en cada frame
+	STFlies* Flie = NULL; /// Puntero a estructura que contiene los parámetros de cada blob, tantos como la
+							/// longitud del frame
 	/// SEGMENTACION
 	int Nc; ///Numero de contornos devueltos por segmentacion
 
@@ -104,7 +112,14 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	///! Inicialización: Crea las ventanas, inicializa las estructuras (excepto la STFlies, que se inicia en segmentación ),
 	///! asigna espacio a las imagenes, establece los parámetros del modelo de fondo y crea el fichero de datos.
-	int Inicializacion(IplImage* frame, STFlat** Flat,STCapas** Capa , SHModel** Shape, BGModelParams** BGParams,int argc, char* argv[]);
+	int Inicializacion(IplImage* frame,
+			STFlat** Flat,
+			STCapas** Capa ,
+			SHModel** Shape,
+			BGModelParams** BGParams,
+			StaticBGModel** BGModel,
+			int argc,
+			char* argv[]);
 	/// Preprocesado
 
 	int existe(char *nombreFichero);
@@ -121,11 +136,15 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void mostrarLista(STFlies *Flie);
 
+	void InitNewFrameCaps(IplImage* I, STCapas *Capa );
+
+	void AnyadirCapas( STCapas** NewCap, STCapas** Capa);
+
 	void AnyadirFlies( STFlies** FlieTemp, STFlies **Flie);
 
 	void AlmacenarDatos( STFlies* Flie, char* nombreFichero );
 
-	void LiberarMemoria( STFlies** Flie );
+	void LiberarMemoria( STFlies** Flie, STCapas** Capa );
 
 	void AnalisisEstadistico();
 	/// Medida de tiempos
@@ -135,7 +154,7 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	void CreateWindows();
 
 	/// localiza en memoria las imágenes necesarias para la ejecución
-	void AllocateImages( IplImage*, STCapas* Capa);
+	void AllocateImages( IplImage*, StaticBGModel* bgmodel);
 
 	void InitialBGModelParams( BGModelParams* Params);
 

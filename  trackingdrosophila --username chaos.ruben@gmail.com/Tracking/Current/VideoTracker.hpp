@@ -27,7 +27,7 @@
 
 #define PI 3.14159265
 
-#define IMAGE_BUFFER_LENGTH 51
+#define IMAGE_BUFFER_LENGTH 51 // valor impar
 //Opciones de visualización
 
 
@@ -65,29 +65,37 @@
 		int num_frame; /// Almacena el numero de frame (tiempo)
 		int num_Flies_frame; /// Número de blobs detectados en el frame
 		int num_total_elementos; /// Número de blobs en la estructura hasta el momento.
+		int num_frames; /// almacena el número de frames de la lista
 		struct Flies* siguiente_frame;
 		struct Flies* anterior_frame;
 		struct Flies* siguiente;
 		struct Flies* anterior;
 	}STFlies;
 
+//	typedef struct {
+//		IplImage** BGModel;
+//		IplImage** Idesv;
+//		IplImage** FG;
+//		IplImage** OldFG;
+//
+//	}BuffSTCapas;
+/// Estructura para almacenar el modelo de fondo estático
 	typedef struct {
-		IplImage** BGMBuff;
-		IplImage** IdesBuff;
-		IplImage** FGBuff;
-		IplImage** OFGBuff;
-
-	}BufferSTCapas;
-
-	typedef struct {
-
-		IplImage* BGModel;  ///BackGround Model
-		IplImage* IDesv;	/// Desviación tipica del modelo de fondo
-		IplImage* OldFG; ///OldForeGround ( blobs estáticos )
-		IplImage* FGTemp; /// Imagen a segmentar y validar
-		IplImage* FG;  ///Foreground ( blobs en movimiento )
+		IplImage* Imed; ///BackGround Model
+		IplImage* IDesv; /// Desviación tipica del modelo de fondo estático
 		IplImage* ImFMask; /// Mascara del plato
+	}StaticBGModel;
+
+	typedef struct Capas{
+		int num_frame;
+		int num_elementos;
+		IplImage* BGModel;  /// backGround Model dinámico
+		IplImage* IDesv;	/// Desviación tipica del modelo de fondo dinámico
+		IplImage* OldFG; ///OldForeGround ( blobs estáticos ).
+		IplImage* FG;  ///Foreground ( blobs en movimiento ).
 		IplImage* ImMotion;
+		struct Capas* siguiente_frame;
+		struct Capas* anterior_frame;
 	}STCapas;
 
 	/// Estructura para el modelo del plato
@@ -99,12 +107,11 @@
 		CvRect DataFROI;
 	}STFlat;
 
-		/// Estructura para el modelo de forma
-	typedef struct {
-
-		float FlyAreaMed ;
-		float FlyAreaMedia;
-		float FlyAreaDes ;
+	/// Estructura para el modelo de forma
+typedef struct {
+	float FlyAreaMed ;
+	float FlyAreaMedia;
+	float FlyAreaDes ;
 }SHModel;
 
 #endif
