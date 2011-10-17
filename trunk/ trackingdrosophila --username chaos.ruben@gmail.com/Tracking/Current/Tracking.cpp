@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 	frame = cvQueryFrame( g_capture );
 
 	///////////  INICIALIZACIÓN ////////////
-	int ok = Inicializacion(frame, &Flat, &Capa, &Shape,&BGParams, argc, argv);
+	int ok = Inicializacion(frame, &Flat, &NewCap, &Shape, &BGParams,&BGModel, argc, argv);
 	if (!ok ) return -1;
 
 	gettimeofday(&tf, NULL);
@@ -49,35 +49,54 @@ int main(int argc, char* argv[]) {
 
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
     for( FrameCountRel = 1;frame; frame = cvQueryFrame(g_capture), FrameCountRel++ ){
-    	/*Posteriormente Añadir posibilidad de que al no poder capturar algún
-    	  frame intentarlo con el sig ( continue ). Si no se puede, durante 2 o tres
-    	  intentos,  salir. Escribir en un fichero log el error. Actualizar el contador
+    	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
-		if ( !frame ) {error(2);break;}
+    	if( !frame ) frame = cvQueryFrame(g_capture); // intentar de nuevo
+		if ( !frame ) { // intentar de nuevo cn los siguientes frame
+			double n_frame = cvGetCaptureProperty( g_capture, 1);
+			int i = 1;
+			printf("\n Fallo en captura del frame %0.1f",n_frame);
+			while( !frame && i<4){
+				printf("\n Intentándo captura del frame %0.1f",n_frame+i);
+				cvSetCaptureProperty( g_capture,
+									CV_CAP_PROP_POS_AVI_RATIO,
+									n_frame +i );
+				frame = cvQueryFrame(g_capture);
+				if ( !frame ) printf("\n Fallo en captura");
+//				FrameCountAbs++;
+				i++;
+			}
+			if ( !frame ) {
+				error(2);
+				break;
+			}
+		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
-		FrameCountAbs += 1;
+		FrameCountAbs = cvGetCaptureProperty( g_capture, 1);
+//		FrameCountAbs += 1;
 		UpdateCount += 1;
 		gettimeofday(&tif, NULL);
 
 		//////////  PREPROCESADO   ////////////
-		int hecho = PreProcesado( ) ;
-		if (!hecho) return -1;
+		if (!PreProcesado( ) ) return -1;
 		//////////  PROCESADO      ////////////
 		Procesado( );
 		//////////  RASTREAR       ////////////
 		Tracking( );
 		//////////  VISUALIZAR     ////////////
 		Visualizacion();
-		//////////  ESCRIBIR DATOS ////////////
+		//////////  GUARDAR DATOS ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
+		// ( buffer de datos) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ).
 		if( FrameCountRel >= STRUCT_BUFFER_LENGTH){
 
 			mostrarLista(Flie);
-			// Una vez que se llena el buffer se almacena el primer frame en fichero
+			// Una vez que se llenan los buffer se almacenan los datos del primer frame en fichero
 			AlmacenarDatos( Flie, nombreFichero );
 			 // por cada nuevo frame se libera el espacio del primer frame y se
 			 // actualizan los punteros del siguiente frame
-			LiberarMemoria( &Flie );
+			LiberarMemoria( &Flie , &Capa );
+
 		}
 	}
     ///////// POSTPROCESADO //////////
@@ -85,7 +104,9 @@ int main(int argc, char* argv[]) {
 
 	///////// LIBERAR MEMORIA ////////
 
+	// completar. tras añadir buffers liberar memoria de todos los elementos (no solo del puntero actual)
 	free(Capa);
+	free(BGModel);
 	free(Flat);
 	free(Flie);
 	DeallocateImages( );
@@ -98,11 +119,12 @@ int main(int argc, char* argv[]) {
 }
 
 
-int Inicializacion(IplImage* frame,
+int Inicializacion( IplImage* frame,
 					STFlat** Flat,
 					STCapas** Capa ,
 					SHModel** Shape,
 					BGModelParams** BGParams,
+					StaticBGModel** BGModel,
 					int argc,
 					char* argv[]){
 	// Creación de ventanas de visualizacion
@@ -111,15 +133,20 @@ int Inicializacion(IplImage* frame,
 	//      Añadimos un slider a la ventana del video Drosophila.avi
 	//              int TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
 
-	// Iniciar estructura para almacenar las Capas
-	STCapas* Cap = NULL;
-	Cap = ( STCapas *) malloc( sizeof( STCapas));
-	if ( !Capa ) {error(4);	return 0;}
+	// Iniciar estructura del buffer de las capas y crear imagenes
+//	BuffSTCapas **buf = NULL;
+//	int last = IMAGE_BUFFER_LENGTH; // indice al ultimo elemento del buffer.
+
+//	if( buf == 0 ) {
+//		buf = (IplImage**)malloc(IMAGE_BUFFER_LENGTH*sizeof(buf[0]));
+//		memset( buf, 0, IMAGE_BUFFER_LENGTH*sizeof(buf[0]));
+//	}
 	// creación de imagenes a utilizar
-	AllocateImages( frame, Cap );
-	*Capa = Cap;
+
+
 	// Iniciar estructura para modelo de plato
 	STFlat* flat = NULL;
+	flat = *Flat;
 	flat = ( STFlat *) malloc( sizeof( STFlat));
 	if ( !Flat ) {error(4);return 0;}
 	flat->PCentroX = 0;
@@ -129,6 +156,7 @@ int Inicializacion(IplImage* frame,
 
 	// Iniciar estructura para modelo de forma
 	SHModel *shape = NULL;
+	shape = *Shape;
 	shape = ( SHModel *) malloc( sizeof( SHModel));
 	if ( !shape ) {error(4);return 0;}
 	shape->FlyAreaDes = 0;
@@ -137,9 +165,24 @@ int Inicializacion(IplImage* frame,
 	*Shape = shape;
 	// Iniciar estructura para parametros del modelo de fondo en primera actualización
 	BGModelParams *bgparams = NULL;
+	bgparams = *BGParams;
 	bgparams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 	if ( !bgparams ) {error(4);return 0;}
 	*BGParams = bgparams;
+
+	//Iniciar estructura para el model de fondo estático
+	StaticBGModel* bgmodel;
+	bgmodel = *BGModel;
+	bgmodel = ( StaticBGModel*) malloc( sizeof( StaticBGModel));
+	if ( !bgmodel ) {error(4);return 0;}
+	*BGModel = bgmodel;
+
+	// Iniciar estructura para capas del nuevo frame
+	STCapas* newcap = NULL;
+	newcap = ( STCapas *) malloc( sizeof( STCapas));
+	InitNewFrameCaps( frame, newcap );
+	*Capa = newcap;
+	AllocateImages( frame, bgmodel);
 	// Obtener datos del video y regresar puntero CvCapture al inicio del video.
 	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0 );
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
@@ -187,6 +230,7 @@ int Inicializacion(IplImage* frame,
 			while (resp != 's'||'S'||'n'||'N');
 		}
 	}
+
 	return 1;
 }
 
@@ -224,7 +268,7 @@ int PreProcesado( ){
 		printf("Localizando plato... ");
 		gettimeofday(&ti, NULL);
 
-		MascaraPlato( g_capture, Capa->ImFMask, Flat );
+		MascaraPlato( g_capture, BGModel->ImFMask, Flat );
 
 		if ( Flat->PRadio == 0  ) {
 			error(3);
@@ -244,13 +288,12 @@ int PreProcesado( ){
 		gettimeofday(&ti, NULL);
 		// establecer parametros
 		InitialBGModelParams( BGParams);
-		initBGGModel( g_capture , Capa->BGModel,Capa->IDesv, Capa->ImFMask, BGParams, Flat->DataFROI);
-		FrameCountAbs = cvGetCaptureProperty( g_capture, 1 );
+		initBGGModel( g_capture ,BGModel->Imed,BGModel->IDesv, BGModel->ImFMask, BGParams, Flat->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
-		TiempoGlobal= TiempoGlobal + TiempoParcial ;
+		TiempoGlobal = TiempoGlobal + TiempoParcial ;
 		printf(" %5.4g segundos\n", TiempoGlobal/1000);
 		TiempoGlobal = 0; // inicializamos el tiempo global
 	}
@@ -261,7 +304,7 @@ int PreProcesado( ){
 
 //		ShapeModel( g_capture, Shape , Capa->ImFMask, Flat->DataFROI );
 
-		FrameCountAbs = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
+
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -270,14 +313,45 @@ int PreProcesado( ){
 		printf("Fin preprocesado. Iniciando procesado...\n");
 		TiempoGlobal = 0;
 	}
+	FrameCountAbs = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
+	// Iniciamos la estructura capas para el procesado
+	cvCopy( BGModel->Imed, NewCap->BGModel);
+	cvCopy( BGModel->IDesv, NewCap->IDesv);
+
 	return hecho = 1;
 }
 
+/*  Esta función realiza las siguientes acciones:
+ *
+ * - Limpieza del foreground en tres etapas :
+ *   1_Actualización de fondo y resta de fondo obteniendo el foreground
+ *   2_Nueva actualización y resta usando la máscacara de foreground
+ *   Redefinición de la máscara de foreground mediante ajuste por elipses ( en segmentacion)
+ *   3_Repetir de nuevo el ciclo de actualizacion-resta-segmentación obteniendo el foreground y
+ *   el background definitivo
+ * - Obtención de los parámetros de los blobs ( en segmentación )
+ * - Rellena la lista lineal doblemente enlazada ( FlieTemp )con los datos de cada uno de los blobs
+ * - Rellena la estructura NewCap con las nuevas imagenes.
+ * - Finalmente enlaza la lista FlieTemp a la lista (buffer) Flie
+ *   y la estructura NewCap al buffer Capas   */
 void Procesado(){
 
 	gettimeofday(&ti, NULL);
 
-	ImPreProcess( frame, Imagen, Capa->ImFMask, 0, Flat->DataFROI);
+	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, Flat->DataFROI);
+
+	cvCopy( NewCap->BGModel, BGTemp); // guardamos una copia del modelo original
+	cvCopy(NewCap->IDesv,DETemp);	//NewCap se sobrescribe
+	// Iniciar estructura para capas del nuevo frame
+
+	STCapas* NewCap = NULL;
+	NewCap = ( STCapas *) malloc( sizeof( STCapas));
+
+	InitNewFrameCaps( Imagen, NewCap );
+
+	cvCopy(  BGTemp,NewCap->BGModel);
+	cvCopy(DETemp,NewCap->IDesv);
+
 
 	gettimeofday(&tf, NULL);
 	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -285,9 +359,6 @@ void Procesado(){
 	printf( "\n\t\t\tFRAME %.0f\n", FrameCountAbs);
 	printf("\nPreprocesado de imagen: %5.4g ms\n", TiempoParcial);
 
-	cvCopy( Capa->BGModel, BGTemp); // guardamos una copia del modelo original
-	cvCopy(Capa->IDesv,DETemp);
-	cvZero( Capa->FG);
 	for ( int i = 0; i < 3; i++){
 		gettimeofday(&ti, NULL);
 		if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
@@ -297,7 +368,7 @@ void Procesado(){
 		// establecer parametros
 		InitialBGModelParams( BGParams);
 
-		UpdateBGModel( Imagen, Capa->BGModel,Capa->IDesv, BGParams, Flat->DataFROI, Capa->FG );
+		UpdateBGModel( Imagen, NewCap->BGModel,NewCap->IDesv, BGParams, Flat->DataFROI, NewCap->FG );
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -307,7 +378,7 @@ void Procesado(){
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
 
-		BackgroundDifference( Imagen, Capa->BGModel,Capa->IDesv, Capa->FG ,BGParams, Flat->DataFROI);
+		BackgroundDifference( Imagen, NewCap->BGModel,NewCap->IDesv, NewCap->FG ,BGParams, Flat->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -318,10 +389,8 @@ void Procesado(){
 			gettimeofday(&ti, NULL);
 			printf( "Segmentando Foreground...");
 
-			segmentacion(Imagen, Capa, Flat->DataFROI,&FlieTemp);
-			// rellenamos
+			segmentacion(Imagen, NewCap, Flat->DataFROI,&FlieTemp,BGModel->ImFMask);
 
-			cvCopy( Capa->FGTemp, Capa->FG);
 			gettimeofday(&tf, NULL);
 			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 									(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -329,8 +398,8 @@ void Procesado(){
 		}
 		// en la ultima iteracion nos kedamos con ultimo BGModel obtenido
 		if (i < 2 ){
-			cvCopy( BGTemp, Capa->BGModel );
-			cvCopy( DETemp, Capa->IDesv );
+			cvCopy( BGTemp, NewCap->BGModel );
+			cvCopy( DETemp, NewCap->IDesv );
 		}
 		/////// VALIDACIÓN
 		// solo en la última iteracion
@@ -347,8 +416,8 @@ void Procesado(){
 //			}
 
 	}
-	// Una vez validada la añadimos a la estructura ( añadir al final )
-
+	// Una vez validada añadimos ( al final ) las estructuras a las listas (buffers).
+	AnyadirCapas( &NewCap, &Capa);
 	AnyadirFlies( &FlieTemp, &Flie );
 
 }
@@ -370,17 +439,60 @@ void Tracking(){
 	printf("Tracking: %5.4g ms\n", TiempoParcial);
 }
 
+void InitNewFrameCaps(IplImage* I, STCapas *Capa ){
 
-///! - Añade al final de la lista los nuevos elementos ya validados.
+	CvSize size = cvGetSize( I );
+	Capa->BGModel = cvCreateImage(size,8,1);
+	Capa->FG = cvCreateImage(size,8,1);
+	Capa->IDesv = cvCreateImage(size,8,1);
+	Capa->OldFG = cvCreateImage(size,8,1);
+	Capa->ImMotion = cvCreateImage( size, 8, 3 );
+	Capa->ImMotion->origin = I->origin;
+	cvZero( Capa->BGModel );
+	cvZero( Capa->FG );
+	cvZero( Capa->IDesv );
+	cvZero( Capa->ImMotion);
+
+	Capa->anterior_frame = NULL;
+	Capa->siguiente_frame = NULL;
+	Capa->num_frame = FrameCountAbs;
+}
+
+///! - Añade la estuctura de las capas correspondientes al nuevo frame al final de la
+///!   lista lineal doblemente enlazada ( buffer de imagenes ).
+void AnyadirCapas( STCapas** NewCap, STCapas** Capa){
+
+	STCapas* Nuevo;
+	STCapas* Actual;
+	Actual = *Capa;
+	Nuevo = *NewCap;
+	// Primera iteración
+	if ( !Actual){
+		Nuevo->num_elementos = 1;
+		*Capa = Nuevo;
+	}
+	else{
+
+		Nuevo->anterior_frame = Actual;
+	//	Nuevo->siguiente_frame = NULL;
+		Actual->siguiente_frame = Nuevo;
+
+		Nuevo->num_elementos = Actual->num_elementos + 1;
+		*Capa = Nuevo;
+	}
+}
+
+///! - Añade al final de la lista Flie los nuevos elementos ya validados de FlieTemp.
 ///! - Se hace que cada elemento del frame anterior apunte al primero del frame siguiente
 ///! - Se hace que cada elemento del frame siguiente apunte al primero del frame anterior
 void AnyadirFlies( STFlies** FlieTemp, STFlies **Flie ){
-	// Primera iteracion
+
 	STFlies* Nuevo;
 	STFlies* Actual;
 	Actual = *Flie;
 	Nuevo = *FlieTemp;
-	if (Actual == NULL){ // Si es el primer frame
+	// Primera iteracion
+	if (Actual == NULL){
 		// Nuevo al primer elemento y de paso rellenamos el numero de frame
 		for( int k = 0; k < Nuevo->num_Flies_frame - 1 ; k++ ) {
 			Nuevo->num_frame = FrameCountAbs;
@@ -437,9 +549,10 @@ void AnyadirFlies( STFlies** FlieTemp, STFlies **Flie ){
 }
 
 
-///! El algoritmo mantiene un buffer de 50 frames ( 2 seg aprox ) para la estructura .
-///! Una vez que se ha llenado el buffer, se almacena en fichero el primer valor y se libera su
-///! espacio.
+///! El algoritmo mantiene un buffer de 50 frames ( 2 seg aprox ) para los datos y para las
+///! imagenes.
+///! Una vez que se han llenado los buffer, se almacena en fichero los datos correspondientes
+///! al primer frame
 void AlmacenarDatos( STFlies* Flie , char *nombreFichero){
 
 	FILE * pf;
@@ -469,15 +582,15 @@ void AlmacenarDatos( STFlies* Flie , char *nombreFichero){
 	fclose(pf);
 }
 
-///! Libera la memoria correspondiente al primer frame del buffer.
-void LiberarMemoria( STFlies **Flie){
+///! Libera la memoria correspondiente al primer frame de los buffer.
+///! Una vez que se han llenado los buffer,
+///! se libera el espacio tanto de los datos como de las imagenes del primer frame
 
+void LiberarMemoria( STFlies **Flie, STCapas **Capa){
+/* Estructura STFLies */
 	STFlies* flie;
-	STFlies* anterior;
 	flie = *Flie;
-	anterior = *Flie;
 	while( flie->anterior_frame != NULL) flie = flie->anterior_frame;
-	anterior = flie;
 	int frame_actual = flie->num_frame;
 	while( flie->num_frame == frame_actual){
 		*Flie = flie;
@@ -496,6 +609,25 @@ void LiberarMemoria( STFlies **Flie){
 	/// regresamos puntero al final del buffer
 	while( flie->siguiente != NULL) flie = flie->siguiente;
 	*Flie = flie;
+
+/* Buffer imagenes */
+	STCapas *Cap;
+	Cap = *Capa;
+	/// regresamos el puntero al inicio del buffer
+	while( Cap->anterior_frame != NULL) Cap = Cap->anterior_frame;
+	cvReleaseImage(&Cap->BGModel);
+	cvReleaseImage(&Cap->FG);
+	cvReleaseImage(&Cap->IDesv);
+	cvReleaseImage(&Cap->OldFG);
+	cvReleaseImage(&Cap->ImMotion);
+	*Capa = Cap;
+	Cap = Cap->siguiente_frame;
+	Cap->anterior_frame = NULL;
+	free(*Capa);
+	*Capa = NULL;
+	/// regresamos puntero al final del buffer
+	while( Cap->siguiente_frame != NULL) Cap = Cap->siguiente_frame;
+	*Capa = Cap;
 }
 
 void Visualizacion(){
@@ -563,7 +695,7 @@ void AnalisisEstadistico(){
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
 	printf( "Análisis finalizado ...\n" );
 }
-void AllocateImages( IplImage* I ,STCapas* Capa){
+void AllocateImages( IplImage* I , StaticBGModel* bgmodel){
 
 	// Crear imagenes y redimensionarlas en caso de que cambien su tamaño
 
@@ -581,24 +713,17 @@ void AllocateImages( IplImage* I ,STCapas* Capa){
 //		cvReleaseImage( &Capa->OldFG );
 //		cvReleaseImage( &Capa->ImMotion );
 
-		Capa->BGModel = cvCreateImage(size,8,1);
-		Capa->FG = cvCreateImage(size,8,1);
-		Capa->FGTemp = cvCreateImage(size,8,1);
-		Capa->IDesv = cvCreateImage(size,8,1);
-		Capa->ImFMask = cvCreateImage(size,8,1);
 
-		Capa->OldFG = cvCreateImage(size,8,1);
-		Capa->ImMotion = cvCreateImage( size, 8, 3 );
 
-		cvZero( Capa->BGModel );
-		cvZero( Capa->FG );
-		cvZero( Capa->FGTemp );
-		cvZero( Capa->IDesv );
-		cvZero( Capa->ImFMask );
 
-		cvZero( Capa->OldFG );
-		cvZero( Capa->ImMotion );
-		Capa->ImMotion->origin = I->origin;
+		bgmodel->Imed = cvCreateImage(size,8,1);
+		bgmodel->ImFMask = cvCreateImage(size,8,1);
+		bgmodel->IDesv= cvCreateImage(size,8,1);
+
+		cvZero( bgmodel->Imed);
+		cvZero( bgmodel->IDesv);
+		cvZero( bgmodel->ImFMask);
+
 
 		cvReleaseImage( &BGTemp );
 		cvReleaseImage( &DETemp );

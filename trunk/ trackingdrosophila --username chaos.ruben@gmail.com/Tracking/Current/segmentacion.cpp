@@ -18,16 +18,13 @@
 
 #include "segmentacion.h"
 
-
-
-
+	IplImage *FGTemp = 0;
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
 	IplImage *FGMask = 0;
 
-
-int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp){
+int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp,IplImage* Mask){
 
 
 	//Inicializar estructura para almacenar los datos de las moscas
@@ -43,23 +40,25 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	        cvReleaseImage( &IDifm );
 	        cvReleaseImage( &pesos );
 
+	        FGTemp = cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);
 	        IDif=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
 	        IDifm=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
 	        pesos=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
 	        FGMask=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
+	        cvZero( FGTemp);
 	        cvZero( IDif);
 	        cvZero( IDifm);
 	        cvZero(pesos);
 	        cvZero( FGMask);
 	}
 
-	cvCopy(Capa->FG,Capa->FGTemp);
+	cvCopy(Capa->FG,FGTemp);
 
 	cvSetImageROI( Brillo , Roi);
 	cvSetImageROI( Capa->BGModel, Roi );
 	cvSetImageROI( Capa->IDesv, Roi );
 	cvSetImageROI( Capa->FG, Roi );
-	cvSetImageROI( Capa->FGTemp, Roi );
+	cvSetImageROI( FGTemp, Roi );
 
 	cvSetImageROI( IDif, Roi );
 	cvSetImageROI( IDifm, Roi );
@@ -77,7 +76,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	CvSeq* first_contour=NULL;
 
 	// Distancia normalizada de cada pixel a su modelo de fondo.
-//		cvShowImage("Foreground", Capa->FGTemp);
+//		cvShowImage("Foreground",FGTemp);
 //				cvWaitKey(0);
 	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
@@ -85,7 +84,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
-	int Nc = cvFindContours(Capa->FGTemp,
+	int Nc = cvFindContours(FGTemp,
 			storage,
 			&first_contour,
 			sizeof(CvContour),
@@ -238,7 +237,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 		//Eliminamos el blob
 
 		for (int y = rect.y; y< rect.y + rect.height; y++){
-					uchar* ptr1 = (uchar*) ( Capa->FGTemp->imageData + y*Capa->FGTemp->widthStep + 1*rect.x);
+					uchar* ptr1 = (uchar*) ( FGTemp->imageData + y*FGTemp->widthStep + 1*rect.x);
 					for (int x= 0; x<rect.width; x++){
 						ptr1[x] = 0;
 					}
@@ -246,7 +245,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 
 		// Obtenemos el centro de la elipse
 
-		cvResetImageROI( Capa->FGTemp ); // para evitar el offset de find contours
+		cvResetImageROI( FGTemp ); // para evitar el offset de find contours
 		cvResetImageROI( FGMask);
 
 		centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
@@ -300,16 +299,16 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 		printf("\n EJE A : %f\t EJE B: %f\t ORIENTACION: %f",FLIE->a,FLIE->b,FLIE->orientacion);
 		}
 
-		cvEllipse( Capa->FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
+		cvEllipse( FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
 
 		cvEllipse( FGMask, centro , axes, tita, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 		// Dibujar Roi para pruebas
-		cvRectangle( Capa->FGTemp,
+		cvRectangle( FGTemp,
 				cvPoint( rect.x, rect.y),
 				cvPoint( rect.x + rect.width , rect.y + rect.height ),
 				cvScalar(255,0,0,0),
 				1);
-		cvSetImageROI( Capa->FGTemp, Roi );
+		cvSetImageROI( FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
 
 		cvReleaseMat(&vector_resta);
@@ -325,41 +324,42 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 
 
 // PRUEBAS visualizacion
-//	cvShowImage("Foreground", Capa->FGTemp);
+//	cvShowImage("Foreground", FGTemp);
 //			cvWaitKey(0);
-	cvSetImageROI( Capa->ImFMask,Roi);
-	invertirBW(  Capa->ImFMask );
+	cvSetImageROI( Mask,Roi);
+	invertirBW(  Mask );
 	/*En la imagen resultante se ve la elipse rellenada con la imagen real
 	 * de las moscas usando como máscara el foreground
 	 */
-	cvAdd(Capa->FGTemp,Brillo,Capa->FGTemp, FGMask);
+	cvAdd(FGTemp,Brillo,FGTemp, FGMask);
 
-	invertirBW(  Capa->ImFMask );
+	invertirBW(  Mask );
 
-	cvResetImageROI( Capa->FGTemp);
-	cvShowImage("Foreground", Capa->FGTemp);
-	cvSetImageROI( Capa->FGTemp,Roi);
+	cvResetImageROI( FGTemp);
+	cvShowImage("Foreground", FGTemp);
+	cvSetImageROI( FGTemp,Roi);
 //		cvWaitKey(0);
 
-	cvAdd ( Capa->FG, Capa->FGTemp, Capa->FGTemp);
-//	cvShowImage("Foreground", Capa->FGTemp);
+	cvAdd ( Capa->FG, FGTemp, FGTemp);
+//	cvShowImage("Foreground", FGTemp);
 // 			cvWaitKey(0);
 // FIN PRUEBAS
-	cvCopy( FGMask, Capa->FGTemp);
-
+	cvCopy( FGMask,FGTemp);
+	cvCopy( FGTemp,Capa->FG);
 
 	cvResetImageROI( Brillo );
 	cvResetImageROI( Capa->BGModel );
 	cvResetImageROI( Capa->IDesv );
 	cvResetImageROI( Capa->FG );
-	cvResetImageROI( Capa->FGTemp );
-	cvResetImageROI( Capa->ImFMask );
+	cvResetImageROI( FGTemp );
+	cvResetImageROI( Mask );
 //	cvResetImageROI( FGMask);
 
 
-//	cvShowImage("Foreground", Capa->FGTemp);
+//	cvShowImage("Foreground", FGTemp);
 //	cvWaitKey(0);
 	// Liberar memoria
+	cvReleaseImage( &FGTemp);
 	cvReleaseImage(&IDif);
 	cvReleaseImage(&IDifm);
 	cvReleaseImage(&pesos);
