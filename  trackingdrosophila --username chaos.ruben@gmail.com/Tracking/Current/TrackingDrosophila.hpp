@@ -1,5 +1,5 @@
 /*!
- * Tracking.h
+ * TrackingDrosophila.h
  *
  *  Created on: 19/07/2011
  *      Author: chao
@@ -13,7 +13,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <BlobResult.h>
-#include "Interfaz_Lista.h"
 #include "segmentacion.h"
 #include "ShapeModel.hpp"
 #include "Plato.hpp"
@@ -59,14 +58,18 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	StaticBGModel* BGModel = NULL;
 	BGModelParams *BGParams = NULL;
 
-	/// EStructura capas
-	STCapas* Capa = NULL;
-	STCapas* NewCap = NULL;
+	/// Estructura frame
+	STFrame* FrameData = NULL;
+	/// Buffer frames
+	tlcde *FramesBuf = NULL;
+
+	/// Estructura fly
+	STFly* Fly = NULL;
+	/// Lista flies
+	tlcde *Flies = NULL;
 
 	/// Modelo del Plato
 	STFlat* Flat;
-
-
 
 	// otros parámetros
 	int fr = 0;
@@ -74,20 +77,11 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	int UpdateCount = 0;
 	IplImage* BGTemp;
 	IplImage* DETemp;
-	IplImage* BGTemp1;
-	IplImage* DETemp1;
-
 
 	// Modelado de forma
 
 	SHModel* Shape;
 
-	///Estructura Flies
-	STFlies* FlieTemp = NULL; /// Puntero a la estructura creada en segmentación. Una lista lineal doblemente en lazada
-							  /// que contiene los parámetros de cada uno de los blobs del frame nuevo
-							/// esta lista se crea nueva en cada frame
-	STFlies* Flie = NULL; /// Puntero a estructura que contiene los parámetros de cada blob, tantos como la
-							/// longitud del frame
 	/// SEGMENTACION
 	int Nc; ///Numero de contornos devueltos por segmentacion
 
@@ -110,17 +104,16 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 
 
-	///! Inicialización: Crea las ventanas, inicializa las estructuras (excepto la STFlies, que se inicia en segmentación ),
+	///! Inicialización: Crea las ventanas, inicializa las estructuras (excepto STFlies y STFrame que se inicia en procesado ),
 	///! asigna espacio a las imagenes, establece los parámetros del modelo de fondo y crea el fichero de datos.
 	int Inicializacion(IplImage* frame,
 			STFlat** Flat,
-			STCapas** Capa ,
 			SHModel** Shape,
 			BGModelParams** BGParams,
 			StaticBGModel** BGModel,
 			int argc,
 			char* argv[]);
-	/// Preprocesado
+
 
 	int existe(char *nombreFichero);
 
@@ -134,17 +127,11 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void Visualizacion();
 
-	void mostrarLista(STFlies *Flie);
+	void mostrarListaFlies(tlcde *lista);
 
-	void InitNewFrameCaps(IplImage* I, STCapas *Capa );
+	void InitNewFrameData(IplImage* I, STFrame *FrameData );
 
-	void AnyadirCapas( STCapas** NewCap, STCapas** Capa);
-
-	void AnyadirFlies( STFlies** FlieTemp, STFlies **Flie);
-
-	void AlmacenarDatos( STFlies* Flie, char* nombreFichero );
-
-	void LiberarMemoria( STFlies** Flie, STCapas** Capa );
+	int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
 
 	void AnalisisEstadistico();
 	/// Medida de tiempos
@@ -158,30 +145,26 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void InitialBGModelParams( BGModelParams* Params);
 
-	// Para invertir mascaras
-//	void invertirBW( IplImage* Imagen);
-	/** Crea un modelo de fondo gaussiano usando la mediana. Establece los umbrales
-	 de binarización. **/
-
 	void MotionTemplate( IplImage* img, IplImage* dst);
 
 	void OpticalFlowLK( IplImage* ImLast, IplImage* velX, IplImage* velY);
-
-	int CreateBlobs(IplImage* ROI,IplImage* blobs_img, STFlies**, Lista );
-
-//	void mostrarLista(Lista);
-
-	/// Crea la capa de ROIS de cada objeto
-	void CreateRois( IplImage*, IplImage*);
-
-	/// Limpia de la memoria las imagenes usadas durante la ejecución
-	void DeallocateImages( void );
 
 	/// Función para obtener el número de frames en algunos S.O Linux
 	int getAVIFrames( char* );
 
 	/// Crea una trackbar para posicionarse en puntos concretos del video
 	void onTrackbarSlider(  int  );
+
+
+
+	/// Limpia de la memoria las imagenes usadas durante la ejecución
+	void DeallocateImages( void );
+
+	void liberarListaFlies(tlcde *lista);
+
+	int liberarPrimero(tlcde *FramesBuf );
+
+	void liberarBuffer(tlcde *FramesBuf);
 
 	/// destruye las ventanas
 	void DestroyWindows( );

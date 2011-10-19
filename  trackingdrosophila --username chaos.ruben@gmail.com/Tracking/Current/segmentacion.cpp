@@ -24,11 +24,15 @@
 	IplImage *pesos = 0;
 	IplImage *FGMask = 0;
 
-int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp,IplImage* Mask){
+tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask){
 
+	//Iniciar lista para almacenar las moscas
+	tlcde* flies = NULL;
+	flies = ( tlcde * )malloc( sizeof(tlcde ));
+	iniciarLcde( flies );
+	//Inicializar estructura para almacenar los datos cada mosca
+	STFly *flyData = NULL;
 
-	//Inicializar estructura para almacenar los datos de las moscas
-	*FlieTemp = NULL;
 	IplImage *FGMask = 0;
 	// CREAR IMAGENES
 
@@ -40,11 +44,11 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	        cvReleaseImage( &IDifm );
 	        cvReleaseImage( &pesos );
 
-	        FGTemp = cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);
-	        IDif=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
-	        IDifm=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
-	        pesos=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-	        FGMask=cvCreateImage(cvSize(Capa->BGModel->width,Capa->BGModel->height), IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
+	        FGTemp = cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);
+	        IDif=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
+	        IDifm=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
+	        pesos=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
+	        FGMask=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
 	        cvZero( FGTemp);
 	        cvZero( IDif);
 	        cvZero( IDifm);
@@ -52,12 +56,12 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	        cvZero( FGMask);
 	}
 
-	cvCopy(Capa->FG,FGTemp);
+	cvCopy(FrameData->FG,FGTemp);
 
 	cvSetImageROI( Brillo , Roi);
-	cvSetImageROI( Capa->BGModel, Roi );
-	cvSetImageROI( Capa->IDesv, Roi );
-	cvSetImageROI( Capa->FG, Roi );
+	cvSetImageROI( FrameData->BGModel, Roi );
+	cvSetImageROI( FrameData->IDesv, Roi );
+	cvSetImageROI( FrameData->FG, Roi );
 	cvSetImageROI( FGTemp, Roi );
 
 	cvSetImageROI( IDif, Roi );
@@ -78,9 +82,9 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	// Distancia normalizada de cada pixel a su modelo de fondo.
 //		cvShowImage("Foreground",FGTemp);
 //				cvWaitKey(0);
-	cvAbsDiff(Brillo,Capa->BGModel,IDif);// |I(p)-u(p)|/0(p)
+	cvAbsDiff(Brillo,FrameData->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
-	cvDiv( IDifm,Capa->IDesv,pesos );// Calcular
+	cvDiv( IDifm,FrameData->IDesv,pesos );// Calcular
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
@@ -139,14 +143,14 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 		cvZero( RT);
 
 
-//		cvShowImage("Foreground", Capa->FG);
+//		cvShowImage("Foreground", FrameData->FG);
 //		cvWaitKey(0);
 		if (SHOW_SEGMENTATION_DATA == 1) {
 			printf(" \n\nMatriz de distancia normalizada al background |I(p)-u(p)|/0(p)");
 		}
 		// Hallar Z y u={ux,uy}
 		for (int y = rect.y; y< rect.y + rect.height; y++){
-			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
+			uchar* ptr1 = (uchar*) ( FrameData->FG->imageData + y*FrameData->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
 			if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
 
@@ -186,7 +190,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 		}
 
 		for (int y = rect.y; y< rect.y + rect.height; y++){
-			uchar* ptr1 = (uchar*) ( Capa->FG->imageData + y*Capa->FG->widthStep + 1*rect.x);
+			uchar* ptr1 = (uchar*) ( FrameData->FG->imageData + y*FrameData->FG->widthStep + 1*rect.x);
 			uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
 			for (int x= 0; x<rect.width; x++){
 
@@ -263,40 +267,25 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 		}
 //		CvMat *contorno = cvCreateMat(1,c->total,CV_32FC1);
 //		cvCvtSeqToArray(c , contorno );
-		STFlies* FLIE = NULL;
-		FLIE = ( STFlies *) malloc( sizeof( STFlies));
-		if ( !FLIE ) {error(4);	return -1;}
-		FLIE->etiqueta = id  ;  /// Identificación del blob
-		FLIE->Color = cvScalar(0,0,0,0); /// Color para dibujar el blob
-		FLIE-> posicion = centro; /// Posición del blob
-		FLIE->a = semiejemayor;
-		FLIE->b = semiejemenor; /// semiejes de la elipse
-		FLIE->orientacion = tita; /// Almacena la orientación
-//		FLIE->perimetro = cv::arcLength(contorno,0);
-		FLIE->Roi = rect;
-		FLIE->Static = 0;  /// Flag para indicar que el blob permanece estático
-		FLIE->num_frame = 0; /// Almacena el numero de frame (tiempo)
-		FLIE->num_Flies_frame = Nc; /// Número de blobs detectados en el frame
-		FLIE->siguiente_frame = NULL;
-		FLIE->anterior_frame = NULL;
-		// Enlazar
-		STFlies* temp = NULL;
-		temp = *FlieTemp;
-		FLIE->siguiente = NULL;
-		FLIE->anterior = temp;
-		// el primer valor a null
-		if( temp == NULL) FLIE->anterior = NULL;
-		// En la primera iteración no habrá nada en FlieTemp (null)
-		if (temp != NULL) temp->siguiente = FLIE;
 
-		*FlieTemp = FLIE;
-
-
+		flyData = ( STFly *) malloc( sizeof( STFly));
+		if ( !flyData ) {error(4);	exit(1);}
+		flyData->etiqueta = id  ;  /// Identificación del blob
+		flyData->Color = cvScalar(0,0,0,0); /// Color para dibujar el blob
+		flyData-> posicion = centro; /// Posición del blob
+		flyData->a = semiejemayor;
+		flyData->b = semiejemenor; /// semiejes de la elipse
+		flyData->orientacion = tita; /// Almacena la orientación
+//		flyData->perimetro = cv::arcLength(contorno,0);
+		flyData->Roi = rect;
+		flyData->Static = 0;  /// Flag para indicar que el blob permanece estático
+		flyData->num_frame = FrameData->num_frame;
+		// Añadir a lista
+		insertar( flyData, flies );
 
 		//Mostrar los campos de cada mosca o blob
-
 		if(SHOW_SEGMENTACION_STRUCT == 1){
-		printf("\n EJE A : %f\t EJE B: %f\t ORIENTACION: %f",FLIE->a,FLIE->b,FLIE->orientacion);
+		printf("\n EJE A : %f\t EJE B: %f\t ORIENTACION: %f",flyData->a,flyData->b,flyData->orientacion);
 		}
 
 		cvEllipse( FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
@@ -340,17 +329,17 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	cvSetImageROI( FGTemp,Roi);
 //		cvWaitKey(0);
 
-	cvAdd ( Capa->FG, FGTemp, FGTemp);
+	cvAdd ( FrameData->FG, FGTemp, FGTemp);
 //	cvShowImage("Foreground", FGTemp);
 // 			cvWaitKey(0);
 // FIN PRUEBAS
 	cvCopy( FGMask,FGTemp);
-	cvCopy( FGTemp,Capa->FG);
+	cvCopy( FGTemp,FrameData->FG);
 
 	cvResetImageROI( Brillo );
-	cvResetImageROI( Capa->BGModel );
-	cvResetImageROI( Capa->IDesv );
-	cvResetImageROI( Capa->FG );
+	cvResetImageROI( FrameData->BGModel );
+	cvResetImageROI( FrameData->IDesv );
+	cvResetImageROI( FrameData->FG );
 	cvResetImageROI( FGTemp );
 	cvResetImageROI( Mask );
 //	cvResetImageROI( FGMask);
@@ -366,7 +355,7 @@ int segmentacion( IplImage *Brillo, STCapas* Capa ,CvRect Roi,STFlies** FlieTemp
 	cvReleaseImage(&FGMask);
 	cvReleaseMemStorage( &storage);
 
-	return Nc;
+	return flies;
 
 }//Fin de la función
 

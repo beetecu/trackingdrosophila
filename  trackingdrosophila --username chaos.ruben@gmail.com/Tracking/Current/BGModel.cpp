@@ -212,7 +212,6 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*dataroi.x);
 		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep + 1*dataroi.x);
 		uchar* ptr5 =  (uchar*) ( fg->imageData + y*fg->widthStep + 1*dataroi.x);
-		if (SHOW_BACKGROUND_DATA == 1) printf(" \n\n");
 		for (int x = 0; x<dataroi.width; x++){
 
 			// Si la desviación tipica del pixel supera en HiF veces la

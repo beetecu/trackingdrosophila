@@ -24,7 +24,7 @@ typedef struct {
 
 }ValParams;
 
-void Validacion(IplImage *Imagen, STCapas* Capa, SHModel* SH, STFlies* Flie, CvRect Segroi,BGModelParams* BGParams, ValParams* VParams);
+void Validacion(IplImage *Imagen, STFrameDatas* FrameData, SHModel* SH, STFlies* Flie, CvRect Segroi,BGModelParams* BGParams, ValParams* VParams);
 void setValParams( ValParams* Params);
 void setBGModParams( BGModelParams* Params);
 double CalcProbMosca( SHModel* SH , STFlies* Flie );

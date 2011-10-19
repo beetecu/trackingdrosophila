@@ -6,7 +6,7 @@
  */
 
 #ifndef VIDEOTRACKER_HPP_
-#define VIDEOTRACKER_HPP_ //Modifica
+#define VIDEOTRACKER_HPP_
 
 #include <opencv2/imgproc/imgproc_c.h>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -16,7 +16,6 @@
 #include <fstream>
 #include <math.h>
 #include <opencv2/video/background_segm.hpp>
-#include "Errores.hpp"
 #include "Libreria.h"
 
 #define CVX_RED CV_RGB(255,0,0)
@@ -49,10 +48,8 @@
 #ifndef DEFINICION_DE_ESTRUCTURAS
 #define DEFINICION_DE_ESTRUCTURAS
 
-//	typedef struct{
-//
-//	};
-	typedef struct Flies{
+
+	typedef struct {
 
 		int etiqueta;  /// Identificación del blob
 		CvScalar Color; /// Color para dibujar el blob
@@ -63,22 +60,8 @@
 		CvRect Roi;
 		bool Static;  /// Flag para indicar que el blob permanece estático
 		int num_frame; /// Almacena el numero de frame (tiempo)
-		int num_Flies_frame; /// Número de blobs detectados en el frame
-		int num_total_elementos; /// Número de blobs en la estructura hasta el momento.
-		int num_frames; /// almacena el número de frames de la lista
-		struct Flies* siguiente_frame;
-		struct Flies* anterior_frame;
-		struct Flies* siguiente;
-		struct Flies* anterior;
-	}STFlies;
+	}STFly;
 
-//	typedef struct {
-//		IplImage** BGModel;
-//		IplImage** Idesv;
-//		IplImage** FG;
-//		IplImage** OldFG;
-//
-//	}BuffSTCapas;
 /// Estructura para almacenar el modelo de fondo estático
 	typedef struct {
 		IplImage* Imed; ///BackGround Model
@@ -86,17 +69,16 @@
 		IplImage* ImFMask; /// Mascara del plato
 	}StaticBGModel;
 
-	typedef struct Capas{
+
+	typedef struct {
 		int num_frame;
-		int num_elementos;
 		IplImage* BGModel;  /// backGround Model dinámico
 		IplImage* IDesv;	/// Desviación tipica del modelo de fondo dinámico
 		IplImage* OldFG; ///OldForeGround ( blobs estáticos ).
 		IplImage* FG;  ///Foreground ( blobs en movimiento ).
 		IplImage* ImMotion;
-		struct Capas* siguiente_frame;
-		struct Capas* anterior_frame;
-	}STCapas;
+		tlcde* Flies; /// Puntero a lista circular doblemente enlazada con los datos de cada fly
+	}STFrame;
 
 	/// Estructura para el modelo del plato
 

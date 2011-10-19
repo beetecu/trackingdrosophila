@@ -10,11 +10,7 @@
 
 #include "VideoTracker.hpp"
 
-
-
-
-
-int  segmentacion(IplImage *Brillo,STCapas* Capa, CvRect Roi,STFlies** FlieTemp,IplImage* Mask);
+tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask);
 
 
 
