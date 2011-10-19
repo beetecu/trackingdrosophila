@@ -41,6 +41,11 @@ void error(int err){
 			fprintf( stderr, "ERROR: División por 0 \n" );
 			DestroyWindows( );
 			break;
-
+		case 6:
+			fprintf( stderr, "ERROR: Fallo al guardar datos 0 \n" );
+			DestroyWindows( );
+			break;
+		case 7:
+			fprintf( stderr, "ERROR: Fallo al liberar buffer 0 \n" );
 	}
 }
