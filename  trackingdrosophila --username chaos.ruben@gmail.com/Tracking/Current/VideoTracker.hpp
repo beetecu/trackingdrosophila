@@ -15,8 +15,13 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <time.h>
+#include <sys/time.h>
 #include <opencv2/video/background_segm.hpp>
-#include "Libreria.h"
+
+using namespace cv;
+using namespace std;
+//#include "Libreria.h"
 
 #define CVX_RED CV_RGB(255,0,0)
 #define CVX_BLUE CV_RGB(0,0,255)
@@ -48,6 +53,34 @@
 #ifndef DEFINICION_DE_ESTRUCTURAS
 #define DEFINICION_DE_ESTRUCTURAS
 
+#ifndef _ELEMENTO_H
+#define _ELEMENTO_H
+
+	// Tipo Elemento (un elemento de la lista) ///////////////////////
+	typedef struct s
+	{
+	  void *dato;          // área de datos
+	  struct s *anterior;  // puntero al elemento anterior
+	  struct s *siguiente; // puntero al elemento siguiente
+	} Elemento;
+
+
+#endif // _ELEMENTO_H
+
+
+#ifndef _INTERFAZ_LCSE_H
+#define _INTERFAZ_LCSE_H
+
+// Parámetros de la lista
+typedef struct
+{
+  Elemento *ultimo;      // apuntará siempre al último elemento
+  Elemento *actual;      // apuntará siempre al elemento accedido
+  int numeroDeElementos; // número de elementos de la lista
+  int posicion;          // índice del elemento apuntado por actual
+} tlcde;
+
+#endif //_INTERFAZ_LCSE_H
 
 	typedef struct {
 
@@ -58,7 +91,7 @@
 		float orientacion; /// Almacena la orientación
 		double perimetro;
 		CvRect Roi;
-		bool Static;  /// Flag para indicar que el blob permanece estático
+		bool Static;  /// Flag para indicar que el blob permanece estático.
 		int num_frame; /// Almacena el numero de frame (tiempo)
 	}STFly;
 
@@ -96,6 +129,6 @@ typedef struct {
 	float FlyAreaDes ;
 }SHModel;
 
-#endif
+#endif /*Estructuras*/
 
 #endif /* VIDEOTRACKER_HPP_ */

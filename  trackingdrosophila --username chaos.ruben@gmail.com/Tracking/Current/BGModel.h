@@ -9,6 +9,7 @@
 #define BGMODEL_H_
 
 #include "VideoTracker.hpp"
+#include "Libreria.h"
 
 typedef struct{
 	//Parametros del modelo

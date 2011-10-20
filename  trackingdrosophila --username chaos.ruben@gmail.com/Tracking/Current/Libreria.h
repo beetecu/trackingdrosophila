@@ -4,15 +4,31 @@
  *  Created on: 09/08/2011
  *      Author: chao
  */
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
+
+#include "VideoTracker.hpp"
 #include "Errores.hpp"
+
 #ifndef LIBRERIA_H_
 #define LIBRERIA_H_
+
+/// Medida de tiempos
+
+#ifndef CLK_TCK
+#define CLK_TCK CLOCKS_PER_SEC
+#endif
+
+#ifndef _TIEMPOS_
+#define _TIEMPOS_
+
+int gettimeofday( struct timeval *tv, struct timezone *tz );
+
+#endif //_TIEMPOS_
+
+/////////////// Tratamiento de imagenes /////////////////
+#ifndef _IMAGEN_
+#define _IMAGEN_
+/// Función para obtener el número de frames en algunos S.O Linux
+int getAVIFrames( char* );
 
 //! \brief Recibe una imagen RGB 8 bit y devuelve una imagen en escala de grises con un
 //!   flitrado gaussiano 5x. Si el último parámetro es verdadero, se binariza. Si
@@ -28,8 +44,11 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 
 void invertirBW( IplImage* Imagen );
 
-#endif // LIBRERIA_H_
+#endif // _IMAGEN_
 
+
+// Interfaz para manipular una lcde //////////////////////////////
+//
 #ifndef _ELEMENTO_H
 #define _ELEMENTO_H
 
@@ -48,8 +67,6 @@ void invertirBW( IplImage* Imagen );
 #ifndef _INTERFAZ_LCSE_H
 #define _INTERFAZ_LCSE_H
 
-// Interfaz para manipular una lcde //////////////////////////////
-//
 // Parámetros de la lista
 typedef struct
 {
@@ -59,8 +76,10 @@ typedef struct
   int posicion;          // índice del elemento apuntado por actual
 } tlcde;
 
-// Mostrar un mensaje de error y abortar el programa
-void error();
+#endif //_INTERFAZ_LCSE_H
+
+#ifndef _INTERFAZ_LCSE_
+#define _INTERFAZ_LCSE_
 
 // Crear un nuevo elemento
 Elemento *nuevoElemento();
@@ -105,6 +124,30 @@ void modificar(void *pNuevosDatos, tlcde *lcde);
 
 void anyadirAlFinal(void *e, tlcde *lcde );
 
-#endif // _INTERFAZ_LCSE_H
+#endif // _INTERFAZ_LCSE_
 
 
+#ifndef _BUFFER_
+#define _BUFFER_
+
+void mostrarListaFlies(tlcde *lista);
+
+void liberarListaFlies(tlcde *lista);
+
+int liberarPrimero(tlcde *FramesBuf );
+
+void liberarBuffer(tlcde *FramesBuf);
+
+#endif //_BUFFER_
+
+#ifndef _FICHEROS_
+#define _FIHEROS_
+
+int existe(char *nombreFichero);
+
+void crearFichero(char *nombreFichero );
+
+int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
+
+#endif //_FICHEROS_
+#endif // LIBRERIA_H_
