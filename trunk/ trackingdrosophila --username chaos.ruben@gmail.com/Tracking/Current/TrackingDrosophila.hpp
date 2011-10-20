@@ -9,21 +9,12 @@
 #define TRACKING_H_
 
 #include "VideoTracker.hpp"
+#include "Libreria.h"
 #include "BGModel.h"
-#include <time.h>
-#include <sys/time.h>
 #include <BlobResult.h>
 #include "segmentacion.h"
 #include "ShapeModel.hpp"
 #include "Plato.hpp"
-
-using namespace cv;
-using namespace std;
-
-// DEFINICIONES
-#ifndef CLK_TCK
-#define CLK_TCK CLOCKS_PER_SEC
-#endif
 
 #define STRUCT_BUFFER_LENGTH IMAGE_BUFFER_LENGTH /// máximo número de frames que almacenará la estructura. Impar
 								/// para trabajar en el centro con 25 frames a cada lado.
@@ -33,14 +24,9 @@ using namespace std;
 #ifndef VARIABLES_GLOBALES_PROGRAMA
 	#define VARIABLES_GLOBALES_PROGRAMA
 
-/// Ficheros
-
 	char nombreFichero[30];
 
-
-/// Medida de tiempos
-struct timeval ti, tf, tif, tff; // iniciamos la estructura
-
+	struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	float TiempoInicial;
 	float TiempoParcial;
 	float TiempoFrame;
@@ -114,11 +100,6 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 			int argc,
 			char* argv[]);
 
-
-	int existe(char *nombreFichero);
-
-	void crearFichero(char *nombreFichero );
-
 	int PreProcesado( );
 
 	void Procesado();
@@ -127,15 +108,15 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 
 	void Visualizacion();
 
-	void mostrarListaFlies(tlcde *lista);
+	void AnalisisEstadistico();
+
+	void Finalizar();
+
+	void InitialBGModelParams( BGModelParams* Params);
 
 	void InitNewFrameData(IplImage* I, STFrame *FrameData );
 
-	int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
 
-	void AnalisisEstadistico();
-	/// Medida de tiempos
-	int gettimeofday( struct timeval *tv, struct timezone *tz );
 
 	/// Crea las ventanas de visualización
 	void CreateWindows();
@@ -143,28 +124,18 @@ struct timeval ti, tf, tif, tff; // iniciamos la estructura
 	/// localiza en memoria las imágenes necesarias para la ejecución
 	void AllocateImages( IplImage*, StaticBGModel* bgmodel);
 
-	void InitialBGModelParams( BGModelParams* Params);
-
 	void MotionTemplate( IplImage* img, IplImage* dst);
 
 	void OpticalFlowLK( IplImage* ImLast, IplImage* velX, IplImage* velY);
 
-	/// Función para obtener el número de frames en algunos S.O Linux
-	int getAVIFrames( char* );
+	///
+	int RetryCap();
 
 	/// Crea una trackbar para posicionarse en puntos concretos del video
 	void onTrackbarSlider(  int  );
 
-
-
 	/// Limpia de la memoria las imagenes usadas durante la ejecución
 	void DeallocateImages( void );
-
-	void liberarListaFlies(tlcde *lista);
-
-	int liberarPrimero(tlcde *FramesBuf );
-
-	void liberarBuffer(tlcde *FramesBuf);
 
 	/// destruye las ventanas
 	void DestroyWindows( );

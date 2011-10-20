@@ -11,6 +11,7 @@
 
 using namespace cv;
 using namespace std;
+
 void help(){
 	printf("\n Para ejecutar el programa escriba en la consola: "
 			"TrackingDrosophila [nombre_video.avi] [Nombre_Fichero]\n  "
@@ -39,57 +40,45 @@ int main(int argc, char* argv[]) {
 	frame = cvQueryFrame( g_capture );
 
 	///////////  INICIALIZACIÓN ////////////
+
+	//inicializar estructuras, imagenes y fichero de datos
 	if (!Inicializacion(frame, &Flat, &Shape, &BGParams,&BGModel, argc, argv) ) return -1;
+
 	//inicializar buffer de datos.
 	FramesBuf = ( tlcde * )malloc( sizeof(tlcde));
-	if( !FramesBuf ) error(4);
+	if( !FramesBuf ) {error(4);Finalizar();}
 	iniciarLcde( FramesBuf );
-
 
 	gettimeofday(&tf, NULL);
 	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000
 			     + (tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g ms\n", TiempoParcial);
 
+	//////////  PREPROCESADO   ////////////
+	if (!PreProcesado( ) ) Finalizar();
+
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
     for( FrameCountRel = 1;frame; frame = cvQueryFrame(g_capture), FrameCountRel++ ){
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
-    	if( !frame ) frame = cvQueryFrame(g_capture); // intentar de nuevo
-		if ( !frame ) { // intentar de nuevo cn los siguientes frame
-			double n_frame = cvGetCaptureProperty( g_capture, 1);
-			int i = 1;
-			printf("\n Fallo en captura del frame %0.1f",n_frame);
-			while( !frame && i<4){
-				printf("\n Intentándo captura del frame %0.1f",n_frame+i);
-				cvSetCaptureProperty( g_capture,
-									CV_CAP_PROP_POS_AVI_RATIO,
-									n_frame +i );
-				frame = cvQueryFrame(g_capture);
-				if ( !frame ) printf("\n Fallo en captura");
-//				FrameCountAbs++;
-				i++;
-			}
-			if ( !frame ) {
-				error(2);
-				break;
-			}
-		}
+    	if( !frame ) RetryCap();
+    	if( !RetryCap ) Finalizar();
+
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		FrameCountAbs = cvGetCaptureProperty( g_capture, 1);
-//		FrameCountAbs += 1;
 		UpdateCount += 1;
 		gettimeofday(&tif, NULL);
 
-		//////////  PREPROCESADO   ////////////
-		if (!PreProcesado( ) ) return -1;
-		//////////  PROCESADO      ////////////
+		//////////  PROCESAR      ////////////
 		Procesado( );
+
 		//////////  RASTREAR       ////////////
 		Tracking(  );
+
 		//////////  VISUALIZAR     ////////////
 		Visualizacion();
-		//////////  GUARDAR DATOS ////////////
+
+		//////////  ALMACENAR ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
 		// ( buffer de datos) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ).
 		if( FramesBuf->numeroDeElementos == STRUCT_BUFFER_LENGTH){
@@ -97,36 +86,16 @@ int main(int argc, char* argv[]) {
 			mostrarListaFlies(FrameData->Flies);
 			// Una vez que se llenan los buffer se almacenan los datos del primer frame en fichero
 
-			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);exit(-1);}
-			if(!liberarPrimero( FramesBuf ) ){error(7);exit(-1);};
+			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);Finalizar();}
+			if(!liberarPrimero( FramesBuf ) ){error(7);Finalizar();};
 			FrameData = NULL;
 		}
 	}
     ///////// POSTPROCESADO //////////
 	AnalisisEstadistico();
 
-	///////// LIBERAR MEMORIA ////////
-
-	// completar. tras añadir buffers liberar memoria de todos los elementos (no solo del puntero actual)
-	//liberar estructuras
-	cvReleaseImage(&BGModel->IDesv);
-	cvReleaseImage(&BGModel->ImFMask);
-	cvReleaseImage(&BGModel->Imed);
-	free(BGModel);
-	free(Flat);
-	liberarBuffer( FramesBuf );
-	//liberar listas
-	free( FramesBuf);
-	free( Flies );
-
-
-	DeallocateImages( );
-//	DeallocateImagesBGM();
-
-	cvReleaseCapture(&g_capture);
-
-	DestroyWindows( );
-
+	///////// LIBERAR MEMORIA Y TERMINAR////////
+	Finalizar();
 }
 
 
@@ -229,32 +198,7 @@ int Inicializacion( IplImage* frame,
 	return 1;
 }
 
-int existe(char *nombreFichero)
-{
-  FILE *pf = NULL;
-  // Verificar si el fichero existe
-  int exis = 0; // no existe
-  if ((pf = fopen(nombreFichero, "r")) != NULL)
-  {
-    exis = 1;   // existe
-    fclose(pf);
-  }
-  return exis;
-}
-
-void crearFichero(char *nombreFichero )
-{
-  FILE *pf = NULL;
-  // Abrir el fichero nombreFichero para escribir "w"
-  if ((pf = fopen(nombreFichero, "wb")) == NULL)
-  {
-    printf("El fichero no puede crearse.");
-    exit(1);
-  }
- fclose(pf);
-}
-
-int PreProcesado( ){
+int PreProcesado(  ){
 
 	static int hecho = 0;
 	// Obtencion de mascara del plato
@@ -308,7 +252,6 @@ int PreProcesado( ){
 		TiempoGlobal = 0;
 	}
 	FrameCountAbs = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
-	// Iniciamos la estructura capas para el procesado
 
 	return hecho = 1;
 }
@@ -451,68 +394,6 @@ void Tracking(){
 	FrameData = NULL;
 }
 
-void InitNewFrameData(IplImage* I, STFrame *FrameData ){
-
-	CvSize size = cvGetSize( I );
-	FrameData->BGModel = cvCreateImage(size,8,1);
-	FrameData->FG = cvCreateImage(size,8,1);
-	FrameData->IDesv = cvCreateImage(size,8,1);
-	FrameData->OldFG = cvCreateImage(size,8,1);
-	FrameData->ImMotion = cvCreateImage( size, 8, 3 );
-	FrameData->ImMotion->origin = I->origin;
-	cvZero( FrameData->BGModel );
-	cvZero( FrameData->FG );
-	cvZero( FrameData->IDesv );
-	cvZero( FrameData->ImMotion);
-	FrameData->Flies = NULL;
-	FrameData->num_frame = FrameCountAbs;
-}
-
-
-///! El algoritmo mantiene un buffer de 50 frames ( 2 seg aprox ) para los datos y para las
-///! imagenes.
-///! Una vez que se han llenado los buffer, se almacena en fichero los datos de la lista
-///! Flies correspondientes al primer frame. La pisición actual no se modifica.
-///! Si la lista está vacía mostrará un error. Si se ha guardado con éxito devuelve un uno
-int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
-
-
-	tlcde* Flies = NULL;
-	FILE * pf;
-	STFly* fly = NULL;
-	STFrame* frameData = NULL;
-	int posicion = framesBuf->posicion;
-
-	if (framesBuf->numeroDeElementos == 0) {printf("\nLista vacia\n");return 0;}
-
-	// obtenemos la direccion del primer elemento
-	irAlPrincipio( framesBuf );
-	frameData = (STFrame*)obtenerActual( framesBuf );
-	//obtenemos la lista
-	Flies = frameData->Flies;
-	int i = 0, tam = Flies->numeroDeElementos;
-	// Abrir el fichero nombreFichero para escribir "w".
-	if ((pf = fopen(nombreFichero, "a")) == NULL)
-	{
-	printf("El fichero no puede abrirse.");
-	exit(1);
-	}
-	while( i < tam ){
-		fly = (STFly*)obtener(i, Flies);
-		fwrite(&fly, sizeof(STFly), 1, pf);
-		if (ferror(pf))
-		{
-		  perror("Error durante la escritura");
-		  exit(2);
-		}
-		i++;
-	}
-	fclose(pf);
-	irAl( posicion, framesBuf);
-	return 1;
-}
-
-
 void Visualizacion(){
 
 	irAlFinal( FramesBuf);
@@ -584,6 +465,78 @@ void AnalisisEstadistico(){
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
 	printf( "Análisis finalizado ...\n" );
 }
+
+void Finalizar(){
+	// completar. tras añadir buffers liberar memoria de todos los elementos (no solo del puntero actual)
+	//liberar estructuras
+	if(BGModel){
+	cvReleaseImage(&BGModel->IDesv);
+	cvReleaseImage(&BGModel->ImFMask);
+	cvReleaseImage(&BGModel->Imed);
+	free(BGModel);
+	}
+	if(Flat) free(Flat);
+	if(FramesBuf) {liberarBuffer( FramesBuf );free( FramesBuf);}
+	//liberar listas
+	if(Flies) free( Flies );
+	if(Fly) free(Fly);
+	if( Shape) free(Shape);
+
+	DeallocateImages( );
+//	DeallocateImagesBGM();
+
+	cvReleaseCapture(&g_capture);
+
+	DestroyWindows( );
+}
+
+void InitNewFrameData(IplImage* I, STFrame *FrameData ){
+
+	CvSize size = cvGetSize( I );
+	FrameData->BGModel = cvCreateImage(size,8,1);
+	FrameData->FG = cvCreateImage(size,8,1);
+	FrameData->IDesv = cvCreateImage(size,8,1);
+	FrameData->OldFG = cvCreateImage(size,8,1);
+	FrameData->ImMotion = cvCreateImage( size, 8, 3 );
+	FrameData->ImMotion->origin = I->origin;
+	cvZero( FrameData->BGModel );
+	cvZero( FrameData->FG );
+	cvZero( FrameData->IDesv );
+	cvZero( FrameData->ImMotion);
+	FrameData->Flies = NULL;
+	FrameData->num_frame = FrameCountAbs;
+}
+
+void InitialBGModelParams( BGModelParams* Params){
+	 static int first = 1;
+	 Params->FRAMES_TRAINING = 20;
+	 Params->ALPHA = 0 ;
+	 Params->MORFOLOGIA = 0;
+	 Params->CVCLOSE_ITR = 1;
+	 Params->MAX_CONTOUR_AREA = 200 ;
+	 Params->MIN_CONTOUR_AREA = 5;
+	 if (CREATE_TRACKBARS == 1){
+				 // La primera vez inicializamos los valores.
+				 if (first == 1){
+					 Params->HIGHT_THRESHOLD = 20;
+					 Params->LOW_THRESHOLD = 10;
+					 first = 0;
+				 }
+	 			cvCreateTrackbar( "HighT",
+	 							  "Foreground",
+	 							  &Params->HIGHT_THRESHOLD,
+	 							  100  );
+	 			cvCreateTrackbar( "LowT",
+	 							  "Foreground",
+	 							  &Params->LOW_THRESHOLD,
+	 							  100  );
+	 }else{
+		 Params->HIGHT_THRESHOLD = 20;
+		 Params->LOW_THRESHOLD = 10;
+	 }
+}
+
+
 void AllocateImages( IplImage* I , StaticBGModel* bgmodel){
 
 	// Crear imagenes y redimensionarlas en caso de que cambien su tamaño
@@ -707,137 +660,27 @@ void onTrackbarSlider(  int pos ){
 	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_FRAMES, pos );
 }
 
-int getAVIFrames(char * fname) {
-	char tempSize[4];
-	// Trying to open the video file
-	ifstream  videoFile( fname , ios::in | ios::binary );
-	// Checking the availablity of the file
-	if ( !videoFile ) {
-		cout << "Couldn’t open the input file " << fname << endl;
-		exit( 1 );
-	}
-	// get the number of frames
-	videoFile.seekg( 0x30 , ios::beg );
-	videoFile.read( tempSize , 4 );
-	int frames = (unsigned char ) tempSize[0] + 0x100*(unsigned char ) tempSize[1] + 0x10000*(unsigned char ) tempSize[2] +    0x1000000*(unsigned char ) tempSize[3];
-	videoFile.close(  );
-	return frames;
-}
-
-void mostrarListaFlies(tlcde *lista)
-{
-		// Mostrar todos los elementos de la lista
-	int i = 0, tam = lista->numeroDeElementos;
-	STFly* flydata = NULL;
-	while( i < tam ){
-		flydata = (STFly*)obtener(i, lista);
-		printf( "etiqueta %d\nColor\nposicion\n a %0.2f b %0.2f\norientacion %0.1f\nperimetro\nStatic %d\n num_frame %d\n;",
-				flydata->etiqueta,
-				flydata->a,
-				flydata->b,
-				flydata->orientacion,
-				flydata->Static,
-				flydata->num_frame);
-		i++;
-	}
-	if (tam = 0 ) printf(" Lista vacía\n");
-}
-
-void liberarListaFlies(tlcde *lista)
-{
-  // Borrar todos los elementos de la lista
-  STFly *flydata = NULL;
-
-  // borrar: borra siempre el elemento actual
-  irAlPrincipio(lista);
-  flydata = (STFly *)borrar(lista);
-  while (flydata)
-  {
-    free(flydata); // borrar el área de datos del elemento eliminado
-    flydata = (STFly *)borrar(lista);
-  }
-}
-
-///! Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
-///! El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
-///! a la función.
-int liberarPrimero(tlcde *FramesBuf ){
-
-	STFrame *frameData = NULL;
-	STFrame *frDataTemp = NULL;
-
-//Guardamos la posición actual.
-	int i = FramesBuf->posicion;
-//
-	if(!irAl(0, FramesBuf) ) {printf("\nBuffer vacio");return 0;}
-	frameData = (STFrame*)obtenerActual( FramesBuf );
-	 // por cada nuevo frame se libera el espacio del primer frame
-	liberarListaFlies( frameData->Flies );
-	free( frameData->Flies);
-	//borra el primer elemento
-	cvReleaseImage(&frameData->BGModel);
-	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesv);
-	cvReleaseImage(&frameData->ImMotion);
-	cvReleaseImage(&frameData->OldFG);
-	frameData = (STFrame *)borrar( FramesBuf );
-	if( !frameData ) {
-		printf( "Se ha borrado el último elemento.Buffer vacio" );
-		free( frameData );
-		return 0;
-	}
-	else{
-		free( frameData );
-		irAl(i - 1, FramesBuf);
-		return 1;
+int RetryCap(){
+	frame = cvQueryFrame(g_capture); // intentar de nuevo
+	if ( !frame ) { // intentar de nuevo cn los siguientes frame
+		double n_frame = cvGetCaptureProperty( g_capture, 1);
+		int i = 1;
+		printf("\n Fallo en captura del frame %0.1f",n_frame);
+		while( !frame && i<4){
+			printf("\n Intentándo captura del frame %0.1f",n_frame+i);
+			cvSetCaptureProperty( g_capture,
+								CV_CAP_PROP_POS_AVI_RATIO,
+								n_frame +i );
+			frame = cvQueryFrame(g_capture);
+			if ( !frame ) printf("\n Fallo en captura");
+//				FrameCountAbs++;
+			i++;
+		}
+		if ( !frame ) {
+			error(2);
+			return 0;
+		}
+		else return 1;
 	}
 }
 
-void liberarBuffer(tlcde *FramesBuf)
-{
-  // Borrar todos los elementos del buffer
-  STFrame *frameData = NULL;
-
-  // borrar: borra siempre el elemento actual
-  irAlPrincipio(FramesBuf);
-  frameData = (STFrame *)borrar( FramesBuf );
-  while (frameData)
-  {
-	liberarListaFlies( frameData->Flies);
-	cvReleaseImage(&frameData->BGModel);
-	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesv);
-	cvReleaseImage(&frameData->ImMotion);
-	cvReleaseImage(&frameData->OldFG);
-    free(frameData); // borrar el área de datos del elemento eliminado
-    frameData = (STFrame *)borrar( FramesBuf );
-  }
-}
-void InitialBGModelParams( BGModelParams* Params){
-	 static int first = 1;
-	 Params->FRAMES_TRAINING = 20;
-	 Params->ALPHA = 0 ;
-	 Params->MORFOLOGIA = 0;
-	 Params->CVCLOSE_ITR = 1;
-	 Params->MAX_CONTOUR_AREA = 200 ;
-	 Params->MIN_CONTOUR_AREA = 5;
-	 if (CREATE_TRACKBARS == 1){
-				 // La primera vez inicializamos los valores.
-				 if (first == 1){
-					 Params->HIGHT_THRESHOLD = 20;
-					 Params->LOW_THRESHOLD = 10;
-					 first = 0;
-				 }
-	 			cvCreateTrackbar( "HighT",
-	 							  "Foreground",
-	 							  &Params->HIGHT_THRESHOLD,
-	 							  100  );
-	 			cvCreateTrackbar( "LowT",
-	 							  "Foreground",
-	 							  &Params->LOW_THRESHOLD,
-	 							  100  );
-	 }else{
-		 Params->HIGHT_THRESHOLD = 20;
-		 Params->LOW_THRESHOLD = 10;
-	 }
-}

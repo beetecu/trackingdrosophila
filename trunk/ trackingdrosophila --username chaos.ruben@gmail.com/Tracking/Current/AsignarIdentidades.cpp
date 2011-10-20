@@ -83,7 +83,6 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 			color = CV_RGB(255,0,0);
 			magnitude = 30;
 
-
 		// select component ROI
 		cvSetImageROI( silh, comp_rect );
 		cvSetImageROI( mhi, comp_rect );

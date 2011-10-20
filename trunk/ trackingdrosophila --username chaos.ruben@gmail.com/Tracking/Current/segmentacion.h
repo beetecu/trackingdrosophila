@@ -9,6 +9,7 @@
 #define SEGMENTACION_H_
 
 #include "VideoTracker.hpp"
+#include "Libreria.h"
 
 tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask);
 

@@ -7,6 +7,25 @@
 
 #include "Libreria.h"
 
+// Tratamiento de Imagenes
+
+int getAVIFrames(char * fname) {
+	char tempSize[4];
+	// Trying to open the video file
+	ifstream  videoFile( fname , ios::in | ios::binary );
+	// Checking the availablity of the file
+	if ( !videoFile ) {
+		cout << "Couldn’t open the input file " << fname << endl;
+		exit( 1 );
+	}
+	// get the number of frames
+	videoFile.seekg( 0x30 , ios::beg );
+	videoFile.read( tempSize , 4 );
+	int frames = (unsigned char ) tempSize[0] + 0x100*(unsigned char ) tempSize[1] + 0x10000*(unsigned char ) tempSize[2] +    0x1000000*(unsigned char ) tempSize[3];
+	videoFile.close(  );
+	return frames;
+}
+
 void invertirBW( IplImage* Imagen ){
 	for( int y=0;  y< Imagen->height ; y++){
 			uchar* ptr = (uchar*) ( Imagen->imageData + y*Imagen->widthStep);
@@ -41,12 +60,7 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 
 ///////////////////// Interfaz para manipular una lcde //////////////////////////////
 //
-//// Mostrar un mensaje de error y abortar el programa
-//void error()
-//{
-//  printf("Insuficiente memoria\n");
-//  exit(1);
-//}
+
 
 // Crear un nuevo elemento
 Elemento *nuevoElemento()
@@ -326,3 +340,163 @@ void anyadirAlFinal(void *e, tlcde *lcde ){
 	insertar( e, lcde);
 }
 
+///////////////////// Interfaz para gestionar buffer //////////////////////////////
+void mostrarListaFlies(tlcde *lista)
+{
+		// Mostrar todos los elementos de la lista
+	int i = 0, tam = lista->numeroDeElementos;
+	STFly* flydata = NULL;
+	while( i < tam ){
+		flydata = (STFly*)obtener(i, lista);
+		printf( "etiqueta %d\nColor\nposicion\n a %0.2f b %0.2f\norientacion %0.1f\nperimetro\nStatic %d\n num_frame %d\n;",
+				flydata->etiqueta,
+				flydata->a,
+				flydata->b,
+				flydata->orientacion,
+				flydata->Static,
+				flydata->num_frame);
+		i++;
+	}
+	if (tam = 0 ) printf(" Lista vacía\n");
+}
+
+void liberarListaFlies(tlcde *lista)
+{
+  // Borrar todos los elementos de la lista
+  STFly *flydata = NULL;
+
+  // borrar: borra siempre el elemento actual
+  irAlPrincipio(lista);
+  flydata = (STFly *)borrar(lista);
+  while (flydata)
+  {
+    free(flydata); // borrar el área de datos del elemento eliminado
+    flydata = (STFly *)borrar(lista);
+  }
+}
+
+///! Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
+///! El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
+///! a la función.
+int liberarPrimero(tlcde *FramesBuf ){
+
+	STFrame *frameData = NULL;
+	STFrame *frDataTemp = NULL;
+
+//Guardamos la posición actual.
+	int i = FramesBuf->posicion;
+//
+	if(!irAl(0, FramesBuf) ) {printf("\nBuffer vacio");return 0;}
+	frameData = (STFrame*)obtenerActual( FramesBuf );
+	 // por cada nuevo frame se libera el espacio del primer frame
+	liberarListaFlies( frameData->Flies );
+	free( frameData->Flies);
+	//borra el primer elemento
+	cvReleaseImage(&frameData->BGModel);
+	cvReleaseImage(&frameData->FG);
+	cvReleaseImage(&frameData->IDesv);
+	cvReleaseImage(&frameData->ImMotion);
+	cvReleaseImage(&frameData->OldFG);
+	frameData = (STFrame *)borrar( FramesBuf );
+	if( !frameData ) {
+		printf( "Se ha borrado el último elemento.Buffer vacio" );
+		free( frameData );
+		return 0;
+	}
+	else{
+		free( frameData );
+		irAl(i - 1, FramesBuf);
+		return 1;
+	}
+}
+
+void liberarBuffer(tlcde *FramesBuf)
+{
+  // Borrar todos los elementos del buffer
+  STFrame *frameData = NULL;
+
+  // borrar: borra siempre el elemento actual
+  irAlPrincipio(FramesBuf);
+  frameData = (STFrame *)borrar( FramesBuf );
+  while (frameData)
+  {
+	liberarListaFlies( frameData->Flies);
+	cvReleaseImage(&frameData->BGModel);
+	cvReleaseImage(&frameData->FG);
+	cvReleaseImage(&frameData->IDesv);
+	cvReleaseImage(&frameData->ImMotion);
+	cvReleaseImage(&frameData->OldFG);
+    free(frameData); // borrar el área de datos del elemento eliminado
+    frameData = (STFrame *)borrar( FramesBuf );
+  }
+}
+
+/////////////////////////// GESTION FICHEROS //////////////////////////////
+
+int existe(char *nombreFichero)
+{
+  FILE *pf = NULL;
+  // Verificar si el fichero existe
+  int exis = 0; // no existe
+  if ((pf = fopen(nombreFichero, "r")) != NULL)
+  {
+    exis = 1;   // existe
+    fclose(pf);
+  }
+  return exis;
+}
+
+void crearFichero(char *nombreFichero )
+{
+  FILE *pf = NULL;
+  // Abrir el fichero nombreFichero para escribir "w"
+  if ((pf = fopen(nombreFichero, "wb")) == NULL)
+  {
+    printf("El fichero no puede crearse.");
+    exit(1);
+  }
+ fclose(pf);
+}
+
+///! El algoritmo mantiene un buffer de 50 frames ( 2 seg aprox ) para los datos y para las
+///! imagenes.
+///! Una vez que se han llenado los buffer, se almacena en fichero los datos de la lista
+///! Flies correspondientes al primer frame. La pisición actual no se modifica.
+///! Si la lista está vacía mostrará un error. Si se ha guardado con éxito devuelve un uno
+
+int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
+
+	tlcde* Flies = NULL;
+	FILE * pf;
+	STFly* fly = NULL;
+	STFrame* frameData = NULL;
+	int posicion = framesBuf->posicion;
+
+	if (framesBuf->numeroDeElementos == 0) {printf("\nLista vacia\n");return 0;}
+
+	// obtenemos la direccion del primer elemento
+	irAlPrincipio( framesBuf );
+	frameData = (STFrame*)obtenerActual( framesBuf );
+	//obtenemos la lista
+	Flies = frameData->Flies;
+	int i = 0, tam = Flies->numeroDeElementos;
+	// Abrir el fichero nombreFichero para escribir "w".
+	if ((pf = fopen(nombreFichero, "a")) == NULL)
+	{
+	printf("El fichero no puede abrirse.");
+	exit(1);
+	}
+	while( i < tam ){
+		fly = (STFly*)obtener(i, Flies);
+		fwrite(&fly, sizeof(STFly), 1, pf);
+		if (ferror(pf))
+		{
+		  perror("Error durante la escritura");
+		  exit(2);
+		}
+		i++;
+	}
+	fclose(pf);
+	irAl( posicion, framesBuf);
+	return 1;
+}
