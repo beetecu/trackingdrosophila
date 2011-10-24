@@ -12,6 +12,53 @@
 using namespace cv;
 using namespace std;
 
+char nombreFichero[30];
+
+struct timeval ti, tf, tif, tff; // iniciamos la estructura
+float TiempoInicial;
+float TiempoParcial;
+float TiempoFrame;
+float TiempoGlobal = 0;
+
+extern double NumFrame = 0; /// contador de frames absolutos ( incluyendo preprocesado )
+
+double TotalFrames = 0;
+CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
+
+///HightGui
+int g_slider_pos = 0;
+
+/// MODELADO DE FONDO
+StaticBGModel* BGModel = NULL;
+BGModelParams *BGParams = NULL;
+
+/// Estructura frame
+STFrame* FrameData = NULL;
+/// Buffer frames
+tlcde *FramesBuf = NULL;
+
+/// Estructura fly
+STFly* Fly = NULL;
+/// Lista flies
+tlcde *Flies = NULL;
+
+/// Modelo del Plato
+STFlat* Flat;
+
+// Modelado de forma
+
+SHModel* Shape;
+
+/// Imagenes que se usarán en el programa principal
+/// CAPTURA
+/// Imagenes RGB 3 canales
+IplImage* frame;
+IplImage *ImVisual;
+
+/// TRACKING
+IplImage *ImOpFlowX;
+IplImage *ImOpFlowY;
+
 void help(){
 	printf("\n Para ejecutar el programa escriba en la consola: "
 			"TrackingDrosophila [nombre_video.avi] [Nombre_Fichero]\n  "
@@ -22,6 +69,7 @@ void help(){
 			"se establecerá [Data] por defecto. ");
 }
 int main(int argc, char* argv[]) {
+
 
 	if( argc<1) {help(); return -1;};
 
@@ -46,7 +94,7 @@ int main(int argc, char* argv[]) {
 
 	//inicializar buffer de datos.
 	FramesBuf = ( tlcde * )malloc( sizeof(tlcde));
-	if( !FramesBuf ) {error(4);Finalizar();}
+	if( !FramesBuf ) {error(4);FinalizarTracking();}
 	iniciarLcde( FramesBuf );
 
 	gettimeofday(&tf, NULL);
@@ -55,28 +103,26 @@ int main(int argc, char* argv[]) {
 	printf(" %5.4g ms\n", TiempoParcial);
 
 	//////////  PREPROCESADO   ////////////
-	if (!PreProcesado( ) ) Finalizar();
+	if (!PreProcesado( ) ) FinalizarTracking();
 
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
-    for( FrameCountRel = 1;frame; frame = cvQueryFrame(g_capture), FrameCountRel++ ){
+    for(int Fr = 1;frame; frame = cvQueryFrame(g_capture), Fr++ ){
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
     	if( !frame ) RetryCap();
-    	if( !RetryCap ) Finalizar();
+    	if( !RetryCap ) FinalizarTracking();
 
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
-		FrameCountAbs = cvGetCaptureProperty( g_capture, 1);
-		UpdateCount += 1;
+		NumFrame = cvGetCaptureProperty( g_capture, 1);
+
 		gettimeofday(&tif, NULL);
 
 		//////////  PROCESAR      ////////////
-		Procesado( );
+		//Procesado(frame, FramesBuf,BGModel, Flat, Shape );
+		Procesado2(frame, FramesBuf,BGModel, Flat, Shape );
 
 		//////////  RASTREAR       ////////////
-		Tracking(  );
-
-		//////////  VISUALIZAR     ////////////
-		Visualizacion();
+		Tracking( FramesBuf );
 
 		//////////  ALMACENAR ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
@@ -86,16 +132,31 @@ int main(int argc, char* argv[]) {
 			mostrarListaFlies(FrameData->Flies);
 			// Una vez que se llenan los buffer se almacenan los datos del primer frame en fichero
 
-			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);Finalizar();}
-			if(!liberarPrimero( FramesBuf ) ){error(7);Finalizar();};
+			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);FinalizarTracking();}
+			if(!liberarPrimero( FramesBuf ) ){error(7);FinalizarTracking();}
 			FrameData = NULL;
 		}
+		gettimeofday(&tff, NULL);
+		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
+				(tff.tv_usec - tif.tv_usec)/1000.0;
+		TiempoGlobal = TiempoGlobal + TiempoFrame;
+
+		//////////  VISUALIZAR     ////////////
+		Visualizacion( (STFrame*) FramesBuf->ultimo->dato );
+
+		printf("\n//////////////////////////////////////////////////\n");
+		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",NumFrame, TiempoFrame);
+		printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
+		printf("Porcentaje completado: %.2f %% \n",(NumFrame/TotalFrames)*100 );
+		printf("\n//////////////////////////////////////////////////\n");
+
+
 	}
+	///////// LIBERAR MEMORIA Y TERMINAR////////
+	FinalizarTracking();
     ///////// POSTPROCESADO //////////
 	AnalisisEstadistico();
 
-	///////// LIBERAR MEMORIA Y TERMINAR////////
-	Finalizar();
 }
 
 
@@ -251,188 +312,40 @@ int PreProcesado(  ){
 		printf("Fin preprocesado. Iniciando procesado...\n");
 		TiempoGlobal = 0;
 	}
-	FrameCountAbs = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
+	NumFrame = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
 
 	return hecho = 1;
 }
 
-/*  Esta función realiza las siguientes acciones:
- *
- * - Limpieza del foreground en tres etapas :
- *   1_Actualización de fondo y resta de fondo obteniendo el foreground
- *   2_Nueva actualización de fondo usando la máscacara de foreground obtenida.
- *   Resta de fondo
- *   Redefinición de la máscara de foreground mediante ajuste por elipses y
- *   obtención de los parámetros de los blobs en segmentación.
- *   3_Repetir de nuevo el ciclo de actualizacion-resta-segmentación con la nueva máscara
- *   obteniendo así el foreground y el background definitivo
- *
- * - Rellena la lista lineal doblemente enlazada ( Flies )con los datos de cada uno de los blobs
- * - Rellena la estructura FrameData con las nuevas imagenes y la lista Flies.
- * - Finalmente añade la lista Flies a la estructura FrameData
- *   y la estructura FrameData al buffer FramesBuf   */
-void Procesado(){
-
-	static int first = 1;
-	gettimeofday(&ti, NULL);
-
-	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, Flat->DataFROI);
-/* Nota. */
-	// Iniciar estructura para datos del nuevo frame
-	if( first ) { //en la primera iteración
-		FrameData = ( STFrame *) malloc( sizeof(STFrame));
-		InitNewFrameData( Imagen, FrameData );
-		cvCopy(  BGModel->Imed,FrameData->BGModel);
-		cvCopy(BGModel->IDesv,FrameData->IDesv);
-		first = 0;
-	}
-	else{
-		irAlFinal( FramesBuf );
-		FrameData = ( STFrame*)obtenerActual( FramesBuf );
-		cvCopy( FrameData->BGModel, BGTemp);
-		cvCopy( FrameData->IDesv, DETemp);
-		FrameData = NULL;
-		FrameData = ( STFrame *) malloc( sizeof(STFrame));
-		InitNewFrameData( Imagen, FrameData );
-		// copiamos los últimos parámetros del fondo.
-		cvCopy( BGTemp, FrameData->BGModel);
-		cvCopy( DETemp, FrameData->IDesv);
-	}
-	cvCopy(  FrameData->BGModel,BGTemp );
-	cvCopy( FrameData->IDesv,DETemp );
-
-	gettimeofday(&tf, NULL);
-	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-							(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf( "\n\t\t\tFRAME %.0f\n", FrameCountAbs);
-	printf("\nPreprocesado de imagen: %5.4g ms\n", TiempoParcial);
-
-	for ( int i = 0; i < 3; i++){
-		gettimeofday(&ti, NULL);
-		if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
-		if ( i > 0 ) printf("\nRedefiniendo foreground %d de 2:\n\n", i);
-		//// BACKGROUND UPDATE
-		// Actualización del fondo original
-		// establecer parametros
-		InitialBGModelParams( BGParams);
-
-		UpdateBGModel( Imagen, FrameData->BGModel,FrameData->IDesv, BGParams, Flat->DataFROI, FrameData->FG );
-
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Background update: %5.4g ms\n", TiempoParcial);
-
-		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-		gettimeofday(&ti, NULL);
-
-		BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv, FrameData->FG ,BGParams, Flat->DataFROI);
-
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-									(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("Obtención de máscara de Foreground : %5.4g ms\n", TiempoParcial);
-		/////// SEGMENTACION
-		if( i > 0 ){
-			if(FrameData->Flies != NULL) {
-				liberarListaFlies( FrameData->Flies );//nos quedamos con la última
-				free(FrameData->Flies);
-				FrameData->Flies = NULL;
-			}
-			gettimeofday(&ti, NULL);
-			printf( "Segmentando Foreground...");
-
-			FrameData->Flies = segmentacion(Imagen, FrameData, Flat->DataFROI,BGModel->ImFMask);
-
-			gettimeofday(&tf, NULL);
-			TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-									(tf.tv_usec - ti.tv_usec)/1000.0;
-			printf(" %5.4g ms\n", TiempoParcial);
-		}
-		// Volvemos a cargar el original,en la ultima iteracion nos kedamos con ultimo BGModel obtenido
-		if (i < 2 ){
-			cvCopy( BGTemp, FrameData->BGModel );
-			cvCopy( DETemp, FrameData->IDesv );
-		}
-		/////// VALIDACIÓN
-		// solo en la última iteracion
-//			if (i > 1){
-//				gettimeofday(&ti, NULL);
-//				printf( "\nValidando contornos...");
-//
-//		//		Validacion(Imagen, FrameData , Shape, Flat->DataFROI, Flie, NULL, NULL);
-//
-//				gettimeofday(&tf, NULL);
-//				TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
-//										(tf.tv_usec - ti.tv_usec)/1000.0;
-//				printf(" %5.4g ms\n", TiempoParcial);
-//			}
-
-	}
-	// Una vez validada añadimos ( al final ) las estructuras a las listas (buffers).
-	anyadirAlFinal( FrameData, FramesBuf );
-	FrameData = NULL;
-}
-void Tracking(){
-	irAlFinal( FramesBuf);
-	FrameData = ( STFrame* )obtenerActual( FramesBuf );
-	gettimeofday(&ti, NULL);
-	cvZero( FrameData->ImMotion);
-	if ( SHOW_MOTION_TEMPLATE == 1){
-		MotionTemplate( FrameData->FG, FrameData->ImMotion);
-	}
-
-
-//		OpticalFlowLK( FrameData->FG, ImOpFlowX, ImOpFlowY );
-
-	cvCircle( FrameData->ImMotion, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,255,0), -1, 8, 0 );
-	cvCircle( FrameData->ImMotion, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,255,0),2 );
-	gettimeofday(&tf, NULL);
-	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-											(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf("Tracking: %5.4g ms\n", TiempoParcial);
-	FrameData = NULL;
-}
-
-void Visualizacion(){
-
-	irAlFinal( FramesBuf);
-	FrameData = ( STFrame* )obtenerActual( FramesBuf );
+void Visualizacion( STFrame* frameData ){
 
 	if (SHOW_VISUALIZATION == 1){
+
+
 	//Obtenemos la Imagen donde se visualizarán los resultados
 	cvCopy(frame, ImVisual);
 
 	//Dibujamos el plato en la imagen de visualizacion
+
 	cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
 	cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 	// Dibujamos la ROI
-	cvRectangle( ImVisual,
-			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
-			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
-			CV_RGB(255,0,0),2);
+//	cvRectangle( ImVisual,
+//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
+//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
+//			CV_RGB(255,0,0),2);
 
 	//Dibujamos los blobs
 
-	//              for( int i = 0; i < blobs.GetNumBlobs(); i++){
-	//                      CurrentBlob = blobs.GetBlob( i );
-	//                      CurrentBlob -> FillBlob( ImBlobs, CVX_RED );
-	//                      CvBox2D elipse = CurrentBlob->GetEllipse();
-	//                  cvBoxPoints( elipse,pt );
-	//
-	//                                 cvEllipse(Imagen,cvPoint(cvRound(elipse.center.x),cvRound(elipse.center.y)),
-	//                                                 (cvSize(elipse.size.width,elipse.size.height)),
-	//                                                 elipse.angle,0,360,CVX_RED,-1, 8, 0);
-	//              }
-	//                cvShowImage( "Visualización", ImVisual);
-
+	visualizarDatos( ImVisual );
+	cvShowImage( "Visualización", ImVisual );
 	}
 	// Mostramos imagenes
-	cvShowImage( "Drosophila.avi", frame );
+
 	//
 	if (SHOW_BG_REMOVAL == 1){
-			cvShowImage("Background", FrameData->BGModel);
-//				cvShowImage( "Foreground",FrameData->FG);
+			cvShowImage("Background", frameData->BGModel);
+//			cvShowImage( "Foreground",frameData->FG);
 
 	//		cvWaitKey(0);
 	}
@@ -441,21 +354,10 @@ void Visualizacion(){
 	cvShowImage( "Flujo Optico Y", ImOpFlowY);
 	}
 	if ( SHOW_MOTION_TEMPLATE == 1){
-		cvShowImage( "Motion",FrameData->ImMotion);
+		cvShowImage( "Motion",frameData->ImMotion);
 		}
-	;
 
-	gettimeofday(&tff, NULL);
-	TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
-			(tff.tv_usec - tif.tv_usec)/1000.0;
-	TiempoGlobal = TiempoGlobal + TiempoFrame;
-	printf("\n//////////////////////////////////////////////////\n");
-	printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",FrameCountAbs, TiempoFrame);
-	printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
-	printf("Porcentaje completado: %.2f %% \n",(FrameCountAbs/TotalFrames)*100 );
-	printf("\n//////////////////////////////////////////////////\n");
-
-	FrameData = NULL;
+	frameData = NULL;
 }
 
 
@@ -466,7 +368,7 @@ void AnalisisEstadistico(){
 	printf( "Análisis finalizado ...\n" );
 }
 
-void Finalizar(){
+void FinalizarTracking(){
 	// completar. tras añadir buffers liberar memoria de todos los elementos (no solo del puntero actual)
 	//liberar estructuras
 	if(BGModel){
@@ -490,22 +392,22 @@ void Finalizar(){
 	DestroyWindows( );
 }
 
-void InitNewFrameData(IplImage* I, STFrame *FrameData ){
-
-	CvSize size = cvGetSize( I );
-	FrameData->BGModel = cvCreateImage(size,8,1);
-	FrameData->FG = cvCreateImage(size,8,1);
-	FrameData->IDesv = cvCreateImage(size,8,1);
-	FrameData->OldFG = cvCreateImage(size,8,1);
-	FrameData->ImMotion = cvCreateImage( size, 8, 3 );
-	FrameData->ImMotion->origin = I->origin;
-	cvZero( FrameData->BGModel );
-	cvZero( FrameData->FG );
-	cvZero( FrameData->IDesv );
-	cvZero( FrameData->ImMotion);
-	FrameData->Flies = NULL;
-	FrameData->num_frame = FrameCountAbs;
-}
+//void InitNewFrameData(IplImage* I, STFrame *FrameData ){
+//
+//	CvSize size = cvGetSize( I );
+//	FrameData->BGModel = cvCreateImage(size,8,1);
+//	FrameData->FG = cvCreateImage(size,8,1);
+//	FrameData->IDesv = cvCreateImage(size,8,1);
+//	FrameData->OldFG = cvCreateImage(size,8,1);
+//	FrameData->ImMotion = cvCreateImage( size, 8, 3 );
+//	FrameData->ImMotion->origin = I->origin;
+//	cvZero( FrameData->BGModel );
+//	cvZero( FrameData->FG );
+//	cvZero( FrameData->IDesv );
+//	cvZero( FrameData->ImMotion);
+//	FrameData->Flies = NULL;
+//	FrameData->num_frame = NumFrame;
+//}
 
 void InitialBGModelParams( BGModelParams* Params){
 	 static int first = 1;
@@ -566,24 +468,14 @@ void AllocateImages( IplImage* I , StaticBGModel* bgmodel){
 		cvZero( bgmodel->IDesv);
 		cvZero( bgmodel->ImFMask);
 
-
-		cvReleaseImage( &BGTemp );
-		cvReleaseImage( &DETemp );
-		cvReleaseImage( &Imagen );
 		cvReleaseImage( &ImOpFlowX );
 		cvReleaseImage( &ImOpFlowY );
 		cvReleaseImage( &ImVisual );
 
-		BGTemp = cvCreateImage( size,8,1);
-		DETemp = cvCreateImage( size,8,1);
-		Imagen = cvCreateImage( size ,8,1);
 		ImOpFlowX = cvCreateImage( size ,IPL_DEPTH_32F,1 );
 		ImOpFlowY = cvCreateImage( size ,IPL_DEPTH_32F,1 );
 		ImVisual = cvCreateImage( size,8,3);
 
-		cvZero( BGTemp );
-		cvZero( DETemp );
-		cvZero( Imagen );
 		cvZero( ImOpFlowX );
 		cvZero( ImOpFlowY );
 		cvZero( ImVisual );
@@ -595,19 +487,18 @@ void AllocateImages( IplImage* I , StaticBGModel* bgmodel){
 
 void DeallocateImages( ){
 
-	cvReleaseImage( &Imagen );
+
 	cvReleaseImage( &ImOpFlowX);
 	cvReleaseImage( &ImOpFlowY);
 	cvReleaseImage( &ImVisual );
-	cvReleaseImage( &BGTemp);
-	cvReleaseImage( &DETemp);
+
 
 }
 
 // Creación de ventanas
 void CreateWindows( ){
 
-	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
+//	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
 	if (SHOW_BG_REMOVAL == 1){
 		cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
 		cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
@@ -635,7 +526,8 @@ void CreateWindows( ){
 }
 // Destruccion de ventanas
 void DestroyWindows( ){
-	cvDestroyWindow( "Drosophila.avi" );
+
+	//cvDestroyWindow( "Drosophila.avi" );
 
 
 if (SHOW_BG_REMOVAL == 1){
@@ -673,7 +565,7 @@ int RetryCap(){
 								n_frame +i );
 			frame = cvQueryFrame(g_capture);
 			if ( !frame ) printf("\n Fallo en captura");
-//				FrameCountAbs++;
+
 			i++;
 		}
 		if ( !frame ) {
@@ -682,5 +574,45 @@ int RetryCap(){
 		}
 		else return 1;
 	}
+	else return 1;
 }
 
+void visualizarDatos( IplImage* Im  ){
+
+	CvFont fuente1;
+	CvFont fuente2;
+
+	char NFrame[100];
+	CvPoint NFrameO;
+	char TProcesF[100];
+	CvPoint TProcesFO;
+	char TProces[100];
+	CvPoint TProcesO;
+	char PComplet[100];
+	CvPoint PCompletO;
+
+	sprintf(NFrame,"Frame %.0f ",NumFrame);
+	sprintf(TProcesF,"Tiempo de procesado del Frame : %5.4g ms", TiempoFrame);
+	sprintf(TProces,"Segundos de video procesados: %.3f seg ", TiempoGlobal/1000);
+	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(NumFrame/TotalFrames)*100 );
+
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.5, 0.5, 0, 1, 8);
+
+	NFrameO.x = 10;
+	NFrameO.y = 20;
+	cvPutText( Im, NFrame, NFrameO, &fuente1, CVX_WHITE );
+
+	TProcesFO.x = 10;
+	TProcesFO.y = 40;
+	cvPutText( Im, TProcesF, TProcesFO, &fuente2, CVX_GREEN );
+
+	TProcesO.x = 10;
+	TProcesO.y = 60;
+	cvPutText( Im, TProces, TProcesO, &fuente2, CVX_GREEN);
+
+	PCompletO.x = 10;
+	PCompletO.y = 80;
+	cvPutText( Im, PComplet, PCompletO, &fuente2, CVX_GREEN);
+
+}

@@ -364,8 +364,10 @@ void liberarListaFlies(tlcde *lista)
 {
   // Borrar todos los elementos de la lista
   STFly *flydata = NULL;
-
+  // Comprobar si hay elementos
+  if (lista->numeroDeElementos == 0 ) return;
   // borrar: borra siempre el elemento actual
+
   irAlPrincipio(lista);
   flydata = (STFly *)borrar(lista);
   while (flydata)
@@ -386,7 +388,9 @@ int liberarPrimero(tlcde *FramesBuf ){
 //Guardamos la posición actual.
 	int i = FramesBuf->posicion;
 //
-	if(!irAl(0, FramesBuf) ) {printf("\nBuffer vacio");return 0;}
+
+	if( FramesBuf->numeroDeElementos == 0 ) {printf("\nBuffer vacio");return 1;}
+	irAl(0, FramesBuf);
 	frameData = (STFrame*)obtenerActual( FramesBuf );
 	 // por cada nuevo frame se libera el espacio del primer frame
 	liberarListaFlies( frameData->Flies );
@@ -414,13 +418,14 @@ void liberarBuffer(tlcde *FramesBuf)
 {
   // Borrar todos los elementos del buffer
   STFrame *frameData = NULL;
-
+  if (FramesBuf->numeroDeElementos == 0 ) return;
   // borrar: borra siempre el elemento actual
   irAlPrincipio(FramesBuf);
   frameData = (STFrame *)borrar( FramesBuf );
   while (frameData)
   {
 	liberarListaFlies( frameData->Flies);
+	free( frameData->Flies );
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
 	cvReleaseImage(&frameData->IDesv);
@@ -469,16 +474,17 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	tlcde* Flies = NULL;
 	FILE * pf;
 	STFly* fly = NULL;
-	STFrame* frameData = NULL;
 	int posicion = framesBuf->posicion;
 
-	if (framesBuf->numeroDeElementos == 0) {printf("\nLista vacia\n");return 0;}
+	if (framesBuf->numeroDeElementos == 0) {printf("\nBuffer vacío\n");return 0;}
 
 	// obtenemos la direccion del primer elemento
 	irAlPrincipio( framesBuf );
 	frameData = (STFrame*)obtenerActual( framesBuf );
 	//obtenemos la lista
+
 	Flies = frameData->Flies;
+	if (Flies->numeroDeElementos == 0) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
 	int i = 0, tam = Flies->numeroDeElementos;
 	// Abrir el fichero nombreFichero para escribir "w".
 	if ((pf = fopen(nombreFichero, "a")) == NULL)
