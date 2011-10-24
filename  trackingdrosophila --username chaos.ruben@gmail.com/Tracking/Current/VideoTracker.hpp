@@ -17,7 +17,7 @@
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
-#include <opencv2/video/background_segm.hpp>
+
 
 using namespace cv;
 using namespace std;
@@ -35,9 +35,10 @@ using namespace std;
 //Opciones de visualización
 
 
+
 #define CREATE_TRACKBARS 0 ///<- switch from 0 to 1 para visualizar trackbars.
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
-#define SHOW_VISUALIZATION 0 ///<- switch from 0 to 1 para visualizar resultado.
+#define SHOW_VISUALIZATION 1 ///<- switch from 0 to 1 para visualizar resultado.
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
 #define SHOW_MOTION_TEMPLATE 0
 #define SHOW_BACKGROUND_DATA 1
