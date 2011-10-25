@@ -11,7 +11,7 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 
-tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask);
+tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi);
 
 
 

@@ -24,7 +24,7 @@
 	IplImage *pesos = 0;
 	IplImage *FGMask = 0;
 
-tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask){
+tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi){
 
 	//Iniciar lista para almacenar las moscas
 	tlcde* flies = NULL;
@@ -315,14 +315,13 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 // PRUEBAS visualizacion
 //	cvShowImage("Foreground", FGTemp);
 //			cvWaitKey(0);
-	cvSetImageROI( Mask,Roi);
-	invertirBW(  Mask );
+
 	/*En la imagen resultante se ve la elipse rellenada con la imagen real
 	 * de las moscas usando como máscara el foreground
 	 */
 	cvAdd(FGTemp,Brillo,FGTemp, FGMask);
 
-	invertirBW(  Mask );
+
 
 	cvResetImageROI( FGTemp);
 	cvShowImage("Foreground", FGTemp);
@@ -341,7 +340,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	cvResetImageROI( FrameData->IDesv );
 	cvResetImageROI( FrameData->FG );
 	cvResetImageROI( FGTemp );
-	cvResetImageROI( Mask );
+
 //	cvResetImageROI( FGMask);
 
 

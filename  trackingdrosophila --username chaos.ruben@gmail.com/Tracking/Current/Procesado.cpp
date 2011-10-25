@@ -122,7 +122,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 			gettimeofday(&ti, NULL);
 			printf( "Segmentando Foreground...");
 
-			frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI,BGModel->ImFMask);
+			frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI );
 
 			gettimeofday(&tf, NULL);
 			tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -239,7 +239,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	printf("Obtención de máscara de Foreground : %5.4g ms\n", tiempoParcial);
 	/////// SEGMENTACION
 
-	frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI,BGModel->ImFMask);
+	frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
