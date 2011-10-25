@@ -480,7 +480,7 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 
 	// obtenemos la direccion del primer elemento
 	irAlPrincipio( framesBuf );
-	frameData = (STFrame*)obtenerActual( framesBuf );
+	STFrame* frameData = (STFrame*)obtenerActual( framesBuf );
 	//obtenemos la lista
 
 	Flies = frameData->Flies;
