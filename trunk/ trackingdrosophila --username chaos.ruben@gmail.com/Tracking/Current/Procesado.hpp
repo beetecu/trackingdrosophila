@@ -11,7 +11,7 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 #include "BGModel.h"
-#include "segmentacion.h"
+#include "segmentacion.hpp"
 
 
 void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat, SHModel* Shape);

@@ -40,14 +40,17 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 	IplImage* BGTemp;
 	IplImage* DETemp;
 	IplImage *Imagen;
+	IplImage* FGMask;
+
 	CvSize size = cvGetSize( frame );
 	BGTemp = cvCreateImage( size,8,1);
 	DETemp = cvCreateImage( size,8,1);
 	Imagen = cvCreateImage( size ,8,1);
+	FGMask = cvCreateImage( size, 8, 1);
 	cvZero( BGTemp );
 	cvZero( DETemp );
 	cvZero( Imagen );
-
+	cvZero( FGMask );
 
 	static int first = 1;
 	gettimeofday(&ti, NULL);
@@ -122,7 +125,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 			gettimeofday(&ti, NULL);
 			printf( "Segmentando Foreground...");
 
-			frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI );
+			frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI, FGMask );
 
 			gettimeofday(&tf, NULL);
 			tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -154,6 +157,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 	cvReleaseImage( &BGTemp );
 	cvReleaseImage( &DETemp );
 	cvReleaseImage( &Imagen );
+	cvReleaseImage(&FGMask);
 	anyadirAlFinal( frameData, framesBuf );
 }
 
@@ -170,18 +174,17 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	int UpdateCount = 0;
 	BGModelParams *BGParams = NULL;
 
-	STFrame* frameData;
+	STFrame* frameData = NULL;
 
-	IplImage* BGTemp;
-	IplImage* DETemp;
 	IplImage *Imagen;
+	IplImage *FGMask;
+
 	CvSize size = cvGetSize( frame );
-	BGTemp = cvCreateImage( size,8,1);
-	DETemp = cvCreateImage( size,8,1);
+
 	Imagen = cvCreateImage( size ,8,1);
-	cvZero( BGTemp );
-	cvZero( DETemp );
+	FGMask = cvCreateImage( size, 8, 1);
 	cvZero( Imagen );
+	cvZero( FGMask );
 
 	gettimeofday(&ti, NULL);
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
@@ -200,18 +203,13 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	}
 	else{
 		irAlFinal( framesBuf );
-		frameData = ( STFrame*)obtenerActual( framesBuf );
-		cvCopy( frameData->BGModel, BGTemp);
-		cvCopy( frameData->IDesv, DETemp);
-		frameData = NULL;
+		STFrame* frameAnterior = ( STFrame*)obtenerActual( framesBuf );
 		frameData = ( STFrame *) malloc( sizeof(STFrame));
 		InitNewFrameData( Imagen, frameData );
 		// cargamos los últimos parámetros del fondo.
-		cvCopy( BGTemp, frameData->BGModel);
-		cvCopy( DETemp, frameData->IDesv);
+		cvCopy( frameAnterior->BGModel, frameData->BGModel);
+		cvCopy( frameAnterior->IDesv, frameData->IDesv);
 	}
-	cvCopy(  frameData->BGModel,BGTemp );
-	cvCopy( frameData->IDesv,DETemp );
 
 	gettimeofday(&ti, NULL);
     printf("\nDefiniendo foreground :\n\n");
@@ -239,7 +237,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	printf("Obtención de máscara de Foreground : %5.4g ms\n", tiempoParcial);
 	/////// SEGMENTACION
 
-	frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI);
+	frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI, FGMask);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -265,10 +263,8 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	// Liberar memoria
 
 	free(BGParams);
-	cvReleaseImage( &BGTemp );
-	cvReleaseImage( &DETemp );
 	cvReleaseImage( &Imagen );
-
+	cvReleaseImage( &FGMask );
 }
 
 void InitNewFrameData(IplImage* I, STFrame *FrameData ){

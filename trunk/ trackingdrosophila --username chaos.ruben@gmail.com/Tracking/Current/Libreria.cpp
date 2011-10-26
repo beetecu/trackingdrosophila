@@ -506,3 +506,4 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	irAl( posicion, framesBuf);
 	return 1;
 }
+

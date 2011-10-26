@@ -1,5 +1,5 @@
 /*
- * segmentacion.h
+ * segmentacion.hpp
  *
  *  Created on: 29/08/2011
  *      Author: german
@@ -11,7 +11,7 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 
-tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi);
+tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi, IplImage* Mask );
 
 
 
