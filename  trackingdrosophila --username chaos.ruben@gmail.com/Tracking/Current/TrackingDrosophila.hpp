@@ -12,7 +12,7 @@
 #include "Libreria.h"
 #include "BGModel.h"
 #include <BlobResult.h>
-#include "segmentacion.h"
+#include "segmentacion.hpp"
 #include "ShapeModel.hpp"
 #include "Plato.hpp"
 #include "Tracking.hpp"
