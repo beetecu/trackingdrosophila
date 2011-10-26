@@ -14,20 +14,21 @@
 
 /// Parametros validación
 typedef struct {
-	float UmbralProb; /// establece cuantas desviaciones tipicas se puede alejar el area del area media sin que se considere inválido el blob
-	float UmbralCirc; /// Máxima circularidad a partir de la cual un blob se considerará no válido
+	int UmbralProb; /// establece cuantas desviaciones tipicas se puede alejar el area del area media sin que se considere inválido el blob
+	int UmbralCirc; /// Máxima circularidad a partir de la cual un blob se considerará no válido
 	int MaxIncLTHIters; /// Número de iteraciones en las que se incrementará el umbral bajo para dividir una elipse
 	int MaxLowTH; /// Máximo valor que alcanzará el umbral mínimo para dividir elipse
 	float PxiMin; /// Probabilidad mínima admisible a partir de la cual se deja de aumentar MaxLowTH
 	int MaxDecLTHIters; //// Número de iteraciones en las que se incrementará el umbral bajo para aumentar P(xi)
 	int MinLowTH; /// Mínimo valor que alcanzará el umbral bajo para aumentar P(xi)
+	float UmbralDes;
 
 }ValParams;
 
-void Validacion(IplImage *Imagen, STFrameDatas* FrameData, SHModel* SH, STFlies* Flie, CvRect Segroi,BGModelParams* BGParams, ValParams* VParams);
+void Validacion(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,BGModelParams* BGParams, ValParams* VParams,STFly* FlyData,IplImage* mask);
 void setValParams( ValParams* Params);
 void setBGModParams( BGModelParams* Params);
-double CalcProbMosca( SHModel* SH , STFlies* Flie );
-double CalcCircul( STFlies* Flie);
-int CalcProbUmbral( SHModel* SH ,ValParams* VParams);
+double CalcProbMosca( SHModel* SH , STFly* Flie );
+double CalcCircul( STFly* Flie);
+int CalcProbUmbral( SHModel* SH ,ValParams* VParams,STFly* Flie);
 #endif /* VALIDACION_HPP_ */
