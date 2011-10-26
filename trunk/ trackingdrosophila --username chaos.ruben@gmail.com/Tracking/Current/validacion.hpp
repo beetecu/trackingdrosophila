@@ -9,7 +9,7 @@
 #define VALIDACION_HPP_
 
 #include "VideoTracker.hpp"
-#include "segmentacion.h"
+#include "segmentacion.hpp"
 #include "BGModel.h"
 
 /// Parametros validación
