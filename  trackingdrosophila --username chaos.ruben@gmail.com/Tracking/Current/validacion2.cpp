@@ -160,9 +160,9 @@ tlcde* Validacion(IplImage *Imagen,
 		ValParams* VParams,IplImage* Mask){
 
 	//Iniciar lista para almacenar las moscas
-		tlcde* FLIE = NULL;
-		FLIE = ( tlcde * )malloc( sizeof(tlcde ));
-		iniciarLcde( FLIE);
+		tlcde* FLIE_LIST = NULL;
+		FLIE_LIST = ( tlcde * )malloc( sizeof(tlcde ));
+		iniciarLcde( FLIE_LIST);
 
 	//Inicializar estructura para almacenar los datos cada mosca
 		STFly *FlyData = NULL;
@@ -182,7 +182,7 @@ tlcde* Validacion(IplImage *Imagen,
 	IplImage* mask=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);;
 	IplImage* maskTemp=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);
 
-	FLIE=FrameData->Flies;
+	tlcde* FLIE=FrameData->Flies;
 	tlcde* FLIE_TEMP=FLIE;
 	tlcde* Temp=NULL;
 	tlcde* TempSeg=NULL;
@@ -317,7 +317,6 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 						if ( FrameData->Flies->numeroDeElementos > 1 ){
 							SEG = true;
-	//						FlyData->flag_seg=true; // Poner el flag de la segmentación a 1
 							break;
 						}
 
@@ -354,9 +353,12 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 					 * hacerlo aqui o modificar la función segmentación para que pueda hacerlo
 					 */
 
-					// Si hay segmentacion,añadimos los blos
+					// Si hay segmentacion,añadimos los blos(hijos) al final de la lista
 
 						if (SEG){
+
+							FlyData=(STFly *)obtener(j, FLIE);
+							FlyData->flag_seg=true;
 
 //							Px = CalcProbTotal(FrameData->Flies,SH,VParams,FlyData);
 
@@ -369,21 +371,16 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 							Pxi = CalcProbMosca( SH , FlyData );
 							Exceso = CalcProbUmbral( SH, VParams,FlyData);
 
-							anyadirAlFinal(FlyData, FLIE );
+							anyadirAlFinal(FlyData, FLIE );// añadir al final dela Lista FLIE
 
 
 							}//fin for
 
-						}//Fin if, fin de la segementación
+						}//Fin if, Fin de la segmentación
 
-//						else{
-//
-//							// Resta de fondo
-//							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyData->Roi);
-//
-//							// Segmentar
-//							FrameData->Flies = segmentacion(Imagen, FrameData, FlyData->Roi,NULL);
-//						}//Fin else
+						 // Si No hay segmentación y el blob cumple con las condicione, este se mantine
+						 //en  la misma posicioón dentro de la lista FLIE
+
 
 			} //IF Exceso
 
@@ -396,20 +393,21 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 				///// AHORA ES CUANDO REALMENTE VALIDAMOS/////
 
-//	Px=CalcProbTotal(FLIE,SH,VParams,FlyData);
-//
-//	for(int p=0;p < FLIE->numeroDeElementos;p++){
-//
-//		FlyData=(STFly *)obtener(p, FLIE);
-//
-//		if(FlyData->flag_seg){
-//
-//			borrar(FLIE);
-//		}
-//
-//	}
+	Px=CalcProbTotal(FLIE,SH,VParams,FlyData); // Calcular la Px para todas las moscas
 
-	return FLIE; // Guardar los blobs validados en la lista para meterlos en el frameBuf
+	for(int p=0;p < FLIE->numeroDeElementos;p++){
+
+		FlyData=(STFly *)obtener(p, FLIE);
+
+		if(!FlyData->flag_seg){ // Si el blob NO fue segmentado y cumple con las condiciones se añade a FLIE_LIST
+
+			insertar((FlyData),FLIE_LIST);
+
+		} // Si el blob SI fue segmentado no se añade a FLIE_LIST
+
+	} // Fin del for
+
+	return FLIE_LIST; // Guardar los blobs validados en la lista para meterlos en el frameBuf
 
 }//Fin de Validación
 
