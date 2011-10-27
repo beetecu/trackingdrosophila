@@ -25,9 +25,10 @@ typedef struct {
 
 }ValParams;
 
-void Validacion(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,BGModelParams* BGParams, ValParams* VParams,STFly* FlyData,IplImage* mask);
+tlcde* Validacion(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,BGModelParams* BGParams, ValParams* VParams,IplImage* Mask);
 void setValParams( ValParams* Params);
 void setBGModParams( BGModelParams* Params);
+double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData);
 double CalcProbMosca( SHModel* SH , STFly* Flie );
 double CalcCircul( STFly* Flie);
 int CalcProbUmbral( SHModel* SH ,ValParams* VParams,STFly* Flie);
