@@ -317,7 +317,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 						if ( FrameData->Flies->numeroDeElementos > 1 ){
 							SEG = true;
-							FlyData->flag_seg=true; // Poner el flag de la segmentación a 1
+	//						FlyData->flag_seg=true; // Poner el flag de la segmentación a 1
 							break;
 						}
 

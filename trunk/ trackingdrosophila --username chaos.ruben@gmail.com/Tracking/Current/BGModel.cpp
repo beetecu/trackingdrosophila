@@ -205,15 +205,19 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 //	setLowThreshold( bg_model, LOW_THRESHOLD );
 
 //	cvInRange( ImGray, IhiF,IlowF, Imaskt);
-	cvAbsDiff( ImGray, bg_model, Idiff);
-	cvDiv( Idiff,Ides,Idiff );// Calcular |I(p)-u(p)|/0(p)
+//	cvAbsDiff( ImGray, bg_model, Idiff);
+//	cvDiv( Idiff,Ides,Idiff );// Calcular |I(p)-u(p)|/0(p)
 
 	for (int y = dataroi.y; y < dataroi.y + dataroi.height; y++){
+		uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*dataroi.x);
+		uchar* ptr2 = (uchar*) ( bg_model->imageData + y*bg_model->widthStep + 1*dataroi.x);
 		uchar* ptr3 = (uchar*) ( Idiff->imageData + y*Idiff->widthStep + 1*dataroi.x);
 		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep + 1*dataroi.x);
 		uchar* ptr5 =  (uchar*) ( fg->imageData + y*fg->widthStep + 1*dataroi.x);
 		for (int x = 0; x<dataroi.width; x++){
-
+			// Calcular (I(p)-u(p)) /0(p)
+			if ( (ptr1[x]-ptr2[x]) >= 0 ) ptr3[x] = 0;
+			else ptr3[x] = abs( ptr1[x]-ptr2[x]);
 			// Si la desviación tipica del pixel supera en HiF veces la
 			// desviación típica del modelo, el pixel se clasifica como
 			//foreground ( 255 ), en caso contrario como background
