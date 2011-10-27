@@ -13,6 +13,4 @@
 
 tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi, IplImage* Mask );
 
-
-
 #endif /* SEGMENTACION_H_ */
