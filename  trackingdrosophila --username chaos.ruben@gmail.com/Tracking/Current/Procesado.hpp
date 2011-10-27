@@ -12,11 +12,14 @@
 #include "Libreria.h"
 #include "BGModel.h"
 #include "segmentacion.hpp"
+#include "validacion.hpp"
+
+#include "segmentacion.hpp"
 
 
-void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat, SHModel* Shape);
+void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat, SHModel* Shape,STFly* Fly);
 
-void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape );
+void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape,STFly* Fly );
 
 void InitNewFrameData(IplImage* I, STFrame *FrameData );
 

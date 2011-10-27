@@ -24,7 +24,7 @@
 
 #include "Procesado.hpp"
 
-void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape ){
+void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape,STFly* Fly ){
 
 	extern double NumFrame;
 	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -138,18 +138,20 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 			cvCopy( DETemp, frameData->IDesv );
 		}
 		/////// VALIDACIÓN
-		// solo en la última iteracion
-//			if (i > 1){
-//				gettimeofday(&ti, NULL);
-//				printf( "\nValidando contornos...");
-//
-//		//		Validacion(Imagen, frameData , Shape, Flat->DataFROI, Flie, NULL, NULL);
-//
-//				gettimeofday(&tf, NULL);
-//				tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
-//										(tf.tv_usec - ti.tv_usec)/1000.0;
-//				printf(" %5.4g ms\n", tiempoParcial);
-//			}
+
+			if (i > 1){
+				gettimeofday(&ti, NULL);
+				printf( "\nValidando contornos...");
+
+
+				frameData->Flies = Validacion(Imagen, frameData , Shape, Flat->DataFROI, NULL, NULL,FGMask);
+
+
+				gettimeofday(&tf, NULL);
+				tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
+										(tf.tv_usec - ti.tv_usec)/1000.0;
+				printf(" %5.4g ms\n", tiempoParcial);
+			}
 
 	}
 	// Una vez validada añadimos ( al final ) las estructuras a las listas (buffers).
@@ -158,12 +160,15 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 	cvReleaseImage( &DETemp );
 	cvReleaseImage( &Imagen );
 	cvReleaseImage(&FGMask);
+
 	anyadirAlFinal( frameData, framesBuf );
+	//STFrame* Mosca=(STFrame*)obtenerActual(framesBuf);
+//	printf("\n ELEMENTOS : %d",Mosca->Flies->numeroDeElementos);
 }
 
 ///! Igual que procesado, pero solo una iteración. Background dinámico para detección de movimiento
 
-void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape ){
+void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape,STFly* Fly ){
 
 	extern double NumFrame;
 	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -249,7 +254,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	gettimeofday(&ti, NULL);
 	printf( "\nValidando contornos...");
 
-	//Validacion(Imagen, frameData , Shape, Flat->DataFROI, Flie, NULL, NULL);
+	frameData->Flies = Validacion(Imagen, frameData , Shape, Flat->DataFROI, NULL, NULL,FGMask);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
@@ -297,7 +302,7 @@ void putBGModelParams( BGModelParams* Params){
 				 // La primera vez inicializamos los valores.
 				 if (first == 1){
 					 Params->HIGHT_THRESHOLD = 20;
-					 Params->LOW_THRESHOLD = 10;
+					 Params->LOW_THRESHOLD = 13;
 					 first = 0;
 				 }
 	 			cvCreateTrackbar( "HighT",
