@@ -124,6 +124,8 @@ void modificar(void *pNuevosDatos, tlcde *lcde);
 
 void anyadirAlFinal(void *e, tlcde *lcde );
 
+//tlcde* fusionarListas( tlcde* lcde1, tlcde* lcde2);
+
 #endif // _INTERFAZ_LCSE_
 
 

@@ -15,6 +15,7 @@ void Tracking( tlcde* framesBuf ){
 	STFly* flyData = NULL;
 	static int workPos = 0; // punto de trabajo en el buffer
 
+	hungarian_t prob;
 
 	// el rastreo no se inicia hasta que el buffer tenga almenos 3 elementos
 	if( framesBuf->numeroDeElementos < 3) return;
@@ -31,6 +32,10 @@ void Tracking( tlcde* framesBuf ){
 	// cargar datos del frame
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 	gettimeofday(&ti, NULL);
+
+	framesBuf = matchingIdentity( framesBuf , 0 );
+
+
 	cvZero(frameData->ImMotion);
 	if ( SHOW_MOTION_TEMPLATE == 1){
 		MotionTemplate( frameData->FG, frameData->ImMotion);
@@ -46,3 +51,15 @@ void Tracking( tlcde* framesBuf ){
 	irAlFinal( framesBuf );
 }
 
+tlcde* matchingIdentity( tlcde* framesBuf ,int estado ){
+
+	tlcde* FliesFrActual;
+	tlcde* FliesFrSig;
+
+	if ( estado == 1){
+
+	}
+	else{
+
+	}
+}

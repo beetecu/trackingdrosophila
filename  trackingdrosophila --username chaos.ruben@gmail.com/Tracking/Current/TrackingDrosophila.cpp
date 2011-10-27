@@ -31,7 +31,7 @@ int g_slider_pos = 0;
 /// MODELADO DE FONDO
 StaticBGModel* BGModel = NULL;
 BGModelParams *BGParams = NULL;
-
+CvBGStatModel* Dbg_model = 0;
 /// Estructura frame
 STFrame* FrameData = NULL;
 /// Buffer frames
@@ -206,6 +206,14 @@ int Inicializacion( IplImage* frame,
 	bgmodel = ( StaticBGModel*) malloc( sizeof( StaticBGModel));
 	if ( !bgmodel ) {error(4);return 0;}
 	*BGModel = bgmodel;
+	// iniciar estructura para modelo de fondo dinamico
+//	if(!bg_model)
+//		{
+//			//create BG model
+//			Dbg_model = cvCreateGaussianBGModel( tmp_frame );
+//			//bg_model = cvCreateFGDStatModel( temp );
+//			continue;
+//		}
 
 	AllocateImages( frame, bgmodel);
 	// Obtener datos del video y regresar puntero CvCapture al inicio del video.
@@ -261,57 +269,61 @@ int Inicializacion( IplImage* frame,
 
 int PreProcesado(  ){
 
-	static int hecho = 0;
+	int hecho = 0;
 	// Obtencion de mascara del plato
-	if( !hecho ){
-		printf("\nIniciando preprocesado.");
-		printf("Localizando plato... ");
-		gettimeofday(&ti, NULL);
 
-		MascaraPlato( g_capture, BGModel->ImFMask, Flat );
+	printf("\nIniciando preprocesado.");
+	printf("Localizando plato... ");
+	gettimeofday(&ti, NULL);
 
-		if ( Flat->PRadio == 0  ) {
-			error(3);
-			return 0;
-		}
+	MascaraPlato( g_capture, BGModel->ImFMask, Flat );
+	if ( Flat->PRadio == 0  ) {error(3);return 0;}
 
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-													(tf.tv_usec - ti.tv_usec)/1000.0;
-		TiempoGlobal= TiempoGlobal + TiempoParcial ;
-		printf(" %5.4g segundos\n", TiempoGlobal/1000);
-	}
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+												(tf.tv_usec - ti.tv_usec)/1000.0;
+	TiempoGlobal= TiempoGlobal + TiempoParcial ;
+	printf(" %5.4g segundos\n", TiempoGlobal/1000);
 
-	// Crear Modelo de fondo estático .Solo en la primera ejecución
-	if (!hecho) {
-		printf("Creando modelo de fondo..... ");
-		gettimeofday(&ti, NULL);
-		// establecer parametros
-		InitialBGModelParams( BGParams);
-		initBGGModel( g_capture ,BGModel->Imed,BGModel->IDesv, BGModel->ImFMask, BGParams, Flat->DataFROI);
 
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-		TiempoGlobal = TiempoGlobal + TiempoParcial ;
-		printf(" %5.4g segundos\n", TiempoGlobal/1000);
-		TiempoGlobal = 0; // inicializamos el tiempo global
-	}
-	// Modelado de la forma de los objetos a rastrear.
-	if( !hecho){
-		printf("Creando modelo de forma..... ");
-		gettimeofday(&ti, NULL);
+// Crear Modelo de fondo estático .Solo en la primera ejecución
 
-//		ShapeModel( g_capture, Shape , FrameData->ImFMask, Flat->DataFROI );
+	printf("Creando modelo de fondo..... ");
+	gettimeofday(&ti, NULL);
+	// establecer parametros
+	InitialBGModelParams( BGParams);
+	initBGGModel( g_capture ,BGModel->Imed,BGModel->IDesv, BGModel->ImFMask, BGParams, Flat->DataFROI);
 
-		gettimeofday(&tf, NULL);
-		TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-		TiempoGlobal= TiempoGlobal + TiempoParcial ;
-		printf(" %5.4g seg\n", TiempoGlobal/1000);
-		printf("Fin preprocesado. Iniciando procesado...\n");
-		TiempoGlobal = 0;
-	}
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+									(tf.tv_usec - ti.tv_usec)/1000.0;
+	TiempoGlobal = TiempoGlobal + TiempoParcial ;
+	printf(" %5.4g segundos\n", TiempoGlobal/1000);
+	TiempoGlobal = 0; // inicializamos el tiempo global
+
+// Iniciar modelo de fondo dinámico
+//	if(!Dbg_model)
+//	{
+//		//create BG model
+//		bg_model = cvCreateGaussianBGModel( tmp_frame );
+//		//bg_model = cvCreateFGDStatModel( temp );
+//		continue;
+//	}
+// Modelado de la forma de los objetos a rastrear.
+
+	printf("Creando modelo de forma..... ");
+	gettimeofday(&ti, NULL);
+
+	ShapeModel( g_capture, Shape , BGModel->ImFMask, Flat->DataFROI );
+
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+									(tf.tv_usec - ti.tv_usec)/1000.0;
+	TiempoGlobal= TiempoGlobal + TiempoParcial ;
+	printf(" %5.4g seg\n", TiempoGlobal/1000);
+	printf("Fin preprocesado. Iniciando procesado...\n");
+	TiempoGlobal = 0;
+
 	NumFrame = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
 
 	return hecho = 1;
@@ -590,11 +602,14 @@ void visualizarDatos( IplImage* Im  ){
 	CvPoint TProcesO;
 	char PComplet[100];
 	CvPoint PCompletO;
+	char FPS[100];
+	CvPoint FPSO;
 
 	sprintf(NFrame,"Frame %.0f ",NumFrame);
 	sprintf(TProcesF,"Tiempo de procesado del Frame : %5.4g ms", TiempoFrame);
 	sprintf(TProces,"Segundos de video procesados: %.3f seg ", TiempoGlobal/1000);
 	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(NumFrame/TotalFrames)*100 );
+	sprintf(FPS,"FPS: %.2f ",(1000/TiempoFrame));
 
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.5, 0.5, 0, 1, 8);
@@ -615,4 +630,7 @@ void visualizarDatos( IplImage* Im  ){
 	PCompletO.y = 80;
 	cvPutText( Im, PComplet, PCompletO, &fuente2, CVX_GREEN);
 
+	FPSO.x = 10;
+	FPSO.y = 100;
+	cvPutText( Im, FPS, FPSO, &fuente1, CVX_WHITE);
 }

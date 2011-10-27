@@ -353,7 +353,7 @@ void mostrarListaFlies(tlcde *lista)
 				flydata->a,
 				flydata->b,
 				flydata->orientacion,
-				flydata->Static,
+				flydata->Estado,
 				flydata->num_frame);
 		i++;
 	}
