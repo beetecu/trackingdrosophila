@@ -42,7 +42,7 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
 #define SHOW_MOTION_TEMPLATE 0
 #define SHOW_BACKGROUND_DATA 1
-#define SHOW_SEGMENTATION_DATA 0
+#define SHOW_SEGMENTATION_DATA 1
 #define SHOW_SEGMENTACION_STRUCT 0
 
 
@@ -92,7 +92,7 @@ typedef struct
 		float orientacion; /// Almacena la orientación
 		double perimetro;
 		CvRect Roi;
-		bool Static;  /// Flag para indicar que el blob permanece estático.
+		bool Estado;  /// Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
 		int num_frame; /// Almacena el numero de frame (tiempo)
 	}STFly;
 

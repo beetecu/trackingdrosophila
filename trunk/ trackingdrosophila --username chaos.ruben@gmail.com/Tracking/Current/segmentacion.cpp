@@ -57,9 +57,11 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	        cvZero(pesos);
 	        cvZero( FGMask);
 	}
-
+	cvShowImage("Foreground", FrameData->FG);
+	cvWaitKey(0);
 	cvCopy(FrameData->FG,FGTemp);
-
+	cvShowImage("Foreground", FGTemp);
+	cvWaitKey(0);
 	cvSetImageROI( Brillo , Roi);
 	cvSetImageROI( FrameData->BGModel, Roi );
 	cvSetImageROI( FrameData->IDesv, Roi );
@@ -105,7 +107,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	
 	if( SHOW_SEGMENTATION_DATA == 1) printf( "\nTotal Contornos Detectados: %d ", Nc );
 
-
+	int i = 0;
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
 //		do{
@@ -114,7 +116,8 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 			id++; //incrmentar el Id de las moscas
 
 			float z=0;  // parámetro para el cálculo de la matriz de covarianza
-
+			// Parámetros para calcular el error del ajuste en base a la diferencia de areas entre el Fg y la ellipse
+			float err;
 			float areaFG;
 			float areaElipse;
 			areaFG = cvContourArea(c);
@@ -168,7 +171,10 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 						if( ( y == rect.y) && ( x == 0) ){
 							printf("\n Origen: ( %d , %d )\n\n",(x + rect.x),y);
 						}
+						if ( ptr1[x] == 255 ){
 						printf("%d\t", ptr2[x]);
+						}
+						else printf("0\t");
 					}
 
 					if ( ptr1[x] == 255 ){
@@ -269,10 +275,13 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 			axes = cvSize( cvRound(semiejemayor) , cvRound(semiejemenor) );
 			tita = (tita*180)/PI;
 			areaElipse = PI*semiejemenor*semiejemayor;
+			err = abs(areaElipse - areaFG);
+
 //		}
-//		while( abs(areaElipse - areaFG)> 5 );
+//		while( err > 5 );
 		if (SHOW_SEGMENTATION_DATA == 1){
-			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f",
+			printf("\n AreaElipse = %f  Area FG = %f  Error del ajuste = %f", areaElipse,areaFG,err);
+			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f ",
 					2*semiejemayor,
 					2*semiejemenor,
 					tita);
@@ -290,7 +299,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		flyData->orientacion = tita; /// Almacena la orientación
 //		flyData->perimetro = cv::arcLength(contorno,0);
 		flyData->Roi = rect;
-		flyData->Static = 0;  /// Flag para indicar que el blob permanece estático
+		flyData->Estado = 0;  /// Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
 		flyData->num_frame = FrameData->num_frame;
 		// Añadir a lista
 		insertar( flyData, flies );
@@ -309,6 +318,8 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 				cvPoint( rect.x + rect.width , rect.y + rect.height ),
 				cvScalar(255,0,0,0),
 				1);
+		cvShowImage("Foreground", FGTemp );
+		cvWaitKey(0);
 		cvSetImageROI( FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
 
@@ -345,8 +356,12 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 // 			cvWaitKey(0);
 // FIN PRUEBAS
 	cvCopy( FGMask,FGTemp);
-	cvSetImageROI( Mask, Roi);
-	if( Mask != NULL) cvCopy( FGTemp,Mask);
+
+	if( Mask != NULL) {
+		cvSetImageROI( Mask, Roi);
+		cvCopy( FGTemp,Mask);
+		cvResetImageROI( Mask);
+	}
 //	cvCopy( FGTemp,FrameData->FG);
 
 	cvResetImageROI( Brillo );
@@ -354,7 +369,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	cvResetImageROI( FrameData->IDesv );
 	cvResetImageROI( FrameData->FG );
 	cvResetImageROI( FGTemp );
-	cvResetImageROI( Mask);
+
 
 //	cvResetImageROI( FGMask);
 
