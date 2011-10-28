@@ -10,6 +10,7 @@
 
 #include "VideoTracker.hpp"
 #include "Libreria.h"
+#include "Plato.hpp"
 
 typedef struct{
 	//Parametros del modelo
@@ -25,7 +26,7 @@ typedef struct{
 }BGModelParams;
 
 // PROTOTIPOS DE FUNCIONES //
-void SetBGModelParams(BGModelParams *Parameters);
+void DefaultBGMParams(BGModelParams *Parameters);
 //! \brief Inicializa el modelo de fondo como una Gaussiana con una estimación
 //! de la mediana y de la de desviación típica según:
 //! Para el aprendizaje del fondo toma un número de frames igual a FRAMES_TRAINING
@@ -34,7 +35,7 @@ void SetBGModelParams(BGModelParams *Parameters);
 	  \param BG : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
 	  \param ImMask : Máscara  de 8 bit de niveles de gris para el preprocesdo (extraccion del plato).
 	*/
-void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,BGModelParams* Param, CvRect ROI);
+StaticBGModel* initBGModel( CvCapture* t_capture,BGModelParams* Param );
 
 IplImage* getBinaryImage(IplImage * image);
 //! \brief Recibe una imagen en escala de grises preprocesada. En la primera ejecución inicializa el modelo. Estima a la mediana
@@ -97,7 +98,9 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
     */
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi);
 void onTrackbarSlide(int pos, BGModelParams* Param);
-void AllocateImagesBGM( IplImage *I );
-void DeallocateImagesBGM();
+void AllocateBGMImages( IplImage*, StaticBGModel* bgmodel);
+void DeallocateBGM( StaticBGModel* BGModel );
+void AllocateTempImages( IplImage *I );
+void DeallocateTempImages();
 
 #endif /* BGMODEL_H_ */

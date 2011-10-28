@@ -42,7 +42,10 @@ void ShapeModel( CvCapture* g_capture, SHModel* SH,IplImage* ImMask, CvRect ROI 
 
 		ImPreProcess( frame, ImGray, ImMask, true, ROI);
 		cvSetImageROI( ImGray, ROI);
-		cvShowImage( "Drosophila.avi", ImGray );
+		if (SHOW_SHAPE_MODELING == 1){
+			    cvShowImage( "Visualización", ImGray );
+		}
+
 
 		//Obtener los Blobs y excluir aquellos que no interesan por su tamaño
 
@@ -78,7 +81,10 @@ void ShapeModel( CvCapture* g_capture, SHModel* SH,IplImage* ImMask, CvRect ROI 
 			if(SHOW_SHAPE_MODEL_DATA_AREAS) printf("Area blob %d = %f ",i,currentBlob->area);
 
 			currentBlob->FillBlob( Imblob, CV_RGB(255,0,0));
-			cvShowImage("Foreground", Imblob);
+			if (SHOW_SHAPE_MODELING == 1){
+				cvShowImage("Foreground", Imblob);
+					}
+
 
 			k++;//incrementar indice del vector que contiene las areas
 

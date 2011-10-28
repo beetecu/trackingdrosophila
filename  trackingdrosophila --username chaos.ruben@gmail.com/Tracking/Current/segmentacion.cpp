@@ -57,11 +57,11 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	        cvZero(pesos);
 	        cvZero( FGMask);
 	}
-	cvShowImage("Foreground", FrameData->FG);
-	cvWaitKey(0);
+//	cvShowImage("Foreground", FrameData->FG);
+//	cvWaitKey(0);
 	cvCopy(FrameData->FG,FGTemp);
-	cvShowImage("Foreground", FGTemp);
-	cvWaitKey(0);
+//	cvShowImage("Foreground", FGTemp);
+//	cvWaitKey(0);
 	cvSetImageROI( Brillo , Roi);
 	cvSetImageROI( FrameData->BGModel, Roi );
 	cvSetImageROI( FrameData->IDesv, Roi );
@@ -318,8 +318,8 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 				cvPoint( rect.x + rect.width , rect.y + rect.height ),
 				cvScalar(255,0,0,0),
 				1);
-		cvShowImage("Foreground", FGTemp );
-		cvWaitKey(0);
+//		cvShowImage("Foreground", FGTemp );
+//		cvWaitKey(0);
 		cvSetImageROI( FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
 
@@ -342,16 +342,16 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	/*En la imagen resultante se ve la elipse rellenada con la imagen real
 	 * de las moscas usando como máscara el foreground
 	 */
-	cvAdd(FGTemp,Brillo,FGTemp, FGMask);
-
-
-
-	cvResetImageROI( FGTemp);
-	cvShowImage("Foreground", FGTemp);
-	cvSetImageROI( FGTemp,Roi);
-//		cvWaitKey(0);
-
-	cvAdd ( FrameData->FG, FGTemp, FGTemp);
+//	cvAdd(FGTemp,Brillo,FGTemp, FGMask);
+//
+//
+//
+//	cvResetImageROI( FGTemp);
+//	cvShowImage("Foreground", FGTemp);
+//	cvSetImageROI( FGTemp,Roi);
+////		cvWaitKey(0);
+//
+//	cvAdd ( FrameData->FG, FGTemp, FGTemp);
 //	cvShowImage("Foreground", FGTemp);
 // 			cvWaitKey(0);
 // FIN PRUEBAS

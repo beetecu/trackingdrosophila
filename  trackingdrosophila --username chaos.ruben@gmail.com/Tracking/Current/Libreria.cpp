@@ -396,6 +396,7 @@ int liberarPrimero(tlcde *FramesBuf ){
 	liberarListaFlies( frameData->Flies );
 	free( frameData->Flies);
 	//borra el primer elemento
+	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
 	cvReleaseImage(&frameData->IDesv);

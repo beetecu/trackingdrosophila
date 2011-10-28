@@ -17,8 +17,8 @@ using namespace std;
 
 #define MAX_FRAMES_LEARNING
 
-void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
-				STFlat* Flat){
+void MascaraPlato(CvCapture* t_capture,
+				StaticBGModel* Flat){
 
 	//int* centro_x, int* centro_y, int* radio
 	CvMemStorage* storage = cvCreateMemStorage(0);
@@ -98,11 +98,11 @@ void MascaraPlato(CvCapture* t_capture, IplImage* Cap,
 	printf("Creando máscara del plato... ");
 //	GlobalTime = (double)cvGetTickCount() - GlobalTime;
 //	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-	for (int y = 0; y< Cap->height; y++){
+	for (int y = 0; y< Im->height; y++){
 		//puntero para acceder a los datos de la imagen
-		uchar* ptr = (uchar*) ( Cap->imageData + y*Cap->widthStep);
+		uchar* ptr = (uchar*) ( Flat->ImFMask->imageData + y*Flat->ImFMask->widthStep);
 		// Los pixeles fuera del plato se ponen a 0;
-		for (int x= 0; x<Cap->width; x++){
+		for (int x= 0; x<Flat->ImFMask->width; x++){
 			if ( sqrt( pow( abs( x - Flat->PCentroX ) ,2 )
 					+ pow( abs( y - Flat->PCentroY  ), 2 ) )
 					> Flat->PRadio) ptr[x] = 255;

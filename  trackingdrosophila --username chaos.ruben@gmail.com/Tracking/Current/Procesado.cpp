@@ -24,7 +24,7 @@
 
 #include "Procesado.hpp"
 
-void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape ){
+void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape ){
 
 	extern double NumFrame;
 	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -57,7 +57,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 	if ( !BGParams ) {error(4);exit(-1 );}
 
-	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, Flat->DataFROI);
+	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -69,6 +69,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 	if( first ) { //en la primera iteración inicializamos el fondo al obtenido en el modelo de fondo
 		frameData = ( STFrame *) malloc( sizeof(STFrame));
 		InitNewFrameData( Imagen, frameData );
+		cvCopy( frame,frameData->Frame);
 		cvCopy(  BGModel->Imed,frameData->BGModel);
 		cvCopy(BGModel->IDesv,frameData->IDesv);
 		first = 0;
@@ -76,6 +77,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 	else{ // en las siguientes iteraciones inicializamos el nuevo al Actual.
 		irAlFinal( framesBuf );
 		frameData = ( STFrame*)obtenerActual( framesBuf );
+		cvCopy( frame,frameData->Frame);
 		cvCopy( frameData->BGModel, BGTemp);
 		cvCopy( frameData->IDesv, DETemp);
 		frameData = NULL;
@@ -99,7 +101,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 		// establecer parametros
 		putBGModelParams( BGParams);
 
-		UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGParams, Flat->DataFROI, frameData->FG );
+		UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGParams, BGModel->DataFROI, frameData->FG );
 
 		gettimeofday(&tf, NULL);
 		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -109,7 +111,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
 
-		BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGParams, Flat->DataFROI);
+		BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGParams, BGModel->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -125,7 +127,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 			gettimeofday(&ti, NULL);
 			printf( "Segmentando Foreground...");
 
-			frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI, FGMask );
+			frameData->Flies = segmentacion(Imagen, frameData, BGModel->DataFROI, FGMask );
 
 			gettimeofday(&tf, NULL);
 			tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -144,7 +146,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 				printf( "\nValidando contornos...");
 
 
-				//frameData->Flies = Validacion(Imagen, frameData , Shape, Flat->DataFROI, NULL, NULL,FGMask);
+				//frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
 
 
 				gettimeofday(&tf, NULL);
@@ -168,7 +170,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat*
 
 ///! Igual que procesado, pero solo una iteración. Background dinámico para detección de movimiento
 
-void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape ){
+void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape ){
 
 	extern double NumFrame;
 	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -184,8 +186,8 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	tlcde* FliesFG = NULL;
 	//tlcde* FliesOldFG = NULL;
 
-	IplImage *Imagen;
-	IplImage *FGMask;
+	IplImage *Imagen; // imagen preprocesada
+	IplImage *FGMask; // mascara del foreground
 
 	CvSize size = cvGetSize( frame );
 
@@ -198,27 +200,30 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 	if ( !BGParams ) {error(4);exit(-1 );}
 
-	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, Flat->DataFROI);
+	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 
-	static int first = 1;
+	static bool first = true;
 	// Iniciar estructura para datos del nuevo frame
 	if( first ) { //en la primera iteración
 		frameData = ( STFrame *) malloc( sizeof(STFrame));
-		InitNewFrameData( Imagen, frameData );
+		InitNewFrameData( frame, frameData );
 		cvCopy(  BGModel->Imed,frameData->BGModel);
 		cvCopy(BGModel->IDesv,frameData->IDesv);
-		first = 0;
+//		cvShowImage("Visualizacion", frame);
+//	     	cvWaitKey(0);
+		first = false;
 	}
 	else{
 		irAlFinal( framesBuf );
 		STFrame* frameAnterior = ( STFrame*)obtenerActual( framesBuf );
 		frameData = ( STFrame *) malloc( sizeof(STFrame));
-		InitNewFrameData( Imagen, frameData );
+		InitNewFrameData( frame, frameData );
 		// cargamos los últimos parámetros del fondo.
 		cvCopy( frameAnterior->BGModel, frameData->BGModel);
 		cvCopy( frameAnterior->IDesv, frameData->IDesv);
 	}
-
+	// copiamos el frame en la estructura
+	cvCopy( frame,frameData->Frame);
 //	obtener la mascara del FG y la lista con los datos de sus blobs.
 	gettimeofday(&ti, NULL);
     printf("\nDefiniendo foreground :\n\n");
@@ -228,7 +233,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	// establecer parametros
 	putBGModelParams( BGParams);
 //	cvUpdateBGStatModel( tmp_frame, bg_model, update_bg_model ? -1 : 0 );
-	UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGParams, Flat->DataFROI, frameData->FG );
+	UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGParams, BGModel->DataFROI, frameData->FG );
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -238,7 +243,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 	gettimeofday(&ti, NULL);
 
-	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGParams, Flat->DataFROI);
+	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGParams, BGModel->DataFROI);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -246,38 +251,40 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 	printf("Obtención de máscara de Foreground : %5.4g ms\n", tiempoParcial);
 	/////// SEGMENTACION
 
-	frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI, FGMask);
+	frameData->Flies = segmentacion(Imagen, frameData, BGModel->DataFROI, FGMask);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 							(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g ms\n", tiempoParcial);
-	/////// VALIDACIÓN
-	// solo en la última iteracion
 
+	/////// VALIDACIÓN
 	gettimeofday(&ti, NULL);
 	printf( "\nValidando contornos...");
 
-//	frameData->Flies = Validacion(Imagen, frameData , Shape, Flat->DataFROI, NULL, NULL,FGMask);
+//	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
 
+
+//	FliesFG = (STFlies*)obtenerUltimo( frameData->Flies);
+
+	cvCopy( FGMask,frameData->FG );
+
+	//Anyadir al buffer
+	anyadirAlFinal( frameData, framesBuf );
+
+	// Medir tiempos
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
 							(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g ms\n", tiempoParcial);
-//	FliesFG = (STFlies*)obtenerUltimo( frameData->Flies);
-
-	//Anyadir al buffer
-
-	anyadirAlFinal( frameData, framesBuf );
 
 	// Liberar memoria
-
 	free(BGParams);
 	cvReleaseImage( &Imagen );
 	cvReleaseImage( &FGMask );
 }
 
-//void Procesado3( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape ){
+//void Procesado3( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape ){
 //
 //	extern double NumFrame;
 //	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -307,7 +314,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 //	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 //	if ( !BGParams ) {error(4);exit(-1 );}
 //
-//	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, Flat->DataFROI);
+//	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 //
 //	static int first = 1;
 //	// Iniciar estructura para datos del nuevo frame
@@ -343,7 +350,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 //	printf("Obtención de máscara de Foreground : %5.4g ms\n", tiempoParcial);
 //	/////// SEGMENTACION
 //
-//	frameData->Flies = segmentacion(Imagen, frameData, Flat->DataFROI, FGMask);
+//	frameData->Flies = segmentacion(Imagen, frameData, BGModel->DataFROI, FGMask);
 //
 //	gettimeofday(&tf, NULL);
 //	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -355,7 +362,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat
 //	gettimeofday(&ti, NULL);
 //	printf( "\nValidando contornos...");
 //
-////	frameData->Flies = Validacion(Imagen, frameData , Shape, Flat->DataFROI, Flie, NULL, NULL);
+////	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, Flie, NULL, NULL);
 //
 //	gettimeofday(&tf, NULL);
 //	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 +
@@ -378,12 +385,14 @@ void InitNewFrameData(IplImage* I, STFrame *FrameData ){
 
 	extern double NumFrame;
 	CvSize size = cvGetSize( I );
+	FrameData->Frame = cvCreateImage(size,8,3);
 	FrameData->BGModel = cvCreateImage(size,8,1);
 	FrameData->FG = cvCreateImage(size,8,1);
 	FrameData->IDesv = cvCreateImage(size,8,1);
 	FrameData->OldFG = cvCreateImage(size,8,1);
 	FrameData->ImMotion = cvCreateImage( size, 8, 3 );
 	FrameData->ImMotion->origin = I->origin;
+	cvZero( FrameData->Frame );
 	cvZero( FrameData->BGModel );
 	cvZero( FrameData->FG );
 	cvZero( FrameData->IDesv );

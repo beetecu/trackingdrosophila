@@ -42,9 +42,9 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
 #define SHOW_MOTION_TEMPLATE 0
 #define SHOW_BACKGROUND_DATA 1
-#define SHOW_SEGMENTATION_DATA 1
+#define SHOW_SEGMENTATION_DATA 0
 #define SHOW_SEGMENTACION_STRUCT 0
-
+#define SHOW_SHAPE_MODELING 1
 
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 1
@@ -101,11 +101,16 @@ typedef struct
 		IplImage* Imed; ///BackGround Model
 		IplImage* IDesv; /// Desviación tipica del modelo de fondo estático
 		IplImage* ImFMask; /// Mascara del plato
+		int PCentroX ;
+		int PCentroY ;
+		int PRadio ;
+		CvRect DataFROI;
 	}StaticBGModel;
 
 
 	typedef struct {
 		int num_frame;
+		IplImage* Frame;
 		IplImage* BGModel;  /// backGround Model dinámico
 		IplImage* IDesv;	/// Desviación tipica del modelo de fondo dinámico
 		IplImage* OldFG; ///OldForeGround ( blobs estáticos ).
@@ -113,15 +118,6 @@ typedef struct
 		IplImage* ImMotion;
 		tlcde* Flies; /// Puntero a lista circular doblemente enlazada con los datos de cada fly
 	}STFrame;
-
-	/// Estructura para el modelo del plato
-
-	typedef struct {
-		int PCentroX ;
-		int PCentroY ;
-		int PRadio ;
-		CvRect DataFROI;
-	}STFlat;
 
 	/// Estructura para el modelo de forma
 typedef struct {
