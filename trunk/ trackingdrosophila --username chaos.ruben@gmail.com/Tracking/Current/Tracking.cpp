@@ -14,6 +14,10 @@ void Tracking( tlcde* framesBuf ){
 	STFrame* frameData = NULL;
 	STFly* flyData = NULL;
 	static int workPos = 0; // punto de trabajo en el buffer
+	/// TRACKING
+	IplImage *ImOpFlowX;
+	IplImage *ImOpFlowY;
+
 
 	hungarian_t prob;
 
@@ -40,14 +44,23 @@ void Tracking( tlcde* framesBuf ){
 	if ( SHOW_MOTION_TEMPLATE == 1){
 		MotionTemplate( frameData->FG, frameData->ImMotion);
 	}
+	ImOpFlowX = cvCreateImage( cvGetSize( frameData->FG ) ,IPL_DEPTH_32F,1 );
+	ImOpFlowY = cvCreateImage(cvGetSize( frameData->FG ) ,IPL_DEPTH_32F,1 );
 
+	cvZero( ImOpFlowX );
+	cvZero( ImOpFlowY );
 //		OpticalFlowLK( frameData->FG, ImOpFlowX, ImOpFlowY );
-
+	if (SHOW_OPTICAL_FLOW == 1){
+	cvShowImage( "Flujo Optico X", ImOpFlowX );
+	cvShowImage( "Flujo Optico Y", ImOpFlowY);
+	}
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 											(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf("Tracking: %5.4g ms\n", tiempoParcial);
 
+	cvReleaseImage( &ImOpFlowX );
+	cvReleaseImage( &ImOpFlowY );
 	irAlFinal( framesBuf );
 }
 

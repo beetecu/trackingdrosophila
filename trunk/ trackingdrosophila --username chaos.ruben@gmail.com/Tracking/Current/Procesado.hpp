@@ -17,9 +17,9 @@
 #include "segmentacion.hpp"
 
 
-void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat, SHModel* Shape);
+void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel, SHModel* Shape);
 
-void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,STFlat* Flat,SHModel* Shape );
+void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape );
 
 void InitNewFrameData(IplImage* I, STFrame *FrameData );
 

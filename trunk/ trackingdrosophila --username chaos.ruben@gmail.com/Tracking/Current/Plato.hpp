@@ -11,6 +11,6 @@
 #include "VideoTracker.hpp"
 
 /// Busca el plato y crea la máscara
-void MascaraPlato(CvCapture*,IplImage*, STFlat* Flat);
+void MascaraPlato(CvCapture*, StaticBGModel* Flat);
 
 #endif /* PLATO_HPP_ */

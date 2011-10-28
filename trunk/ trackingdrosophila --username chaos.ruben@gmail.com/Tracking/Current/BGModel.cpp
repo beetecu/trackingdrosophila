@@ -37,32 +37,69 @@ IplImage *ImGray; /// Imagen preprocesada
 IplImage *ImGrayF; /// Imagen preprocesada float
 IplImage *Imaskt;
 
+extern float TiempoGlobal ;
 
-void initBGGModel( CvCapture* t_capture, IplImage* BG,IplImage *DE, IplImage* ImMask,BGModelParams* Param,CvRect ROI){
+StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
+	struct timeval ti, tf, tif, tff; // iniciamos la estructura
+	int TiempoParcial;
 	int num_frames = 0;
-	 SetBGModelParams( Param );
-	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
+	IplImage* frame = cvQueryFrame( t_capture );
+			if ( !frame ) {
+				error(2);
+				exit(-1);
+			}
+			if ( (cvWaitKey(10) & 255) == 27 ) exit(-1);
 
+	 if( Param == NULL ) DefaultBGMParams( Param );
+
+	//Iniciar estructura para el modelo de fondo estático
+	StaticBGModel* bgmodel;
+
+	bgmodel = ( StaticBGModel*) malloc( sizeof( StaticBGModel));
+	if ( !bgmodel ) {error(4);return(0);}
+
+	bgmodel->PCentroX = 0;
+	bgmodel->PCentroY = 0;
+	bgmodel->PRadio = 0;
+
+	AllocateBGMImages(frame, bgmodel );
+
+	// Obtencion de mascara del plato
+	printf("Localizando plato... ");
+	gettimeofday(&ti, NULL);
+
+	MascaraPlato( t_capture, bgmodel );
+	if (bgmodel->PRadio == 0  ) {error(3);return(0);}
+
+	gettimeofday(&tf, NULL);
+	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+												(tf.tv_usec - ti.tv_usec)/1000.0;
+	TiempoGlobal= TiempoGlobal + TiempoParcial ;
+	printf(" %5.4g segundos\n", TiempoGlobal/1000);
+
+
+	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 	while( num_frames < Param->FRAMES_TRAINING ){
-		IplImage* frame = cvQueryFrame( t_capture );
+		frame = cvQueryFrame( t_capture );
 		if ( !frame ) {
 			error(2);
 			break;
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
-		AllocateImagesBGM( frame );
+
 //		int max_buffer;
 //		IplImage* rawImage;
 
-		ImPreProcess( frame, ImGray, ImMask, false, ROI);
+		ImPreProcess( frame, ImGray, bgmodel->ImFMask, false, bgmodel->DataFROI);
 
-		accumulateBackground( ImGray, BG ,DE, ROI, 0);
+		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesv, bgmodel->DataFROI, 0);
 
 		num_frames += 1;
 	}
-	return;
+
+	return bgmodel;
 }
 
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRect ROI , IplImage* mask = NULL ) {
@@ -74,6 +111,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 		cvZero( mask );
 		flag = 1;
 	}
+
 	// Se inicializa el fondo con la primera imagen
 	static int first = 1; // solo para el modelo inicial
 	if ( first == 1 ){
@@ -152,6 +190,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 
 void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
 
+
 	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,DESVI, DataROI , 0);
 	else accumulateBackground( tmp_frame, BGModel,DESVI, DataROI ,Mask);
 
@@ -188,6 +227,7 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesv, double
 
 	cvReleaseImage( &ImTemp );
 
+	DeallocateTempImages();
 }
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,BGModelParams* Param, CvRect dataroi){
 
@@ -242,9 +282,6 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 
 		FGCleanup( fg, Ides,Param, dataroi );
-
-
-
 
 //	printf(" Alpha = %f\n",ALPHA);
 //	cvShowImage( "Foreground",fg);
@@ -345,7 +382,7 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 //void onTrackbarSlide(pos, BGModelParams* Param) {
 //   Param->ALPHA = pos / 100;
 //}
-void SetBGModelParams( BGModelParams *Parameters){
+void DefaultBGMParams( BGModelParams *Parameters){
     //init parameters
 	 BGModelParams *Params;
 	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
@@ -367,7 +404,42 @@ void SetBGModelParams( BGModelParams *Parameters){
 
 }
 
-void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation purposes
+
+/// localiza en memoria las imágenes necesarias para la ejecución
+
+void AllocateBGMImages( IplImage* I , StaticBGModel* bgmodel){
+
+	// Crear imagenes y redimensionarlas en caso de que cambien su tamaño
+	AllocateTempImages( I );
+	CvSize size = cvGetSize( I );
+
+//	if( !FrameData->BGModel ||
+//		 FrameData->BGModel->width != size.width ||
+//		 FrameData->BGModel->height != size.height ) {
+
+		bgmodel->Imed = cvCreateImage(size,8,1);
+		bgmodel->ImFMask = cvCreateImage(size,8,1);
+		bgmodel->IDesv= cvCreateImage(size,8,1);
+
+		cvZero( bgmodel->Imed);
+		cvZero( bgmodel->IDesv);
+		cvZero( bgmodel->ImFMask);
+
+}
+
+/// Limpia de la memoria las imagenes usadas durante la ejecución
+void DeallocateBGM( StaticBGModel* BGModel ){
+
+	if(BGModel){
+		DeallocateTempImages();
+		cvReleaseImage(&BGModel->IDesv);
+		cvReleaseImage(&BGModel->ImFMask);
+		cvReleaseImage(&BGModel->Imed);
+		free(BGModel);
+	}
+}
+
+void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation purposes
 
         CvSize sz = cvGetSize( I );
         if( !Ides ||
@@ -418,10 +490,9 @@ void AllocateImagesBGM( IplImage *I ) {  // I is just a sample for allocation pu
         	}
 }
 
-void DeallocateImagesBGM() {
+void DeallocateTempImages() {
 
 		cvReleaseImage( &ImedianF );
-
         cvReleaseImage( &IvarF );
         cvReleaseImage( &Ivar );
 
@@ -436,6 +507,19 @@ void DeallocateImagesBGM() {
         cvReleaseImage( &Imaskt );
         cvReleaseImage( &ImGray );
         cvReleaseImage( &ImGrayF );
+ 		ImedianF = NULL;
+			IvarF = NULL;
+			Ivar =  NULL;
+			Ides = NULL;
+			IdesF = NULL;
+			IdiffF =NULL;
+			Idiff = NULL;
+			IhiF = NULL;
+			IlowF = NULL;
+
+		    ImGray = NULL;
+			ImGrayF = NULL;
+			Imaskt = NULL;
 }
 
 
