@@ -12,15 +12,21 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 	STFrame* frameData;
 	irAl( pos, frameBuf );
 	frameData = (STFrame*)obtenerActual(frameBuf);
+	// si no se ha llenado el buffer y se pide visualizar el primero, esperar a llenar buffer.
+	if ( ( frameBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH-1) && pos == 0 ){
+		VerEstadoBuffer(frameData->Frame, frameBuf->numeroDeElementos );
+		return;
+	}
 
 	if (SHOW_VISUALIZATION == 1){
 
 	//Obtenemos la Imagen donde se visualizarán los resultados
 
 	//Dibujamos el plato en la imagen de visualizacion
-
-	cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-	cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+	if( DETECTAR_PLATO ){
+		cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+		cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+	}
 	// Dibujamos la ROI
 //	cvRectangle( frameData->Frame,
 //			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
@@ -29,7 +35,7 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 
 	//Dibujamos los blobs
 
-//	visualizarDatos( frameData->Frame );
+//	ShowStatDataFr( frameData->Frame );
 	cvShowImage( "Visualización", frameData->Frame );
 	}
 	// Mostramos imagenes
@@ -46,6 +52,64 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 
 	irAlFinal( frameBuf );
 }
+// Genera una imagen que representa el llenado del buffer
+void VerEstadoBuffer( IplImage* Imagen,int num ){
+	static int count = 0 ;
+	float anchoBuf = 200; // longitud en pixels del ancho del buffer
+	IplImage* buffer;
+	char PComplet[100];
+	CvFont fuente1;
+	float porcentaje;
+
+	CvSize size = cvSize(Imagen->width,Imagen->height); // get current frame size
+	buffer = cvCreateImage(size, IPL_DEPTH_8U, 3);
+	cvZero( buffer);
+
+	cvRectangle( buffer, cvPoint( 218, 228 ),cvPoint( 422, 252), CVX_WHITE, 1 );
+	cvRectangle( buffer, cvPoint( 220, 230 ),cvPoint( 220 + count , 250 ), CVX_GREEN, -1 );
+
+	count = count + 4;
+	porcentaje = (count/anchoBuf)*100;
+	sprintf(PComplet," %.0f %% ",porcentaje );
+//	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvPutText( buffer, PComplet,  cvPoint( 300,265), &fuente1, CVX_WHITE );
+	cvPutText( buffer, "Llenando Buffer",cvPoint( 250,225 ) ,&fuente1,CVX_WHITE );
+	cvShowImage( "Visualización", buffer );
+	cvReleaseImage(&buffer);
+//	cvWaitKey(0);
+}
+
+//void VerEstadoSHModel( IplImage* Imagen,int num ){
+//
+//}
+
+//void VerEstadoBGModel( IplImage* Imagen ){
+//
+//	static int count = 0 ;
+//	float anchoBuf = 200; // longitud en pixels del ancho del buffer
+//	IplImage* bgmod;
+//	char PComplet[100];
+//	CvFont fuente1;
+//	float porcentaje;
+//
+//	CvSize size = cvSize(Imagen->width,Imagen->height); // get current frame size
+//	bgmod= cvCreateImage(size, IPL_DEPTH_8U, 3);
+//	cvZero( bgmod);
+//
+//	cvRectangle( bgmod, cvPoint( 218, 228 ),cvPoint( 422, 252), CVX_WHITE, 1 );
+//	cvRectangle( bgmod, cvPoint( 220, 230 ),cvPoint( 220 + count , 250 ), CVX_GREEN, -1 );
+//
+//	count = count + 4;
+//	porcentaje = (count/anchoBuf)*100;
+//	sprintf(PComplet," %.0f %% ",porcentaje );
+////	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+//	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+//	cvPutText(bgmod, PComplet,  cvPoint( 300,265), &fuente1, CVX_WHITE );
+//	cvPutText( bgmod, "Modelando fondo...",cvPoint( 250,225 ) ,&fuente1,CVX_WHITE );
+//	cvShowImage( "Visualización", bgmod );
+//	cvReleaseImage(&bgmod);
+//}
 
 // Creación de ventanas
 void CreateWindows( ){

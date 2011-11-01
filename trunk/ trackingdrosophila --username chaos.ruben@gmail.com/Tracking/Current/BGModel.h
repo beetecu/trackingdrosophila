@@ -10,10 +10,11 @@
 
 #include "VideoTracker.hpp"
 #include "Libreria.h"
-#include "Plato.hpp"
+
 
 typedef struct{
 	//Parametros del modelo
+	int FLAT_FRAMES_TRAINING;/// Nº de frames para aprendizaje del plato
 	int FRAMES_TRAINING ;/// Nº de frames para el aprendizaje del fondo
 	int HIGHT_THRESHOLD; /// Umbral alto para la resta de fondo
 	int LOW_THRESHOLD ; /// Umbral bajo para la resta de fondo
@@ -97,6 +98,9 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
     */
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi);
+
+void MascaraPlato(CvCapture*, StaticBGModel* Flat, int frTrain);
+
 void onTrackbarSlide(int pos, BGModelParams* Param);
 void AllocateBGMImages( IplImage*, StaticBGModel* bgmodel);
 void DeallocateBGM( StaticBGModel* BGModel );

@@ -15,9 +15,9 @@
 
 
 // various tracking parameters (in seconds)
-const double MHI_DURATION = 2;
-const double MAX_TIME_DELTA = 0.5;
-const double MIN_TIME_DELTA = 0.05;
+const double MHI_DURATION = 1;
+const double MAX_TIME_DELTA = 0.4;	//0.5
+const double MIN_TIME_DELTA = 0.05;	//0.05
 // number of cyclic frame buffer used for motion detection
 // (should, probably, depend on FPS)
 const int N = 4;
@@ -32,7 +32,7 @@ IplImage *mhi = 0; // MHI
 IplImage *orient = 0; // orientation
 IplImage *mask = 0; // valid orientation mask
 IplImage *segmask = 0; // motion segmentation map
-CvMemStorage* storage = 0; // temporary storage
+
 
 void MotionTemplate( IplImage* img, IplImage* dst);
 

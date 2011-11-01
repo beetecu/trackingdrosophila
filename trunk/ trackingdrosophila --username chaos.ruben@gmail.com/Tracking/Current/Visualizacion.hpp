@@ -18,4 +18,8 @@ void DestroyWindows( );
 
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat );
 
+void VerEstadoBuffer( IplImage* Imagen,int num );
+
+void VerEstadoBGModel( IplImage* Imagen );
+
 #endif /* VISUALIZACION_HPP_ */

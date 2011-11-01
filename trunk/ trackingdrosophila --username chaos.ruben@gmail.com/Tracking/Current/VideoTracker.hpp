@@ -32,6 +32,13 @@ using namespace std;
 #define PI 3.14159265
 
 #define IMAGE_BUFFER_LENGTH 51 // valor impar
+#define ULTIMO IMAGE_BUFFER_LENGTH-1
+#define PRIMERO 0
+
+
+// Opciones de programa
+
+#define DETECTAR_PLATO 1
 //Opciones de visualización
 
 
@@ -40,7 +47,7 @@ using namespace std;
 #define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
 #define SHOW_VISUALIZATION 1 ///<- switch from 0 to 1 para visualizar resultado.
 #define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
-#define SHOW_MOTION_TEMPLATE 0
+#define SHOW_MOTION_TEMPLATE 1
 #define SHOW_BACKGROUND_DATA 1
 #define SHOW_SEGMENTATION_DATA 0
 #define SHOW_SEGMENTACION_STRUCT 0
@@ -94,6 +101,7 @@ typedef struct
 		CvRect Roi;
 		bool Estado;  /// Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
 		int num_frame; /// Almacena el numero de frame (tiempo)
+		bool flag_seg;
 	}STFly;
 
 /// Estructura para almacenar el modelo de fondo estático
@@ -107,7 +115,28 @@ typedef struct
 		CvRect DataFROI;
 	}StaticBGModel;
 
+	typedef struct {
+		int totalFrames;
+		int numFrame;
+		float TProces;
+		float TTacking;
+		float staticBlobs; /// blobs estáticos en tanto por ciento
+		float CantidadMov;
+		float TiempoFrame;
+		float TiempoGlobal;
+		float CMov30;  /// Cantidad de movimiento medio en los últimos 30 min
+		float CMov1H;  /// Bis última hora
+		float CMov2H;	/// Bis últimas 2 horas
+		float CMov4H;
+		float CMov8H;
+		float CMov16H;
+		float CMov24H;
+		float CMov48H;
+		float CMovMedio;	/// Cantidad de movimiento medio desde el comienzo
+	}STStatFrame;
 
+/// Estructura que almacena las capas del frame, los datos para realizar calculos estadisticos simples en
+/// tiempo de ejecución y la lista de Flies con los datos de cada fly
 	typedef struct {
 		int num_frame;
 		IplImage* Frame;
@@ -116,6 +145,7 @@ typedef struct
 		IplImage* OldFG; ///OldForeGround ( blobs estáticos ).
 		IplImage* FG;  ///Foreground ( blobs en movimiento ).
 		IplImage* ImMotion;
+//		STStatFrame * Stat;
 		tlcde* Flies; /// Puntero a lista circular doblemente enlazada con los datos de cada fly
 	}STFrame;
 
@@ -125,6 +155,7 @@ typedef struct {
 	float FlyAreaMedia;
 	float FlyAreaDes ;
 }SHModel;
+
 
 #endif /*Estructuras*/
 
