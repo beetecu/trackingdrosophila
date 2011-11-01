@@ -19,8 +19,8 @@ float TiempoInicial;
 float TiempoParcial;
 float TiempoFrame;
 extern float TiempoGlobal = 0;
-
 extern double NumFrame = 0; /// contador de frames absolutos ( incluyendo preprocesado )
+
 
 double TotalFrames = 0;
 CvCapture *g_capture ; /// puntero a una estructura de tipo CvCapture
@@ -124,13 +124,22 @@ int main(int argc, char* argv[]) {
 
 		//////////  ALMACENAR ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
-		// ( buffer de datos) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ).
+		// ( buffer de datos  ) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ) .
+		// Los buffers son colas FIFO
+
+		// si buffer lleno
 		if( FramesBuf->numeroDeElementos == STRUCT_BUFFER_LENGTH){
+			// obtener primero
 			FrameData = (STFrame*) FramesBuf->ultimo->siguiente->dato;
 			mostrarListaFlies(FrameData->Flies);// del ultimo elemento
-			// Una vez que se llenan los buffer se almacenan los datos del primer frame en fichero
+			// calculo de datos estadísticos simples en tiempo de ejecución
+//			CalcStatDataFrame();
 
+//			VisualizarEl( PRIMERO , FramesBuf , BGModel );
+
+			// guardar datos del primer frame en fichero
 			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);FinalizarTracking();}
+			// Liberar de memoria los datos del frame
 			if(!liberarPrimero( FramesBuf ) ){error(7);FinalizarTracking();}
 			FrameData = NULL;
 		}
@@ -138,17 +147,23 @@ int main(int argc, char* argv[]) {
 		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
 				(tff.tv_usec - tif.tv_usec)/1000.0;
 		TiempoGlobal = TiempoGlobal + TiempoFrame;
+		// calcular los tiempos del frame
+		//			CalcDataFrame( FrameData )
+
+		////////// ESTADISTICAS /////////////
+		//
+
 
 		//////////  VISUALIZAR     ////////////
 		//
 		// incrustar datos en primer frame del buffer
 		FrameData = (STFrame*) FramesBuf->ultimo->dato;
-		visualizarDatos( FrameData->Frame);
-		visualizarDatos( FrameData->FG);//
+		ShowStatDataFr( FrameData->Frame);
+		ShowStatDataFr( FrameData->FG);//
 		//visualizar primer frame del buffer
-//		VisualizarEl( 0, FramesBuf , BGModel );
+		VisualizarEl( 0, FramesBuf , BGModel );
 		// visualizar ultimo frame del buffer
-		VisualizarEl(IMAGE_BUFFER_LENGTH-1, FramesBuf , BGModel );
+//		VisualizarEl(IMAGE_BUFFER_LENGTH-1, FramesBuf , BGModel );
 		// FramesBuf->ultimo->siguiente->dato
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",NumFrame, TiempoFrame);
@@ -161,7 +176,7 @@ int main(int argc, char* argv[]) {
 	///////// LIBERAR MEMORIA Y TERMINAR////////
 	FinalizarTracking();
     ///////// POSTPROCESADO //////////
-	AnalisisEstadistico();
+//	AnalisisEstadistico();
 
 }
 
@@ -273,16 +288,6 @@ int PreProcesado(  ){
 	printf(" %5.4g segundos\n", TiempoGlobal/1000);
 	TiempoGlobal = 0; // inicializamos el tiempo global
 
-// Iniciar modelo de fondo dinámico
-//	if(!Dbg_model)
-//	{
-//		//create BG model
-//		bg_model = cvCreateGaussianBGModel( tmp_frame );
-//		//bg_model = cvCreateFGDStatModel( temp );
-//		continue;
-//	}
-// Modelado de la forma de los objetos a rastrear.
-
 	printf("Creando modelo de forma..... ");
 	gettimeofday(&ti, NULL);
 
@@ -300,7 +305,7 @@ int PreProcesado(  ){
 
 	return hecho = 1;
 }
-void visualizarDatos( IplImage* Im  ){
+void ShowStatDataFr( IplImage* Im  ){
 
 	CvFont fuente1;
 	CvFont fuente2;
@@ -357,7 +362,8 @@ void FinalizarTracking(){
 	// completar. tras añadir buffers liberar memoria de todos los elementos (no solo del puntero actual)
 	//liberar estructuras
 	DeallocateBGM( BGModel );
-
+	ReleaseDataSegm( );
+	DeallocateTrackIm();
 	if(FramesBuf) {liberarBuffer( FramesBuf );free( FramesBuf);}
 	//liberar listas
 	if(Flies) free( Flies );
@@ -374,6 +380,8 @@ void FinalizarTracking(){
 
 void InitialBGModelParams( BGModelParams* Params){
 	 static int first = 1;
+	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 50;
+	 else Params->FLAT_FRAMES_TRAINING = 0;
 	 Params->FRAMES_TRAINING = 20;
 	 Params->ALPHA = 0 ;
 	 Params->MORFOLOGIA = 0;
@@ -400,9 +408,6 @@ void InitialBGModelParams( BGModelParams* Params){
 		 Params->LOW_THRESHOLD = 10;
 	 }
 }
-
-
-
 
 void onTrackbarSlider(  int pos ){
 

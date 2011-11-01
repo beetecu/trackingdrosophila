@@ -40,7 +40,7 @@
 	int PreProcesado( );
 
 	///! Imprime en el frame datos del procesado para visualizacion
-	void visualizarDatos( IplImage* Im  );
+	void ShowStatDataFr( IplImage* Im  );
 
 	void AnalisisEstadistico();
 

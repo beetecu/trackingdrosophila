@@ -18,15 +18,27 @@
 
 #include "segmentacion.hpp"
 
-
-
-tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask){
-
 	IplImage *FGTemp = 0;
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
 	IplImage *FGMask = 0;
+	CvMat *vector_u; // Matriz de medias
+	CvMat *vector_resta; // (pi-u)
+	CvMat *matrix_mul;// Matriz (pi-u)(pi-u)T
+	CvMat *MATRIX_C;// MATRIZ DE COVARIANZA
+	CvMat *evects;// Matriz de EigenVectores
+	CvMat *evals;// Matriz de EigenValores
+
+	CvMat *Diagonal; // Matriz Diagonal,donde se extraen los ejes
+	CvMat *R;// Matriz EigenVectores.
+	CvMat *RT;
+
+	CvMemStorage* storage;
+	CvSeq* first_contour;
+
+tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask){
+
 
 	//Iniciar lista para almacenar las moscas
 	tlcde* flies = NULL;
@@ -35,53 +47,20 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	//Inicializar estructura para almacenar los datos cada mosca
 	STFly *flyData = NULL;
 
+	// crear imagenes y datos si no se ha hecho e inicializar
+	CreateDataSegm( Brillo );
 
-	// CREAR IMAGENES
-
-	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
-
-	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
-
-	        cvReleaseImage( &IDif );
-	        cvReleaseImage( &IDifm );
-	        cvReleaseImage( &pesos );
-
-	        FGTemp = cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);
-	        IDif=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
-	        IDifm=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);// IDif en punto flotante
-	        pesos=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-	        FGMask=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
-	        cvZero( FGTemp);
-	        cvZero( IDif);
-	        cvZero( IDifm);
-	        cvZero(pesos);
-	        cvZero( FGMask);
-	}
 //	cvShowImage("Foreground", FrameData->FG);
 //	cvWaitKey(0);
 	cvCopy(FrameData->FG,FGTemp);
 //	cvShowImage("Foreground", FGTemp);
 //	cvWaitKey(0);
-	cvSetImageROI( Brillo , Roi);
-	cvSetImageROI( FrameData->BGModel, Roi );
-	cvSetImageROI( FrameData->IDesv, Roi );
-	cvSetImageROI( FrameData->FG, Roi );
-	cvSetImageROI( FGTemp, Roi );
-
-	cvSetImageROI( IDif, Roi );
-	cvSetImageROI( IDifm, Roi );
-	cvSetImageROI( pesos, Roi );
-	cvSetImageROI( FGMask, Roi );
-
+	establecerROIS( FrameData, Brillo, Roi );
 
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores,semiejes de la elipse.
 	CvScalar r1,r2; // valores de la matriz de los eigen vectores, orientación.
 
-	//Crear storage y secuencia de los contornos
-
-	CvMemStorage* storage = cvCreateMemStorage();
-	CvSeq* first_contour=NULL;
 
 	// Distancia normalizada de cada pixel a su modelo de fondo.
 //		cvShowImage("Foreground",FGTemp);
@@ -130,20 +109,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 			float tita; // orientación
 
 			CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
-
-			// CREAR MATRICES
-
-			CvMat *vector_u=cvCreateMat(2,1,CV_32FC1); // Matriz de medias
-			CvMat *vector_resta=cvCreateMat(2,1,CV_32FC1); // (pi-u)
-			CvMat *matrix_mul=cvCreateMat(2,2,CV_32FC1);// Matriz (pi-u)(pi-u)T
-			CvMat *MATRIX_C=cvCreateMat(matrix_mul->rows,matrix_mul->cols,CV_32FC1);// MATRIZ DE COVARIANZA
-			CvMat *evects=cvCreateMat(2,2,CV_32FC1);// Matriz de EigenVectores
-			CvMat *evals=cvCreateMat(2,2,CV_32FC1);// Matriz de EigenValores
-
-			CvMat *Diagonal=cvCreateMat(2,2,CV_32FC1); // Matriz Diagonal,donde se extraen los ejes
-			CvMat *R=cvCreateMat(2,2,CV_32FC1);// Matriz EigenVectores.
-			CvMat *RT=cvCreateMat(2,2,CV_32FC1);
-
+			// Inicializar matrices a 0
 			cvZero( vector_u);
 			cvZero( vector_resta);
 			cvZero( matrix_mul);
@@ -323,15 +289,6 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		cvSetImageROI( FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
 
-		cvReleaseMat(&vector_resta);
-		cvReleaseMat(&matrix_mul);
-		cvReleaseMat(&MATRIX_C);
-		cvReleaseMat(&evects);
-		cvReleaseMat(&evals);
-		cvReleaseMat(&Diagonal);
-		cvReleaseMat(&R);
-		cvReleaseMat(&RT);
-
 	}// Fin de contornos
 
 
@@ -362,21 +319,54 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		cvCopy( FGTemp,Mask);
 		cvResetImageROI( Mask);
 	}
-//	cvCopy( FGTemp,FrameData->FG);
 
-	cvResetImageROI( Brillo );
-	cvResetImageROI( FrameData->BGModel );
-	cvResetImageROI( FrameData->IDesv );
-	cvResetImageROI( FrameData->FG );
-	cvResetImageROI( FGTemp );
+	resetearROIS( FrameData, Brillo );
 
+	return flies;
 
-//	cvResetImageROI( FGMask);
+}//Fin de la función
 
+void CreateDataSegm( IplImage* Brillo ){
+	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
+	// crear imagenes si no se ha hecho o redimensionarlas si cambia su tamaño
+	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
+		    // CREAR IMAGENES
+	        cvReleaseImage( &IDif );
+	        cvReleaseImage( &IDifm );
+	        cvReleaseImage( &pesos );
 
-//	cvShowImage("Foreground", FGTemp);
-//	cvWaitKey(0);
-	// Liberar memoria
+	        FGTemp = cvCreateImage(size, IPL_DEPTH_8U, 1);
+	        IDif=cvCreateImage(size, IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
+	        IDifm=cvCreateImage(size, IPL_DEPTH_8U, 1);// IDif en punto flotante
+	        pesos=cvCreateImage(size, IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
+	        FGMask=cvCreateImage(size, IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
+
+			// CREAR MATRICES
+
+			vector_u=cvCreateMat(2,1,CV_32FC1); // Matriz de medias
+			vector_resta=cvCreateMat(2,1,CV_32FC1); // (pi-u)
+			matrix_mul=cvCreateMat(2,2,CV_32FC1);// Matriz (pi-u)(pi-u)T
+			MATRIX_C=cvCreateMat(matrix_mul->rows,matrix_mul->cols,CV_32FC1);// MATRIZ DE COVARIANZA
+			evects=cvCreateMat(2,2,CV_32FC1);// Matriz de EigenVectores
+			evals=cvCreateMat(2,2,CV_32FC1);// Matriz de EigenValores
+
+			Diagonal=cvCreateMat(2,2,CV_32FC1); // Matriz Diagonal,donde se extraen los ejes
+			R=cvCreateMat(2,2,CV_32FC1);// Matriz EigenVectores.
+			RT=cvCreateMat(2,2,CV_32FC1);
+
+			//Crear storage y secuencia de los contornos
+
+			storage = cvCreateMemStorage();
+	}
+	first_contour=NULL;
+	cvZero( FGTemp);
+    cvZero( IDif);
+    cvZero( IDifm);
+    cvZero(pesos);
+	cvZero( FGMask);
+}
+
+void ReleaseDataSegm( ){
 	cvReleaseImage( &FGTemp);
 	cvReleaseImage(&IDif);
 	cvReleaseImage(&IDifm);
@@ -384,11 +374,40 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	cvReleaseImage(&FGMask);
 	cvReleaseMemStorage( &storage);
 
+	cvReleaseMat(&vector_resta);
+	cvReleaseMat(&matrix_mul);
+	cvReleaseMat(&MATRIX_C);
+	cvReleaseMat(&evects);
+	cvReleaseMat(&evals);
+	cvReleaseMat(&Diagonal);
+	cvReleaseMat(&R);
+	cvReleaseMat(&RT);
 
-	return flies;
+}
 
-}//Fin de la función
+void establecerROIS( STFrame* FrameData, IplImage* Brillo,CvRect Roi ){
+	cvSetImageROI( Brillo , Roi);
+	cvSetImageROI( FrameData->BGModel, Roi );
+	cvSetImageROI( FrameData->IDesv, Roi );
+	cvSetImageROI( FrameData->FG, Roi );
+	cvSetImageROI( FGTemp, Roi );
 
+	cvSetImageROI( IDif, Roi );
+	cvSetImageROI( IDifm, Roi );
+	cvSetImageROI( pesos, Roi );
+	cvSetImageROI( FGMask, Roi );
 
+}
 
+void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
+	cvResetImageROI( Brillo );
+	cvResetImageROI( FrameData->BGModel );
+	cvResetImageROI( FrameData->IDesv );
+	cvResetImageROI( FrameData->FG );
+	cvResetImageROI( FGTemp );
 
+	cvResetImageROI( IDif );
+	cvResetImageROI( IDifm);
+	cvResetImageROI( pesos );
+	cvResetImageROI( FGMask);
+}

@@ -13,7 +13,7 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 	CvSize size = cvSize(img->width,img->height); // get current frame size
 	int i, idx2;
 //	int  idx1 = last;
-
+	CvMemStorage* storage = 0; // temporary storage
 	CvSeq* seq;
 	CvRect comp_rect;
 	double count;
@@ -56,7 +56,7 @@ void MotionTemplate( IplImage* img, IplImage* dst){
 	cvZero( dst );
 	cvMerge( mask, 0, 0, 0, dst );
    // calculate motion gradient orientation and valid orientation mask
-	cvCalcMotionGradient( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, 3 );
+	cvCalcMotionGradient( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, 7 );
 
 	if( !storage )
 		storage = cvCreateMemStorage(0);

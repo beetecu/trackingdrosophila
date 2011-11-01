@@ -36,8 +36,10 @@ IplImage *IlowF; /// La mediana menos x veces la desviación típica
 IplImage *ImGray; /// Imagen preprocesada
 IplImage *ImGrayF; /// Imagen preprocesada float
 IplImage *Imaskt;
+IplImage* fgTemp;
 
 extern float TiempoGlobal ;
+
 
 StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
@@ -68,9 +70,17 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 	// Obtencion de mascara del plato
 	printf("Localizando plato... ");
 	gettimeofday(&ti, NULL);
-
-	MascaraPlato( t_capture, bgmodel );
-	if (bgmodel->PRadio == 0  ) {error(3);return(0);}
+	if  ( Param->FLAT_FRAMES_TRAINING >0){
+		MascaraPlato( t_capture, bgmodel, Param->FLAT_FRAMES_TRAINING);
+		if (bgmodel->PRadio == 0  ) {error(3);return(0);}
+	}
+	else{
+		bgmodel->DataFROI = cvRect(0,
+		0,
+		frame->width,
+		frame->height ); // Datos para establecer ROI si no se quiere detectar el plato
+		cvZero(bgmodel->ImFMask);
+	}
 
 	gettimeofday(&tf, NULL);
 	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -291,7 +301,7 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 
 	static CvMemStorage* mem_storage = NULL;
 	static CvSeq* contours = NULL;
-	IplImage* FGTemp = cvCreateImage(cvSize(FG->width,FG->height), IPL_DEPTH_8U, 1);
+
 	cvSetImageROI( FG, dataroi);
 	// Aplicamos morfologia: Erosión y dilatación
 	if( Param->MORFOLOGIA == true){
@@ -303,7 +313,7 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 	}
 
 	cvResetImageROI( FG);
-	cvCopy(FG, FGTemp);
+	cvCopy(FG, fgTemp);
 	cvZero ( FG );
 	// Buscamos los contornos cuya area se encuentre en un rango determinado
 	if( mem_storage == NULL ){
@@ -311,9 +321,9 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 	} else {
 		cvClearMemStorage( mem_storage);
 	}
-	cvSetImageROI( FGTemp, dataroi);
+	cvSetImageROI( fgTemp, dataroi);
 	CvContourScanner scanner = cvStartFindContours(
-								FGTemp,
+								fgTemp,
 								mem_storage,
 								sizeof(CvContour),
 								CV_RETR_EXTERNAL,
@@ -374,10 +384,108 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 		}
 	}
 	contours = cvEndFindContours( & scanner );
-	cvResetImageROI( FGTemp);
-	cvReleaseImage( &FGTemp );
+	cvResetImageROI( fgTemp);
+
 
 }
+
+void MascaraPlato(CvCapture* t_capture,
+				StaticBGModel* Flat,int frTrain){
+
+	//int* centro_x, int* centro_y, int* radio
+	CvMemStorage* storage = cvCreateMemStorage(0);
+	CvSeq* circles = NULL;
+	IplImage* Im;
+
+// LOCALIZACION
+
+	int num_frames = 0;
+
+//	t_capture = cvCaptureFromAVI( "Drosophila.avi" );
+	if ( !t_capture ) {
+		fprintf( stderr, "ERROR: capture is NULL \n" );
+		getchar();
+		return ;
+	}
+
+	// Obtención del centro de máximo radio del plato en 50 frames
+
+//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
+//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
+
+	while (num_frames < frTrain) {
+
+		IplImage* frame = cvQueryFrame( t_capture );
+		if ( !frame ) {
+			fprintf( stderr, "ERROR: frame is null...\n" );
+			getchar();
+			break;
+		}
+		if ( (cvWaitKey(10) & 255) == 27 ) break;
+
+//		VerEstadoBGModel( frame );
+		Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+//
+		// Imagen a un canal de niveles de gris
+		cvCvtColor( frame , Im, CV_BGR2GRAY);
+
+		// Filtrado gaussiano 5x
+		cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
+
+
+		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,300, 150,
+				cvRound( Im->height/2 ));
+		int i;
+		for (i = 0; i < circles->total; i++)
+		{
+
+			// Excluimos los radios que se salgan de la imagen
+			 float* p = (float*)cvGetSeqElem( circles, i );
+			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
+				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
+				  (  cvRound( p[1] )  < cvRound( p[2] ) ) ||
+				  ( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) )
+				) continue;
+
+			 // Buscamos el de mayor radio de entre todos los frames;
+			 if (  Flat->PRadio < cvRound( p[2] ) ){
+				 Flat->PRadio = cvRound( p[2] );
+				 Flat->PCentroX = cvRound( p[0] );
+				 Flat->PCentroY = cvRound( p[1] );
+			 }
+		}
+		num_frames +=1;
+		cvClearMemStorage( storage);
+	}
+	cvReleaseMemStorage( &storage );
+
+	printf("\nPlato localizado : ");
+	printf("Centro x : %d , Centro y %d : , Radio: %d \n"
+			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
+	Flat->DataFROI = cvRect(Flat->PCentroX-Flat->PRadio,
+					Flat->PCentroY-Flat->PRadio,
+					2*Flat->PRadio,
+					2*Flat->PRadio ); // Datos para establecer ROI del plato
+	// Creacion de mascara
+
+	printf("Creando máscara del plato... ");
+//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
+//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
+	for (int y = 0; y< Im->height; y++){
+		//puntero para acceder a los datos de la imagen
+		uchar* ptr = (uchar*) ( Flat->ImFMask->imageData + y*Flat->ImFMask->widthStep);
+		// Los pixeles fuera del plato se ponen a 0;
+		for (int x= 0; x<Flat->ImFMask->width; x++){
+			if ( sqrt( pow( abs( x - Flat->PCentroX ) ,2 )
+					+ pow( abs( y - Flat->PCentroY  ), 2 ) )
+					> Flat->PRadio) ptr[x] = 255;
+			else	ptr[x] = 0;
+		}
+	}
+	cvReleaseImage(&Im);
+	return;
+}
+
 
 //void onTrackbarSlide(pos, BGModelParams* Param) {
 //   Param->ALPHA = pos / 100;
@@ -388,6 +496,7 @@ void DefaultBGMParams( BGModelParams *Parameters){
 	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
     if( Parameters == NULL )
       {
+    	Params->FLAT_FRAMES_TRAINING = 0;
     	Params->FRAMES_TRAINING = 20;
     	Params->ALPHA = 0.5 ;
     	Params->MORFOLOGIA = 0;
@@ -459,7 +568,7 @@ void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation p
         		cvReleaseImage( &ImGray );
         		cvReleaseImage( &ImGrayF );
         		cvReleaseImage( &Imaskt );
-
+        		cvReleaseImage(&fgTemp);
 
         		ImedianF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 				IvarF = cvCreateImage( sz, 8, 1 );
@@ -474,6 +583,7 @@ void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation p
 			    ImGray = cvCreateImage( sz, 8, 1 );
 				ImGrayF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 				Imaskt = cvCreateImage( sz, 8, 1 );
+				fgTemp = cvCreateImage(sz, IPL_DEPTH_8U, 1);
 
 				cvZero( ImedianF );
 				cvZero( IvarF );
@@ -487,6 +597,7 @@ void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation p
 				cvZero(ImGray);
 				cvZero(ImGrayF);
 				cvZero(Imaskt);
+				cvZero(fgTemp);
         	}
 }
 
@@ -507,6 +618,8 @@ void DeallocateTempImages() {
         cvReleaseImage( &Imaskt );
         cvReleaseImage( &ImGray );
         cvReleaseImage( &ImGrayF );
+        cvReleaseImage( &fgTemp );
+
  		ImedianF = NULL;
 			IvarF = NULL;
 			Ivar =  NULL;
@@ -520,6 +633,7 @@ void DeallocateTempImages() {
 		    ImGray = NULL;
 			ImGrayF = NULL;
 			Imaskt = NULL;
+			fgTemp = NULL;
 }
 
 

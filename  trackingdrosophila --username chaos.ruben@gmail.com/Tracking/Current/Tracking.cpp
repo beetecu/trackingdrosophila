@@ -7,6 +7,11 @@
 
 #include "Tracking.hpp"
 
+	IplImage *ImOpFlowX;
+	IplImage *ImOpFlowY;
+	IplImage *ImagenA;
+	IplImage *ImagenB;
+
 void Tracking( tlcde* framesBuf ){
 
 	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -15,9 +20,11 @@ void Tracking( tlcde* framesBuf ){
 	STFly* flyData = NULL;
 	static int workPos = 0; // punto de trabajo en el buffer
 	/// TRACKING
-	IplImage *ImOpFlowX;
-	IplImage *ImOpFlowY;
 
+
+	frameData = ( STFrame* )obtenerActual( framesBuf );
+
+	AllocateTrackImages( frameData->FG );
 
 	hungarian_t prob;
 
@@ -32,7 +39,7 @@ void Tracking( tlcde* framesBuf ){
 	workPos = (framesBuf->numeroDeElementos + 1)/2 -1;
 
 	// acceder al punto de trabajo
-	irAl( workPos, framesBuf);
+	irAl( ULTIMO , framesBuf);
 	// cargar datos del frame
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 	gettimeofday(&ti, NULL);
@@ -44,23 +51,29 @@ void Tracking( tlcde* framesBuf ){
 	if ( SHOW_MOTION_TEMPLATE == 1){
 		MotionTemplate( frameData->FG, frameData->ImMotion);
 	}
-	ImOpFlowX = cvCreateImage( cvGetSize( frameData->FG ) ,IPL_DEPTH_32F,1 );
-	ImOpFlowY = cvCreateImage(cvGetSize( frameData->FG ) ,IPL_DEPTH_32F,1 );
 
-	cvZero( ImOpFlowX );
-	cvZero( ImOpFlowY );
-//		OpticalFlowLK( frameData->FG, ImOpFlowX, ImOpFlowY );
+
 	if (SHOW_OPTICAL_FLOW == 1){
+		irAlFinal( framesBuf);
+		frameData = ( STFrame* )obtenerActual( framesBuf );
+		cvCopy(frameData->FG,ImagenB);
+		//cvCvtColor( frameData->Frame, ImagenB, CV_BGR2GRAY);
+		irAlAnterior( framesBuf);
+		frameData = ( STFrame* )obtenerActual( framesBuf );
+		cvCopy(frameData->FG,ImagenA);
+	//	cvCvtColor( frameData->Frame, ImagenA, CV_BGR2GRAY);
+	//	LKOptFlow( frameData->FG, ImOpFlowX, ImOpFlowY );
+		PLKOptFlow( ImagenA, ImagenB, ImOpFlowX );
 	cvShowImage( "Flujo Optico X", ImOpFlowX );
 	cvShowImage( "Flujo Optico Y", ImOpFlowY);
 	}
+
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 											(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf("Tracking: %5.4g ms\n", tiempoParcial);
 
-	cvReleaseImage( &ImOpFlowX );
-	cvReleaseImage( &ImOpFlowY );
+
 	irAlFinal( framesBuf );
 }
 
@@ -75,4 +88,40 @@ tlcde* matchingIdentity( tlcde* framesBuf ,int estado ){
 	else{
 
 	}
+}
+
+void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation purposes
+
+        CvSize sz = cvGetSize( I );
+        if( !ImOpFlowX ||
+        		ImOpFlowX->width != sz.width ||
+        		ImOpFlowX->height != sz.height ) {
+
+        		cvReleaseImage( &ImOpFlowX);
+        		cvReleaseImage( &ImOpFlowY);
+        		cvReleaseImage( &ImagenA);
+        		cvReleaseImage( &ImagenB);
+
+        		ImOpFlowX = cvCreateImage( sz,IPL_DEPTH_32F,1 );
+        		ImOpFlowY = cvCreateImage(sz ,IPL_DEPTH_32F,1 );
+        		ImagenA = cvCreateImage( sz ,8,1 );
+        		ImagenB = cvCreateImage(sz ,8,1 );
+
+        		cvZero( ImOpFlowX );
+        		cvZero( ImOpFlowY );
+        		cvZero( ImagenA );
+        		cvZero( ImagenB );
+
+        	}
+		cvZero( ImOpFlowX );
+		cvZero( ImOpFlowY );
+		cvZero( ImagenA );
+		cvZero( ImagenB );
+
+}
+void DeallocateTrackIm(){
+		cvReleaseImage( &ImOpFlowX);
+    		cvReleaseImage( &ImOpFlowY);
+    		cvReleaseImage( &ImagenA);
+    		cvReleaseImage( &ImagenB);
 }
