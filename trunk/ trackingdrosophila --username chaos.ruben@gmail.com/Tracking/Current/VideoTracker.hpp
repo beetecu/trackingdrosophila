@@ -100,6 +100,8 @@ typedef struct
 		double perimetro;
 		CvRect Roi;
 		bool Estado;  /// Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
+		bool flag_seg; // Indica si e blog a sido segmentado
+		bool flag_def; // indica si el blob ha  desaparecido durante el analisis del defecto
 		int num_frame; /// Almacena el numero de frame (tiempo)
 		bool flag_seg;
 	}STFly;
