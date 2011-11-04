@@ -159,11 +159,11 @@ int main(int argc, char* argv[]) {
 		// incrustar datos en primer frame del buffer
 		FrameData = (STFrame*) FramesBuf->ultimo->dato;
 		ShowStatDataFr( FrameData->Frame);
-		ShowStatDataFr( FrameData->FG);//
+//		ShowStatDataFr( FrameData->FG);//
 		//visualizar primer frame del buffer
-		VisualizarEl( 0, FramesBuf , BGModel );
+//		VisualizarEl( 0, FramesBuf , BGModel );
 		// visualizar ultimo frame del buffer
-//		VisualizarEl(IMAGE_BUFFER_LENGTH-1, FramesBuf , BGModel );
+		VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel );
 		// FramesBuf->ultimo->siguiente->dato
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",NumFrame, TiempoFrame);

@@ -18,40 +18,44 @@ void Tracking( tlcde* framesBuf ){
 	int tiempoParcial;
 	STFrame* frameData = NULL;
 	STFly* flyData = NULL;
-	static int workPos = 0; // punto de trabajo en el buffer
-	/// TRACKING
+	static int workPos = -1; // punto de trabajo en el buffer
 
-
+	// Inicializar
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 
 	AllocateTrackImages( frameData->FG );
 
 	hungarian_t prob;
 
-	// el rastreo no se inicia hasta que el buffer tenga almenos 3 elementos
-	if( framesBuf->numeroDeElementos < 3) return;
-	// Mientras no se llene el buffer, solo se incrementa la posición de trabajo
-	// cada dos frames (cuado el numero de elementos es impar ).
-	// el buffer tiene un numero de elementos impar. El punto de trabajo será el
-	// centro.
-	if( ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH)&&
-			( !(framesBuf->numeroDeElementos%2) )) return;
-	workPos = (framesBuf->numeroDeElementos + 1)/2 -1;
+	/// resolvemos la ambiguedad en la orientación usando una plantilla de movimiento
+	/// y hacemos una primera asignación de identidad.
+
+	cvZero(frameData->ImMotion);
+		if ( SHOW_MOTION_TEMPLATE == 1){
+			MotionTemplate( framesBuf );//frameData->FG, frameData->ImMotion
+	}
+
+	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
+	if( framesBuf->numeroDeElementos < 25) return;
+	// Cuando el buffer esté por la mitad comienza el rastreo en el segundo frame
+	// La posición de trabajo se irá incremetando a la par que el tamaño del buffer
+	// asta quedar finalmente situada en el centro.
+	if ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH)
+			workPos += 1;
 
 	// acceder al punto de trabajo
-	irAl( ULTIMO , framesBuf);
+	irAl( workPos , framesBuf);
 	// cargar datos del frame
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 	gettimeofday(&ti, NULL);
 
+	///////   FASE DE CORRECCIÓN  /////////
+
+	//Reasignamos idendidades
+
+	if (workPos == PRIMERO) return;
+
 	framesBuf = matchingIdentity( framesBuf , 0 );
-
-
-	cvZero(frameData->ImMotion);
-	if ( SHOW_MOTION_TEMPLATE == 1){
-		MotionTemplate( frameData->FG, frameData->ImMotion);
-	}
-
 
 	if (SHOW_OPTICAL_FLOW == 1){
 		irAlFinal( framesBuf);
@@ -73,21 +77,11 @@ void Tracking( tlcde* framesBuf ){
 											(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf("Tracking: %5.4g ms\n", tiempoParcial);
 
+	////////// FASE DE PREDICCIÓN /////////
+
+	// aplicamos kalman
 
 	irAlFinal( framesBuf );
-}
-
-tlcde* matchingIdentity( tlcde* framesBuf ,int estado ){
-
-	tlcde* FliesFrActual;
-	tlcde* FliesFrSig;
-
-	if ( estado == 1){
-
-	}
-	else{
-
-	}
 }
 
 void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation purposes
@@ -111,7 +105,6 @@ void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation 
         		cvZero( ImOpFlowY );
         		cvZero( ImagenA );
         		cvZero( ImagenB );
-
         	}
 		cvZero( ImOpFlowX );
 		cvZero( ImOpFlowY );
@@ -124,4 +117,5 @@ void DeallocateTrackIm(){
     		cvReleaseImage( &ImOpFlowY);
     		cvReleaseImage( &ImagenA);
     		cvReleaseImage( &ImagenB);
+    		releaseMotionTemplate();
 }

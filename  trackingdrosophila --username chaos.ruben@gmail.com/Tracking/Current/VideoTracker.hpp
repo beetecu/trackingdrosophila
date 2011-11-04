@@ -98,11 +98,15 @@ typedef struct
 		float a,b; /// semiejes de la elipse
 		float orientacion; /// Almacena la orientación
 		double perimetro;
-		CvRect Roi;
+		CvRect Roi; /// region de interes para el blob
 		bool Estado;  /// Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
 		bool flag_seg; // Indica si e blog a sido segmentado
 		bool flag_def; // indica si el blob ha  desaparecido durante el analisis del defecto
 		int num_frame; /// Almacena el numero de frame (tiempo)
+		bool salto;	/// Indica que la mosca ha saltado
+		bool Grupo; /// Indica que la mosca permanece estática en un grupo de 2 o más moscas.
+		int Zona; /// Si se seleccionan zonas de interes en el plato,
+						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
 		bool flag_seg;
 	}STFly;
 
@@ -117,6 +121,7 @@ typedef struct
 		CvRect DataFROI;
 	}StaticBGModel;
 
+/// Estructura que almacena cálculos estadísticos simples para mostrar en tiempo de ejecución
 	typedef struct {
 		int totalFrames;
 		int numFrame;
