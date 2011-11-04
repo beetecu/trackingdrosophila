@@ -50,17 +50,9 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	// crear imagenes y datos si no se ha hecho e inicializar
 	CreateDataSegm( Brillo );
 
-//	cvShowImage("Foreground", FrameData->FG);
-//	cvWaitKey(0);
 	cvCopy(FrameData->FG,FGTemp);
-//	cvShowImage("Foreground", FGTemp);
-//	cvWaitKey(0);
+
 	establecerROIS( FrameData, Brillo, Roi );
-
-	CvScalar v;
-	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores,semiejes de la elipse.
-	CvScalar r1,r2; // valores de la matriz de los eigen vectores, orientación.
-
 
 	// Distancia normalizada de cada pixel a su modelo de fondo.
 //		cvShowImage("Foreground",FGTemp);
@@ -68,8 +60,6 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	cvAbsDiff(Brillo,FrameData->BGModel,IDif);// |I(p)-u(p)|/0(p)
 	cvConvertScale(IDif ,IDifm,1,0);// A float
 	cvDiv( IDifm,FrameData->IDesv,pesos );// Calcular
-	// Si se introduce un umbral se realizará el ajuste de la elipse
-
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
@@ -89,162 +79,29 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	int i = 0;
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
-//		do{
+		if( SHOW_SEGMENTATION_DATA == 1) printf("\n BLOB %d\n",id);
+		id++; //incrmentar el Id de las moscas
 
-			if( SHOW_SEGMENTATION_DATA == 1) printf("\n BLOB %d\n",id);
-			id++; //incrmentar el Id de las moscas
+		// Parámetros para calcular el error del ajuste en base a la diferencia de areas entre el Fg y la ellipse
+		float err;
+		float areaFG;
+		float areaElipse;
+		areaFG = cvContourArea(c);
+		/// Parámetros elipse
+		RNG rng(0xFFFFFFFF); // para generar un color aleatorio
+		float semiejemenor;
+		float semiejemayor;
+		CvSize axes;
+		CvPoint centro;
+		float tita; // orientación
 
-			float z=0;  // parámetro para el cálculo de la matriz de covarianza
-			// Parámetros para calcular el error del ajuste en base a la diferencia de areas entre el Fg y la ellipse
-			float err;
-			float areaFG;
-			float areaElipse;
-			areaFG = cvContourArea(c);
-			/// Parámetros elipse
+		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
+		// realiza el ajuste a una elipse de los pesos del rectangulo que coincidan con la máscara
+		ellipseFit( rect, pesos, FrameData->FG, &semiejemenor,&semiejemayor,&axes,&centro,&tita );
 
-			float semiejemenor;
-			float semiejemayor;
-			CvSize axes;
-			CvPoint centro;
-			float tita; // orientación
+		areaElipse = PI*semiejemenor*semiejemayor;
+		err = abs(areaElipse - areaFG);
 
-			CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
-			// Inicializar matrices a 0
-			cvZero( vector_u);
-			cvZero( vector_resta);
-			cvZero( matrix_mul);
-			cvZero( MATRIX_C);
-			cvZero( evects);
-			cvZero( evals);
-			cvZero( Diagonal);
-			cvZero( R);
-			cvZero( RT);
-
-
-	//		cvShowImage("Foreground", FrameData->FG);
-	//		cvWaitKey(0);
-			if (SHOW_SEGMENTATION_DATA == 1) {
-				printf(" \n\nMatriz de distancia normalizada al background |I(p)-u(p)|/0(p)");
-			}
-			// Hallar Z y u={ux,uy}
-			for (int y = rect.y; y< rect.y + rect.height; y++){
-				uchar* ptr1 = (uchar*) ( FrameData->FG->imageData + y*FrameData->FG->widthStep + 1*rect.x);
-				uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
-				if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
-
-				for (int x = 0; x<rect.width; x++){
-					if (SHOW_SEGMENTATION_DATA == 1) {
-						if( ( y == rect.y) && ( x == 0) ){
-							printf("\n Origen: ( %d , %d )\n\n",(x + rect.x),y);
-						}
-						if ( ptr1[x] == 255 ){
-						printf("%d\t", ptr2[x]);
-						}
-						else printf("0\t");
-					}
-
-					if ( ptr1[x] == 255 ){
-
-						z = z + ptr2[x]; // Sumatorio de los pesos
-						*((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) = CV_MAT_ELEM( *vector_u, float, 0,0 )+ (x + rect.x)*ptr2[x];
-						*((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) = CV_MAT_ELEM( *vector_u, float, 1,0 )+ y*ptr2[x];
-		//					vector_u[0][0] = vector_u[0][0] + x*ptr2[x]; // sumatorio del peso por la pos x
-		//					vector_u[1][0] = vector_u[1][0] + y*ptr2[x]; // sumatorio del peso por la pos y
-
-					}
-				}
-			}
-			if (SHOW_SEGMENTATION_DATA == 1){
-						printf( "\n\nSumatorio de pesos:\n Z = %f",z);
-						printf( "\n Sumatorio (wi*pi) = [ %f , %f ]",
-								CV_MAT_ELEM( *vector_u, float, 0,0 ),
-								CV_MAT_ELEM( *vector_u, float, 1,0 ));
-			}
-			if ( z != 0) {
-				cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
-			}
-			else {
-				error(5);
-			}
-			if (SHOW_SEGMENTATION_DATA == 1){
-				printf("\n\nCentro (vector u)\n u = [ %f , %f ]\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
-			}
-
-			for (int y = rect.y; y< rect.y + rect.height; y++){
-				uchar* ptr1 = (uchar*) ( FrameData->FG->imageData + y*FrameData->FG->widthStep + 1*rect.x);
-				uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
-				for (int x= 0; x<rect.width; x++){
-
-					if ( ptr1[x] == 255 ){
-						//vector_resta[0][0] = x - vector_u[0][0];
-						//vector_resta[1][0] = y - vector_u[1][0];
-						*((float*)CV_MAT_ELEM_PTR( *vector_resta, 0, 0 )) = (x + rect.x) - CV_MAT_ELEM( *vector_u, float, 0,0 );
-						*((float*)CV_MAT_ELEM_PTR( *vector_resta, 1, 0 )) = y - CV_MAT_ELEM( *vector_u, float, 1,0 );
-						cvGEMM(vector_resta, vector_resta, ptr2[x] , NULL, 0, matrix_mul,CV_GEMM_B_T);// Multiplicar Matrices (pi-u)(pi-u)T
-						cvAdd( MATRIX_C, matrix_mul	, MATRIX_C ); // sumatorio
-					}
-				}
-			}
-			if ( z != 0) cvConvertScale(MATRIX_C, MATRIX_C, 1/z,0); // Matriz de covarianza
-
-			// Mostrar matriz de covarianza
-			if (SHOW_SEGMENTATION_DATA == 1) {
-					printf("\nMatriz de covarianza");
-									for(int i=0;i<2;i++){
-										printf("\n\n");
-										for(int j=0;j<2;j++){
-											v=cvGet2D(MATRIX_C,i,j);
-											printf("\t%f",v.val[0]);
-										}
-							}
-			}
-
-			// EXTRAER LOS EIGENVALORES Y EIGENVECTORES
-
-			cvEigenVV(MATRIX_C,evects,evals,2);// Hallar los EigenVectores
-			cvSVD(MATRIX_C,Diagonal,R,RT,0); // Hallar los EigenValores, MATRIX_C=R*Diagonal*RT
-
-			//Extraer valores de los EigenVectores y EigenValores
-
-			d1=cvGet2D(Diagonal,0,0);
-			d2=cvGet2D(Diagonal,1,1);
-			r1=cvGet2D(R,0,0);
-			r2=cvGet2D(R,0,1);
-
-			//Hallar los semiejes y la orientación
-
-			semiejemayor=2*(sqrt(d1.val[0]));
-			semiejemenor=2*(sqrt(d2.val[0]));
-			tita=atan(r2.val[0]/r1.val[0]);
-
-			// Dibujar elipse
-
-			//Eliminamos el blob
-
-			for (int y = rect.y; y< rect.y + rect.height; y++){
-						uchar* ptr1 = (uchar*) ( FGTemp->imageData + y*FGTemp->widthStep + 1*rect.x);
-						for (int x= 0; x<rect.width; x++){
-							ptr1[x] = 0;
-						}
-			}
-
-			// Obtenemos el centro de la elipse
-
-			cvResetImageROI( FGTemp ); // para evitar el offset de find contours
-			cvResetImageROI( FGMask);
-
-			centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
-					cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
-
-			// Obtenemos los ejes y la orientacion en grados
-
-			axes = cvSize( cvRound(semiejemayor) , cvRound(semiejemenor) );
-			tita = (tita*180)/PI;
-			areaElipse = PI*semiejemenor*semiejemayor;
-			err = abs(areaElipse - areaFG);
-
-//		}
-//		while( err > 5 );
 		if (SHOW_SEGMENTATION_DATA == 1){
 			printf("\n AreaElipse = %f  Area FG = %f  Error del ajuste = %f", areaElipse,areaFG,err);
 			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f ",
@@ -252,20 +109,18 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 					2*semiejemenor,
 					tita);
 		}
-//		CvMat *contorno = cvCreateMat(1,c->total,CV_32FC1);
-//		cvCvtSeqToArray(c , contorno );
 
 		flyData = ( STFly *) malloc( sizeof( STFly));
 		if ( !flyData ) {error(4);	exit(1);}
 		flyData->etiqueta = id  ;  /// Identificación del blob
-		flyData->Color = cvScalar(0,0,0,0); /// Color para dibujar el blob
+		flyData->Color = randomColor(rng); /// Color para dibujar el blob
 		flyData-> posicion = centro; /// Posición del blob
 		flyData->a = semiejemayor;
 		flyData->b = semiejemenor; /// semiejes de la elipse
 		flyData->orientacion = tita; /// Almacena la orientación
 //		flyData->perimetro = cv::arcLength(contorno,0);
 		flyData->Roi = rect;
-		flyData->Estado = 0;  /// Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
+		flyData->Estado = 1;  /// Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
 		flyData->num_frame = FrameData->num_frame;
 		// Añadir a lista
 		insertar( flyData, flies );
@@ -364,6 +219,158 @@ void CreateDataSegm( IplImage* Brillo ){
     cvZero( IDifm);
     cvZero(pesos);
 	cvZero( FGMask);
+}
+
+void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
+		float *semiejemenor,float* semiejemayor,CvSize* axes,CvPoint* centro,float* tita ){
+
+	CvScalar v;
+	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores,semiejes de la elipse.
+	CvScalar r1,r2; // valores de la matriz de los eigen vectores, orientación.
+
+	float z=0;  // parámetro para el cálculo de la matriz de covarianza
+
+	// Inicializar matrices a 0
+	cvZero( vector_u);
+	cvZero( vector_resta);
+	cvZero( matrix_mul);
+	cvZero( MATRIX_C);
+	cvZero( evects);
+	cvZero( evals);
+	cvZero( Diagonal);
+	cvZero( R);
+	cvZero( RT);
+
+
+//		cvShowImage("Foreground", mask);
+//		cvWaitKey(0);
+	if (SHOW_SEGMENTATION_DATA == 1) {
+		printf(" \n\nMatriz de distancia normalizada al background |I(p)-u(p)|/0(p)");
+	}
+	// Hallar Z y u={ux,uy}
+	for (int y = rect.y; y< rect.y + rect.height; y++){
+		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*rect.x);
+		uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
+		if (SHOW_SEGMENTATION_DATA == 1) printf(" \n\n");
+
+		for (int x = 0; x<rect.width; x++){
+			if (SHOW_SEGMENTATION_DATA == 1) {
+				if( ( y == rect.y) && ( x == 0) ){
+					printf("\n Origen: ( %d , %d )\n\n",(x + rect.x),y);
+				}
+				if ( ptr1[x] == 255 ){
+				printf("%d\t", ptr2[x]);
+				}
+				else printf("0\t");
+			}
+
+			if ( ptr1[x] == 255 ){
+
+				z = z + ptr2[x]; // Sumatorio de los pesos
+				*((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) = CV_MAT_ELEM( *vector_u, float, 0,0 )+ (x + rect.x)*ptr2[x];
+				*((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) = CV_MAT_ELEM( *vector_u, float, 1,0 )+ y*ptr2[x];
+//					vector_u[0][0] = vector_u[0][0] + x*ptr2[x]; // sumatorio del peso por la pos x
+//					vector_u[1][0] = vector_u[1][0] + y*ptr2[x]; // sumatorio del peso por la pos y
+
+			}
+		}
+	}
+	if (SHOW_SEGMENTATION_DATA == 1){
+				printf( "\n\nSumatorio de pesos:\n Z = %f",z);
+				printf( "\n Sumatorio (wi*pi) = [ %f , %f ]",
+						CV_MAT_ELEM( *vector_u, float, 0,0 ),
+						CV_MAT_ELEM( *vector_u, float, 1,0 ));
+	}
+	if ( z != 0) {
+		cvConvertScale(vector_u, vector_u, 1/z,0); // vector de media {ux, uy}
+	}
+	else {
+		error(5);
+	}
+	if (SHOW_SEGMENTATION_DATA == 1){
+		printf("\n\nCentro (vector u)\n u = [ %f , %f ]\n",CV_MAT_ELEM( *vector_u, float, 0,0 ),CV_MAT_ELEM( *vector_u, float, 1,0 ));
+	}
+
+	for (int y = rect.y; y< rect.y + rect.height; y++){
+		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*rect.x);
+		uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*rect.x);
+		for (int x= 0; x<rect.width; x++){
+
+			if ( ptr1[x] == 255 ){
+				//vector_resta[0][0] = x - vector_u[0][0];
+				//vector_resta[1][0] = y - vector_u[1][0];
+				*((float*)CV_MAT_ELEM_PTR( *vector_resta, 0, 0 )) = (x + rect.x) - CV_MAT_ELEM( *vector_u, float, 0,0 );
+				*((float*)CV_MAT_ELEM_PTR( *vector_resta, 1, 0 )) = y - CV_MAT_ELEM( *vector_u, float, 1,0 );
+				cvGEMM(vector_resta, vector_resta, ptr2[x] , NULL, 0, matrix_mul,CV_GEMM_B_T);// Multiplicar Matrices (pi-u)(pi-u)T
+				cvAdd( MATRIX_C, matrix_mul	, MATRIX_C ); // sumatorio
+			}
+		}
+	}
+	if ( z != 0) cvConvertScale(MATRIX_C, MATRIX_C, 1/z,0); // Matriz de covarianza
+
+	// Mostrar matriz de covarianza
+	if (SHOW_SEGMENTATION_DATA == 1) {
+			printf("\nMatriz de covarianza");
+							for(int i=0;i<2;i++){
+								printf("\n\n");
+								for(int j=0;j<2;j++){
+									v=cvGet2D(MATRIX_C,i,j);
+									printf("\t%f",v.val[0]);
+								}
+					}
+	}
+
+	// EXTRAER LOS EIGENVALORES Y EIGENVECTORES
+
+	cvEigenVV(MATRIX_C,evects,evals,2);// Hallar los EigenVectores
+	cvSVD(MATRIX_C,Diagonal,R,RT,0); // Hallar los EigenValores, MATRIX_C=R*Diagonal*RT
+
+	//Extraer valores de los EigenVectores y EigenValores
+
+	d1=cvGet2D(Diagonal,0,0);
+	d2=cvGet2D(Diagonal,1,1);
+	r1=cvGet2D(R,0,0);
+	r2=cvGet2D(R,0,1);
+
+	//Hallar los semiejes y la orientación
+
+	*semiejemayor=2*(sqrt(d1.val[0]));
+	*semiejemenor=2*(sqrt(d2.val[0]));
+	*tita=atan(r2.val[0]/r1.val[0]);
+
+	// Dibujar elipse
+
+	//Eliminamos el blob
+
+	for (int y = rect.y; y< rect.y + rect.height; y++){
+				uchar* ptr1 = (uchar*) ( FGTemp->imageData + y*FGTemp->widthStep + 1*rect.x);
+				for (int x= 0; x<rect.width; x++){
+					ptr1[x] = 0;
+				}
+	}
+
+	// Obtenemos el centro de la elipse
+
+	cvResetImageROI( FGTemp ); // para evitar el offset de find contours
+	cvResetImageROI( FGMask);
+
+
+	*centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
+			cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
+
+	// Obtenemos los ejes y la orientacion en grados
+
+	*axes = cvSize( cvRound(*semiejemayor) , cvRound(*semiejemenor) );
+	*tita = ( (*tita) *180)/PI;
+
+}
+
+
+
+static Scalar randomColor(RNG& rng)
+{
+    int icolor = (unsigned)rng;
+    return Scalar(icolor&255, (icolor>>8)&255, (icolor>>16)&255);
 }
 
 void ReleaseDataSegm( ){

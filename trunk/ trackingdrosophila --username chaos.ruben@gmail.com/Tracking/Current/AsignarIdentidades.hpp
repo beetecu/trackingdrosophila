@@ -10,30 +10,15 @@
 
 #include "VideoTracker.hpp"
 #include "opencv2/video/tracking.hpp"
+#include "Libreria.h"
 
+void MotionTemplate( tlcde* framesBuf );
 
+///! brief Realiza la asignación de identidades. El primer parámetro es la lista
+///! el segundo parámetro es un flag que indica qué individuos asignar. 1 para los
+///! del foreground ( estado dinámico )  y 0 para los del oldforeground ( estado estático )
+tlcde* matchingIdentity( tlcde* framesBuf ,int estado );
 
-
-// various tracking parameters (in seconds)
-const double MHI_DURATION = 1;
-const double MAX_TIME_DELTA = 0.4;	//0.5
-const double MIN_TIME_DELTA = 0.05;	//0.05
-// number of cyclic frame buffer used for motion detection
-// (should, probably, depend on FPS)
-const int N = 4;
-
-// ring image buffer
-//IplImage **buf = 0;
-//int last = 0;
-
-// temporary images
-IplImage* silh; // Imagen con las siluetas
-IplImage *mhi = 0; // MHI
-IplImage *orient = 0; // orientation
-IplImage *mask = 0; // valid orientation mask
-IplImage *segmask = 0; // motion segmentation map
-
-
-void MotionTemplate( IplImage* img, IplImage* dst);
+void releaseMotionTemplate();
 
 #endif /* ASIGNARIDENTIDADES_HPP_ */

@@ -26,14 +26,29 @@ int getAVIFrames(char * fname) {
 	return frames;
 }
 
-void invertirBW( IplImage* Imagen ){
-	for( int y=0;  y< Imagen->height ; y++){
-			uchar* ptr = (uchar*) ( Imagen->imageData + y*Imagen->widthStep);
+void invertirBW( IplImage* Imagen )
+{
+	//añadir para invertir con  roi
+	if (Imagen->roi){
+		for( int y=Imagen->roi->yOffset;  y< Imagen->roi->yOffset + Imagen->roi->height ; y++){
 
-			for (int x = 0; x<Imagen->width; x++) {
-				if (ptr[x] == 255) ptr[x] = 0;
-				else ptr[x] = 255;
-			}
+				uchar* ptr = (uchar*) ( Imagen->imageData + y*Imagen->widthStep + 1*Imagen->roi->xOffset);
+
+				for (int x = 0; x<Imagen->roi->width; x++) {
+					if (ptr[x] == 255) ptr[x] = 0;
+					else ptr[x] = 255;
+				}
+		}
+	}
+	else{
+		for( int y=0;  y< Imagen->height ; y++){
+				uchar* ptr = (uchar*) ( Imagen->imageData + y*Imagen->widthStep);
+
+				for (int x = 0; x<Imagen->width; x++) {
+					if (ptr[x] == 255) ptr[x] = 0;
+					else ptr[x] = 255;
+				}
+		}
 	}
 }
 // Recibe la imagen del video y devuelve la imagen en un canal de niveles
