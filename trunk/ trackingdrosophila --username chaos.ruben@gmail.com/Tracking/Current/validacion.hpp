@@ -12,6 +12,7 @@
 #include "segmentacion.hpp"
 #include "BGModel.h"
 
+
 /// Parametros validación
 typedef struct {
 	int UmbralProb; /// establece cuantas desviaciones tipicas se puede alejar el area del area media sin que se considere inválido el blob
@@ -21,7 +22,9 @@ typedef struct {
 	float PxiMin; /// Probabilidad mínima admisible a partir de la cual se deja de aumentar MaxLowTH
 	int MaxDecLTHIters; //// Número de iteraciones en las que se incrementará el umbral bajo para aumentar P(xi)
 	int MinLowTH; /// Mínimo valor que alcanzará el umbral bajo para aumentar P(xi)
-	float UmbralDes;
+	float Umbral_H;
+	float Umbral_L;
+	float PxiMax;
 
 }ValParams;
 
