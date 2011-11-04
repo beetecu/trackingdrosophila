@@ -237,6 +237,8 @@ tlcde* Validacion(IplImage *Imagen,
 
 	Px = CalcProbTotal(FLIE_TEMP,SH,VParams,FlyData); // Calcular la probabilidad de todas las mosca
 
+	maskTemp=FrameData->FG;
+
 
 // Recorremos los blobs uno por uno y los validamos.
 // bucle for desde el primero hasta el ultimo individuo de la estructura mosca del frame actual
@@ -248,6 +250,8 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 	Temp=FLIE_TEMP;
+	Besthres=0;
+	BestPxi=0;
 
 	// Almacenar la Roi del blob visitado antes de ser validado
 
@@ -259,14 +263,17 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 	FlyData->flag_def = false; // Flag que indica si el blob deparece al validar en caso de Defecto
 
 	Pxi = CalcProbMosca( SH ,FlyData);
+	BestPxi=Pxi;
 	Circul = CalcCircul( FlyData );
 	Exceso = CalcProbUmbral( SH, VParams,FlyData); // Calcular los umbrales de la validación
+
+
 
 
 				// Comprobamos si no alcanza la probabilidad umbral minima devido
 				// a un area superior al rango establecido
 
-				if( Exceso && Pxi < VParams->Umbral_L ){
+				if( Exceso ){
 
 					VParams->MaxLowTH = ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
 					VParams->PxiMin=VParams->Umbral_L;// Establecer el Umbral Bajo
@@ -298,7 +305,9 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 						// Segmentar
-						FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,NULL);
+						FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
+
+						cvCopy(mask,FrameData->FG);
 
 
 //						if (SHOW_VALIDATION_DATA == 1) {
@@ -416,19 +425,20 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 						else{
 
-							FLIE_TEMP->actual->dato=FlyData;
-							insertar(FlyData,PxList); //Insertar en lista para calcular la Px final
+//							FLIE_TEMP->actual->dato=FlyData;
+//							insertar(FlyData,PxList); //Insertar en lista para calcular la Px final
 
-//							BGParams->LOW_THRESHOLD=Besthres;
-//							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyDataTemp);
-//							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,NULL);
-//							FlyData=(STFly*)obtener(0,FrameData->Flies);
-//							Pxi = CalcProbMosca( SH , FlyData );
-//							FLIE->actual->dato=FlyData;
-//							insertar(FlyData,PxList);
+							BGParams->LOW_THRESHOLD=Besthres;
+							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,maskTemp,BGParams, FlyDataTemp);
+							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
+							FlyData=(STFly*)obtener(0,FrameData->Flies);
+							Pxi = CalcProbMosca( SH , FlyData );
+							FLIE->actual->dato=FlyData;
+							insertar(FlyData,PxList);
 						}
 
-
+						BGParams=NULL;// Inicializar LOW_THRESHOLD y demas valores
+						setBGModParams( &BGParams);
 
 			} //Fin Exceso
 
@@ -445,19 +455,21 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 					setBGModParams( &BGParams);
 
 
-					while(!Exceso && BGParams->LOW_THRESHOLD >0 && Pxi > VParams->Umbral_H){
-
+//					while(!Exceso && BGParams->LOW_THRESHOLD >0 && Pxi > VParams->Umbral_H){
+					while(!Exceso && BGParams->LOW_THRESHOLD >0){
 
 					// Incrementar umbral
 					BGParams->LOW_THRESHOLD -=1;
 
 
 					// Resta de fondo
-					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyDataTemp);
+					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyData->Roi);
 
 
 					// Segmentar
-					FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,NULL);
+					FrameData->Flies = segmentacion(Imagen, FrameData, FlyData->Roi,mask);
+
+					cvCopy(mask,FrameData->FG);
 
 					FlyData=(STFly *)obtener(0, FrameData->Flies);
 
@@ -507,10 +519,11 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 		Pxi = CalcProbMosca( SH , FlyData );
 
-		if(!FlyData->flag_seg && !FlyData->flag_def){ // Si el blob NO fue segmentado y cumple con las condiciones se añade a FLIE_LIST
+		if(!FlyData->flag_seg && !FlyData->flag_def && Pxi > Px){ // Si el blob NO fue segmentado y cumple con las condiciones se añade a FLIE_LIST
 
 			insertar(FlyData,FLIE_LIST);
-		}
+
+		} // Si el blob SI fue segmentado no se añade a FLIE_LIST
 
 	} // Fin del for
 
