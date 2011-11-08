@@ -12,13 +12,42 @@
 #include "opencv2/video/tracking.hpp"
 #include "Libreria.h"
 
-void MotionTemplate( tlcde* framesBuf );
+
+
+typedef struct{
+	int etiqueta;
+	CvScalar color;
+}Identity;
+
+void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 
 ///! brief Realiza la asignación de identidades. El primer parámetro es la lista
 ///! el segundo parámetro es un flag que indica qué individuos asignar. 1 para los
 ///! del foreground ( estado dinámico )  y 0 para los del oldforeground ( estado estático )
-tlcde* matchingIdentity( tlcde* framesBuf ,int estado );
+STFly* matchingIdentity( tlcde* framesBuf ,tlcde* Etiquetas, CvRect MotionRoi );
+
+void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
+
+void CrearIdentidades(tlcde* Etiquetas);
+
+static Scalar randomColor(RNG& rng);
+
+void liberarIdentidades(tlcde* lista);
+
+void asignarNuevaId( STFly* fly, tlcde* identities);
+
+void dejarId( STFly* fly, tlcde* identities );
+
+void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids = NULL );
+
+void SetTita( STFly* flyActual,STFly* flyAnterior );
 
 void releaseMotionTemplate();
+
+void TrackbarSliderMHI(  int pos );
+
+void TrackbarSliderDMin(  int pos );
+
+void TrackbarSliderDMax(  int pos );
 
 #endif /* ASIGNARIDENTIDADES_HPP_ */

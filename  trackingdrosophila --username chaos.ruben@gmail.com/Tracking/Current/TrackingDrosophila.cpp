@@ -359,23 +359,28 @@ void AnalisisEstadistico(){
 }
 
 void FinalizarTracking(){
-	// completar. tras añadir buffers liberar memoria de todos los elementos (no solo del puntero actual)
+
+	//liberar buffer
+	if(FramesBuf) {
+		liberarBuffer( FramesBuf );
+		free( FramesBuf);
+	}
 	//liberar estructuras
 	DeallocateBGM( BGModel );
-	ReleaseDataSegm( );
-	DeallocateTrackIm();
-	if(FramesBuf) {liberarBuffer( FramesBuf );free( FramesBuf);}
-	//liberar listas
-	if(Flies) free( Flies );
+	if( FrameData ) liberarSTFrame( FrameData);
 	if(Fly) free(Fly);
 	if( Shape) free(Shape);
+	// liberar imagenes y datos de segmentacion
+	ReleaseDataSegm( );
+	//liberar listas
+	if(Flies) free( Flies );
 
-
-//	DeallocateTempImages();
+	// liberar imagenes y datos de tracking
+	ReleaseDataTrack();
 
 	cvReleaseCapture(&g_capture);
 
-	DestroyWindows( );
+	cvDestroyAllWindows( );
 }
 
 void InitialBGModelParams( BGModelParams* Params){
@@ -410,7 +415,6 @@ void InitialBGModelParams( BGModelParams* Params){
 }
 
 void onTrackbarSlider(  int pos ){
-
 	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_FRAMES, pos );
 }
 

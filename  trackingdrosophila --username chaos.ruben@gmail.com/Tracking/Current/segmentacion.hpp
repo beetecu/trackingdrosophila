@@ -19,7 +19,7 @@ void CreateDataSegm( IplImage* Brillo );
 void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 		float *semiejemenor,float* semiejemayor,CvSize* axes,CvPoint* centro,float* tita );
 
-static Scalar randomColor(RNG& rng);
+
 
 void ReleaseDataSegm( );
 

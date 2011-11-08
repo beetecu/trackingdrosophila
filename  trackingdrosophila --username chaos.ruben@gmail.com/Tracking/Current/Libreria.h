@@ -96,6 +96,8 @@ void insertar(void *e, tlcde *lcde);
 // apuntado por actual y lo elimina de la lista.
 void *borrar(tlcde *lcde);
 
+void *borrarEl(int i,tlcde *lcde);
+
 // Avanzar la posición actual al siguiente elemento.
 void irAlSiguiente(tlcde *lcde);
 
@@ -139,6 +141,8 @@ void liberarListaFlies(tlcde *lista);
 int liberarPrimero(tlcde *FramesBuf );
 
 void liberarBuffer(tlcde *FramesBuf);
+
+void liberarSTFrame( STFrame* frameData );
 
 #endif //_BUFFER_
 

@@ -1,6 +1,8 @@
 /*
  * Tracking.cpp
  *
+ *	Hasta aquí el algoritmo trabaja solo con información espacial
+ *	En este punto añadimos la información temporal
  *  Created on: 20/10/2011
  *      Author: chao
  */
@@ -12,6 +14,8 @@
 	IplImage *ImagenA;
 	IplImage *ImagenB;
 
+	tlcde* Identities = NULL;
+
 void Tracking( tlcde* framesBuf ){
 
 	struct timeval ti, tf, tif, tff; // iniciamos la estructura
@@ -20,19 +24,26 @@ void Tracking( tlcde* framesBuf ){
 	STFly* flyData = NULL;
 	static int workPos = -1; // punto de trabajo en el buffer
 
+
 	// Inicializar
+	// creamos una cola Lifo de identidades
+	if(!Identities) Identities = ( tlcde * )malloc( sizeof(tlcde ));
+	iniciarLcde( Identities );
+	CrearIdentidades(Identities);
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 
 	AllocateTrackImages( frameData->FG );
 
 	hungarian_t prob;
 
-	/// resolvemos la ambiguedad en la orientación usando una plantilla de movimiento
-	/// y hacemos una primera asignación de identidad.
-
+	/// resolvemos la ambiguedad en la orientación y hacemos una primera
+	/// asignación de identidad mediante una plantilla de movimiento.
+	/// MotionTemplate trabaja al final del buffer( el número de frames
+	/// dependerá de MHI_DURATION ).
+	/// Cada objeto detectado se etiqueta como un nuevo elemento
 	cvZero(frameData->ImMotion);
 		if ( SHOW_MOTION_TEMPLATE == 1){
-			MotionTemplate( framesBuf );//frameData->FG, frameData->ImMotion
+			MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
 	}
 
 	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
@@ -50,12 +61,18 @@ void Tracking( tlcde* framesBuf ){
 	gettimeofday(&ti, NULL);
 
 	///////   FASE DE CORRECCIÓN  /////////
+	// esta etapa se encarga de hacer la asignación de identidad definitiva
+	// recibe información temporal de los últimos 48 frames ( Longitud_buffer
+	// - frame_Inicio - frame_final - (frame_final-1) que son aprox 2 seg )
+	//
 
-	//Reasignamos idendidades
+	//Reasignamos idendidades.
+	// enlazamos objetos etiquetados como nuevos con los que estaban parados
+
 
 	if (workPos == PRIMERO) return;
 
-	framesBuf = matchingIdentity( framesBuf , 0 );
+//	framesBuf = matchingIdentity( framesBuf , 0 );
 
 	if (SHOW_OPTICAL_FLOW == 1){
 		irAlFinal( framesBuf);
@@ -79,7 +96,7 @@ void Tracking( tlcde* framesBuf ){
 
 	////////// FASE DE PREDICCIÓN /////////
 
-	// aplicamos kalman
+	// aplicamos kalman a objetos en movimiento
 
 	irAlFinal( framesBuf );
 }
@@ -112,7 +129,9 @@ void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation 
 		cvZero( ImagenB );
 
 }
-void DeallocateTrackIm(){
+void ReleaseDataTrack(){
+		liberarIdentidades( Identities );
+		if (Identities) free( Identities) ;
 		cvReleaseImage( &ImOpFlowX);
     		cvReleaseImage( &ImOpFlowY);
     		cvReleaseImage( &ImagenA);

@@ -10,8 +10,12 @@
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 
 	STFrame* frameData;
+	tlcde* flies;
+	STFly* fly;
+
 	irAl( pos, frameBuf );
 	frameData = (STFrame*)obtenerActual(frameBuf);
+	flies = frameData->Flies;
 	// si no se ha llenado el buffer y se pide visualizar el primero, esperar a llenar buffer.
 	if ( ( frameBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH-1) && pos == 0 ){
 		VerEstadoBuffer(frameData->Frame, frameBuf->numeroDeElementos );
@@ -34,6 +38,15 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 //			CV_RGB(255,0,0),2);
 
 	//Dibujamos los blobs
+	int i = 0;
+	while( i <  flies->numeroDeElementos ){
+		fly = (STFly*)obtener(i, flies);
+		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+		cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+		cvLine( frameData->Frame, fly->posicion, cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion)),
+						cvRound( fly->posicion.y + 1.5*fly->a*sin(fly->orientacion))), fly->Color, 3, CV_AA, 0 );
+		i++;
+	}
 
 //	ShowStatDataFr( frameData->Frame );
 	cvShowImage( "Visualización", frameData->Frame );

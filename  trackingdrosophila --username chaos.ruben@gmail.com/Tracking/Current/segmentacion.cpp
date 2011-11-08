@@ -88,7 +88,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		float areaElipse;
 		areaFG = cvContourArea(c);
 		/// Parámetros elipse
-		RNG rng(0xFFFFFFFF); // para generar un color aleatorio
+
 		float semiejemenor;
 		float semiejemayor;
 		CvSize axes;
@@ -112,12 +112,15 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 
 		flyData = ( STFly *) malloc( sizeof( STFly));
 		if ( !flyData ) {error(4);	exit(1);}
-		flyData->etiqueta = id  ;  /// Identificación del blob
-		flyData->Color = randomColor(rng); /// Color para dibujar el blob
+		flyData->etiqueta = 0;//id  ;  /// Identificación del blob
+		flyData->Color = cvScalar( 0,0,0,0); /// Color para dibujar el blob
 		flyData-> posicion = centro; /// Posición del blob
 		flyData->a = semiejemayor;
 		flyData->b = semiejemenor; /// semiejes de la elipse
 		flyData->orientacion = tita; /// Almacena la orientación
+		flyData->CountState = 0;
+		flyData->direccion = 0;
+		flyData->dstTotal = 0;
 //		flyData->perimetro = cv::arcLength(contorno,0);
 		flyData->Roi = rect;
 		flyData->Estado = 1;  /// Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
@@ -139,7 +142,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 				cvPoint( rect.x + rect.width , rect.y + rect.height ),
 				cvScalar(255,0,0,0),
 				1);
-//		cvShowImage("Foreground", FGTemp );
+//		cvShowImage("Foreground", FGMask );
 //		cvWaitKey(0);
 		cvSetImageROI( FGTemp, Roi );
 		cvSetImageROI( FGMask, Roi );
@@ -367,11 +370,7 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 
 
 
-static Scalar randomColor(RNG& rng)
-{
-    int icolor = (unsigned)rng;
-    return Scalar(icolor&255, (icolor>>8)&255, (icolor>>16)&255);
-}
+
 
 void ReleaseDataSegm( ){
 	cvReleaseImage( &FGTemp);
