@@ -20,6 +20,6 @@ void Tracking( tlcde* frammeBuf );
 
 void AllocateTrackImages( IplImage *I );
 
-void DeallocateTrackIm();
+void ReleaseDataTrack();
 
 #endif /* TRACKING_HPP_ */

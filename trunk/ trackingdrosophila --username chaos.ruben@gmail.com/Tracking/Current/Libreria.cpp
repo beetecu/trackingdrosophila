@@ -242,6 +242,7 @@ void *borrar(tlcde *lcde)
     {
       datos = ultimo->dato;
       free(ultimo);
+      datos = NULL;
       ultimo = actual = NULL;
       numeroDeElementos = 0;
       posicion = -1;
@@ -355,6 +356,11 @@ void anyadirAlFinal(void *e, tlcde *lcde ){
 	insertar( e, lcde);
 }
 
+void anyadirAlPrincipio(void *e, tlcde *lcde ){
+	irAlPrincipio( lcde );
+	insertar( e, lcde);
+}
+
 ///////////////////// Interfaz para gestionar buffer //////////////////////////////
 void mostrarListaFlies(tlcde *lista)
 {
@@ -388,6 +394,7 @@ void liberarListaFlies(tlcde *lista)
   while (flydata)
   {
     free(flydata); // borrar el área de datos del elemento eliminado
+    flydata = NULL;
     flydata = (STFly *)borrar(lista);
   }
 }
@@ -420,14 +427,26 @@ int liberarPrimero(tlcde *FramesBuf ){
 	frameData = (STFrame *)borrar( FramesBuf );
 	if( !frameData ) {
 		printf( "Se ha borrado el último elemento.Buffer vacio" );
-		free( frameData );
+		frameData = NULL;
 		return 0;
 	}
 	else{
 		free( frameData );
+		frameData = NULL;
 		irAl(i - 1, FramesBuf);
 		return 1;
 	}
+}
+
+void liberarSTFrame( STFrame* frameData ){
+	liberarListaFlies( frameData->Flies);
+	free( frameData->Flies );
+	cvReleaseImage(&frameData->BGModel);
+	cvReleaseImage(&frameData->FG);
+	cvReleaseImage(&frameData->IDesv);
+	cvReleaseImage(&frameData->ImMotion);
+	cvReleaseImage(&frameData->OldFG);
+    free(frameData); // borrar el área de datos del elemento eliminado
 }
 
 void liberarBuffer(tlcde *FramesBuf)
@@ -522,4 +541,6 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	irAl( posicion, framesBuf);
 	return 1;
 }
+
+
 

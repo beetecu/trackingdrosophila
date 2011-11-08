@@ -97,17 +97,20 @@ typedef struct
 		CvPoint posicion; /// Posición del blob
 		float a,b; /// semiejes de la elipse
 		float orientacion; /// Almacena la orientación
+		float direccion; ///almacena la dirección del desplazamiento
+		float dstTotal; /// almacena la distancia total recorrida hasta el momento
 		double perimetro;
 		CvRect Roi; /// region de interes para el blob
 		bool Estado;  /// Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
 		bool flag_seg; // Indica si e blog a sido segmentado
 		bool flag_def; // indica si el blob ha  desaparecido durante el analisis del defecto
+		int CountState; // Si alcanza un valor umbral consideraremos que el blob permanece estático y estado = 0;
 		int num_frame; /// Almacena el numero de frame (tiempo)
 		bool salto;	/// Indica que la mosca ha saltado
 		bool Grupo; /// Indica que la mosca permanece estática en un grupo de 2 o más moscas.
 		int Zona; /// Si se seleccionan zonas de interes en el plato,
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
-		bool flag_seg;
+
 	}STFly;
 
 /// Estructura para almacenar el modelo de fondo estático
