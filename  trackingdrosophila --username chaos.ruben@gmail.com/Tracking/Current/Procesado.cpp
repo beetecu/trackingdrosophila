@@ -24,6 +24,10 @@
 
 #include "Procesado.hpp"
 
+BGModelParams *BGPrParams = NULL;
+IplImage *Imagen = NULL; // imagen preprocesada
+IplImage *FGMask = NULL; // mascara del foreground
+
 void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape ){
 
 	extern double NumFrame;
@@ -33,7 +37,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 	int fr = 0;
 	int BGUpdate = 1;
 	int UpdateCount = 0;
-	BGModelParams *BGParams = NULL;
+	BGModelParams *BGPrParams = NULL;
 
 	STFrame* frameData;
 
@@ -54,8 +58,8 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 
 	static int first = 1;
 	gettimeofday(&ti, NULL);
-	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
-	if ( !BGParams ) {error(4);exit(-1 );}
+	BGPrParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
+	if ( !BGPrParams ) {error(4);exit(-1 );}
 
 	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 
@@ -99,9 +103,9 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 		//// BACKGROUND UPDATE
 		// Actualización del fondo original
 		// establecer parametros
-		putBGModelParams( BGParams);
+		putBGModelParams( BGPrParams);
 
-		UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGParams, BGModel->DataFROI, frameData->FG );
+		UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGPrParams, BGModel->DataFROI, frameData->FG );
 
 		gettimeofday(&tf, NULL);
 		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -111,7 +115,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 		gettimeofday(&ti, NULL);
 
-		BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGParams, BGModel->DataFROI);
+		BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGPrParams, BGModel->DataFROI);
 
 		gettimeofday(&tf, NULL);
 		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -157,7 +161,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 
 	}
 	// Una vez validada añadimos ( al final ) las estructuras a las listas (buffers).
-	free(BGParams);
+	free(BGPrParams);
 	cvReleaseImage( &BGTemp );
 	cvReleaseImage( &DETemp );
 	cvReleaseImage( &Imagen );
@@ -179,26 +183,29 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 	int fr = 0;
 	int BGUpdate = 1;
 	int UpdateCount = 0;
-	BGModelParams *BGParams = NULL;
+
 
 	STFrame* frameData = NULL;
 
 	tlcde* FliesFG = NULL;
 	//tlcde* FliesOldFG = NULL;
 
-	IplImage *Imagen; // imagen preprocesada
-	IplImage *FGMask; // mascara del foreground
+
 
 	CvSize size = cvGetSize( frame );
 
-	Imagen = cvCreateImage( size ,8,1);
-	FGMask = cvCreateImage( size, 8, 1);
+	gettimeofday(&ti, NULL);
+
+	if(!Imagen) {
+		Imagen = cvCreateImage( size ,8,1);
+		FGMask = cvCreateImage( size, 8, 1);
+	}
 	cvZero( Imagen );
 	cvZero( FGMask );
 
-	gettimeofday(&ti, NULL);
-	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
-	if ( !BGParams ) {error(4);exit(-1 );}
+
+	if( !BGPrParams ) BGPrParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
+	if ( !BGPrParams ) {error(4);exit(-1 );}
 
 	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 
@@ -231,9 +238,9 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 	//// BACKGROUND UPDATE
 	// Actualización del fondo
 	// establecer parametros
-	putBGModelParams( BGParams);
+	putBGModelParams( BGPrParams);
 //	cvUpdateBGStatModel( tmp_frame, bg_model, update_bg_model ? -1 : 0 );
-	UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGParams, BGModel->DataFROI, frameData->FG );
+	UpdateBGModel( Imagen, frameData->BGModel,frameData->IDesv, BGPrParams, BGModel->DataFROI, frameData->FG );
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -243,7 +250,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 	/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 	gettimeofday(&ti, NULL);
 
-	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGParams, BGModel->DataFROI);
+	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesv, frameData->FG ,BGPrParams, BGModel->DataFROI);
 
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
@@ -278,10 +285,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 							(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g ms\n", tiempoParcial);
 
-	// Liberar memoria
-	free(BGParams);
-	cvReleaseImage( &Imagen );
-	cvReleaseImage( &FGMask );
+
 }
 
 //void Procesado3( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape ){
@@ -293,7 +297,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 //	int fr = 0;
 //	int BGUpdate = 1;
 //	int UpdateCount = 0;
-//	BGModelParams *BGParams = NULL;
+//	BGModelParams *BGPrParams = NULL;
 //
 //	STFrame* frameData = NULL;
 //
@@ -311,8 +315,8 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 //	cvZero( FGMask );
 //
 //	gettimeofday(&ti, NULL);
-//	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
-//	if ( !BGParams ) {error(4);exit(-1 );}
+//	BGPrParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
+//	if ( !BGPrParams ) {error(4);exit(-1 );}
 //
 //	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 //
@@ -376,7 +380,7 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 //
 //	// Liberar memoria
 //
-//	free(BGParams);
+//	free(BGPrParams);
 //	cvReleaseImage( &Imagen );
 //	cvReleaseImage( &FGMask );
 //}
@@ -428,4 +432,10 @@ void putBGModelParams( BGModelParams* Params){
 		 Params->HIGHT_THRESHOLD = 20;
 		 Params->LOW_THRESHOLD = 10;
 	 }
+}
+
+void liberarDataProcess(){
+	free(BGPrParams);
+	cvReleaseImage( &Imagen );
+	cvReleaseImage( &FGMask );
 }

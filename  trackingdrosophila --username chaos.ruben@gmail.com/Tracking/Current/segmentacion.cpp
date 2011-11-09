@@ -22,7 +22,6 @@
 	IplImage *IDif = 0;
 	IplImage *IDifm = 0;
 	IplImage *pesos = 0;
-	IplImage *FGMask = 0;
 	CvMat *vector_u; // Matriz de medias
 	CvMat *vector_resta; // (pi-u)
 	CvMat *matrix_mul;// Matriz (pi-u)(pi-u)T
@@ -53,6 +52,8 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	cvCopy(FrameData->FG,FGTemp);
 
 	establecerROIS( FrameData, Brillo, Roi );
+
+	cvZero( Mask);
 
 	// Distancia normalizada de cada pixel a su modelo de fondo.
 //		cvShowImage("Foreground",FGTemp);
@@ -87,37 +88,32 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		float areaFG;
 		float areaElipse;
 		areaFG = cvContourArea(c);
-		/// Parámetros elipse
 
-		float semiejemenor;
-		float semiejemayor;
-		CvSize axes;
-		CvPoint centro;
-		float tita; // orientación
+		flyData = ( STFly *) malloc( sizeof( STFly));
+		if ( !flyData ) {error(4);	exit(1);}
 
 		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
 		// realiza el ajuste a una elipse de los pesos del rectangulo que coincidan con la máscara
-		ellipseFit( rect, pesos, FrameData->FG, &semiejemenor,&semiejemayor,&axes,&centro,&tita );
+		ellipseFit( rect, pesos, FrameData->FG,
+				&flyData->b,  // semieje menor
+				&flyData->a,  // senueje mayor
+				&flyData->posicion, // centro elipse
+				&flyData->orientacion ); // orientación en grados 0-360
 
-		areaElipse = PI*semiejemenor*semiejemayor;
+		areaElipse = PI*flyData->b*flyData->a;
 		err = abs(areaElipse - areaFG);
 
 		if (SHOW_SEGMENTATION_DATA == 1){
 			printf("\n AreaElipse = %f  Area FG = %f  Error del ajuste = %f", areaElipse,areaFG,err);
 			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f ",
-					2*semiejemayor,
-					2*semiejemenor,
-					tita);
+					2*flyData->a,
+					2*flyData->b,
+					flyData->orientacion);
 		}
 
-		flyData = ( STFly *) malloc( sizeof( STFly));
-		if ( !flyData ) {error(4);	exit(1);}
 		flyData->etiqueta = 0;//id  ;  /// Identificación del blob
 		flyData->Color = cvScalar( 0,0,0,0); /// Color para dibujar el blob
-		flyData-> posicion = centro; /// Posición del blob
-		flyData->a = semiejemayor;
-		flyData->b = semiejemenor; /// semiejes de la elipse
-		flyData->orientacion = tita; /// Almacena la orientación
+
 		flyData->CountState = 0;
 		flyData->direccion = 0;
 		flyData->dstTotal = 0;
@@ -133,50 +129,14 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		printf("\n EJE A : %f\t EJE B: %f\t ORIENTACION: %f",flyData->a,flyData->b,flyData->orientacion);
 		}
 
-		cvEllipse( FGTemp, centro, axes, tita, 0, 360, cvScalar( 255,0,0,0), 1, 8);
+		if( Mask != NULL ){
+		 // para evitar el offset de find contours
+		CvSize axes = cvSize( cvRound(flyData->a) , cvRound(flyData->b) );
+		cvEllipse( Mask, flyData->posicion , axes, flyData->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 
-		cvEllipse( FGMask, centro , axes, tita, 0, 360, cvScalar( 255,0,0,0), -1, 8);
-		// Dibujar Roi para pruebas
-		cvRectangle( FGTemp,
-				cvPoint( rect.x, rect.y),
-				cvPoint( rect.x + rect.width , rect.y + rect.height ),
-				cvScalar(255,0,0,0),
-				1);
-//		cvShowImage("Foreground", FGMask );
-//		cvWaitKey(0);
-		cvSetImageROI( FGTemp, Roi );
-		cvSetImageROI( FGMask, Roi );
+		}
 
 	}// Fin de contornos
-
-
-// PRUEBAS visualizacion
-//	cvShowImage("Foreground", FGTemp);
-//			cvWaitKey(0);
-
-	/*En la imagen resultante se ve la elipse rellenada con la imagen real
-	 * de las moscas usando como máscara el foreground
-	 */
-//	cvAdd(FGTemp,Brillo,FGTemp, FGMask);
-//
-//
-//
-//	cvResetImageROI( FGTemp);
-//	cvShowImage("Foreground", FGTemp);
-//	cvSetImageROI( FGTemp,Roi);
-////		cvWaitKey(0);
-//
-//	cvAdd ( FrameData->FG, FGTemp, FGTemp);
-//	cvShowImage("Foreground", FGTemp);
-// 			cvWaitKey(0);
-// FIN PRUEBAS
-	cvCopy( FGMask,FGTemp);
-
-	if( Mask != NULL) {
-		cvSetImageROI( Mask, Roi);
-		cvCopy( FGTemp,Mask);
-		cvResetImageROI( Mask);
-	}
 
 	resetearROIS( FrameData, Brillo );
 
@@ -197,7 +157,7 @@ void CreateDataSegm( IplImage* Brillo ){
 	        IDif=cvCreateImage(size, IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
 	        IDifm=cvCreateImage(size, IPL_DEPTH_8U, 1);// IDif en punto flotante
 	        pesos=cvCreateImage(size, IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-	        FGMask=cvCreateImage(size, IPL_DEPTH_8U, 1);// Mascara de fg con elipses rellenas
+
 
 			// CREAR MATRICES
 
@@ -221,11 +181,11 @@ void CreateDataSegm( IplImage* Brillo ){
     cvZero( IDif);
     cvZero( IDifm);
     cvZero(pesos);
-	cvZero( FGMask);
+
 }
 
 void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
-		float *semiejemenor,float* semiejemayor,CvSize* axes,CvPoint* centro,float* tita ){
+		float *semiejemenor,float* semiejemayor,CvPoint* centro,float* tita ){
 
 	CvScalar v;
 	CvScalar d1,d2; // valores de la matriz diagonal de eigen valores,semiejes de la elipse.
@@ -336,35 +296,28 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 	r2=cvGet2D(R,0,1);
 
 	//Hallar los semiejes y la orientación
-
+	// Tita valdra entre 0 y360ª
 	*semiejemayor=2*(sqrt(d1.val[0]));
 	*semiejemenor=2*(sqrt(d2.val[0]));
-	*tita=atan(r2.val[0]/r1.val[0]);
+	*tita = 0;
+	float cost = r1.val[0];
+	float sint = r2.val[0];
 
-	// Dibujar elipse
-
-	//Eliminamos el blob
-
-	for (int y = rect.y; y< rect.y + rect.height; y++){
-				uchar* ptr1 = (uchar*) ( FGTemp->imageData + y*FGTemp->widthStep + 1*rect.x);
-				for (int x= 0; x<rect.width; x++){
-					ptr1[x] = 0;
-				}
+	if(( sint == 0)&&( cost == 0)) *tita = 0;
+	else{
+		*tita=atan2( sint,cost );
+		*tita = *tita * 180 / PI;
+		if (*tita < 0 ) *tita = *tita + 360;
 	}
 
 	// Obtenemos el centro de la elipse
-
-	cvResetImageROI( FGTemp ); // para evitar el offset de find contours
-	cvResetImageROI( FGMask);
-
 
 	*centro = cvPoint( cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 0, 0 )) ),
 			cvRound( *((float*)CV_MAT_ELEM_PTR( *vector_u, 1, 0 )) ) );
 
 	// Obtenemos los ejes y la orientacion en grados
 
-	*axes = cvSize( cvRound(*semiejemayor) , cvRound(*semiejemenor) );
-	*tita = ( (*tita) *180)/PI;
+
 
 }
 
@@ -377,7 +330,7 @@ void ReleaseDataSegm( ){
 	cvReleaseImage(&IDif);
 	cvReleaseImage(&IDifm);
 	cvReleaseImage(&pesos);
-	cvReleaseImage(&FGMask);
+
 	cvReleaseMemStorage( &storage);
 
 	cvReleaseMat(&vector_resta);
@@ -401,7 +354,7 @@ void establecerROIS( STFrame* FrameData, IplImage* Brillo,CvRect Roi ){
 	cvSetImageROI( IDif, Roi );
 	cvSetImageROI( IDifm, Roi );
 	cvSetImageROI( pesos, Roi );
-	cvSetImageROI( FGMask, Roi );
+
 
 }
 
@@ -415,5 +368,5 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 	cvResetImageROI( IDif );
 	cvResetImageROI( IDifm);
 	cvResetImageROI( pesos );
-	cvResetImageROI( FGMask);
+
 }

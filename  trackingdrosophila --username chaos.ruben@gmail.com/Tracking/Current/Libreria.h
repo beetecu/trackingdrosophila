@@ -134,7 +134,7 @@ void anyadirAlFinal(void *e, tlcde *lcde );
 #ifndef _BUFFER_
 #define _BUFFER_
 
-void mostrarListaFlies(tlcde *lista);
+void mostrarListaFlies(int pos,tlcde *lista);
 
 void liberarListaFlies(tlcde *lista);
 

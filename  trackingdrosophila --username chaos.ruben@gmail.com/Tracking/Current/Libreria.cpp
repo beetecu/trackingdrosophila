@@ -362,23 +362,59 @@ void anyadirAlPrincipio(void *e, tlcde *lcde ){
 }
 
 ///////////////////// Interfaz para gestionar buffer //////////////////////////////
-void mostrarListaFlies(tlcde *lista)
+void mostrarListaFlies(int pos,tlcde *lista)
 {
-		// Mostrar todos los elementos de la lista
-	int i = 0, tam = lista->numeroDeElementos;
+	int n;
+	tlcde* flies;
+	STFrame* frameData;
+	int pos_act;
+	pos_act = lista->posicion;
+
+	if (pos >= lista->numeroDeElementos || pos < 0) return;
+	  irAlPrincipio(lista);
+	  // Posicionarse en el frame pos
+	for (n = 0; n < pos; n++) irAlSiguiente(lista);
+	// obtenemos la lista de flies
+	frameData = (STFrame*)obtenerActual( lista );
+	flies = frameData->Flies;
+	// Mostrar todos los elementos de la lista
+	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	while( i < tam ){
-		flydata = (STFly*)obtener(i, lista);
-		printf( "etiqueta %d\nColor\nposicion\n a %0.2f b %0.2f\norientacion %0.1f\nperimetro\nStatic %d\n num_frame %d\n;",
-				flydata->etiqueta,
-				flydata->a,
-				flydata->b,
-				flydata->orientacion,
-				flydata->Estado,
-				flydata->num_frame);
-		i++;
+	for(int j = 0; j < 5; j++){
+		while( i < tam ){
+			flydata = (STFly*)obtener(i, flies);
+
+			if (j == 0){
+				if (i == 0) printf( "\netiquetas");
+				printf( "\t%d",flydata->etiqueta);
+			}
+			if( j == 1 ){
+				if (i == 0) printf( "\nPosiciones");
+				int x,y;
+				x = flydata->posicion.x;
+				y = flydata->posicion.y;
+				printf( "\t%d %d",x,y);
+			}
+			if( j == 2 ){
+				if (i == 0) printf( "\nOrientacion");
+				printf( "\t%0.1f",flydata->orientacion);
+			}
+			if( j == 3 ){
+				if (i == 0) printf( "\nEstado\t");
+				printf( "\t%d",flydata->Estado);
+			}
+			if( j == 4 ){
+				if (i == 0) printf( "\nNumFrame");
+				printf( "\t%d",flydata->num_frame);
+			}
+			i++;
+		}
+		i=0;
 	}
 	if (tam = 0 ) printf(" Lista vacía\n");
+	// regresamos lista al punto en que estaba antes de llamar a la funcion de mostrar lista.
+	irAlPrincipio(lista);
+	for (n = 0; n < pos_act; n++) irAlSiguiente(lista);
 }
 
 void liberarListaFlies(tlcde *lista)

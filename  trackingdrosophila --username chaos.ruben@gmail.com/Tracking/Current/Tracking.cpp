@@ -27,9 +27,13 @@ void Tracking( tlcde* framesBuf ){
 
 	// Inicializar
 	// creamos una cola Lifo de identidades
-	if(!Identities) Identities = ( tlcde * )malloc( sizeof(tlcde ));
-	iniciarLcde( Identities );
-	CrearIdentidades(Identities);
+	if(!Identities) {
+		Identities = ( tlcde * )malloc( sizeof(tlcde ));
+		iniciarLcde( Identities );
+		CrearIdentidades(Identities);
+		mostrarIds( Identities );
+	}
+	irAlFinal( framesBuf );
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 
 	AllocateTrackImages( frameData->FG );
@@ -43,6 +47,7 @@ void Tracking( tlcde* framesBuf ){
 	/// Cada objeto detectado se etiqueta como un nuevo elemento
 	cvZero(frameData->ImMotion);
 		if ( SHOW_MOTION_TEMPLATE == 1){
+
 			MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
 	}
 
@@ -92,7 +97,7 @@ void Tracking( tlcde* framesBuf ){
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 											(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf("Tracking: %5.4g ms\n", tiempoParcial);
+	printf("\n\nTracking: %5.4g ms\n", tiempoParcial);
 
 	////////// FASE DE PREDICCIÓN /////////
 
