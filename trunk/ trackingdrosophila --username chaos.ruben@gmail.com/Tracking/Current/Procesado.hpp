@@ -25,4 +25,6 @@ void InitNewFrameData(IplImage* I, STFrame *FrameData );
 
 void putBGModelParams( BGModelParams* Params);
 
+void liberarDataProcess();
+
 #endif /* PROCESADO_HPP_ */

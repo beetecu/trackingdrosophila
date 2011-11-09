@@ -113,6 +113,9 @@ int main(int argc, char* argv[]) {
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		NumFrame = cvGetCaptureProperty( g_capture, 1);
 
+		if(NumFrame == 1443 ){
+			printf("Hola");
+		}
 		gettimeofday(&tif, NULL);
 
 		//////////  PROCESAR      ////////////
@@ -131,7 +134,7 @@ int main(int argc, char* argv[]) {
 		if( FramesBuf->numeroDeElementos == STRUCT_BUFFER_LENGTH){
 			// obtener primero
 			FrameData = (STFrame*) FramesBuf->ultimo->siguiente->dato;
-			mostrarListaFlies(FrameData->Flies);// del ultimo elemento
+			//mostrarListaFlies(FramesBuf->numeroDeElementos-1,FramesBuf);// del ultimo elemento
 			// calculo de datos estadísticos simples en tiempo de ejecución
 //			CalcStatDataFrame();
 
@@ -372,6 +375,8 @@ void FinalizarTracking(){
 	if( Shape) free(Shape);
 	// liberar imagenes y datos de segmentacion
 	ReleaseDataSegm( );
+	// liberar imagenes y datos de procesado
+	liberarDataProcess();
 	//liberar listas
 	if(Flies) free( Flies );
 

@@ -43,8 +43,13 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 		fly = (STFly*)obtener(i, flies);
 		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
 		cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
-		cvLine( frameData->Frame, fly->posicion, cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion)),
-						cvRound( fly->posicion.y + 1.5*fly->a*sin(fly->orientacion))), fly->Color, 3, CV_AA, 0 );
+		cvLine( frameData->Frame,
+				fly->posicion,
+				cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+						 cvRound( fly->posicion.y + 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+				fly->Color, 1,
+				CV_AA, 0 );
+		visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
 		i++;
 	}
 
@@ -93,6 +98,18 @@ void VerEstadoBuffer( IplImage* Imagen,int num ){
 //	cvWaitKey(0);
 }
 
+void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
+
+	char etiqueta[10];
+	CvFont fuente1;
+	CvPoint origen;
+
+	origen = cvPoint( pos.x-5 , pos.y - 15);
+
+	sprintf(etiqueta,"%d",id );
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
+}
 //void VerEstadoSHModel( IplImage* Imagen,int num ){
 //
 //}

@@ -24,7 +24,7 @@ void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 ///! brief Realiza la asignación de identidades. El primer parámetro es la lista
 ///! el segundo parámetro es un flag que indica qué individuos asignar. 1 para los
 ///! del foreground ( estado dinámico )  y 0 para los del oldforeground ( estado estático )
-STFly* matchingIdentity( tlcde* framesBuf ,tlcde* Etiquetas, CvRect MotionRoi );
+STFly* matchingIdentity( tlcde* framesBuf ,tlcde* Etiquetas, CvRect MotionRoi, double angle );
 
 void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
 
@@ -38,9 +38,13 @@ void asignarNuevaId( STFly* fly, tlcde* identities);
 
 void dejarId( STFly* fly, tlcde* identities );
 
+void mostrarIds( tlcde* Ids);
+
 void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids = NULL );
 
-void SetTita( STFly* flyActual,STFly* flyAnterior );
+void SetTita( STFly* flyAnterior,STFly* flyActual, double angle );
+
+void allocateMotionTemplate( IplImage* im);
 
 void releaseMotionTemplate();
 

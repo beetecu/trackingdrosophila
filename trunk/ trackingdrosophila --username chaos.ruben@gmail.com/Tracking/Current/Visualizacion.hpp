@@ -22,4 +22,6 @@ void VerEstadoBuffer( IplImage* Imagen,int num );
 
 void VerEstadoBGModel( IplImage* Imagen );
 
+void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
+
 #endif /* VISUALIZACION_HPP_ */
