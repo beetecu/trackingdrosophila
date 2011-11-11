@@ -14,7 +14,7 @@
 #include "validacion.hpp"
 
 
-// Inicializar los Parametros
+// Inicializar los Parametros para la validación
 
 void setValParams( ValParams** Parameters){
 
@@ -49,6 +49,9 @@ void setValParams( ValParams** Parameters){
 
 	*Parameters=Params;
 }
+
+//Inicializar los parametros para el modelado de fondo
+
 void setBGModParams( BGModelParams** Parameters){
 	BGModelParams* Params;
 	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
@@ -106,13 +109,13 @@ double CalcCircul( STFly* FlyData){
 	return circularidad;
 }
 
-// Probabilidades y Umbrales
+// Probabilidades y  Umbrales
 
 int CalcProbUmbral( SHModel* SH,ValParams* VParams,STFly* FlieData ){
 
 	float area_blob;
-	float area_H;
-	float area_L;
+	float area_H;// area que establce el umbral bajo
+	float area_L;// area que estableceel umbral alto.
 	double Pth_H;
 	double Pth_L;
 
@@ -126,6 +129,9 @@ int CalcProbUmbral( SHModel* SH,ValParams* VParams,STFly* FlieData ){
 
 	VParams->Umbral_L=Pth_H; // Umbral Alto
 	VParams->Umbral_H=Pth_L; // Umbral Bajo
+
+	//Si el area del blob es menor el la media, el error es por defecto,
+	//si es mayor que la media el error será por exceso.
 
 	if ((area_blob - SH->FlyAreaMedia)<0)  return 0;
 	else return 1;
@@ -173,7 +179,7 @@ int ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi ){
 	return Maximo;
 }
 
-					/////////////// VALIDACION \\\\\\\\\\\\\\\\\\\\\\\\\
+					////////////////// VALIDACION /////////////////
 
 tlcde* Validacion(IplImage *Imagen,
 		STFrame* FrameData,
@@ -182,10 +188,10 @@ tlcde* Validacion(IplImage *Imagen,
 		BGModelParams* BGParams,
 		ValParams* VParams,IplImage* Mask){
 
-	//Iniciar listas para almacenar las moscas
+	//Iniciar listas para almacenar los blobs
 
-		tlcde* FLIE_LIST = NULL; // Contiene las moscas validadas para cada frame
-		tlcde* PxList=NULL;
+		tlcde* FLIE_LIST = NULL; // Contiene las moscas validadas para cada frame.
+		tlcde* PxList=NULL; // Contiene las moscas para el caculo de la probabilidad total.
 
 		FLIE_LIST = ( tlcde * )malloc( sizeof(tlcde ));
 		PxList = ( tlcde * )malloc( sizeof(tlcde ));
@@ -223,13 +229,13 @@ tlcde* Validacion(IplImage *Imagen,
 	tlcde* Temp=NULL;
 	tlcde* TempSeg=NULL;
 
-	// establecemos los parámetros de validación por defecto
+	// Establecemos los parámetros de validación por defecto
 
 	if ( VParams == NULL ){
 		setValParams( &VParams);
 	}
 
-	// establecemos parámetros para los umbrales en la resta de fondo por defecto
+	// Establecemos parámetros para los umbrales en la resta de fondo por defecto
 
 	if ( BGParams == NULL){
 		setBGModParams( &BGParams);
@@ -241,7 +247,7 @@ tlcde* Validacion(IplImage *Imagen,
 
 
 // Recorremos los blobs uno por uno y los validamos.
-// bucle for desde el primero hasta el ultimo individuo de la estructura mosca del frame actual
+// Bucle for desde el primero hasta el ultimo individuo de la Lista FrameData->Flie del frame actual
 
 // Los blobs visitados y analizados se almacenan en una "cola" FIFO para una posterior busqueda en anchura
 // de los blobs validados
@@ -280,7 +286,8 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 					VParams->PxiMax=VParams->Umbral_H;// Establecer el Umbral Alto
 
 
-					while( !SEG ){
+//					while( !SEG  && BGParams->LOW_THRESHOLD < VParams->MaxLowTH){
+					while( !SEG){
 
 
 						/* Incrementar paulatinamente el umbral de resta de fondo hasta
@@ -376,7 +383,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 						}
 
 
-						Exceso = CalcProbUmbral( SH, VParams,FlyData); /// calcula VParams->UmbralProb
+						Exceso = CalcProbUmbral( SH, VParams,FlyData); // calcula VParams->UmbralProb
 
 						if(!Exceso ) break;
 
@@ -429,16 +436,24 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 //							insertar(FlyData,PxList); //Insertar en lista para calcular la Px final
 
 							BGParams->LOW_THRESHOLD=Besthres;
+
+							//Resta de fondo
 							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,maskTemp,BGParams, FlyDataTemp);
+
+							//Segmentación
 							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
+
 							FlyData=(STFly*)obtener(0,FrameData->Flies);
 							Pxi = CalcProbMosca( SH , FlyData );
+
 							FLIE->actual->dato=FlyData;
 							insertar(FlyData,PxList);
 						}
 
 						BGParams=NULL;// Inicializar LOW_THRESHOLD y demas valores
 						setBGModParams( &BGParams);
+
+
 
 			} //Fin Exceso
 
@@ -463,11 +478,11 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 					// Resta de fondo
-					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyData->Roi);
+					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyDataTemp);
 
 
 					// Segmentar
-					FrameData->Flies = segmentacion(Imagen, FrameData, FlyData->Roi,mask);
+					FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
 
 					cvCopy(mask,FrameData->FG);
 
@@ -483,12 +498,16 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 					BGParams=NULL;// Inicializar LOW_THRESHOLD y demas valores
 					setBGModParams( &BGParams);
 
+					//Si el blob ha desaparecido al disminuir el umbral poner el flag a 1
+
 					if(!FrameData->Flies->numeroDeElementos){
 
 						FlyData=(STFly *)obtener(j,FLIE_TEMP);
 						FlyData->flag_def = true;
 						FLIE->actual->dato=FlyData;
 					}
+
+					//Si el blob no ha desaparecido dejarlo como esta
 
 					else{
 
@@ -506,7 +525,9 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 				///// AHORA ES CUANDO REALMENTE VALIDAMOS/////
 
-	Px=CalcProbTotal(PxList,SH,VParams,FlyData); // Calcular la Px para todas las moscas
+	// Calcular la Px para todas las moscas
+
+	Px=CalcProbTotal(PxList,SH,VParams,FlyData);
 
 	/* Recorrer los blob introducidos en la cola para realizar una "busqueda" en anchura y validarlos.
 	 * Si el blob ha sido segmentado ( flag_seg ) o ha desaparecido al disminuir el umbral durante
@@ -528,6 +549,14 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 	} // Fin del for
 
 	return FLIE_LIST; // Guardar los blobs validados en la lista para meterlos en el frameBuf
+
+	cvReleaseImage(&Imagen);
+	cvReleaseImage(&Mask);
+	cvReleaseImage(&FrameData->BGModel);
+	cvReleaseImage(&FrameData->FG);
+	cvReleaseImage(&FrameData->Frame);
+	cvReleaseImage(&mask);
+	cvReleaseImage(&maskTemp);
 
 }//Fin de Validación
 

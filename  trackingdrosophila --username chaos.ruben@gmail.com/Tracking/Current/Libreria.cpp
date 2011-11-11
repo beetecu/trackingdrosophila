@@ -51,8 +51,10 @@ void invertirBW( IplImage* Imagen )
 		}
 	}
 }
+
 // Recibe la imagen del video y devuelve la imagen en un canal de niveles
-// de gris con el plato extraido
+// de gris con el plato extraido.
+
 void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI){
 
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
@@ -66,18 +68,22 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 		//bin = false;
 	}
 // Filtrado gaussiano 5x
+
 	cvSmooth(dst,dst,CV_GAUSSIAN,5,5);
+
 // Extraccion del plato
+
 	cvResetImageROI( dst );
 	cvAndS(dst, cvRealScalar( 0 ) , dst, ImFMask );
 }
 
 
-///////////////////// Interfaz para manipular una lcde //////////////////////////////
+///////////////////// INTERFAZ PARA MANIPULAR UNA LCDE //////////////////////////////
 //
 
 
-// Crear un nuevo elemento
+// Crear un nuevo elemento de la lista
+
 Elemento *nuevoElemento()
 {
   Elemento *q = (Elemento *)malloc(sizeof(Elemento));
@@ -146,12 +152,7 @@ void insertar(void *e, tlcde *lcde)
   lcde->posicion = posicion;
 }
 
-///! Borra el elemento apuntado de la posición posición i.
-///! Devuelve un puntero al área de datos del objeto borrado
-///! o NULL si la lista está vacía. Si la posición es el último
-///! y el único elemento, se inicia la lista. Si es el último
-///! pero no el único, actual apuntará al nuevo último. Si no
-///! es el último, acual apuntará al siguiente elemento.
+
 void *borrarEl(int i,tlcde *lcde)
 {
 	int n = 0;
@@ -216,12 +217,6 @@ void *borrarEl(int i,tlcde *lcde)
 
 }
 
-///! Borra el elemento apuntado por actual.
-///! Devuelve un puntero al área de datos del objeto borrado
-///! o NULL si la lista está vacía.Si la posición es el último
-///! y el único elemento, se inicia la lista. Si es el último
-///! pero no el único, actual apuntará al nuevo último. Si no
-///! es el último, acual apuntará al siguiente elemento.
 void *borrar(tlcde *lcde)
 {
   // Obtener los parámetros de la lcde
@@ -278,6 +273,8 @@ void *borrar(tlcde *lcde)
 
   return datos;
 }
+
+
 
 void irAlSiguiente(tlcde *lcde)
 {
@@ -362,6 +359,7 @@ void anyadirAlPrincipio(void *e, tlcde *lcde ){
 }
 
 ///////////////////// Interfaz para gestionar buffer //////////////////////////////
+
 void mostrarListaFlies(int pos,tlcde *lista)
 {
 	int n;
@@ -435,9 +433,9 @@ void liberarListaFlies(tlcde *lista)
   }
 }
 
-///! Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
-///! El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
-///! a la función.
+// Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
+// El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
+// a la función.
 int liberarPrimero(tlcde *FramesBuf ){
 
 	STFrame *frameData = NULL;
@@ -534,11 +532,10 @@ void crearFichero(char *nombreFichero )
  fclose(pf);
 }
 
-///! El algoritmo mantiene un buffer de 50 frames ( 2 seg aprox ) para los datos y para las
-///! imagenes.
-///! Una vez que se han llenado los buffer, se almacena en fichero los datos de la lista
-///! Flies correspondientes al primer frame. La pisición actual no se modifica.
-///! Si la lista está vacía mostrará un error. Si se ha guardado con éxito devuelve un uno
+//!< El algoritmo mantiene un buffer de 50 frames ( 2 seg aprox ) para los datos y para las imagenes.
+//!< Una vez que se han llenado los buffer, se almacena en fichero los datos de la lista
+//!< Flies correspondientes al primer frame. La posición actual no se modifica.
+//!< Si la lista está vacía mostrará un error. Si se ha guardado con éxito devuelve un uno.
 
 int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 

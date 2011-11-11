@@ -14,20 +14,32 @@
 
 typedef struct{
 	//Parametros del modelo
-	int FLAT_FRAMES_TRAINING;/// Nº de frames para aprendizaje del plato
-	int FRAMES_TRAINING ;/// Nº de frames para el aprendizaje del fondo
-	int HIGHT_THRESHOLD; /// Umbral alto para la resta de fondo
-	int LOW_THRESHOLD ; /// Umbral bajo para la resta de fondo
+	int FLAT_FRAMES_TRAINING;//!< Nº de frames para aprendizaje del plato.
+	int FRAMES_TRAINING ;//!< Nº de frames para el aprendizaje del fondo.
+	int HIGHT_THRESHOLD; //!< Umbral alto para la resta de fondo.
+	int LOW_THRESHOLD ; //!< Umbral bajo para la resta de fondo.
 	double ALPHA;
+
 	//Parametros de limpieza de foreground
-	bool MORFOLOGIA ; /// si esta a 1 se aplica erosión y cierre ( no se usa )
-	int CVCLOSE_ITR ; /// Número de iteraciones en op morfológicas
-	int MAX_CONTOUR_AREA; /// Máxima area del blob
-	int MIN_CONTOUR_AREA; /// Mínima area del blob
+
+	bool MORFOLOGIA ; //<! si esta a 1 se aplica erosión y cierre ( no se usa ).
+	int CVCLOSE_ITR ; //<! Número de iteraciones en op morfológicas.
+	int MAX_CONTOUR_AREA;//!< Máxima area del blob.
+	int MIN_CONTOUR_AREA;//!< Mínima area del blob.
+
 }BGModelParams;
 
 // PROTOTIPOS DE FUNCIONES //
+
+//!\brief Establece los parametros por defecto para el modelado de fondo.
+/*!
+ * \param Parameters Estructura que contiene lo parametros para el modelado de fondo.
+ *
+ * \see Viodeotracker.hpp
+ */
+
 void DefaultBGMParams(BGModelParams *Parameters);
+
 //! \brief Inicializa el modelo de fondo como una Gaussiana con una estimación
 //! de la mediana y de la de desviación típica según:
 //! Para el aprendizaje del fondo toma un número de frames igual a FRAMES_TRAINING
@@ -35,35 +47,56 @@ void DefaultBGMParams(BGModelParams *Parameters);
 	  \param t_capture : Imagen fuente de 8 bit de niveles de gris preprocesada.
 	  \param BG : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
 	  \param ImMask : Máscara  de 8 bit de niveles de gris para el preprocesdo (extraccion del plato).
+
+	  \return : El modelo de fondo como una distribución Gaussiana.
 	*/
 StaticBGModel* initBGModel( CvCapture* t_capture,BGModelParams* Param );
 
+
+//!\brief Binariza la Imagen.
+/*!
+ * \param image Imagen fuente de 8 bits en escala de grises.
+ *
+ * \return Una imagen Binarizada.
+ */
 IplImage* getBinaryImage(IplImage * image);
-//! \brief Recibe una imagen en escala de grises preprocesada. En la primera ejecución inicializa el modelo. Estima a la mediana
-//!	en BGMod y la varianza en IvarF según:
-/*! Mediana:
-//!	\f[
-//!		mu(p)= median\I_t(p)
-//!		\f]
-    /*!
-      \param ImGray : Imagen fuente de 8 bit niveles de gris.
-      \param BGMod : Imagen de fondo sobre la que se estima la mediana
+
+//! \brief Recibe una imagen en escala de grises preprocesada. En la primera ejecución inicializa el modelo.
+//!Estima a la mediana	en BGMod y la varianza en IvarF según:
+//!\n
+/*!Mediana :
+	\f[
+		mu(p)=\frac{median}{I_t(p)}
+	\f]
+
+      \param ImGray Imagen fuente de 8 bit niveles de gris.
+      \param BGMod Imagen de fondo sobre la que se estima la mediana.
+      \param Ides Imagen sobre la que se estimada la desviación típica.
+      \param DataROI Región de interes perteneciente al plato.
+      \param mask Imagen sobre la que se actualizará el fondo.
+
+      \return : La estimación de la mediana y la desviación típica para establecer la distribucion Gaussiana del fondo.
     */
 
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRect DataROI, IplImage* mask );
+
 //! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
 //!	en BGMod y la varianza en IvarF según:
+//!\n
 /*! Mediana:
-//!	\f[
-//!		mu(p)= median\I_t(p)
-//!		\f]
-    /*
+	\f[
+		mu(p)=\frac{ median}{I_t(p)}
+	\f]
+
       \param tmp_frame : Imagen fuente de 8 bit niveles de gris.
-      \param *Cap Puntero a estructura que almacena las distintas capas del modelo de fondo.
-      \param DataROI: Contiene los datos para establecer la ROI
+      \param BGModel : Imagen de fondo sobre la que estima la mediana.
+      \param DESVI : Imagen sobre la que se estima la desviación típica.
+      \param Param Puntero a estructura que almacena las distintos parametros del modelo de fondo.
+      \param DataROI: Contiene los datos para establecer la ROI del plato.
       \param Mask: Nos permite actualizar el fondo de forma selectiva.
     */
 void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI,BGModelParams* Param,  CvRect DataROI, IplImage* Mask = NULL);
+
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
 /*!
@@ -71,40 +104,77 @@ void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI,BGMod
       \param Cap : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
 
+
     */
 
 void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT,double ALPHA, CvRect dataroi );
+
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano.
 //! Se establece un umbral bajo ( LOW_THRESHOLD ) para los valores de la normal
 //! tipificada a partir del cual el píxel es foreground ( 255 )
 /*!
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
-      \param bg_model : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
+      \param bg_model : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel.
+      \param Ides : Contiene la estimación de la desviación típica de cada pixel.
+      \param Param : Puntero a estructura que almacena las distintos parametros del modelo de fondo.
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
-      \param DataROI: Contiene los datos para establecer la ROI
+      \param dataroi : Contiene los datos para establecer la ROI.
+
+      \return : La Mascara de primer palto o foreground.
     */
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,BGModelParams* Param, CvRect dataroi);
 
 //! \brief Aplica Componentes conexas para limpieza de la imagen:
-//! - Realiza operaciones de morphologia para elimirar ruido.
-//! - Establece un área máxima y mínimo para que el contorno no sea borrado
-//! - Aplica un umbral alto para los valores de la normal tipificada. Si alguno
+//!\n - Realiza operaciones de morphologia para elimirar ruido.
+//!\n - Establece un área máxima y mínimo para que el contorno no sea borrado
+//!\n - Aplica un umbral alto para los valores de la normal tipificada. Si alguno
 //! de los píxeles del blob clasificado como foreground con el LOW_THRESHOLD no
 //! desaparece al aplicar el HIGHT_THRESHOLD, es un blob válido.
 //! (- Establece el nº máximo de contornos a devolver )
 //!
 /*!
       \param FG : Imagen fuente de 8 bit de niveles de gris que contine la imagen a limpiar
+      \param DES : Contiene la estimación de la desviación típica de cada pixel.
+      \param Param : Puntero a estructura que almacena las distintos parametros del modelo de fondo.
+      \param dataroi : Contiene los datos para establecer la ROI.
+
+      \return En el foreground solo los blobs que se encuentran en movimiento.
 
     */
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi);
 
+
+//!\brief Extraer el Plato.
+/*!
+ * \param * : Frame capturado.
+ * \param Flat : Parametros del palto.
+ * \param frTrain : Numero de frames procesado para extraer el plato.
+ *
+ * \return Los datos con los valores del plato,los cuales estableceran su ROI.
+ */
 void MascaraPlato(CvCapture*, StaticBGModel* Flat, int frTrain);
 
+//!\brief Crea una trackbar para posicionarse en puntos concretos del video.
+/*!
+ * \param pos : numero de frame.
+ * \param Param : Puntero a estructura que almacena las distintos parametros del modelo de fondo.
+ */
 void onTrackbarSlide(int pos, BGModelParams* Param);
+
+//!\brief Crea las Imagenes y estructuras.
+
 void AllocateBGMImages( IplImage*, StaticBGModel* bgmodel);
+
+//!\brief destrulle las imagenes y estructuras.
+
 void DeallocateBGM( StaticBGModel* BGModel );
+
+//!\brief Crea las imagnes temporales.
+
 void AllocateTempImages( IplImage *I );
+
+//!\brief destrulle las imagenes temporales
+
 void DeallocateTempImages();
 
 #endif /* BGMODEL_H_ */

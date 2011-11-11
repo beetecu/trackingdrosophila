@@ -14,7 +14,7 @@ using namespace std;
 
 char nombreFichero[30];
 
-struct timeval ti, tf, tif, tff; // iniciamos la estructura
+struct timeval ti, tf, tif, tff; /// iniciamos la estructura
 float TiempoInicial;
 float TiempoParcial;
 float TiempoFrame;
@@ -55,7 +55,7 @@ SHModel* Shape;
 IplImage* frame;
 
 
-
+//!\brief Contiene Información de ayuda para la compilación y ejecución del programa.
 void help(){
 	printf("\n Para ejecutar el programa escriba en la consola: "
 			"TrackingDrosophila [nombre_video.avi] [Nombre_Fichero]\n  "
@@ -154,11 +154,11 @@ int main(int argc, char* argv[]) {
 		//			CalcDataFrame( FrameData )
 
 		////////// ESTADISTICAS /////////////
-		//
+
 
 
 		//////////  VISUALIZAR     ////////////
-		//
+
 		// incrustar datos en primer frame del buffer
 		FrameData = (STFrame*) FramesBuf->ultimo->dato;
 		ShowStatDataFr( FrameData->Frame);
@@ -380,8 +380,10 @@ void FinalizarTracking(){
 	//liberar listas
 	if(Flies) free( Flies );
 
+
 	// liberar imagenes y datos de tracking
 	ReleaseDataTrack();
+
 
 	cvReleaseCapture(&g_capture);
 
