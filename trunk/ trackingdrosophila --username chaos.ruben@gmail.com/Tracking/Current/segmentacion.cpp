@@ -36,6 +36,39 @@
 	CvMemStorage* storage;
 	CvSeq* first_contour;
 
+/*!
+ * \note wi = pesos = distancia normalizada de cada pixel a su modelo de fondo.
+	\f[
+
+		w_i=\frac{|I(p_i)-u(p_i)|}{\sigma(p_i)}
+
+	\f]
+
+	\f[
+		Z=\sum_{i}^{n}(w_i)
+	\f]
+
+	\f[
+		u=\frac{1}{z}\sum_{i}^{n}(w_i p_i)
+	\f]
+
+ * \note MATRIX_C = Matriz de covarianza.
+ *
+	 \f[
+	 \sum=\frac{1}{z}\sum_{i}^{n}(w_i(p_i - u)(p_i - u)^T)
+	 \f]
+ * \note  Los datos de la elipse se obtienen a partir de los eigen valores y eigen vectores
+ * \note de la matriz de covarianza.
+ * \n
+ * \n
+ * 		\f[
+ * 		MatrizCovarianza=R * Diagonal * R^T
+ * 		\f]
+ * \note R = Matriz EigenVectores, de ella obtenemos la orientación.
+ * \note evals = Matriz de EigenValores, de ella obtenemos ejes.
+ * \note Diagonal = Matriz Diagonal,de ella obtenemos igualmente los ejes.
+ */
+
 tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask){
 
 
@@ -84,6 +117,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		id++; //incrmentar el Id de las moscas
 
 		// Parámetros para calcular el error del ajuste en base a la diferencia de areas entre el Fg y la ellipse
+
 		float err;
 		float areaFG;
 		float areaElipse;
@@ -111,15 +145,15 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 					flyData->orientacion);
 		}
 
-		flyData->etiqueta = 0;//id  ;  /// Identificación del blob
-		flyData->Color = cvScalar( 0,0,0,0); /// Color para dibujar el blob
+		flyData->etiqueta = 0; // Identificación del blob
+		flyData->Color = cvScalar( 0,0,0,0); // Color para dibujar el blob
 
 		flyData->CountState = 0;
 		flyData->direccion = 0;
 		flyData->dstTotal = 0;
 //		flyData->perimetro = cv::arcLength(contorno,0);
 		flyData->Roi = rect;
-		flyData->Estado = 1;  /// Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
+		flyData->Estado = 1;  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
 		flyData->num_frame = FrameData->num_frame;
 		// Añadir a lista
 		insertar( flyData, flies );
@@ -146,6 +180,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 
 void CreateDataSegm( IplImage* Brillo ){
 	CvSize size = cvSize(Brillo->width,Brillo->height); // get current frame size
+
 	// crear imagenes si no se ha hecho o redimensionarlas si cambia su tamaño
 	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
 		    // CREAR IMAGENES
@@ -272,6 +307,7 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 	if ( z != 0) cvConvertScale(MATRIX_C, MATRIX_C, 1/z,0); // Matriz de covarianza
 
 	// Mostrar matriz de covarianza
+
 	if (SHOW_SEGMENTATION_DATA == 1) {
 			printf("\nMatriz de covarianza");
 							for(int i=0;i<2;i++){
@@ -297,6 +333,7 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 
 	//Hallar los semiejes y la orientación
 	// Tita valdra entre 0 y360ª
+
 	*semiejemayor=2*(sqrt(d1.val[0]));
 	*semiejemenor=2*(sqrt(d2.val[0]));
 	*tita = 0;

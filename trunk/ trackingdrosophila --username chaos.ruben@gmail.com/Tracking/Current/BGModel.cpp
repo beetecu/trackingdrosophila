@@ -89,7 +89,7 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 	printf(" %5.4g segundos\n", TiempoGlobal/1000);
 
 
-	/// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
+	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 	while( num_frames < Param->FRAMES_TRAINING ){
 		frame = cvQueryFrame( t_capture );
 		if ( !frame ) {
@@ -143,6 +143,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 //	cvConvertScale( ImedianF,BGMod,1,0); // A int
 //	cvShowImage( "Foreground",mask);
 //	cvWaitKey(0);
+
 	// Se actualiza el fondo usando la máscara.
 
 	for (int y = ROI.y; y< ROI.y + ROI.height; y++){
@@ -185,7 +186,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 
 	// Corregimos la estimación de la desviación mediante la función de error
 	// Así se asegura que la fracción correcta de datos esté dentro de una desvición estándar
-	// ( escalado horizontal de la normal.
+	// ( escalado horizontal de la normal).
 	cvConvertScale(Ides,Ides,0.7,0);
 
 	cvResetImageROI( ImGray );

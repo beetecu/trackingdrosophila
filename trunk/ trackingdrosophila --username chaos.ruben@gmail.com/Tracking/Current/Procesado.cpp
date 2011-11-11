@@ -100,6 +100,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 		gettimeofday(&ti, NULL);
 		if ( i == 0 ) printf("\nDefiniendo foreground :\n\n");
 		if ( i > 0 ) printf("\nRedefiniendo foreground %d de 2:\n\n", i);
+
 		//// BACKGROUND UPDATE
 		// Actualización del fondo original
 		// establecer parametros
@@ -172,7 +173,7 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel
 //	printf("\n ELEMENTOS : %d",Mosca->Flies->numeroDeElementos);
 }
 
-///! Igual que procesado, pero solo una iteración. Background dinámico para detección de movimiento
+//!< Igual que procesado, pero solo una iteración. Background dinámico para detección de movimiento
 
 void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape ){
 
@@ -265,16 +266,18 @@ void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHMode
 							(tf.tv_usec - ti.tv_usec)/1000.0;
 	printf(" %5.4g ms\n", tiempoParcial);
 
+	cvCopy( FGMask,frameData->FG );
+
 	/////// VALIDACIÓN
 	gettimeofday(&ti, NULL);
 	printf( "\nValidando contornos...");
 
-//	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
+	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
 
 
 //	FliesFG = (STFlies*)obtenerUltimo( frameData->Flies);
 
-	cvCopy( FGMask,frameData->FG );
+//	cvCopy( FGMask,frameData->FG );
 
 	//Anyadir al buffer
 	anyadirAlFinal( frameData, framesBuf );
@@ -417,7 +420,7 @@ void putBGModelParams( BGModelParams* Params){
 				 // La primera vez inicializamos los valores.
 				 if (first == 1){
 					 Params->HIGHT_THRESHOLD = 20;
-					 Params->LOW_THRESHOLD = 13;
+					 Params->LOW_THRESHOLD = 15;
 					 first = 0;
 				 }
 	 			cvCreateTrackbar( "HighT",

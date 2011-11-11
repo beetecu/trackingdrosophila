@@ -27,18 +27,24 @@ int gettimeofday( struct timeval *tv, struct timezone *tz );
 /////////////// Tratamiento de imagenes /////////////////
 #ifndef _IMAGEN_
 #define _IMAGEN_
-/// Función para obtener el número de frames en algunos S.O Linux
+
+//!\brief getAVIFrames: Función para obtener el número de frames en algunos S.O Linux.
+/*!
+ * \return el número de frames que contiene el video.
+ */
+
 int getAVIFrames( char* );
 
-//! \brief Recibe una imagen RGB 8 bit y devuelve una imagen en escala de grises con un
-//!   flitrado gaussiano 5x. Si el último parámetro es verdadero, se binariza. Si
+//! \brief ImPreProcess: Recibe una imagen RGB 8 bit y devuelve una imagen en escala de grises con un
+//!   filtrado gaussiano 5x5. Si el último parámetro es verdadero se binariza, si
 //!   el parámetro ImFMask no es NULL se aplica la máscara.
     /*!
-      \param src : Imagen fuente de 8 bit RGB.
-      \param dst : Imagen destino de 8 bit de niveles de gris.
-      \param ImFMask : Máscara.
-      \param bin: : Si está activo se aplica un adaptiveTreshold a la imagen antes de filtrar.
-      \return Imagen preprocesada
+      \param src Imagen fuente de 8 bit RGB.
+      \param dst Imagen destino de 8 bit de niveles de gris.
+      \param ImFMask Máscara.
+      \param bin Si está activo se aplica un AdaptiveTreshold a la imagen antes de filtrar.
+
+      \return Imagen preprocesada con la extracción del plato.
     */
 void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI);
 
@@ -47,12 +53,12 @@ void invertirBW( IplImage* Imagen );
 #endif // _IMAGEN_
 
 
-// Interfaz para manipular una lcde //////////////////////////////
-//
+////////////////////// INTERFAZ PARA MANIPULAR UNA LCDE //////////////////////////////
+
 #ifndef _ELEMENTO_H
 #define _ELEMENTO_H
 
-	// Tipo Elemento (un elemento de la lista) ///////////////////////
+	// Tipo Elemento (un elemento de la lista) //
 	typedef struct s
 	{
 	  void *dato;          // área de datos
@@ -68,6 +74,7 @@ void invertirBW( IplImage* Imagen );
 #define _INTERFAZ_LCSE_H
 
 // Parámetros de la lista
+
 typedef struct
 {
   Elemento *ultimo;      // apuntará siempre al último elemento
@@ -81,49 +88,114 @@ typedef struct
 #ifndef _INTERFAZ_LCSE_
 #define _INTERFAZ_LCSE_
 
-// Crear un nuevo elemento
+//!\brief Crear un nuevo elemento de la lista.
+
 Elemento *nuevoElemento();
 
-// Iniciar una estructura de tipo tlcde
+//!brief  Iniciar una estructura de tipo tlcde.
+/*!
+ * \param lcde lista circular doblemente enlazada.
+ */
 void iniciarLcde(tlcde *lcde);
 
-// Añadir un nuevo elemento a la lista a continuación
-// del elemento actual; el nuevo elemento pasa a ser el
-// actual
+//!\brief Añadir un nuevo elemento a la lista a continuación
+//! del elemento actual; el nuevo elemento pasa a ser el actual.
+/*!
+ * \param e Datos del elemento insertado.
+ * \param lcde Lista circular doblemente enlazada.
+ */
 void insertar(void *e, tlcde *lcde);
 
-// La función borrar devuelve los datos del elemento
-// apuntado por actual y lo elimina de la lista.
+//!\brief La función borrar devuelve los datos del elemento
+//! apuntado por actual y lo elimina de la lista.
+//!\n
+//!\n Borra el elemento apuntado por actual.
+//! Devuelve un puntero al área de datos del objeto borrado
+//! o NULL si la lista está vacía.Si la posición es el último
+//! y el único elemento, se inicia la lista. Si es el último
+//! pero no el único, actual apuntará al nuevo último. Si no
+//! es el último, acual apuntará al siguiente elemento.
+/*!
+ *\param lcde Lista circular doblemente enlazada.
+ */
+
 void *borrar(tlcde *lcde);
+
+//!\brief Borra el elemento apuntado de la posición posición i.
+//! Devuelve un puntero al área de datos del objeto borrado
+//! o NULL si la lista está vacía. Si la posición es el último
+//! y el único elemento, se inicia la lista. Si es el último
+//! pero no el único, actual apuntará al nuevo último. Si no
+//! es el último, acual apuntará al siguiente elemento.
 
 void *borrarEl(int i,tlcde *lcde);
 
-// Avanzar la posición actual al siguiente elemento.
+
+//!\brief Avanzar la posición actual al siguiente elemento dentro de l lita.
+/*!
+ *\param lcde Lista circular doblemente enlazada.
+ */
+
 void irAlSiguiente(tlcde *lcde);
 
-// Retrasar la posición actual al elemento anterior.
+//!\brief Retrasar la posición actual al elemento anterior.
+/*!
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void irAlAnterior(tlcde *lcde);
 
-// Hacer que la posición actual sea el principio de la lista.
+//!\brief Hacer que la posición actual sea el principio de la lista.
+/*!
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void irAlPrincipio(tlcde *lcde);
 
-// El final de la lista es ahora la posición actual.
+//!\brief El final de la lista es ahora la posición actual.
+/*!
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void irAlFinal(tlcde *lcde);
 
-// Posicionarse en el elemento i
+//!\brief Posicionarse en el elemento i de la lista.
+/*!
+ * \param i posición del elemento dentro de la lista.
+ */
 int irAl(int i, tlcde *lcde);
 
-// Devolver el puntero a los datos asociados
-// con el elemento actual
+//!\brief Devolver el puntero a los datos asociados
+//! con el elemento actual.
+/*!
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void *obtenerActual(tlcde *lcde);
 
-// Devolver el puntero a los datos asociados
-// con el elemento de índice i
+//!\brief Devolver el puntero a los datos asociados
+//! con el elemento de índice i.
+/*!
+ * \param i posición del elemento dentro de la lista.
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void *obtener(int i, tlcde *lcde);
 
-// Establecer nuevos datos para el elemento actual
+//!\brief Establecer nuevos datos para el elemento actual.
+/*!
+ * \param pNuevosDatos Espacio donde se alamcenan los nuevos datos.
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void modificar(void *pNuevosDatos, tlcde *lcde);
 
+//!\brief Posicionar un elemento al final de la lista,
+//! a continuación del ultimo elemento.
+/*!
+ * \param e Datos del elemento insertado.
+ * \param lcde Lista circular doblemente enlazada.
+ */
 void anyadirAlFinal(void *e, tlcde *lcde );
 
 //tlcde* fusionarListas( tlcde* lcde1, tlcde* lcde2);
@@ -134,13 +206,37 @@ void anyadirAlFinal(void *e, tlcde *lcde );
 #ifndef _BUFFER_
 #define _BUFFER_
 
+
+//!\brief Mostrar llos elementos de la lista con sus datos.
+/*!
+ * \param pos posicion del elemento mostrado.
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 void mostrarListaFlies(int pos,tlcde *lista);
 
+//!\brief Liberar espacio de datos de la lista.
+/*!
+ * \param lcde Lista circular doblemente enlazada.
+ */
 void liberarListaFlies(tlcde *lista);
 
+//!\ brief Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo ).
+/*
+ * \param FramesBuf \param FramesBuf Lista circular doblemente enlazada que contiene los frames con las listas de las moscas validadas..
+ */
 int liberarPrimero(tlcde *FramesBuf );
 
+//!\brief borra todos los elementos del buffer.
+/*!
+ * \param FramesBuf Lista circular doblemente enlazada que contiene los frames con la listas de las moscas validadas.
+ */
 void liberarBuffer(tlcde *FramesBuf);
+
+//!\brief Liberar y borrar datos de la estructura STFrame.
+/*!
+ * \param frameData Datos de la estructura STFrame.
+ */
 
 void liberarSTFrame( STFrame* frameData );
 
@@ -149,9 +245,29 @@ void liberarSTFrame( STFrame* frameData );
 #ifndef _FICHEROS_
 #define _FIHEROS_
 
+//!\brief verifica si existe el fichero creado que contiene lo datos de las listas almcenadas en e buffer.
+/*!
+ * \param nombreFichero nombre del fichero.
+ *
+ * \return Un 1 o True si el fichero no existe.
+ */
+
+//!\brief
 int existe(char *nombreFichero);
 
+//!\brief Crear el fichero que contiene los datos de las listas alamcenadas en el buffer.
+/*!
+ * \param nombreFichero nombre del fichero que contiene los datos de las moscas.
+ */
 void crearFichero(char *nombreFichero );
+
+//!\brief almacena en fichero los datos de la lista Flies correspondientes al primer frame.
+/*!
+ * \param framesBuf \param FramesBuf Lista circular doblemente enlazada que contiene los frames con la listas de las moscas validadas.
+ * \param nombreFichero nombre del fichero que contiene los datos de las moscas.
+ *
+ * \return Si la lista está vacía mostrará un error, si se ha guardado con éxito devuelve un uno.
+ */
 
 int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
 

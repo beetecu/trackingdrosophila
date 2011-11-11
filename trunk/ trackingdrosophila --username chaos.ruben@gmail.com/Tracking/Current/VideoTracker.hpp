@@ -43,14 +43,19 @@ using namespace std;
 
 
 
-#define CREATE_TRACKBARS 0 ///<- switch from 0 to 1 para visualizar trackbars.
-#define SHOW_BG_REMOVAL 1 ///<- switch from 0 to 1 para visualizar background y foreground.
-#define SHOW_VISUALIZATION 1 ///<- switch from 0 to 1 para visualizar resultado.
-#define SHOW_OPTICAL_FLOW 0 ///<- switch from 0 to 1 para visualizar flujo optico.
-#define SHOW_MOTION_TEMPLATE 1
-#define SHOW_BACKGROUND_DATA 1
-#define SHOW_SEGMENTATION_DATA 0
+#define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
+#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
+#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
+#define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
+#define SHOW_BACKGROUND_DATA 1//!< Switch de 0 a 1 para visualizar el Background.
+#define SHOW_SEGMENTATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
 #define SHOW_SEGMENTACION_STRUCT 0
+#define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+
+#define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
+#define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
+#define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
 #define SHOW_SHAPE_MODELING 1
 #define SHOW_DATA_ASSIGNMENT 1
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0
@@ -64,12 +69,13 @@ using namespace std;
 #ifndef _ELEMENTO_H
 #define _ELEMENTO_H
 
-	// Tipo Elemento (un elemento de la lista) ///////////////////////
+/// Tipo Elemento (un elemento de la lista)
+
 	typedef struct s
 	{
-	  void *dato;          // área de datos
-	  struct s *anterior;  // puntero al elemento anterior
-	  struct s *siguiente; // puntero al elemento siguiente
+	  void *dato;          //!< área de datos
+	  struct s *anterior;  //!< puntero al elemento anterior
+	  struct s *siguiente; //!< puntero al elemento siguiente
 	} Elemento;
 
 
@@ -79,91 +85,97 @@ using namespace std;
 #ifndef _INTERFAZ_LCSE_H
 #define _INTERFAZ_LCSE_H
 
-// Parámetros de la lista
-typedef struct
+/// Parámetros de la lista.
+
+	typedef struct
 {
-  Elemento *ultimo;      // apuntará siempre al último elemento
-  Elemento *actual;      // apuntará siempre al elemento accedido
-  int numeroDeElementos; // número de elementos de la lista
-  int posicion;          // índice del elemento apuntado por actual
+  Elemento *ultimo;      //!< apuntará siempre al último elemento
+  Elemento *actual;      //!< apuntará siempre al elemento accedido
+  int numeroDeElementos; //!< número de elementos de la lista
+  int posicion;          //!< índice del elemento apuntado por actual
 } tlcde;
 
 #endif //_INTERFAZ_LCSE_H
 
 	typedef struct {
 
-		int etiqueta;  /// Identificación del blob
-		CvScalar Color; /// Color para dibujar el blob
-		CvPoint posicion; /// Posición del blob
-		float a,b; /// semiejes de la elipse
-		float orientacion; /// Almacena la orientación
-		float direccion; ///almacena la dirección del desplazamiento
-		float dstTotal; /// almacena la distancia total recorrida hasta el momento
+
+		int etiqueta;  //!< Identificación del blob
+		CvScalar Color; //!< Color para dibujar el blob
+		CvPoint posicion; //!< Posición del blob
+		float a,b; //!< semiejes de la elipse
+		float orientacion; //!< Almacena la orientación
+		float direccion; //!<almacena la dirección del desplazamiento
+		float dstTotal; //!< almacena la distancia total recorrida hasta el momento
 		double perimetro;
-		CvRect Roi; /// region de interes para el blob
-		bool Estado;  /// Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
-		bool flag_seg; // Indica si e blog a sido segmentado
-		bool flag_def; // indica si el blob ha  desaparecido durante el analisis del defecto
-		int CountState; // Si alcanza un valor umbral consideraremos que el blob permanece estático y estado = 0;
-		int num_frame; /// Almacena el numero de frame (tiempo)
-		bool salto;	/// Indica que la mosca ha saltado
-		bool Grupo; /// Indica que la mosca permanece estática en un grupo de 2 o más moscas.
-		int Zona; /// Si se seleccionan zonas de interes en el plato,
+		CvRect Roi; //!< region de interes para el blob
+		bool Estado;  //!< Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
+		bool flag_seg; //!< Indica si e blog a sido segmentado
+		bool flag_def; //!< indica si el blob ha  desaparecido durante el analisis del defecto
+		int CountState; //!< Si alcanza un valor umbral consideraremos que el blob permanece estático y estado = 0;
+		int num_frame; //!< Almacena el numero de frame (tiempo)
+		bool salto;	//!< Indica que la mosca ha saltado
+		bool Grupo; //!< Indica que la mosca permanece estática en un grupo de 2 o más moscas.
+		int Zona; //!< Si se seleccionan zonas de interes en el plato,
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
 
 	}STFly;
 
-/// Estructura para almacenar el modelo de fondo estático
+/// Estructura para almacenar el modelo de fondo estático.
+
 	typedef struct {
-		IplImage* Imed; ///BackGround Model
-		IplImage* IDesv; /// Desviación tipica del modelo de fondo estático
-		IplImage* ImFMask; /// Mascara del plato
-		int PCentroX ;
-		int PCentroY ;
-		int PRadio ;
-		CvRect DataFROI;
+		IplImage* Imed; //!< Imagen que contiene el modelo de fondo (Background Model).
+		IplImage* IDesv; //!< Imagen que contiene la desviación tipica del modelo de fondo estático.
+		IplImage* ImFMask; //!<Imagen que contiene la  Mascara del plato
+		int PCentroX ;//!< Coordenada x del centro del plato.
+		int PCentroY ;//!< Coordenada y del centro del plato.
+		int PRadio ;//!< Radio del plato.
+		CvRect DataFROI;//!< Region de interes del plato.
 	}StaticBGModel;
 
-/// Estructura que almacena cálculos estadísticos simples para mostrar en tiempo de ejecución
+/// Estructura que almacena cálculos estadísticos simples para mostrar en tiempo de ejecución.
+
 	typedef struct {
-		int totalFrames;
-		int numFrame;
+		int totalFrames; //!< Numero de Frames que posee en video
+		int numFrame; //!< Numero de Frame que se está procesando.
 		float TProces;
 		float TTacking;
-		float staticBlobs; /// blobs estáticos en tanto por ciento
+		float staticBlobs; //!< blobs estáticos en tanto por ciento.
 		float CantidadMov;
 		float TiempoFrame;
 		float TiempoGlobal;
-		float CMov30;  /// Cantidad de movimiento medio en los últimos 30 min
-		float CMov1H;  /// Bis última hora
-		float CMov2H;	/// Bis últimas 2 horas
+		float CMov30;  //!< Cantidad de movimiento medio en los últimos 30 min.
+		float CMov1H;  //!< Cantidad de movimiento medio en la última hora.
+		float CMov2H;	//!< Cabtidad de movimiento medio en  últimas 2 horas.
 		float CMov4H;
 		float CMov8H;
 		float CMov16H;
 		float CMov24H;
 		float CMov48H;
-		float CMovMedio;	/// Cantidad de movimiento medio desde el comienzo
+		float CMovMedio;	//!< Cantidad de movimiento medio desde el comienzo.
 	}STStatFrame;
 
 /// Estructura que almacena las capas del frame, los datos para realizar calculos estadisticos simples en
-/// tiempo de ejecución y la lista de Flies con los datos de cada fly
+/// tiempo de ejecución y la lista de los con los datos de cada blob.
+
 	typedef struct {
-		int num_frame;
-		IplImage* Frame;
-		IplImage* BGModel;  /// backGround Model dinámico
-		IplImage* IDesv;	/// Desviación tipica del modelo de fondo dinámico
-		IplImage* OldFG; ///OldForeGround ( blobs estáticos ).
-		IplImage* FG;  ///Foreground ( blobs en movimiento ).
-		IplImage* ImMotion;
+		int num_frame; //!< Identificación del Frame procesado.
+		IplImage* Frame;//!< Imagen fuente de 8 bit de niveles de gris preprocesada.
+		IplImage* BGModel;//!< Imagen de 8 bits que contiene e  BackGround Model Dinámico.
+		IplImage* IDesv;//!< Imagen de 8 bits que contiene la Desviación Típica del modelo de fondo dinámico.
+		IplImage* OldFG; //!< Imagen que contiene el OldForeGround ( blobs estáticos ).
+		IplImage* FG;  //!< Imagen que contiene el Foreground ( blobs en movimiento ).
+		IplImage* ImMotion;//!< Imagen que contiene la orientación de moscas.
 //		STStatFrame * Stat;
-		tlcde* Flies; /// Puntero a lista circular doblemente enlazada con los datos de cada fly
+		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
 	}STFrame;
 
-	/// Estructura para el modelo de forma
-typedef struct {
-	float FlyAreaMed ;
-	float FlyAreaMedia;
-	float FlyAreaDes ;
+/// Estructura para el modelo de forma
+
+	typedef struct {
+	float FlyAreaMed ; //!< Mediana de las areas de los blobs que se encuentran en movimiento en cada frame.
+	float FlyAreaMedia;//!< Media de las areas de los blobs que se encuentran en movimiento en cada frame.
+	float FlyAreaDes ; //!< Desviación típica de las areas de los blobs que se encuentran en movimiento en cada frame.
 }SHModel;
 
 

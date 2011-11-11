@@ -62,6 +62,8 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 	if (SHOW_BG_REMOVAL == 1){
 			cvShowImage("Background", frameData->BGModel);
 			cvShowImage( "Foreground",frameData->FG);
+//			cvWaitKey(0);
+
 	}
 
 	if ( SHOW_MOTION_TEMPLATE == 1){
