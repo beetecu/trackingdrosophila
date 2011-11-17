@@ -113,8 +113,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 	int i = 0;
 	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
 
-		if( SHOW_SEGMENTATION_DATA == 1) printf("\n BLOB %d\n",id);
-		id++; //incrmentar el Id de las moscas
+
 
 		// Parámetros para calcular el error del ajuste en base a la diferencia de areas entre el Fg y la ellipse
 
@@ -136,7 +135,25 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 
 		areaElipse = PI*flyData->b*flyData->a;
 		err = abs(areaElipse - areaFG);
+		if( SHOW_SEGMENTATION_DATA == 1){
+			printf("\n BLOB %d\n",id);
+			id++; //incrmentar el Id de las moscas
 
+			CvRect ventana;
+			ventana.height =100;
+			ventana.width = 100;
+			ventana.x = 270 ;
+			ventana.y = 190;
+			printf("\n\n Matriz Brillo ");
+			verMatrizIm(Brillo, rect);
+			printf("\n\n Matriz BGModel ");
+			verMatrizIm(FrameData->BGModel, rect);
+			printf("\n\n Matriz Idesv ");
+			verMatrizIm(FrameData->IDesv, rect);
+			cvShowImage( "Foreground", FrameData->FG);
+			cvShowImage( "Background", FrameData->BGModel);
+			cvWaitKey(0);
+		}
 		if (SHOW_SEGMENTATION_DATA == 1){
 			printf("\n AreaElipse = %f  Area FG = %f  Error del ajuste = %f", areaElipse,areaFG,err);
 			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f ",
@@ -345,6 +362,7 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 		*tita=atan2( sint,cost );
 		*tita = *tita * 180 / PI;
 		if (*tita < 0 ) *tita = *tita + 360;
+		if (*tita == 360) *tita = 0; // tita varia entre 0 y 359
 	}
 
 	// Obtenemos el centro de la elipse

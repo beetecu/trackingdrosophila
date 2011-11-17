@@ -18,6 +18,15 @@ void DestroyWindows( );
 
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat );
 
+void VisualizarFr( STFrame* frameData, StaticBGModel* Flat );
+
+//!\brief ShowstatDataFr: Imprime en la visualización del frame los datos correspondientes a su procesado.
+/*!
+ * \param Im Imagen de 8 bits, donde se visualiza el frame actual.
+ */
+
+void ShowStatDataFr( IplImage* Im  );
+
 void VerEstadoBuffer( IplImage* Imagen,int num );
 
 void VerEstadoBGModel( IplImage* Imagen );

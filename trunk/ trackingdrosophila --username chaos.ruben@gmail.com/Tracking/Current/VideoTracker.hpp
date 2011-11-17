@@ -18,7 +18,6 @@
 #include <time.h>
 #include <sys/time.h>
 
-
 using namespace cv;
 using namespace std;
 //#include "Libreria.h"
@@ -39,27 +38,25 @@ using namespace std;
 // Opciones de programa
 
 #define DETECTAR_PLATO 1
+
 //Opciones de visualización
-
-
-
-#define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
+#define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
 #define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_BACKGROUND_DATA 1//!< Switch de 0 a 1 para visualizar el Background.
-#define SHOW_SEGMENTATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
+#define SHOW_SEGMENTATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
 #define SHOW_SEGMENTACION_STRUCT 0
-#define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 
+#define SHOW_BGMODEL_DATA 1
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
-#define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
+#define SHOW_SHAPE_MODEL_DATA_MEDIANA 0//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 #define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
-#define SHOW_SHAPE_MODELING 1
 #define SHOW_DATA_ASSIGNMENT 1
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0
-#define SHOW_SHAPE_MODEL_DATA_MEDIANA 1
+#define SHOW_SHAPE_MODEL_DATA_MEDIANA 0
 #define SHOW_VALIDATION_DATA 1
 
 
@@ -133,7 +130,7 @@ using namespace std;
 		CvRect DataFROI;//!< Region de interes del plato.
 	}StaticBGModel;
 
-/// Estructura que almacena cálculos estadísticos simples para mostrar en tiempo de ejecución.
+/// Estructura que almacena cálculos estadísticos globales simples para mostrar en tiempo de ejecución.
 
 	typedef struct {
 		int totalFrames; //!< Numero de Frames que posee en video
@@ -170,7 +167,7 @@ using namespace std;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
 	}STFrame;
 
-/// Estructura para el modelo de forma
+/// Estructura para el modelo de forma de los blobs
 
 	typedef struct {
 	float FlyAreaMed ; //!< Mediana de las areas de los blobs que se encuentran en movimiento en cada frame.
