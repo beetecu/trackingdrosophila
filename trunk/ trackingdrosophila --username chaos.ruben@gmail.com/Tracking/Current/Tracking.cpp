@@ -51,7 +51,7 @@ void Tracking( tlcde* framesBuf ){
 	/// asignación de identidad mediante una plantilla de movimiento.
 
 	cvZero(frameData->ImMotion);
-//	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
+	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
 
 	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
 	if( framesBuf->numeroDeElementos < 25) return;

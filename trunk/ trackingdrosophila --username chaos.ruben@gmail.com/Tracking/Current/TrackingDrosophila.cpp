@@ -154,10 +154,10 @@ int main(int argc, char* argv[]) {
 		ShowStatDataFr( FrameData->Frame);
 //		ShowStatDataFr( FrameData->FG);//
 		//visualizar primer frame del buffer
-		VisualizarEl( 0, FramesBuf , BGModel );
+// 		VisualizarEl( 0, FramesBuf , BGModel );
 		// visualizar ultimo frame del buffer
 		if(FramesBuf->numeroDeElementos >0)
-//		VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel );
+		VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel );
 		// FramesBuf->ultimo->siguiente->dato
  		printf("\n//////////////////////////////////////////////////\n");
 		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",NumFrame, TiempoFrame);

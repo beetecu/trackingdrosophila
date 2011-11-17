@@ -252,7 +252,7 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	/////// VALIDACIÓN
 	gettimeofday(&ti, NULL);
 	printf( "\nValidando contornos...");
-	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
+//	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
 
 //	cvCopy( FGMask,frameData->FG );
 	cvCopy( frameData->BGModel, lastBG);
