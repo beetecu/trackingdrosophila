@@ -266,13 +266,13 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 		uchar* ptr4 = (uchar*) ( Ides->imageData + y*Ides->widthStep + 1*dataroi.x);
 		uchar* ptr5 =  (uchar*) ( fg->imageData + y*fg->widthStep + 1*dataroi.x);
 		for (int x = 0; x<dataroi.width; x++){
-			// Calcular (I(p)-u(p)) /0(p)
+			// Calcular (I(p)-u(p)) /0(p) // ojo, no el valor absoluto
 			if ( (ptr1[x]-ptr2[x]) >= 0 ) ptr3[x] = 0;
 			else ptr3[x] = abs( ptr1[x]-ptr2[x]);
-			// Si la desviación tipica del pixel supera en HiF veces la
+			// Si la desviación tipica del pixel supera en LowT veces la
 			// desviación típica del modelo, el pixel se clasifica como
 			//foreground ( 255 ), en caso contrario como background
-			if ( ptr3[x] > Param->LOW_THRESHOLD ) ptr5[x] = 255;
+			if ( ptr3[x] >= (Param->LOW_THRESHOLD) ) ptr5[x] = 255;
 			else ptr5[x] = 0;
 		}
 	}
@@ -293,7 +293,24 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 
 		FGCleanup( fg, Ides,Param, dataroi );
-
+if( SHOW_BGMODEL_DATA ){
+		CvRect ventana;
+		ventana.height =100;
+		ventana.width = 100;
+		ventana.x = 270 ;
+		ventana.y = 190;
+		printf("\n\n Matriz Brillo ");
+		verMatrizIm(ImGray, ventana);
+		printf("\n\n Matriz BGModel ");
+		verMatrizIm(bg_model, ventana);
+		printf("\n\n Matriz Idesv ");
+		verMatrizIm(Ides, ventana);
+		printf("\n\n Matriz Idesv ");
+		verMatrizIm(Idiff, ventana);
+		cvShowImage( "Foreground", fg);
+		cvShowImage( "Background",bg_model);
+		cvWaitKey(0);
+}
 //	printf(" Alpha = %f\n",ALPHA);
 //	cvShowImage( "Foreground",fg);
 //	cvWaitKey(0);
@@ -339,7 +356,7 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 		double area = cvContourArea( c );
 		area = fabs( area );
 
-		if ( ( (area < Param->MIN_CONTOUR_AREA)&&Param->MIN_CONTOUR_AREA > 0) ||
+		if ( ( (area < Param->MIN_CONTOUR_AREA)&& Param->MIN_CONTOUR_AREA > 0) ||
 				( (area > Param->MAX_CONTOUR_AREA)&& Param->MAX_CONTOUR_AREA > 0) ) {
 			flag = 1;
 		}

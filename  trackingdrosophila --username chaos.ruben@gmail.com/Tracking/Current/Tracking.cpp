@@ -33,6 +33,7 @@ void Tracking( tlcde* framesBuf ){
 		CrearIdentidades(Identities);
 		mostrarIds( Identities );
 	}
+	if( framesBuf->numeroDeElementos < 1) return;
 	irAlFinal( framesBuf );
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 
@@ -40,16 +41,17 @@ void Tracking( tlcde* framesBuf ){
 
 	hungarian_t prob;
 
+
+
+	// Establecemos el estado de los frames que se han ido al oldfg
+
+
+
 	/// resolvemos la ambiguedad en la orientación y hacemos una primera
 	/// asignación de identidad mediante una plantilla de movimiento.
-	/// MotionTemplate trabaja al final del buffer( el número de frames
-	/// dependerá de MHI_DURATION ).
-	/// Cada objeto detectado se etiqueta como un nuevo elemento
-	cvZero(frameData->ImMotion);
-		if ( SHOW_MOTION_TEMPLATE == 1){
 
-			MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
-	}
+	cvZero(frameData->ImMotion);
+//	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
 
 	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
 	if( framesBuf->numeroDeElementos < 25) return;
@@ -135,7 +137,7 @@ void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation 
 
 }
 void ReleaseDataTrack(){
-		liberarIdentidades( Identities );
+		if(Identities) liberarIdentidades( Identities );
 		if (Identities) free( Identities) ;
 		cvReleaseImage( &ImOpFlowX);
     		cvReleaseImage( &ImOpFlowY);
@@ -143,3 +145,5 @@ void ReleaseDataTrack(){
     		cvReleaseImage( &ImagenB);
     		releaseMotionTemplate();
 }
+
+
