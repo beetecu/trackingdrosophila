@@ -293,24 +293,24 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 
 		FGCleanup( fg, Ides,Param, dataroi );
-if( SHOW_BGMODEL_DATA ){
-		CvRect ventana;
-		ventana.height =100;
-		ventana.width = 100;
-		ventana.x = 270 ;
-		ventana.y = 190;
-		printf("\n\n Matriz Brillo ");
-		verMatrizIm(ImGray, ventana);
-		printf("\n\n Matriz BGModel ");
-		verMatrizIm(bg_model, ventana);
-		printf("\n\n Matriz Idesv ");
-		verMatrizIm(Ides, ventana);
-		printf("\n\n Matriz Idesv ");
-		verMatrizIm(Idiff, ventana);
-		cvShowImage( "Foreground", fg);
-		cvShowImage( "Background",bg_model);
-		cvWaitKey(0);
-}
+//if( SHOW_BGMODEL_DATA ){
+//		CvRect ventana;
+//		ventana.height =100;
+//		ventana.width = 100;
+//		ventana.x = 270 ;
+//		ventana.y = 190;
+//		printf("\n\n Matriz Brillo ");
+//		verMatrizIm(ImGray, ventana);
+//		printf("\n\n Matriz BGModel ");
+//		verMatrizIm(bg_model, ventana);
+//		printf("\n\n Matriz Idesv ");
+//		verMatrizIm(Ides, ventana);
+//		printf("\n\n Matriz Idesv ");
+//		verMatrizIm(Idiff, ventana);
+//		cvShowImage( "Foreground", fg);
+//		cvShowImage( "Background",bg_model);
+//		cvWaitKey(0);
+//}
 //	printf(" Alpha = %f\n",ALPHA);
 //	cvShowImage( "Foreground",fg);
 //	cvWaitKey(0);

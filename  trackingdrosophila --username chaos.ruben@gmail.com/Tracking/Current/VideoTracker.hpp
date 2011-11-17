@@ -46,11 +46,11 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_BACKGROUND_DATA 1//!< Switch de 0 a 1 para visualizar el Background.
-#define SHOW_SEGMENTATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
+#define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
 #define SHOW_SEGMENTACION_STRUCT 0
 #define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 
-#define SHOW_BGMODEL_DATA 1
+#define SHOW_BGMODEL_DATA 0
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 0//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 #define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
