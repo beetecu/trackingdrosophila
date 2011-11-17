@@ -9,41 +9,30 @@
 #define ASIGNARIDENTIDADES_HPP_
 
 #include "VideoTracker.hpp"
-#include "opencv2/video/tracking.hpp"
 #include "Libreria.h"
+#include "opencv2/video/tracking.hpp"
 
-
-
-typedef struct{
-	int etiqueta;
-	CvScalar color;
-}Identity;
-
+///!  brief -Resuelve la ambiguedad en la orientación mediante el cálculo
+///!    del gradiente global del movimiento de la escena tras ser segmentado
+///!    en movimientos locales.
+///!   -Hace una primera asignación de identidad mediante una plantilla de movimiento.
 void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 
 ///! brief Realiza la asignación de identidades. El primer parámetro es la lista
 ///! el segundo parámetro es un flag que indica qué individuos asignar. 1 para los
 ///! del foreground ( estado dinámico )  y 0 para los del oldforeground ( estado estático )
 
-STFly* matchingIdentity( tlcde* framesBuf ,tlcde* Etiquetas, CvRect MotionRoi, double angle );
+STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* ids , CvRect MotionRoi, double angle );
+
 
 void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
 
-void CrearIdentidades(tlcde* Etiquetas);
 
-static Scalar randomColor(RNG& rng);
+void corregirEstado( STFrame* frame0, STFrame* frame1, STFrame* frame2, int pos );
 
-void liberarIdentidades(tlcde* lista);
+void establecerEstado( STFrame* frame0, STFrame* frame1, STFrame* frame2,IplImage* orient);
 
-void asignarNuevaId( STFly* fly, tlcde* identities);
-
-void dejarId( STFly* fly, tlcde* identities );
-
-void mostrarIds( tlcde* Ids);
-
-void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids = NULL );
-
-void SetTita( STFly* flyAnterior,STFly* flyActual, double angle );
+int buscarFlies( STFrame* frameData ,CvRect MotionRoi, int *p );
 
 void allocateMotionTemplate( IplImage* im);
 
