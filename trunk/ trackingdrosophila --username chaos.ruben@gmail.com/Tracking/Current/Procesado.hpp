@@ -15,7 +15,7 @@
 #include "validacion.hpp"
 #include "segmentacion.hpp"
 
-//!\brief Procesado2: - Limpieza del foreground en tres etapas :
+//!\brief Procesado: - Limpieza del foreground en tres etapas :
 //!\n 1. Actualización de fondo y resta de fondo obteniendo el foreground.
 //!\n 2. Nueva actualización de fondo usando la máscacara de foreground obtenida.
 //!\n Resta de fondo
@@ -64,13 +64,17 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel, SHMode
  *
  * \see VideoTracker.hpp
  */
-void Procesado2( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel,SHModel* Shape );
+STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
 
+
+
+STFrame* InitNewFrameData(IplImage* I );
 //!\brief InitNewFrameData:  Inicializa las imagenes de la estructura FrameData y la Lista Flies.
 /*!
  * \param I Imagen fuente de 8 bits.
  * \param FrameData Estructura que contiene las imagenes que cada capa.
  */
+
 void InitNewFrameData(IplImage* I, STFrame *FrameData );
 
 //!\brief putBGModelParams: Restablece los parametros para el modelado de fondo.
@@ -80,6 +84,8 @@ void InitNewFrameData(IplImage* I, STFrame *FrameData );
 
 void putBGModelParams( BGModelParams* Params);
 
-void liberarDataProcess();
+void AllocateDataProcess( IplImage *I );
+
+void releaseDataProcess();
 
 #endif /* PROCESADO_HPP_ */

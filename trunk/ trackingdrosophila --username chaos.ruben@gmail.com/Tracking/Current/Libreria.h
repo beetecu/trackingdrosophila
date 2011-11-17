@@ -35,8 +35,10 @@ int gettimeofday( struct timeval *tv, struct timezone *tz );
 
 int getAVIFrames( char* );
 
+int RetryCap( CvCapture* g_capture );
 //! \brief ImPreProcess: Recibe una imagen RGB 8 bit y devuelve una imagen en escala de grises con un
 //!   filtrado gaussiano 5x5. Si el último parámetro es verdadero se binariza, si
+
 //!   el parámetro ImFMask no es NULL se aplica la máscara.
     /*!
       \param src Imagen fuente de 8 bit RGB.
@@ -46,7 +48,11 @@ int getAVIFrames( char* );
 
       \return Imagen preprocesada con la extracción del plato.
     */
+
+
 void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRect ROI);
+
+void verMatrizIm( IplImage* Im, CvRect roi);
 
 void invertirBW( IplImage* Imagen );
 
@@ -202,9 +208,19 @@ void anyadirAlFinal(void *e, tlcde *lcde );
 
 #endif // _INTERFAZ_LCSE_
 
+/////////////////////// INTERFACE PARA GESTIONAR LISTA FLIES //////////////////////////
+#ifndef _FLIES_
+#define _FLIES_
 
-#ifndef _BUFFER_
-#define _BUFFER_
+#define OVER_WRITE 0	// indica que al dibujar una lista flies, se sobreescriba la imagen
+#define CLEAR 1	// indica que al dibujar una lista flies, se borre primero la imagen
+
+
+int dibujarFG( tlcde* flies, IplImage* dst,bool clear);
+
+int dibujarBG( tlcde* flies, IplImage* dst,bool clear);
+
+int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear);
 
 
 //!\brief Mostrar llos elementos de la lista con sus datos.
@@ -212,6 +228,14 @@ void anyadirAlFinal(void *e, tlcde *lcde );
  * \param pos posicion del elemento mostrado.
  * \param lcde Lista circular doblemente enlazada.
  */
+
+
+//!\brief Mostrar llos elementos de la lista con sus datos.
+/*!
+ * \param pos posicion del elemento mostrado.
+ * \param lcde Lista circular doblemente enlazada.
+ */
+
 
 void mostrarListaFlies(int pos,tlcde *lista);
 
@@ -221,10 +245,24 @@ void mostrarListaFlies(int pos,tlcde *lista);
  */
 void liberarListaFlies(tlcde *lista);
 
+void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids = NULL );
+
+void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
+
+void SetTita( STFly* flyAnterior,STFly* flyActual, double angle );
+
+#endif //_FLIES_
+
+///////////////////// Interfaz para gestionar buffer //////////////////////////////
+
+#ifndef _BUFFER_
+#define _BUFFER_
+
 //!\ brief Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo ).
 /*
  * \param FramesBuf \param FramesBuf Lista circular doblemente enlazada que contiene los frames con las listas de las moscas validadas..
  */
+
 int liberarPrimero(tlcde *FramesBuf );
 
 //!\brief borra todos los elementos del buffer.
@@ -241,6 +279,31 @@ void liberarBuffer(tlcde *FramesBuf);
 void liberarSTFrame( STFrame* frameData );
 
 #endif //_BUFFER_
+
+#ifndef _IDENTIDADES_
+#define _IDENTIDADES_
+
+#define NUMBER_OF_IDENTITIES 300
+
+typedef struct{
+	int etiqueta;
+	CvScalar color;
+
+}Identity;
+
+void CrearIdentidades(tlcde* Etiquetas);
+
+static Scalar randomColor(RNG& rng);
+
+void liberarIdentidades(tlcde* lista);
+
+void asignarNuevaId( STFly* fly, tlcde* identities);
+
+void dejarId( STFly* fly, tlcde* identities );
+
+void mostrarIds( tlcde* Ids);
+
+#endif //_IDENTIDADES_
 
 #ifndef _FICHEROS_
 #define _FIHEROS_
@@ -272,4 +335,7 @@ void crearFichero(char *nombreFichero );
 int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
 
 #endif //_FICHEROS_
+
 #endif // LIBRERIA_H_
+
+

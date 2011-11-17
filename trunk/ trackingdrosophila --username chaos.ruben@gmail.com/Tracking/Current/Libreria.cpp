@@ -9,6 +9,30 @@
 
 // Tratamiento de Imagenes
 
+int RetryCap( CvCapture* g_capture ){
+	IplImage* frame = cvQueryFrame(g_capture); // intentar de nuevo
+	if ( !frame ) { // intentar de nuevo cn los siguientes frame
+		double n_frame = cvGetCaptureProperty( g_capture, 1);
+		int i = 1;
+		printf("\n Fallo en captura del frame %0.1f",n_frame);
+		while( !frame && i<4){
+			printf("\n Intentándo captura del frame %0.1f",n_frame+i);
+			cvSetCaptureProperty( g_capture,
+								CV_CAP_PROP_POS_AVI_RATIO,
+								n_frame +i );
+			frame = cvQueryFrame(g_capture);
+			if ( !frame ) printf("\n Fallo en captura");
+			i++;
+		}
+		if ( !frame ) {
+			error(2);
+			return 0;
+		}
+		else return 1;
+	}
+	else return 1;
+}
+
 int getAVIFrames(char * fname) {
 	char tempSize[4];
 	// Trying to open the video file
@@ -77,8 +101,28 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 	cvAndS(dst, cvRealScalar( 0 ) , dst, ImFMask );
 }
 
+void verMatrizIm( IplImage* Im, CvRect roi){
+
+	for (int y = roi.y; y< roi.y + roi.height; y++){
+		uchar* ptr1 = (uchar*) ( Im->imageData + y*Im->widthStep + 1*roi.x);
+
+		printf(" \n\n"); // espacio entre filas
+
+		for (int x = 0; x<roi.width; x++){
+
+			if( ( y == roi.y) && ( x == 0) ){
+				printf("\n Origen: ( %d , %d )\n\n",(x + roi.x),y);
+			}
+			printf("%d\t", ptr1[x]); // columnas
+
+		}
+	}
+
+}
+
 
 ///////////////////// INTERFAZ PARA MANIPULAR UNA LCDE //////////////////////////////
+
 //
 
 
@@ -358,7 +402,54 @@ void anyadirAlPrincipio(void *e, tlcde *lcde ){
 	insertar( e, lcde);
 }
 
-///////////////////// Interfaz para gestionar buffer //////////////////////////////
+/////////////////////// INTERFACE PARA GESTIONAR LISTA FLIES //////////////////////////
+
+int dibujarFG( tlcde* flies, IplImage* dst,bool clear){
+	STFly* fly;
+	if( flies->numeroDeElementos < 1 ) return 0;
+	if( dst == NULL ) return 0;
+	if ( clear ) cvZero( dst );
+	irAlPrincipio( flies);
+	for( int j = 0; j < flies->numeroDeElementos; j++){
+		fly = (STFly*)obtener( j, flies);
+		if( fly->Estado ){
+			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+			cvEllipse( dst, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+		}
+	}
+	return 1;
+}
+
+int dibujarBG( tlcde* flies, IplImage* dst, bool clear){
+	STFly* fly;
+	if( flies->numeroDeElementos < 1 ) return 0;
+	if( dst == NULL ) return 0;
+	if ( clear ) cvZero( dst );
+	irAlPrincipio( flies);
+	for( int j = 0; j < flies->numeroDeElementos; j++){
+		fly = (STFly*)obtener( j, flies);
+		if( !fly->Estado ){
+			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+			cvEllipse( dst, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+		}
+	}
+	return 1;
+}
+
+int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear){
+	STFly* fly;
+	if( flies->numeroDeElementos < 1 ) return 0;
+	if( dst == NULL ) return 0;
+	if ( clear ) cvZero( dst );
+	irAlPrincipio( flies);
+	for( int j = 0; j < flies->numeroDeElementos; j++){
+		fly = (STFly*)obtener( j, flies);
+		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+		cvEllipse( dst, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+	}
+	return 1;
+}
+
 
 void mostrarListaFlies(int pos,tlcde *lista)
 {
@@ -378,7 +469,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 5; j++){
+	for(int j = 0; j < 6; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 
@@ -398,10 +489,14 @@ void mostrarListaFlies(int pos,tlcde *lista)
 				printf( "\t%0.1f",flydata->orientacion);
 			}
 			if( j == 3 ){
+				if (i == 0) printf( "\nDirección");
+				printf( "\t%0.1f",flydata->direccion);
+			}
+			if( j == 4 ){
 				if (i == 0) printf( "\nEstado\t");
 				printf( "\t%d",flydata->Estado);
 			}
-			if( j == 4 ){
+			if( j == 5 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -432,10 +527,110 @@ void liberarListaFlies(tlcde *lista)
     flydata = (STFly *)borrar(lista);
   }
 }
+// si el ultimo parámetro no es nullindica
+void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids ){
+	// si la actual ya habia sido etiquetada dejamos su etiqueta
+	if( flyActual->etiqueta && ids ) dejarId(flyActual,ids);
+	flyActual->etiqueta = flyAnterior->etiqueta;
+	flyActual->Color = flyAnterior->Color;
+	float distancia;
+	//Establecemos la dirección y el modulo del vector de desplazamiento
+	EUDistance( flyAnterior->posicion,flyActual->posicion, &flyAnterior->direccion, &distancia );
+	flyActual->dstTotal = flyAnterior->dstTotal + distancia;
+//	SetTita( flyActual, flyAnterior );
+}
+/// Haya la distancia ecuclidea entre dos puntos. Establece el modulo y y el argumento en grados.
+///
+void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia){
 
-// Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
-// El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
-// a la función.
+
+	float b;
+	float a;
+	b = posicion2.x - posicion1.x;
+	a =  posicion2.y - posicion1.y;
+
+	if( ( b < 0)&&(a < 0) )
+	{
+		*direccion = atan( b / a );
+		//resolvemos ambiguedad debida a los signos en la atan
+		*direccion = *direccion + PI;
+		*direccion = ( (*direccion) *180)/PI; // a grados
+	}
+	else if( ( b == 0) && ( a == 0) ){
+		*direccion = -1;
+	}
+	else if( (b == 0)&&( a != 0) ){
+		if (a < 0) *direccion = 180;
+		else *direccion = 0;
+	}
+	else if( (b != 0)&&( a == 0) ){
+		if( b > 0 ) *direccion = 270;
+		else *direccion = 90;
+	}
+	else {
+		*direccion = atan( b / a );
+		*direccion = ( (*direccion) *180)/PI;
+	}
+
+	// calcular distancia para comprobar si hay desplazamiento. si es menor que un umbral
+	// consideramos que esta quieto.
+	*distancia = sqrt( pow( (posicion2.y-posicion1.y) ,2 )  + pow( (posicion2.x - posicion1.x) ,2 ) );
+
+}
+
+/// resuelve la ambiguedad en la orientaciónpara cada cuadrante
+///estableciendo ésta en función de la dirección del desplazamiento
+/// en la decisión de si no se modifica el ángulo o bien se suma o resta pi
+/// se considera mayores y menores estrictos, de forma que si la dif absoluta
+///entre la direccion y la orientación es exactamnte 90, no se modifica la orient
+//.Siempre devuelve un ángulo entre 0 y 359º
+
+void SetTita( STFly* flyAnterior,STFly* flyActual,double angle ){
+
+	//flyAnterior->direccion = angle;
+	flyActual->direccion = angle;
+
+	if(  flyActual->orientacion >= 0 && flyActual->orientacion < 90 ){
+		if(  (flyActual->direccion > (flyActual->orientacion+90) )&&
+			 (flyActual->direccion < (flyActual->orientacion+270 ) )  ){
+			// no devolvemos un ángulo mayor de 359
+			if( flyActual->orientacion >= 180 )  flyActual->orientacion -= 180;
+			else flyActual->orientacion += 180;
+		}
+	}
+	if(  flyActual->orientacion >= 90 && flyActual->orientacion < 270 ){
+		if(  (flyActual->direccion < (flyActual->orientacion-90) )||
+			 (flyActual->direccion > (flyActual->orientacion+90) )  ){
+			if( flyActual->orientacion >= 180 )  flyActual->orientacion -= 180;
+			else flyActual->orientacion += 180;
+		}
+	}
+	if(  flyActual->orientacion >= 270 && flyActual->orientacion < 360 ){
+		if(  (flyActual->direccion > (flyActual->orientacion-90) )&&
+			 (flyActual->direccion < (flyActual->orientacion-270 ) )  ){
+			// no devolvemos un ángulo mayor de 359
+			if( flyActual->orientacion >= 180 )  flyActual->orientacion -= 180;
+			else flyActual->orientacion += 180;
+		}
+	}
+
+	// si la dirección y la orientación difieren en más de 90º o en menos de 270
+//	if ( ( abs( flyActual->orientacion - angle ) > 90) || (abs( flyActual->orientacion - angle ) < 270) )  {
+//		// establecemos la orientación según la dirección. Si sobrepasa los 360 le restamos 180
+//		// si no los sobrepasa se los sumamos. Así el resultado siempre estará entre 0 y 359.
+//		if (flyActual->orientacion >= 180) flyActual->orientacion = flyActual->orientacion - 180;
+//		else flyActual->orientacion = flyActual->orientacion + 180;
+//		//flyActual->orientacion = flyAnterior->orientacion;
+//	}
+
+}
+///////////////////// Interfaz para gestionar buffer //////////////////////////////
+
+
+///! Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
+///! El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
+///! a la función.
+
 int liberarPrimero(tlcde *FramesBuf ){
 
 	STFrame *frameData = NULL;
@@ -503,6 +698,82 @@ void liberarBuffer(tlcde *FramesBuf)
     free(frameData); // borrar el área de datos del elemento eliminado
     frameData = (STFrame *)borrar( FramesBuf );
   }
+}
+
+///////////////////////// INTERFACE PARA GESTIONAR IDENTIDADES /////////////////////
+
+
+
+void CrearIdentidades(tlcde* Identities){
+
+	Identity* Id;
+	RNG rng(0xFFFFFFFF); // para generar un color aleatorio
+//	char nombre[10];
+//	nombre = "Vidal";
+//	nombre = "Pepe";
+//	nombre = "Tomas";
+//	nombre = "Pablo";
+	int i = NUMBER_OF_IDENTITIES-1;
+	for(i=NUMBER_OF_IDENTITIES-1; i >= 0 ; i--){
+		Id = ( Identity* )malloc( sizeof(Identity ));
+		Id->etiqueta = i + 1;
+		Id->color = randomColor(rng);
+		anyadirAlFinal( Id, Identities);
+	}
+}
+
+void liberarIdentidades(tlcde* lista){
+	  // Borrar todos los elementos de la lista
+	Identity* id;
+	  // Comprobar si hay elementos
+	  if (lista->numeroDeElementos == 0 ) return;
+	  // borrar: borra siempre el elemento actual
+	  irAlPrincipio( lista );
+	  id = (Identity *)borrar(lista);
+	  int i = 0;
+	  while( id ){
+		  free (id);
+		  id = NULL;
+		  id = (Identity *)borrar(lista);
+	  }
+}
+
+void asignarNuevaId( STFly* fly, tlcde* identities){
+	Identity *id;
+	id = (Identity* )borrarEl( identities->numeroDeElementos - 1, identities);
+	fly->etiqueta = id->etiqueta;
+	fly->Color = id->color;
+	free(id);
+	id = NULL;
+}
+
+void dejarId( STFly* fly, tlcde* identities ){
+	Identity *Id;
+	Id = ( Identity* )malloc( sizeof(Identity ));
+	Id->etiqueta = fly->etiqueta;
+	Id->color = fly->Color;
+	anyadirAlFinal( Id , identities );
+}
+
+void mostrarIds( tlcde* Ids){
+
+	Identity* id;
+	irAlFinal(Ids);
+
+	for(int i = 0; i <Ids->numeroDeElementos ; i++ ){
+		id = (Identity*)obtener(i, Ids);
+		printf("Id = %d\n", id->etiqueta);
+	}
+}
+
+void reasignarIds(){
+
+}
+
+static Scalar randomColor(RNG& rng)
+{
+    int icolor = (unsigned)rng;
+    return Scalar(icolor&255, (icolor>>8)&255, (icolor>>16)&255);
 }
 
 /////////////////////////// GESTION FICHEROS //////////////////////////////

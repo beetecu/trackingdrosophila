@@ -7,6 +7,12 @@
 
 #include "Visualizacion.hpp"
 
+	extern float TiempoGlobal ;
+	extern float TiempoFrame;
+	extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
+	extern double TotalFrames ;
+
+
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 
 	STFrame* frameData;
@@ -38,23 +44,125 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 //			CV_RGB(255,0,0),2);
 
 	//Dibujamos los blobs
+
+	for( int i = 0; i <  flies->numeroDeElementos; i++ ){
+		fly = (STFly*)obtener(i, flies);
+		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+
+		if( fly->Estado == 1){
+			cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+			cvLine( frameData->Frame,
+					fly->posicion,
+					cvPoint( cvRound( fly->posicion.x - 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+							 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+					fly->Color,
+					1,CV_AA, 0 );
+		}
+		else{
+			cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+			cvLine( frameData->Frame,
+								fly->posicion,
+								cvPoint( fly->posicion.x ,
+										 fly->posicion.y ),
+								fly->Color,
+								8,CV_AA, 0 );
+		}
+		// visualizar direccion
+		//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+		//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+		double magnitude = 30;
+		cvLine( frameData->Frame,
+				fly->posicion,
+				cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+						 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+				CVX_RED,
+				1, CV_AA, 0 );
+		visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
+
+	}
+
+//	ShowStatDataFr( frameData->Frame );
+	cvShowImage( "Visualización", frameData->Frame );
+
+
+	}
+	// Mostramos imagenes
+
+	//
+	if (SHOW_BG_REMOVAL == 1){
+			cvShowImage("Background", frameData->BGModel);
+			cvShowImage( "Foreground",frameData->FG);
+	}
+
+	if ( SHOW_MOTION_TEMPLATE == 1){
+		cvShowImage( "Motion",frameData->ImMotion);
+		}
+	cvWaitKey(0);
+	irAlFinal( frameBuf );
+}
+
+void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
+
+
+	tlcde* flies;
+	STFly* fly;
+
+	flies = frameData->Flies;
+	if (SHOW_VISUALIZATION == 1){
+
+	//Obtenemos la Imagen donde se visualizarán los resultados
+
+	//Dibujamos el plato en la imagen de visualizacion
+	if( DETECTAR_PLATO ){
+		cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+		cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+	}
+	// Dibujamos la ROI
+//	cvRectangle( frameData->Frame,
+//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
+//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
+//			CV_RGB(255,0,0),2);
+
+	//Dibujamos los blobs
 	int i = 0;
 	while( i <  flies->numeroDeElementos ){
 		fly = (STFly*)obtener(i, flies);
 		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
 		cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+		if( fly->Estado == 1){
+			cvLine( frameData->Frame,
+					fly->posicion,
+					cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+							 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+					fly->Color,
+					1,CV_AA, 0 );
+		}
+		else{
+			cvLine( frameData->Frame,
+								fly->posicion,
+								cvPoint( fly->posicion.x ,
+										 fly->posicion.y ),
+								fly->Color,
+								8,CV_AA, 0 );
+		}
+		// visualizar direccion
+		double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+		//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+		double magnitude = 30;
 		cvLine( frameData->Frame,
 				fly->posicion,
-				cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-						 cvRound( fly->posicion.y + 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
-				fly->Color, 1,
-				CV_AA, 0 );
+				cvPoint( cvRound( fly->posicion.x + magnitude*cos(op_angle*CV_PI/180)),
+						 cvRound( fly->posicion.y - magnitude*sin(op_angle*CV_PI/180))  ),
+				CVX_RED,
+				1, CV_AA, 0 );
 		visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
 		i++;
 	}
 
 //	ShowStatDataFr( frameData->Frame );
 	cvShowImage( "Visualización", frameData->Frame );
+
+
 	}
 	// Mostramos imagenes
 
@@ -69,8 +177,55 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 	if ( SHOW_MOTION_TEMPLATE == 1){
 		cvShowImage( "Motion",frameData->ImMotion);
 		}
+//	cvWaitKey(0);
 
-	irAlFinal( frameBuf );
+}
+
+void ShowStatDataFr( IplImage* Im  ){
+
+
+	CvFont fuente1;
+	CvFont fuente2;
+
+	char NFrame[100];
+	CvPoint NFrameO;
+	char TProcesF[100];
+	CvPoint TProcesFO;
+	char TProces[100];
+	CvPoint TProcesO;
+	char PComplet[100];
+	CvPoint PCompletO;
+	char FPS[100];
+	CvPoint FPSO;
+
+	sprintf(NFrame,"Frame %.0f ",NumFrame);
+	sprintf(TProcesF,"Tiempo de procesado del Frame : %5.4g ms", TiempoFrame);
+	sprintf(TProces,"Segundos de video procesados: %.3f seg ", TiempoGlobal/1000);
+	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(NumFrame/TotalFrames)*100 );
+	sprintf(FPS,"FPS: %.2f ",(1000/TiempoFrame));
+
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.5, 0.5, 0, 1, 8);
+
+	NFrameO.x = 10;
+	NFrameO.y = 20;
+	cvPutText( Im, NFrame, NFrameO, &fuente1, CVX_WHITE );
+
+	TProcesFO.x = 10;
+	TProcesFO.y = 40;
+	cvPutText( Im, TProcesF, TProcesFO, &fuente2, CVX_GREEN );
+
+	TProcesO.x = 10;
+	TProcesO.y = 60;
+	cvPutText( Im, TProces, TProcesO, &fuente2, CVX_GREEN);
+
+	PCompletO.x = 10;
+	PCompletO.y = 80;
+	cvPutText( Im, PComplet, PCompletO, &fuente2, CVX_GREEN);
+
+	FPSO.x = 10;
+	FPSO.y = 100;
+	cvPutText( Im, FPS, FPSO, &fuente1, CVX_WHITE);
 }
 // Genera una imagen que representa el llenado del buffer
 void VerEstadoBuffer( IplImage* Imagen,int num ){
