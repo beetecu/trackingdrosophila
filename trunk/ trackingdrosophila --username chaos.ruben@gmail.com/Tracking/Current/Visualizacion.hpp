@@ -23,6 +23,16 @@ void CreateWindows();
 /// destruye las ventanas
 void DestroyWindows( );
 
+//- opciones en visualización:
+//	- pause (p): realiza una pausa refrescando continuamente el frame actual
+//				para continuar presionar "c"
+//	- stop (s): detiene el procesado de frames y permite visualizar cada frame:
+//		- siguiente frame (+)
+//		- anterior frame (-)
+//		- ultimo frame ( f )
+//		- frame inicial ( i )
+//		- grabar frame a fichero ( g )
+//		- continuar (c) : continua con el procesado
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat );
 
 void VisualizarFr( STFrame* frameData, StaticBGModel* Flat );
