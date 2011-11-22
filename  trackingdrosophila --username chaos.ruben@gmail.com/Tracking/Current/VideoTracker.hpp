@@ -45,7 +45,7 @@ using namespace std;
 #define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
-#define SHOW_BACKGROUND_DATA 1//!< Switch de 0 a 1 para visualizar el Background.
+#define SHOW_BACKGROUND_DATA 0//!< Switch de 0 a 1 para visualizar el Background.
 #define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
 #define SHOW_SEGMENTACION_STRUCT 0
 #define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.

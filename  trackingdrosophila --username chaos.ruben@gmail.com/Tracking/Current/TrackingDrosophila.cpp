@@ -110,6 +110,8 @@ int main(int argc, char* argv[]) {
 		//////////  PROCESAR      ////////////
 		//Procesado(frame, FramesBuf,BGModel, Shape );
 		FrameData = Procesado2(frame, BGModel, Shape );
+//		muestrearLinea( FrameData->Frame,cvPoint( 0, 240 ),cvPoint( 640, 240 ), 20);
+
 		anyadirAlFinal( FrameData, FramesBuf);
 		//////////  RASTREAR       ////////////
 		Tracking( FramesBuf );

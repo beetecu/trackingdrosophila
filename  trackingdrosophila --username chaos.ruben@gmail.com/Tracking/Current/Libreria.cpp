@@ -85,7 +85,6 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 	// Imagen a un canal de niveles de gris
 	cvCvtColor( src, dst, CV_BGR2GRAY);
 	cvSetImageROI( dst, ROI );
-
 	if (bin == true){
 		cvAdaptiveThreshold( dst, dst,
 			255, CV_ADAPTIVE_THRESH_MEAN_C,CV_THRESH_BINARY,75,40);
@@ -111,7 +110,8 @@ void verMatrizIm( IplImage* Im, CvRect roi){
 		for (int x = 0; x<roi.width; x++){
 
 			if( ( y == roi.y) && ( x == 0) ){
-				printf("\n Origen: ( %d , %d )\n\n",(x + roi.x),y);
+				printf("\n Origen: ( %d , %d )",(x + roi.x),y);
+				printf(" Width = %d  Height = %d \n\n",roi.width,roi.height);
 			}
 			printf("%d\t", ptr1[x]); // columnas
 
@@ -120,6 +120,32 @@ void verMatrizIm( IplImage* Im, CvRect roi){
 
 }
 
+void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
+
+	static int count = 0;
+	int max_buffer;
+	int	r[num_frs];
+	CvLineIterator iterator;
+
+	if(!existe("SamplelinesPC.csv")) crearFichero("SamplelinesPC.csv");
+
+	FILE *fptr = fopen("SLine120_220_267_5000.csv","a"); // Store the data here
+
+	// MAIN PROCESSING LOOP:
+	//
+	if( count < num_frs){
+		max_buffer = cvInitLineIterator(rawImage,pt1,pt2,&iterator,8,0);
+		for(int j=0; j<max_buffer; j++){
+			fprintf(fptr,"%d;", iterator.ptr[0]); //Write value
+			CV_NEXT_LINE_POINT(iterator); //Step to the next pixel
+		}
+		// OUTPUT THE DATA IN ROWS:
+		//
+		fprintf(fptr,"\n");
+		count++;
+	}
+	fclose(fptr);
+}
 
 ///////////////////// INTERFAZ PARA MANIPULAR UNA LCDE //////////////////////////////
 
@@ -825,7 +851,7 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	Flies = frameData->Flies;
 	if (Flies->numeroDeElementos == 0) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
 	int i = 0, tam = Flies->numeroDeElementos;
-	// Abrir el fichero nombreFichero para escribir "w".
+	// Abrir el fichero nombreFichero para añadir "a".
 	if ((pf = fopen(nombreFichero, "a")) == NULL)
 	{
 	printf("El fichero no puede abrirse.");

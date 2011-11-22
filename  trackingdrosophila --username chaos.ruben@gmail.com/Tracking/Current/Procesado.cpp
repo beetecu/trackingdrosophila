@@ -237,7 +237,7 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	gettimeofday(&tf, NULL);
 	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 								(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf("Obtención de máscara de Foreground : %5.4g ms\n", tiempoParcial);
+	printf("\n\nObtención de máscara de Foreground : %5.4g ms\n", tiempoParcial);
 	/////// SEGMENTACION
 
 	frameData->Flies = segmentacion(Imagen, frameData, BGModel->DataFROI, FGMask);
@@ -298,8 +298,8 @@ void putBGModelParams( BGModelParams* Params){
 	 Params->ALPHA = 0 ;
 	 Params->MORFOLOGIA = 0;
 	 Params->CVCLOSE_ITR = 1;
-	 Params->MAX_CONTOUR_AREA = 200 ;
-	 Params->MIN_CONTOUR_AREA = 5;
+	 Params->MAX_CONTOUR_AREA = 0 ; //200
+	 Params->MIN_CONTOUR_AREA = 0; //5
 	 if (CREATE_TRACKBARS == 1){
 				 // La primera vez inicializamos los valores.
 				 if (first == 1){

@@ -81,25 +81,9 @@ void InitialBGModelParams( BGModelParams* Params){
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 200 ;
 	 Params->MIN_CONTOUR_AREA = 5;
-	 if (CREATE_TRACKBARS == 1){
-				 // La primera vez inicializamos los valores.
-				 if (first == 1){
-					 Params->HIGHT_THRESHOLD = 20;
-					 Params->LOW_THRESHOLD = 10;
-					 first = 0;
-				 }
-	 			cvCreateTrackbar( "HighT",
-	 							  "Foreground",
-	 							  &Params->HIGHT_THRESHOLD,
-	 							  100  );
-	 			cvCreateTrackbar( "LowT",
-	 							  "Foreground",
-	 							  &Params->LOW_THRESHOLD,
-	 							  100  );
-	 }else{
-		 Params->HIGHT_THRESHOLD = 20;
-		 Params->LOW_THRESHOLD = 10;
-	 }
+	 Params->HIGHT_THRESHOLD = 20;
+	 Params->LOW_THRESHOLD = 10;
+
 }
 
 void releaseDataPreProcess(){

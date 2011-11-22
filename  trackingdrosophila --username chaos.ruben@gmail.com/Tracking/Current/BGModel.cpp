@@ -104,6 +104,8 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
 		ImPreProcess( frame, ImGray, bgmodel->ImFMask, false, bgmodel->DataFROI);
 
+
+
 		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesv, bgmodel->DataFROI, 0);
 
 		num_frames += 1;
@@ -126,6 +128,25 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 	static int first = 1; // solo para el modelo inicial
 	if ( first == 1 ){
 			cvCopy( ImGray, BGMod );
+	}
+
+	muestrearLinea( ImGray,cvPoint( 120, 267 ),	cvPoint( 220, 267 ), 5000);
+
+	if( SHOW_BGMODEL_DATA ){
+			printf("\n\n Imagenes antes de actualizar fondo" );
+			CvRect ventana;
+			ventana.height = 14;
+			ventana.width = 17;
+			ventana.x = 321 ;
+			ventana.y = 116;
+			printf("\n\n Matriz Brillo ");
+			verMatrizIm(ImGray, ventana);
+			printf("\n\n Matriz BGModel ");
+			verMatrizIm(BGMod, ventana);
+			printf("\n\n Matriz Idiff(p) = Brillo(p)-BGModel(p) ");
+			verMatrizIm(Idiff, ventana);
+			printf("\n\n Matriz Ides(p) ");
+			verMatrizIm(Ides, ventana);
 	}
 
 	cvSetImageROI( ImGray, ROI );
@@ -195,6 +216,23 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRe
 	cvResetImageROI( BGMod );
 	cvResetImageROI( Ides );
 
+	if( SHOW_BGMODEL_DATA ){
+			printf("\n\n Imagenes tras actualizar fondo" );
+			CvRect ventana;
+			ventana.height = 14;
+			ventana.width = 17;
+			ventana.x = 321 ;
+			ventana.y = 116;
+			printf("\n\n Matriz Brillo ");
+			verMatrizIm(ImGray, ventana);
+			printf("\n\n Matriz BGModel ");
+			verMatrizIm(BGMod, ventana);
+			printf("\n\n Matriz Idiff(p) = Brillo(p)-BGModel(p) ");
+			verMatrizIm(Idiff, ventana);
+			printf("\n\n Matriz Ides(p) ");
+			verMatrizIm(Ides, ventana);
+	}
+
 	if (flag == 1) cvReleaseImage( &mask );
 
 }
@@ -257,7 +295,31 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 //	cvInRange( ImGray, IhiF,IlowF, Imaskt);
 //	cvAbsDiff( ImGray, bg_model, Idiff);
-//	cvDiv( Idiff,Ides,Idiff );// Calcular |I(p)-u(p)|/0(p)
+//	cvDiv( Idiff,Ides,Idiff );
+	// Calcular (I(p)-u(p))/0(p)
+	if( SHOW_BGMODEL_DATA ){
+			printf("\n\nImagenes antes de resta y limpieza de fondo");
+			CvRect ventana;
+			ventana.height = 14;
+			ventana.width = 17;
+			ventana.x = 321 ;
+			ventana.y = 116;
+			printf("\n\n Matriz Brillo ");
+			verMatrizIm(ImGray, ventana);
+			printf("\n\n Matriz BGModel ");
+			verMatrizIm(bg_model, ventana);
+			printf("\n\n Matriz Ides(p) ");
+			verMatrizIm(Ides, ventana);
+			printf("\n\n Matriz Idiff(p) = Brillo(p)-BGModel(p) ");
+			verMatrizIm(Idiff, ventana);
+			printf("\n\n Matriz FG(p) ");
+			verMatrizIm(fg, ventana);
+
+
+			cvShowImage( "Foreground", fg);
+			cvShowImage( "Background",bg_model);
+			cvWaitKey(0);
+	}
 
 	for (int y = dataroi.y; y < dataroi.y + dataroi.height; y++){
 		uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*dataroi.x);
@@ -293,24 +355,30 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,I
 
 
 		FGCleanup( fg, Ides,Param, dataroi );
-//if( SHOW_BGMODEL_DATA ){
-//		CvRect ventana;
-//		ventana.height =100;
-//		ventana.width = 100;
-//		ventana.x = 270 ;
-//		ventana.y = 190;
-//		printf("\n\n Matriz Brillo ");
-//		verMatrizIm(ImGray, ventana);
-//		printf("\n\n Matriz BGModel ");
-//		verMatrizIm(bg_model, ventana);
-//		printf("\n\n Matriz Idesv ");
-//		verMatrizIm(Ides, ventana);
-//		printf("\n\n Matriz Idesv ");
-//		verMatrizIm(Idiff, ventana);
-//		cvShowImage( "Foreground", fg);
-//		cvShowImage( "Background",bg_model);
-//		cvWaitKey(0);
-//}
+
+if( SHOW_BGMODEL_DATA ){
+		printf("\n\nImagenes tras resta y limpieza de fondo");
+		CvRect ventana;
+		ventana.height = 14;
+		ventana.width = 17;
+		ventana.x = 321 ;
+		ventana.y = 116;
+		printf("\n\n Matriz Brillo ");
+		verMatrizIm(ImGray, ventana);
+		printf("\n\n Matriz BGModel ");
+		verMatrizIm(bg_model, ventana);
+		printf("\n\n Matriz Ides(p) ");
+		verMatrizIm(Ides, ventana);
+		printf("\n\n Matriz Idiff(p) = Brillo(p)-BGModel(p) ");
+		verMatrizIm(Idiff, ventana);
+		printf("\n\n Matriz FG(p) ");
+		verMatrizIm(fg, ventana);
+
+
+		cvShowImage( "Foreground", fg);
+		cvShowImage( "Background",bg_model);
+		cvWaitKey(0);
+}
 //	printf(" Alpha = %f\n",ALPHA);
 //	cvShowImage( "Foreground",fg);
 //	cvWaitKey(0);
@@ -518,9 +586,9 @@ void DefaultBGMParams( BGModelParams *Parameters){
     	Params->FRAMES_TRAINING = 20;
     	Params->ALPHA = 0.5 ;
     	Params->MORFOLOGIA = 0;
-    	Params->CVCLOSE_ITR = 1;
-    	Params->MAX_CONTOUR_AREA = 1000 ;
-    	Params->MIN_CONTOUR_AREA = 5;
+    	Params->CVCLOSE_ITR = 0;
+    	Params->MAX_CONTOUR_AREA = 0 ;
+    	Params->MIN_CONTOUR_AREA = 0;
     	Params->HIGHT_THRESHOLD = 20;
     	Params->LOW_THRESHOLD = 10;
     }
