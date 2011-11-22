@@ -12,16 +12,23 @@
 	extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
 	extern double TotalFrames ;
 
+	VParams* Params = NULL;
+
 
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
+
+	DefaultVParams( &Params);
 
 	STFrame* frameData;
 	tlcde* flies;
 	STFly* fly;
 
+
 	irAl( pos, frameBuf );
 	frameData = (STFrame*)obtenerActual(frameBuf);
 	flies = frameData->Flies;
+//	if(!frameData->Frame) frameData->Frame = cvCreateImage(cvGetSize( frameData->Frame ), 8,3);
+
 	// si no se ha llenado el buffer y se pide visualizar el primero, esperar a llenar buffer.
 	if ( ( frameBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH-1) && pos == 0 ){
 		VerEstadoBuffer(frameData->Frame, frameBuf->numeroDeElementos );
@@ -30,79 +37,147 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 
 	if (SHOW_VISUALIZATION == 1){
 
-	//Obtenemos la Imagen donde se visualizarán los resultados
+		//Obtenemos la Imagen donde se visualizarán los resultados
 
-	//Dibujamos el plato en la imagen de visualizacion
-	if( DETECTAR_PLATO ){
-		cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-		cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
-	}
-	// Dibujamos la ROI
-//	cvRectangle( frameData->Frame,
-//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
-//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
-//			CV_RGB(255,0,0),2);
+		//Dibujamos el plato en la imagen de visualizacion
+		if( DETECTAR_PLATO ){
+			cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+			cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+		}
+		// Dibujamos la ROI
+	//	cvRectangle( frameData->Frame,
+	//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
+	//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
+	//			CV_RGB(255,0,0),2);
 
-	//Dibujamos los blobs
+		//Dibujamos los blobs
+		cvCopy( frameData->Frame,frameData->Frame);
+		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
+			fly = (STFly*)obtener(i, flies);
+			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
 
-	for( int i = 0; i <  flies->numeroDeElementos; i++ ){
-		fly = (STFly*)obtener(i, flies);
-		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-
-		if( fly->Estado == 1){
-			cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+			if( fly->Estado == 1){
+				cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+				cvLine( frameData->Frame,
+						fly->posicion,
+						cvPoint( cvRound( fly->posicion.x - 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+								 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+						fly->Color,
+						1,CV_AA, 0 );
+			}
+			else{
+				cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+				cvLine( frameData->Frame,
+									fly->posicion,
+									cvPoint( fly->posicion.x ,
+											 fly->posicion.y ),
+									fly->Color,
+									8,CV_AA, 0 );
+			}
+			// visualizar direccion
+			//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+			//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+			double magnitude = 30;
 			cvLine( frameData->Frame,
 					fly->posicion,
-					cvPoint( cvRound( fly->posicion.x - 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-							 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
-					fly->Color,
-					1,CV_AA, 0 );
+					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+					CVX_RED,
+					1, CV_AA, 0 );
+			visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
 		}
-		else{
-			cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
-			cvLine( frameData->Frame,
-								fly->posicion,
-								cvPoint( fly->posicion.x ,
-										 fly->posicion.y ),
-								fly->Color,
-								8,CV_AA, 0 );
-		}
-		// visualizar direccion
-		//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-		//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-		double magnitude = 30;
 		cvLine( frameData->Frame,
-				fly->posicion,
-				cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-						 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-				CVX_RED,
-				1, CV_AA, 0 );
-		visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
-
-	}
-
-//	ShowStatDataFr( frameData->Frame );
-	cvShowImage( "Visualización", frameData->Frame );
-
-
-	}
-	// Mostramos imagenes
-
-	//
-	if (SHOW_BG_REMOVAL == 1){
-			cvShowImage("Background", frameData->BGModel);
-			cvShowImage( "Foreground",frameData->FG);
-	}
-
-	if ( SHOW_MOTION_TEMPLATE == 1){
-		cvShowImage( "Motion",frameData->ImMotion);
+						cvPoint( 120, 267 ),
+						cvPoint( 220, 267 ),
+								CVX_RED,
+								1, CV_AA, 0 );
+		// Mostramos imagenes
+		cvShowImage( "Visualización", frameData->Frame );
+		if (SHOW_BG_REMOVAL == 1){
+				cvShowImage("Background", frameData->BGModel);
+				cvShowImage( "Foreground",frameData->FG);
 		}
-	cvWaitKey(0);
-	irAlFinal( frameBuf );
+		if ( SHOW_MOTION_TEMPLATE == 1)	cvShowImage( "Motion",frameData->ImMotion);
+
+		// si se pulsa p ó P  => pause = true
+		if( (cvWaitKey(10) & 255) == 80 || (cvWaitKey(10) & 255) == 112 ){
+			Params->pause = true;
+		}
+		if(Params->pause){
+			cvShowImage( "Visualización", frameData->Frame );
+			if (SHOW_BG_REMOVAL == 1){
+					cvShowImage("Background", frameData->BGModel);
+					cvShowImage( "Foreground",frameData->FG);
+			}
+			if ( SHOW_MOTION_TEMPLATE == 1)	cvShowImage( "Motion",frameData->ImMotion);
+			fflush( stdin);
+			if( cvWaitKey(0) == 'g' || cvWaitKey(0) == 'G'){
+				irAl( pos, frameBuf );
+				frameData = (STFrame*)obtenerActual(frameBuf);
+				cvSaveImage( "Captura.jpg", frameData->Frame);
+			}
+		}
+		// si se pulsa c ó C  => pause = false
+		if( (cvWaitKey(10) & 255) == 67 || (cvWaitKey(10) & 255) == 99 ){
+			Params->pause = false;
+		}
+		// si se pulsa v comienza a grabar un video hasta pulsar S
+//		if( opcion == 'v' || opcion == 'V'){
+//			Params->Grab = true;
+//		}
+		// si se pulsa s ó S => stop = true
+		if( (cvWaitKey(10) & 255) == 83 || (cvWaitKey(10) & 255) == 115 ){
+			Params->stop = true;
+		}
+		int posBuf = pos;
+		// mientras no se presione c ó C ( continue )
+		while(Params->stop){
+			unsigned char opcion;
+			Params->Grab = false;
+			fflush( stdin);
+			opcion = cvWaitKey(0);
+
+			// si pulsamos +, visualizamos el siguiente elemento del buffer
+			if( opcion == 43 ){
+				if (posBuf < frameBuf->numeroDeElementos-1) posBuf += 1;
+			}
+			// si pulsamos -, visualizamos el elemento anterior del buffer
+			if( opcion == 45 ){
+				if ( posBuf > 0 ) posBuf-=1;
+			}
+			// si pulsamos i ó I, visualizamos el primer elemento del buffer
+			if( opcion == 49 || opcion == 69)  {
+				posBuf = 0;
+			}
+			// si pulsamos f +o F, visualizamos el último elemento del buffer
+			if( opcion == 70 || opcion == 102)  {
+				posBuf = frameBuf->numeroDeElementos-1;
+			}
+			// tomar instantanea del frame
+			if( opcion == 'g' || opcion == 'G'){
+				irAl( posBuf, frameBuf );
+				frameData = (STFrame*)obtenerActual(frameBuf);
+				cvSaveImage( "Captura.jpg", frameData->Frame);
+			}
+			irAl( posBuf, frameBuf );
+			frameData = (STFrame*)obtenerActual(frameBuf);
+			CvFont fuente1;
+			char PBuf[100];
+			sprintf(PBuf," Posicion del Buffer: %d ",posBuf );
+			cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+			cvPutText( frameData->Frame, PBuf,  cvPoint( 10,frameData->Frame->height-10), &fuente1, CVX_RED );
+			VisualizarFr( frameData, Flat );
+			if( opcion == 67 || opcion == 99 ){
+					Params->stop = false;
+			}
+		}
+		irAlFinal( frameBuf );
+	}
 }
 
 void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 
+	DefaultVParams( &Params);
 
 	tlcde* flies;
 	STFly* fly;
@@ -110,75 +185,63 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 	flies = frameData->Flies;
 	if (SHOW_VISUALIZATION == 1){
 
-	//Obtenemos la Imagen donde se visualizarán los resultados
+		//Obtenemos la Imagen donde se visualizarán los resultados
 
-	//Dibujamos el plato en la imagen de visualizacion
-	if( DETECTAR_PLATO ){
-		cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-		cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
-	}
-	// Dibujamos la ROI
-//	cvRectangle( frameData->Frame,
-//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
-//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
-//			CV_RGB(255,0,0),2);
+		//Dibujamos el plato en la imagen de visualizacion
+		if( DETECTAR_PLATO ){
+			cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+			cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+		}
+		// Dibujamos la ROI
+	//	cvRectangle( frameData->Frame,
+	//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
+	//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
+	//			CV_RGB(255,0,0),2);
 
-	//Dibujamos los blobs
-	int i = 0;
-	while( i <  flies->numeroDeElementos ){
-		fly = (STFly*)obtener(i, flies);
-		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-		cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
-		if( fly->Estado == 1){
+		//Dibujamos los blobs
+
+		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
+			fly = (STFly*)obtener(i, flies);
+			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+			cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+			if( fly->Estado == 1){
+				cvLine( frameData->Frame,
+						fly->posicion,
+						cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+								 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+						fly->Color,
+						1,CV_AA, 0 );
+			}
+			else{
+				cvLine( frameData->Frame,
+									fly->posicion,
+									cvPoint( fly->posicion.x ,
+											 fly->posicion.y ),
+									fly->Color,
+									8,CV_AA, 0 );
+			}
+			// visualizar direccion
+			//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+			//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+			double magnitude = 30;
 			cvLine( frameData->Frame,
 					fly->posicion,
-					cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-							 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
-					fly->Color,
-					1,CV_AA, 0 );
+					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+					CVX_RED,
+					1, CV_AA, 0 );
+			visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
+
 		}
-		else{
-			cvLine( frameData->Frame,
-								fly->posicion,
-								cvPoint( fly->posicion.x ,
-										 fly->posicion.y ),
-								fly->Color,
-								8,CV_AA, 0 );
+
+		// Mostramos imagenes
+		cvShowImage( "Visualización", frameData->Frame );
+		if (SHOW_BG_REMOVAL == 1){
+				cvShowImage("Background", frameData->BGModel);
+				cvShowImage( "Foreground",frameData->FG);
 		}
-		// visualizar direccion
-		double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-		//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-		double magnitude = 30;
-		cvLine( frameData->Frame,
-				fly->posicion,
-				cvPoint( cvRound( fly->posicion.x + magnitude*cos(op_angle*CV_PI/180)),
-						 cvRound( fly->posicion.y - magnitude*sin(op_angle*CV_PI/180))  ),
-				CVX_RED,
-				1, CV_AA, 0 );
-		visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
-		i++;
+		if ( SHOW_MOTION_TEMPLATE == 1)	cvShowImage( "Motion",frameData->ImMotion);
 	}
-
-//	ShowStatDataFr( frameData->Frame );
-	cvShowImage( "Visualización", frameData->Frame );
-
-
-	}
-	// Mostramos imagenes
-
-	//
-	if (SHOW_BG_REMOVAL == 1){
-			cvShowImage("Background", frameData->BGModel);
-			cvShowImage( "Foreground",frameData->FG);
-//			cvWaitKey(0);
-
-	}
-
-	if ( SHOW_MOTION_TEMPLATE == 1){
-		cvShowImage( "Motion",frameData->ImMotion);
-		}
-//	cvWaitKey(0);
-
 }
 
 void ShowStatDataFr( IplImage* Im  ){
@@ -267,6 +330,23 @@ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
 }
+
+void DefaultVParams( VParams **Parameters){
+    //init parameters
+	 VParams *params;
+
+    if( *Parameters == NULL )
+      {
+    	params = ( VParams *) malloc( sizeof( VParams) );
+
+    	params->pause = false;
+    	params->stop = false;
+    	*Parameters = params;
+    }
+
+
+
+}
 //void VerEstadoSHModel( IplImage* Imagen,int num ){
 //
 //}
@@ -350,3 +430,4 @@ if (SHOW_VISUALIZATION == 1) {
 }
 	cvDestroyWindow( "Motion" );
 }
+

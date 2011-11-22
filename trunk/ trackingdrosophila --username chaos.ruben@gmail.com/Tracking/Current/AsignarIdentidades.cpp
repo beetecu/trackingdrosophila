@@ -137,7 +137,7 @@ static	int TBposDMax = 50;
 	// añade a la lista del frame actual los blobs que previamente estaban en el oldfg y
 	// establecemos el estado de los blobs que pasan al oldFG
 
-	establecerEstado(frameIdx1,frameIdx2,frameIdx3, orient);
+//	establecerEstado(frameIdx1,frameIdx2,frameIdx3, orient);
 
 	if( SHOW_DATA_ASSIGNMENT){
 		if( framesBuf->numeroDeElementos > 1) {

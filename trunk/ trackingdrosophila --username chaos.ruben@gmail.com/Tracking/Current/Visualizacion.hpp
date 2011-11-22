@@ -10,6 +10,13 @@
 
 #include "VideoTracker.hpp"
 #include "Libreria.h"
+
+typedef struct VisualParams{
+	bool pause;
+	bool stop;
+	bool Grab;
+}VParams;
+
 /// Crea las ventanas de visualización
 void CreateWindows();
 
@@ -19,6 +26,8 @@ void DestroyWindows( );
 void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat );
 
 void VisualizarFr( STFrame* frameData, StaticBGModel* Flat );
+
+void DefaultVParams( VParams **Parameters);
 
 //!\brief ShowstatDataFr: Imprime en la visualización del frame los datos correspondientes a su procesado.
 /*!

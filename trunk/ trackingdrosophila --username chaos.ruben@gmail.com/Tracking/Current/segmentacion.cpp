@@ -140,7 +140,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 			id++; //incrmentar el Id de las moscas
 
 			CvRect ventana;
-			ventana.height =100;
+			ventana.height = 321;
 			ventana.width = 100;
 			ventana.x = 270 ;
 			ventana.y = 190;

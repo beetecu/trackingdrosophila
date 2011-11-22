@@ -54,6 +54,8 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 
 void verMatrizIm( IplImage* Im, CvRect roi);
 
+void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs);
+
 void invertirBW( IplImage* Imagen );
 
 #endif // _IMAGEN_
@@ -283,7 +285,7 @@ void liberarSTFrame( STFrame* frameData );
 #ifndef _IDENTIDADES_
 #define _IDENTIDADES_
 
-#define NUMBER_OF_IDENTITIES 300
+#define NUMBER_OF_IDENTITIES 3000
 
 typedef struct{
 	int etiqueta;
