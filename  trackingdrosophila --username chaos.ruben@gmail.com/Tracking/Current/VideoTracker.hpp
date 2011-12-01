@@ -17,6 +17,11 @@
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
+#include <cvaux.h>
+#include <stdio.h>
+#include <cv.h>
+#include <cxcore.h>
+
 
 using namespace cv;
 using namespace std;
@@ -54,10 +59,11 @@ using namespace std;
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 0//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 #define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
-#define SHOW_DATA_ASSIGNMENT 1
+#define SHOW_DATA_ASSIGNMENT 0
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 0
 #define SHOW_VALIDATION_DATA 1
+#define SHOW_KALMAN_RESULT 1
 
 
 #ifndef DEFINICION_DE_ESTRUCTURAS

@@ -604,7 +604,7 @@ void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* 
 
 }
 
-/// resuelve la ambiguedad en la orientaciónpara cada cuadrante
+/// resuelve la ambiguedad en la orientación para cada cuadrante
 ///estableciendo ésta en función de la dirección del desplazamiento
 /// en la decisión de si no se modifica el ángulo o bien se suma o resta pi
 /// se considera mayores y menores estrictos, de forma que si la dif absoluta
