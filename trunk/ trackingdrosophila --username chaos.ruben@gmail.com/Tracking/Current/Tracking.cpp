@@ -8,13 +8,49 @@
  */
 
 #include "Tracking.hpp"
+#include "Kalman.hpp"
+
+
+#define NUMBER_OF_MATRIX 6
 
 	IplImage *ImOpFlowX;
 	IplImage *ImOpFlowY;
 	IplImage *ImagenA;
 	IplImage *ImagenB;
+	IplImage *IKalman;
 
 	tlcde* Identities = NULL;
+
+	// Parametros de Kalman para la linealidad ( Coordenadas)
+
+	CvKalman* kalman = NULL; // Estructra de kalman para la linealizad
+	CvMat* state = NULL;
+	CvMat* measurement = NULL;
+	CvMat* process_noise = NULL;
+
+	CvPoint coordenadas; // Centro del blob.
+	CvPoint coordReal;
+
+	CvRandState rng;
+
+	// Parametros de Kalman para la orientación
+
+	CvKalman* kalman_2=NULL;// Estructura de kalman para la orientacion.
+	CvMat* state_2 = NULL;
+	CvMat* measurement_2 = NULL;
+	CvMat* process_noise_2 = NULL;
+
+	CvRandState rng2;
+
+	float direccion; // Dirección del blob
+	float orientacion; // Orietación del blob
+
+	CvRect flieRoi;// Roi del blob.
+
+	CvMat* indexMat[NUMBER_OF_MATRIX]; // Matrices para usar el filtro de Kalman
+
+
+
 
 void Tracking( tlcde* framesBuf ){
 
@@ -22,8 +58,11 @@ void Tracking( tlcde* framesBuf ){
 	int tiempoParcial;
 	STFrame* frameData = NULL;
 	STFly* flyData = NULL;
-	static int workPos = -1; // punto de trabajo en el buffer
+	tlcde* flies;
 
+	bool firstbuf = false;
+
+	static int workPos = -1; // punto de trabajo en el buffer
 
 	// Inicializar
 	// creamos una cola Lifo de identidades
@@ -51,6 +90,7 @@ void Tracking( tlcde* framesBuf ){
 	/// asignación de identidad mediante una plantilla de movimiento.
 
 	cvZero(frameData->ImMotion);
+
 	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
 
 	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
@@ -61,11 +101,141 @@ void Tracking( tlcde* framesBuf ){
 	if ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH)
 			workPos += 1;
 
+	if(workPos == 0) firstbuf=true;
+
 	// acceder al punto de trabajo
 	irAl( workPos , framesBuf);
 	// cargar datos del frame
 	frameData = ( STFrame* )obtenerActual( framesBuf );
 	gettimeofday(&ti, NULL);
+
+
+	flies=frameData->Flies;
+
+	for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
+
+	flyData=(STFly*)obtener(flypos,flies);
+
+	coordenadas=flyData->posicion;
+	direccion=flyData->direccion;
+	orientacion=flyData->orientacion;
+
+
+	coordenadas.x=flyData->posicion.x;
+	coordenadas.y=flyData->posicion.y;
+
+	flieRoi=flyData->Roi;
+
+
+	////// INICIALIZAR FILTROS DE KALMAN//////
+
+	kalman = initKalman(indexMat,coordenadas,orientacion); // FK Lineal para las coodenadas
+
+	kalman_2 = initKalman2(direccion,orientacion);// FK para la orientación
+
+	state=cvCreateMat(4,1,CV_32FC1);
+	measurement = cvCreateMat( 2, 1, CV_32FC1 );
+	process_noise = cvCreateMat(4, 1, CV_32FC1);
+
+	state_2=cvCreateMat(2,1,CV_32FC1);
+	measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
+	process_noise_2 = cvCreateMat(2, 1, CV_32FC1);
+
+
+	cvZero(state);
+	cvZero(state_2);
+	cvZero(measurement);
+	cvZero(measurement_2);
+
+	state->data.fl[0]=coordenadas.x;
+	state->data.fl[1]=coordenadas.y;
+
+
+	state_2->data.fl[0]=orientacion;
+
+
+	/////////////////// PREDICCION //////////////////////
+
+//	predict = updateKalmanPredict(kalman);
+
+	const CvMat* yk = cvKalmanPredict( kalman, 0 ); // Predicción coordenadas
+
+	const CvMat* yk_2 = cvKalmanPredict( kalman_2, 0 ); // Predicción orientacion
+
+
+	cvRandSetRange(&rng,0,sqrt(kalman->measurement_noise_cov->data.fl[0]),0);
+	cvRand( &rng, measurement );
+
+	cvRandSetRange(&rng2,0,sqrt(kalman_2->measurement_noise_cov->data.fl[0]),0);
+	cvRand( &rng2, measurement_2 );
+
+	cvMatMulAdd(kalman->measurement_matrix,state,measurement,measurement);
+
+	cvMatMulAdd(kalman_2->measurement_matrix,state_2,measurement_2,measurement_2);
+
+
+	if(workPos > 1){
+
+	////////////////////// CORRECCION ////////////////////////
+
+//	correct = updateKalmanCorrect(kalman ,measurement);
+
+	cvKalmanCorrect( kalman,measurement);
+
+	cvKalmanCorrect( kalman_2,measurement_2);
+
+	cvRandSetRange(&rng,0,sqrt(kalman->process_noise_cov->data.fl[0]),0);
+	cvRand( &rng,process_noise );
+
+	cvRandSetRange(&rng2,0,sqrt(kalman_2->process_noise_cov->data.fl[0]),0);
+	cvRand( &rng2,process_noise_2 );
+
+	cvMatMulAdd(kalman->transition_matrix,state,process_noise,state);
+
+	cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
+
+
+	////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
+
+	if(SHOW_KALMAN_RESULT){
+
+	printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
+
+	printf("\n Dirección : %f ,  Orientación : %f y Coordenadas: ( %d , %d ) ",direccion,orientacion,coordenadas.x,coordenadas.y);
+
+	printf("\n\n Real State Coordenadas: ( %f y %f )",state->data.fl[0],state->data.fl[1]);
+	printf("\n Predicted State Coordenadas: (%f y %f )",yk->data.fl[0],yk->data.fl[1]);
+	printf("\n Observed State: ( %f y %f )",measurement->data.fl[0],measurement->data.fl[1]);
+
+
+	printf("\n\n Real State Orientación : %f",state_2->data.fl[0]);
+	printf("\n Predicted State Orientation: %f",yk_2->data.fl[0]);
+	printf("\n Observer State:  %f", measurement_2->data.fl[0]);
+
+	printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
+	printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
+	printf("\n");
+
+	///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
+
+		cvCircle(IKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
+		cvShowImage( "Kalman", IKalman );
+
+		cvCircle(IKalman,cvPoint(cvRound(yk->data.fl[0]),cvRound(yk->data.fl[1])),5,CVX_RED,1,8);
+		cvShowImage( "Kalman", IKalman );
+
+		cvCircle(IKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
+		cvShowImage( "Kalman", IKalman );
+
+
+	}
+
+	}
+
+	cvReleaseKalman(&kalman);
+	cvReleaseKalman(&kalman_2);
+
+	}//FOR
 
 	///////   FASE DE CORRECCIÓN  /////////
 	// esta etapa se encarga de hacer la asignación de identidad definitiva
@@ -117,21 +287,25 @@ void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation 
 
         		cvReleaseImage( &ImOpFlowX);
         		cvReleaseImage( &ImOpFlowY);
+        		cvReleaseImage( &IKalman);
         		cvReleaseImage( &ImagenA);
         		cvReleaseImage( &ImagenB);
 
         		ImOpFlowX = cvCreateImage( sz,IPL_DEPTH_32F,1 );
-        		ImOpFlowY = cvCreateImage(sz ,IPL_DEPTH_32F,1 );
+        		ImOpFlowY = cvCreateImage(sz,IPL_DEPTH_32F,1 );
+        		IKalman = cvCreateImage( sz,8,3 );
         		ImagenA = cvCreateImage( sz ,8,1 );
         		ImagenB = cvCreateImage(sz ,8,1 );
 
         		cvZero( ImOpFlowX );
         		cvZero( ImOpFlowY );
+        		cvZero( IKalman);
         		cvZero( ImagenA );
         		cvZero( ImagenB );
         	}
 		cvZero( ImOpFlowX );
 		cvZero( ImOpFlowY );
+		cvZero(IKalman);
 		cvZero( ImagenA );
 		cvZero( ImagenB );
 
@@ -145,5 +319,3 @@ void ReleaseDataTrack(){
     		cvReleaseImage( &ImagenB);
     		releaseMotionTemplate();
 }
-
-
