@@ -7,7 +7,35 @@
 
 #include "Libreria.h"
 
-// Tratamiento de Imagenes
+
+///////////////////// MEDIDA DE TIEMPOS //////////////////////////////
+
+float obtenerTiempo( timeval ti, int unidad ){
+
+	timeval tf;
+	float tiempo;
+	gettimeofday( &tf , NULL);
+	switch( unidad ){
+		case 0: // milisegundos
+			tiempo= (tf.tv_sec - ti.tv_sec)*1000 +
+															(tf.tv_usec - ti.tv_usec)/1000.0;
+			break;
+		case 1: //segundos
+			tiempo= ( (tf.tv_sec - ti.tv_sec)*1000 +
+															(tf.tv_usec - ti.tv_usec)/1000.0 )/1000;
+			break;
+		case 2: // minutos
+			tiempo= ( (tf.tv_sec - ti.tv_sec)*1000 +
+									(tf.tv_usec - ti.tv_usec)/1000.0 )/ 1000000;
+			break;
+		case 3: // horas
+			tiempo= ( (tf.tv_sec - ti.tv_sec)*1000 +
+					(tf.tv_usec - ti.tv_usec)/1000.0 )/ 1000000000;
+	}
+	return tiempo;
+}
+
+///////////////////// TRATAMIENTO DE IMAGENES //////////////////////////////
 
 int RetryCap( CvCapture* g_capture ){
 	IplImage* frame = cvQueryFrame(g_capture); // intentar de nuevo
@@ -83,7 +111,8 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
 	// Imagen a un canal de niveles de gris
-	cvCvtColor( src, dst, CV_BGR2GRAY);
+	// if(( src->depth > 8)&&(src->nChannels>1))
+		cvCvtColor( src, dst, CV_BGR2GRAY);
 	cvSetImageROI( dst, ROI );
 	if (bin == true){
 		cvAdaptiveThreshold( dst, dst,
@@ -95,29 +124,54 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 	cvSmooth(dst,dst,CV_GAUSSIAN,5,5);
 
 // Extraccion del plato
-
 	cvResetImageROI( dst );
 	cvAndS(dst, cvRealScalar( 0 ) , dst, ImFMask );
 }
 
 void verMatrizIm( IplImage* Im, CvRect roi){
-
-	for (int y = roi.y; y< roi.y + roi.height; y++){
-		uchar* ptr1 = (uchar*) ( Im->imageData + y*Im->widthStep + 1*roi.x);
-
-		printf(" \n\n"); // espacio entre filas
-
-		for (int x = 0; x<roi.width; x++){
-
-			if( ( y == roi.y) && ( x == 0) ){
-				printf("\n Origen: ( %d , %d )",(x + roi.x),y);
-				printf(" Width = %d  Height = %d \n\n",roi.width,roi.height);
+	if( Im->depth == IPL_DEPTH_32F) {
+		int step1       = Im->widthStep/sizeof(float);
+		float *ptr1   = (float *)Im->imageData;
+		for (int i = roi.y; i< roi.y + roi.height; i++){
+			printf(" \n\n"); // espacio entre filas
+			for (int j = roi.x; j < roi.x + roi.width; j++){
+				printf("%0.2f\t", ptr1[i*step1+j*Im->nChannels]); // columnas
 			}
-			printf("%d\t", ptr1[x]); // columnas
-
 		}
+//		for (int y = roi.y; y< roi.y + roi.height; y++){
+//			float* ptr1 = (float*)( Im->imageData + y*Im->widthStep + 1*roi.x);
+//			printf(" \n\n"); // espacio entre filas
+//			for (int x = 0; x<roi.width; x++){
+//				if( ( y == roi.y) && ( x == 0) ){
+//					printf("\n Origen: ( %d , %d )",(x + roi.x),y);
+//					printf(" Width = %d  Height = %d \n\n",roi.width,roi.height);
+//				}
+//
+//				printf("%f\t", ptr1[x]); // columnas
+//			}
+//		}
 	}
-
+	else{
+		int step1       = Im->widthStep/sizeof(uchar);
+		uchar *ptr1   = (uchar *)Im->imageData;
+		for (int i = roi.y; i< roi.y + roi.height; i++){
+			printf(" \n\n"); // espacio entre filas
+			for (int j = roi.x; j < roi.x + roi.width; j++){
+				printf("%d\t", ptr1[i*step1+j*Im->nChannels]); // columnas
+			}
+		}
+//		for (int y = roi.y; y< roi.y + roi.height; y++){
+//			uchar* ptr1 = (uchar*) ( Im->imageData + y*Im->widthStep + 1*roi.x);
+//			printf(" \n\n"); // espacio entre filas
+//			for (int x = 0; x<roi.width; x++){
+//				if( ( y == roi.y) && ( x == 0) ){
+//					printf("\n Origen: ( %d , %d )",(x + roi.x),y);
+//					printf(" Width = %d  Height = %d \n\n",roi.width,roi.height);
+//				}
+//				 printf("%d\t", ptr1[x]); // columnas
+//			}
+//		}
+	}
 }
 
 void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
@@ -498,7 +552,6 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	for(int j = 0; j < 6; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
-
 			if (j == 0){
 				if (i == 0) printf( "\netiquetas");
 				printf( "\t%d",flydata->etiqueta);
@@ -510,6 +563,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 				y = flydata->posicion.y;
 				printf( "\t%d %d",x,y);
 			}
+
 			if( j == 2 ){
 				if (i == 0) printf( "\nOrientacion");
 				printf( "\t%0.1f",flydata->orientacion);
@@ -541,7 +595,7 @@ void liberarListaFlies(tlcde *lista)
   // Borrar todos los elementos de la lista
   STFly *flydata = NULL;
   // Comprobar si hay elementos
-  if (lista->numeroDeElementos == 0 ) return;
+  if(lista == NULL || lista->numeroDeElementos<1)  return;
   // borrar: borra siempre el elemento actual
 
   irAlPrincipio(lista);
@@ -607,7 +661,7 @@ void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* 
 /// resuelve la ambiguedad en la orientación para cada cuadrante
 ///estableciendo ésta en función de la dirección del desplazamiento
 /// en la decisión de si no se modifica el ángulo o bien se suma o resta pi
-/// se considera mayores y menores estrictos, de forma que si la dif absoluta
+/// se consideran mayores y menores estrictos, de forma que si la dif absoluta
 ///entre la direccion y la orientación es exactamnte 90, no se modifica la orient
 //.Siempre devuelve un ángulo entre 0 y 359º
 
@@ -650,7 +704,8 @@ void SetTita( STFly* flyAnterior,STFly* flyActual,double angle ){
 //	}
 
 }
-///////////////////// Interfaz para gestionar buffer //////////////////////////////
+
+///////////////////// INTERFACE PARA GESTIONAR BUFFER //////////////////////////////
 
 
 ///! Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
@@ -676,7 +731,7 @@ int liberarPrimero(tlcde *FramesBuf ){
 	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesv);
+	cvReleaseImage(&frameData->IDesvf);
 	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
 	frameData = (STFrame *)borrar( FramesBuf );
@@ -698,7 +753,7 @@ void liberarSTFrame( STFrame* frameData ){
 	free( frameData->Flies );
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesv);
+	cvReleaseImage(&frameData->IDesvf);
 	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
     free(frameData); // borrar el área de datos del elemento eliminado
@@ -718,7 +773,7 @@ void liberarBuffer(tlcde *FramesBuf)
 	free( frameData->Flies );
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesv);
+	cvReleaseImage(&frameData->IDesvf);
 	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
     free(frameData); // borrar el área de datos del elemento eliminado

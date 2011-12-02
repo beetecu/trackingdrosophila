@@ -14,16 +14,15 @@
 #include "segmentacion.hpp"
 #include "validacion.hpp"
 #include "segmentacion.hpp"
-
-//!\brief Procesado: - Limpieza del foreground en tres etapas :
+#include "Visualizacion.hpp"
+#include <opencv2/video/background_segm.hpp>
+//!\brief Procesado: - Obtención del foreground mediante modelo de fondo mediana  :
 //!\n 1. Actualización de fondo y resta de fondo obteniendo el foreground.
 //!\n 2. Nueva actualización de fondo usando la máscacara de foreground obtenida.
 //!\n Resta de fondo
 //!\n Redefinición de la máscara de foreground mediante ajuste por elipses y
 //!\n obtención de los parámetros de los blobs en segmentación.
-//!\n 3. Repetir de nuevo el ciclo de actualizacion-resta-segmentación con la nueva máscara
-//!\n obteniendo así el foreground y el background definitivo.
-//!\n
+
 //!\n -Rellena la lista lineal doblemente enlazada ( Flies )con los datos de cada uno de los blobs.
 //!\n -Rellena la estructura FrameData con las nuevas imagenes y la lista Flies.
 //!\n -Finalmente añade la lista Flies a la estructura FrameData.
@@ -39,17 +38,16 @@
  *
  * \see VideoTracker.hpp
  */
-void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel, SHModel* Shape);
+STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
 
-//!\brief Procesado2: - Limpieza del foreground en tres etapas :
-//!\n 1. Actualización de fondo y resta de fondo obteniendo el foreground.
-//!\n 2. Nueva actualización de fondo usando la máscacara de foreground obtenida.
-//!\n Resta de fondo
+//!\brief Procesado2: - Obtención del foreground mediante modelo de fondo mediana
+//!\n con actualización selectiva en tres etapas :
+//!\n 1. Actualización de fondo.
+//!\n 2. resta de fondo obteniendo el foreground.
 //!\n Redefinición de la máscara de foreground mediante ajuste por elipses y
 //!\n obtención de los parámetros de los blobs en segmentación.
-//!\n 3. Repetir de nuevo el ciclo de actualizacion-resta-segmentación con la nueva máscara
-//!\n obteniendo así el foreground y el background definitivo.
-//!\n
+//!\n 3. Actualización selectiva mediante uso de máscara de foreground.
+
 //!\n -Rellena la lista lineal doblemente enlazada ( Flies )con los datos de cada uno de los blobs.
 //!\n -Rellena la estructura FrameData con las nuevas imagenes y la lista Flies.
 //!\n -Finalmente añade la lista Flies a la estructura FrameData.
@@ -64,9 +62,13 @@ void Procesado( IplImage* frame,tlcde* framesBuf, StaticBGModel* BGModel, SHMode
  *
  * \see VideoTracker.hpp
  */
+
 STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
 
-
+///! Igual que procesado uno pero con modelo de fondo gaussiano simple
+STFrame* Procesado3( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
+///! Igual que procesado2 pero con modelo de fondo gaussiano simple
+STFrame* Procesado4( IplImage* frame,StaticBGModel* BGModel, CvBGStatModel* bg_model,SHModel* Shape );
 
 STFrame* InitNewFrameData(IplImage* I );
 //!\brief InitNewFrameData:  Inicializa las imagenes de la estructura FrameData y la Lista Flies.
