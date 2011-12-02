@@ -54,8 +54,8 @@
 
 void Tracking( tlcde* framesBuf ){
 
-	struct timeval ti, tf, tif, tff; // iniciamos la estructura
-	int tiempoParcial;
+	struct timeval ti, tf; // iniciamos la estructura
+	float tiempoParcial;
 	STFrame* frameData = NULL;
 	STFly* flyData = NULL;
 	tlcde* flies;
@@ -70,7 +70,7 @@ void Tracking( tlcde* framesBuf ){
 		Identities = ( tlcde * )malloc( sizeof(tlcde ));
 		iniciarLcde( Identities );
 		CrearIdentidades(Identities);
-		mostrarIds( Identities );
+		//mostrarIds( Identities );
 	}
 	if( framesBuf->numeroDeElementos < 1) return;
 	irAlFinal( framesBuf );
@@ -88,10 +88,19 @@ void Tracking( tlcde* framesBuf ){
 
 	/// resolvemos la ambiguedad en la orientación y hacemos una primera
 	/// asignación de identidad mediante una plantilla de movimiento.
-
+	gettimeofday(&ti, NULL);
+	printf("\t1)Motion Template\n");
 	cvZero(frameData->ImMotion);
 
+//	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
+	gettimeofday(&tf, NULL);
+	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
+											(tf.tv_usec - ti.tv_usec)/1000.0;
+	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
+
+
 	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
+
 
 	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
 	if( framesBuf->numeroDeElementos < 25) return;
@@ -266,10 +275,7 @@ void Tracking( tlcde* framesBuf ){
 	cvShowImage( "Flujo Optico Y", ImOpFlowY);
 	}
 
-	gettimeofday(&tf, NULL);
-	tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-											(tf.tv_usec - ti.tv_usec)/1000.0;
-	printf("\n\nTracking: %5.4g ms\n", tiempoParcial);
+
 
 	////////// FASE DE PREDICCIÓN /////////
 

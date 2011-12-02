@@ -156,7 +156,7 @@ int ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi ){
 	}
 	// |I(p)-u(p)|/0(p)
 	cvAbsDiff(Imagen,FrameData->BGModel,IDif);
-	cvDiv(IDif,FrameData->IDesv,pesos);
+	cvDiv(IDif,FrameData->IDesvf,pesos);
 	// Buscar máximo
 	int Maximo = 0;
 	for (int y = Roi.y; y< Roi.y + Roi.height; y++){
@@ -308,7 +308,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 						// Resta de fondo
-						BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyDataTemp);
+						BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,BGParams, FlyDataTemp);
 
 
 						// Segmentar
@@ -325,7 +325,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 //
 //						cvAbsDiff(Imagen,FrameData->BGModel,IDif);// |I(p)-u(p)|/0(p)
 //
-//						cvDiv( IDif,FrameData->IDesv,pesos );// Calcular
+//						cvDiv( IDif,FrameData->IDesvf,pesos );// Calcular
 //
 //						cvSetImageROI(FrameData->FG,FlyDataTemp);
 //						cvSetImageROI(pesos,FlyDataTemp);
@@ -438,7 +438,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 							BGParams->LOW_THRESHOLD=Besthres;
 
 							//Resta de fondo
-							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,maskTemp,BGParams, FlyDataTemp);
+							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,maskTemp,BGParams, FlyDataTemp);
 
 							//Segmentación
 							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
@@ -478,7 +478,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 					// Resta de fondo
-					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesv,FrameData->FG,BGParams, FlyDataTemp);
+					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,BGParams, FlyDataTemp);
 
 
 					// Segmentar

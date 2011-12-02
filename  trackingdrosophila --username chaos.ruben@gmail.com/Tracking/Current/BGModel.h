@@ -11,7 +11,8 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 
-
+#define K 0.6745	/// Para la corrección de la MAD ( Median Absolute Deviation )
+					/// con el que se estima la desviación típica.
 typedef struct{
 	//Parametros del modelo
 	int FLAT_FRAMES_TRAINING;//!< Nº de frames para aprendizaje del plato.
@@ -19,6 +20,7 @@ typedef struct{
 	int HIGHT_THRESHOLD; //!< Umbral alto para la resta de fondo.
 	int LOW_THRESHOLD ; //!< Umbral bajo para la resta de fondo.
 	double ALPHA;
+	float INITIAL_DESV;
 
 	//Parametros de limpieza de foreground
 
@@ -52,6 +54,8 @@ void DefaultBGMParams(BGModelParams *Parameters);
 	*/
 StaticBGModel* initBGModel( CvCapture* t_capture,BGModelParams* Param );
 
+void iniciarIdesv( IplImage* Idesv,float Valor, IplImage* mask );
+
 
 //!\brief Binariza la Imagen.
 /*!
@@ -71,14 +75,18 @@ IplImage* getBinaryImage(IplImage * image);
 
       \param ImGray Imagen fuente de 8 bit niveles de gris.
       \param BGMod Imagen de fondo sobre la que se estima la mediana.
-      \param Ides Imagen sobre la que se estimada la desviación típica.
+      \param Idesf Imagen sobre la que se estimada la desviación típica.
       \param DataROI Región de interes perteneciente al plato.
       \param mask Imagen sobre la que se actualizará el fondo.
 
       \return : La estimación de la mediana y la desviación típica para establecer la distribucion Gaussiana del fondo.
     */
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Ides,CvRect DataROI, IplImage* mask );
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesf,CvRect DataROI, IplImage* mask );
+
+void updateMedian(IplImage* ImGray,IplImage* BGMod,IplImage* mask,CvRect ROI );
+
+void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* mask, CvRect ROI );
 
 //! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
 //!	en BGMod y la varianza en IvarF según:
@@ -107,7 +115,7 @@ void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI,BGMod
 
     */
 
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT,double ALPHA, CvRect dataroi );
+void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesf,double ALPHA, CvRect dataroi );
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano.
 //! Se establece un umbral bajo ( LOW_THRESHOLD ) para los valores de la normal
@@ -115,14 +123,14 @@ void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* IdesvT,double
 /*!
       \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
       \param bg_model : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel.
-      \param Ides : Contiene la estimación de la desviación típica de cada pixel.
+      \param Idesf : Contiene la estimación de la desviación típica de cada pixel.
       \param Param : Puntero a estructura que almacena las distintos parametros del modelo de fondo.
       \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
       \param dataroi : Contiene los datos para establecer la ROI.
 
       \return : La Mascara de primer palto o foreground.
     */
-void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Ides,IplImage* fg,BGModelParams* Param, CvRect dataroi);
+void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesf,IplImage* fg,BGModelParams* Param, CvRect dataroi);
 
 //! \brief Aplica Componentes conexas para limpieza de la imagen:
 //!\n - Realiza operaciones de morphologia para elimirar ruido.

@@ -52,10 +52,9 @@ void help(){
 }
 int main(int argc, char* argv[]) {
 
-	struct timeval ti, tf, tif, tff; // iniciamos la estructura
-	float TiempoInicial;
-	float TiempoParcial;
+	struct timeval ti, tf, tif, tff,tinicio; // iniciamos la estructura
 
+	float TiempoParcial;
 
 	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
 	IplImage* frame;
@@ -63,9 +62,8 @@ int main(int argc, char* argv[]) {
 	if( argc<1) {help(); return -1;};
 
 	///////////  CAPTURA  ////////////
-	gettimeofday(&ti, NULL);  //para obtener el tiempo
-	TiempoInicial= ti.tv_sec*1000 + ti.tv_usec/1000.0;
-	printf( "Iniciando captura..." );
+
+	printf( "Iniciando captura...\n" );
 
 	g_capture = cvCaptureFromAVI( argv[1] );
 	if ( !g_capture ) {
@@ -81,41 +79,51 @@ int main(int argc, char* argv[]) {
 	TiempoGlobal = 0;
 	NumFrame = 0;
 	//inicializar parametros, buffer y fichero de datos
+	printf("\nInicializando parámetros...");
 	if (!Inicializacion(frame, argc, argv, &FramesBuf) ) return -1;
 
-	gettimeofday(&tf, NULL);
-	TiempoParcial= (tf.tv_sec - ti.tv_sec)*1000
-			     + (tf.tv_usec - ti.tv_usec)/1000.0;
-	printf(" %5.4g ms\n", TiempoParcial);
-
 	//////////  PREPROCESADO   ////////////
-	printf("\nIniciando preprocesado.");
+	gettimeofday(&ti, NULL);//para obtener el tiempo transcurrido desde el inicio del programa
+	printf("\nIniciando preprocesado...");
 	if (!PreProcesado( g_capture, &BGModel, &Shape) ) Finalizar();
-
+	TiempoParcial = obtenerTiempo( ti , 1);
+	printf("\nPreprocesado correcto.Tiempo total: %0.2f s\n", TiempoParcial);
+	printf("\n\nIniciando procesado...\n");
+	gettimeofday(&tinicio, NULL);//para obtener el tiempo transcurrido desde el inicio del programa
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
     for(int Fr = 1;frame; frame = cvQueryFrame(g_capture), Fr++ ){
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
     	if( !frame ) RetryCap( g_capture );
     	if( !RetryCap ) Finalizar( );
-
+    	gettimeofday(&tif, NULL);
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 		NumFrame = cvGetCaptureProperty( g_capture, 1);
-
-		if(NumFrame == 1443 ){
-			printf("Hola");
-		}
-		gettimeofday(&tif, NULL);
-
+ 		if(Fr>1){
+ 			printf("\n//////////////////////////////////////////////////\n");
+ 			printf("\nTiempo de procesado del  Frame (incluida visualización) %.0f : %5.4g ms\n",NumFrame-1, TiempoFrame);
+			printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
+			printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/TotalFrames)*100 );
+			printf("\n//////////////////////////////////////////////////\n");
+ 		}
+		gettimeofday(&ti, NULL);
+		printf("\n//////////////////////////////////////////////////\n");
+		printf("\t\t\tFRAME %0.f ",NumFrame);
 		//////////  PROCESAR      ////////////
-		//Procesado(frame, FramesBuf,BGModel, Shape );
-		FrameData = Procesado2(frame, BGModel, Shape );
+		printf("\n1)Procesado:\n");
+		FrameData = Procesado(frame, BGModel, Shape );
+	//	FrameData = Procesado2(frame, BGModel, Shape );
+	//	FrameData = Procesado4(frame, BGModel,bg_model, Shape );
 //		muestrearLinea( FrameData->Frame,cvPoint( 0, 240 ),cvPoint( 640, 240 ), 20);
-
+		TiempoParcial = obtenerTiempo( ti , NULL);
+		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
 		anyadirAlFinal( FrameData, FramesBuf);
 		//////////  RASTREAR       ////////////
+		gettimeofday(&ti, NULL);
+		printf("\n2)Tracking:\n");
 		Tracking( FramesBuf );
-
+		TiempoParcial = obtenerTiempo( ti , NULL);
+		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
 		//////////  ALMACENAR ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
 		// ( buffer de datos  ) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ) .
@@ -133,24 +141,27 @@ int main(int argc, char* argv[]) {
 //			VisualizarEl( PRIMERO , FramesBuf , BGModel );
 
 			// guardar datos del primer frame en fichero
-			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);Finalizar();}
+		//	if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);Finalizar();}
 			// Liberar de memoria los datos del frame
 			if(!liberarPrimero( FramesBuf ) ){error(7);Finalizar();}
 			FrameData = NULL;
 		}
 		//else VisualizarEl( PRIMERO , FramesBuf , BGModel );
-		gettimeofday(&tff, NULL);
-		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
-				(tff.tv_usec - tif.tv_usec)/1000.0;
-		TiempoGlobal = TiempoGlobal + TiempoFrame;
+
 		// calcular los tiempos del frame
 		//			CalcDataFrame( FrameData )
 
 		////////// ESTADISTICAS /////////////	//
+		gettimeofday(&ti, NULL);
+		printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
+		TiempoParcial = obtenerTiempo( ti , NULL);
+		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
 
-
+		TiempoFrame = obtenerTiempo( tif, 0 );
 		//////////  VISUALIZAR     ////////////
 		//
+		gettimeofday(&ti, NULL);
+		printf("\n4)Visualización:\n");
 		// incrustar datos en primer frame del buffer
 		FrameData = (STFrame*) FramesBuf->ultimo->dato;
 		ShowStatDataFr( FrameData->Frame);
@@ -160,19 +171,23 @@ int main(int argc, char* argv[]) {
 		// visualizar ultimo frame del buffer
 		if(FramesBuf->numeroDeElementos >0)
 		VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel );
+		TiempoParcial = obtenerTiempo( ti , NULL);
+		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
+
+		TiempoFrame = TiempoFrame + obtenerTiempo( tif, 0 );
+		TiempoGlobal = obtenerTiempo( tinicio, 1);
+//		gettimeofday(&tff, NULL);
+//		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
+//				(tff.tv_usec - tif.tv_usec)/1000.0;
+//		TiempoGlobal = TiempoGlobal + TiempoFrame;
 		// FramesBuf->ultimo->siguiente->dato
- 		printf("\n//////////////////////////////////////////////////\n");
-		printf("\nTiempo de procesado del Frame %.0f : %5.4g ms\n",NumFrame, TiempoFrame);
-		printf("Segundos de video procesados: %.3f seg \n", TiempoGlobal/1000);
-		printf("Porcentaje completado: %.2f %% \n",(NumFrame/TotalFrames)*100 );
-		printf("\n//////////////////////////////////////////////////\n");
 
 	}
 	///////// LIBERAR MEMORIA Y TERMINAR////////
 
     Finalizar();
 	cvReleaseCapture(&g_capture);
-	cvDestroyAllWindows( );
+	DestroyWindows( );
     ///////// POSTPROCESADO //////////
 //	AnalisisEstadistico();
 

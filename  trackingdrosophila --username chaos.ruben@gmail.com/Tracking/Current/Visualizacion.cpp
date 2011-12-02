@@ -49,48 +49,49 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 	//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
 	//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
 	//			CV_RGB(255,0,0),2);
+		if(frameData->Flies!= NULL && frameData->Flies->numeroDeElementos>0) {
+			//Dibujamos los blobs
+			cvCopy( frameData->Frame,frameData->Frame);
+			for( int i = 0; i <  flies->numeroDeElementos; i++ ){
+				fly = (STFly*)obtener(i, flies);
+				CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
 
-		//Dibujamos los blobs
-		cvCopy( frameData->Frame,frameData->Frame);
-		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
-			fly = (STFly*)obtener(i, flies);
-			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-
-			if( fly->Estado == 1){
-				cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+				if( fly->Estado == 1){
+					cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+					cvLine( frameData->Frame,
+							fly->posicion,
+							cvPoint( cvRound( fly->posicion.x - 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+									 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+							fly->Color,
+							1,CV_AA, 0 );
+				}
+				else{
+					cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+					cvLine( frameData->Frame,
+										fly->posicion,
+										cvPoint( fly->posicion.x ,
+												 fly->posicion.y ),
+										fly->Color,
+										8,CV_AA, 0 );
+				}
+				// visualizar direccion
+				//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+				//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+				double magnitude = 30;
 				cvLine( frameData->Frame,
 						fly->posicion,
-						cvPoint( cvRound( fly->posicion.x - 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-								 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
-						fly->Color,
-						1,CV_AA, 0 );
+						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+								 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+						CVX_RED,
+						1, CV_AA, 0 );
+				visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
 			}
-			else{
-				cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
-				cvLine( frameData->Frame,
-									fly->posicion,
-									cvPoint( fly->posicion.x ,
-											 fly->posicion.y ),
-									fly->Color,
-									8,CV_AA, 0 );
-			}
-			// visualizar direccion
-			//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-			//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-			double magnitude = 30;
-			cvLine( frameData->Frame,
-					fly->posicion,
-					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-					CVX_RED,
-					1, CV_AA, 0 );
-			visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
 		}
-		cvLine( frameData->Frame,
-						cvPoint( 120, 267 ),
-						cvPoint( 220, 267 ),
-								CVX_RED,
-								1, CV_AA, 0 );
+//		cvLine( frameData->Frame,
+//						cvPoint( 193, 231 ),
+//						cvPoint( 447, 231 ),
+//								CVX_RED,
+//								1, CV_AA, 0 );
 		// Mostramos imagenes
 		cvShowImage( "Visualización", frameData->Frame );
 		if (SHOW_BG_REMOVAL == 1){
@@ -100,7 +101,7 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 		if ( SHOW_MOTION_TEMPLATE == 1)	cvShowImage( "Motion",frameData->ImMotion);
 
 		// si se pulsa p ó P  => pause = true
-		if( (cvWaitKey(10) & 255) == 80 || (cvWaitKey(10) & 255) == 112 ){
+		if( (cvWaitKey(5) & 255) == 80 || (cvWaitKey(5) & 255) == 112 ){
 			Params->pause = true;
 		}
 		if(Params->pause){
@@ -118,7 +119,7 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 			}
 		}
 		// si se pulsa c ó C  => pause = false
-		if( (cvWaitKey(10) & 255) == 67 || (cvWaitKey(10) & 255) == 99 ){
+		if( (cvWaitKey(5) & 255) == 67 || (cvWaitKey(5) & 255) == 99 ){
 			Params->pause = false;
 		}
 		// si se pulsa v comienza a grabar un video hasta pulsar S
@@ -126,7 +127,7 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 //			Params->Grab = true;
 //		}
 		// si se pulsa s ó S => stop = true
-		if( (cvWaitKey(10) & 255) == 83 || (cvWaitKey(10) & 255) == 115 ){
+		if( (cvWaitKey(5) & 255) == 83 || (cvWaitKey(5) & 255) == 115 ){
 			Params->stop = true;
 		}
 		int posBuf = pos;
@@ -182,7 +183,6 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 	tlcde* flies;
 	STFly* fly;
 
-	flies = frameData->Flies;
 	if (SHOW_VISUALIZATION == 1){
 
 		//Obtenemos la Imagen donde se visualizarán los resultados
@@ -199,41 +199,43 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 	//			CV_RGB(255,0,0),2);
 
 		//Dibujamos los blobs
+		if(frameData->Flies!= NULL && frameData->Flies->numeroDeElementos>0) {
+			flies = frameData->Flies;
 
-		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
-			fly = (STFly*)obtener(i, flies);
-			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-			cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
-			if( fly->Estado == 1){
+			for( int i = 0; i <  flies->numeroDeElementos; i++ ){
+				fly = (STFly*)obtener(i, flies);
+				CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
+				cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+				if( fly->Estado == 1){
+					cvLine( frameData->Frame,
+							fly->posicion,
+							cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+									 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+							fly->Color,
+							1,CV_AA, 0 );
+				}
+				else{
+					cvLine( frameData->Frame,
+										fly->posicion,
+										cvPoint( fly->posicion.x ,
+												 fly->posicion.y ),
+										fly->Color,
+										8,CV_AA, 0 );
+				}
+				// visualizar direccion
+				//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+				//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+				double magnitude = 30;
 				cvLine( frameData->Frame,
 						fly->posicion,
-						cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-								 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
-						fly->Color,
-						1,CV_AA, 0 );
-			}
-			else{
-				cvLine( frameData->Frame,
-									fly->posicion,
-									cvPoint( fly->posicion.x ,
-											 fly->posicion.y ),
-									fly->Color,
-									8,CV_AA, 0 );
-			}
-			// visualizar direccion
-			//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-			//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-			double magnitude = 30;
-			cvLine( frameData->Frame,
-					fly->posicion,
-					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-					CVX_RED,
-					1, CV_AA, 0 );
-			visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
+						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+								 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+						CVX_RED,
+						1, CV_AA, 0 );
+				visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
 
+			}
 		}
-
 		// Mostramos imagenes
 		cvShowImage( "Visualización", frameData->Frame );
 		if (SHOW_BG_REMOVAL == 1){
@@ -408,11 +410,11 @@ void CreateWindows( ){
 
 
 }
-// Destruccion de ventanas
+// Destrucción de ventanas y parametros de visualización
 void DestroyWindows( ){
 
 	//cvDestroyWindow( "Drosophila.avi" );
-
+free(Params);
 
 if (SHOW_BG_REMOVAL == 1){
 	cvDestroyWindow( "Background");

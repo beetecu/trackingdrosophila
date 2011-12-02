@@ -11,7 +11,7 @@
 #ifndef LIBRERIA_H_
 #define LIBRERIA_H_
 
-/// Medida de tiempos
+///////////////////// MEDIDA DE TIEMPOS //////////////////////////////
 
 #ifndef CLK_TCK
 #define CLK_TCK CLOCKS_PER_SEC
@@ -20,11 +20,13 @@
 #ifndef _TIEMPOS_
 #define _TIEMPOS_
 
+float obtenerTiempo( timeval ti, int unidad );
 int gettimeofday( struct timeval *tv, struct timezone *tz );
 
 #endif //_TIEMPOS_
 
-/////////////// Tratamiento de imagenes /////////////////
+///////////////////// TRATAMIENTO DE IMAGENES //////////////////////////////
+
 #ifndef _IMAGEN_
 #define _IMAGEN_
 
@@ -255,7 +257,7 @@ void SetTita( STFly* flyAnterior,STFly* flyActual, double angle );
 
 #endif //_FLIES_
 
-///////////////////// Interfaz para gestionar buffer //////////////////////////////
+///////////////////// INTERFACE PARA GESTIONAR BUFFER //////////////////////////////
 
 #ifndef _BUFFER_
 #define _BUFFER_
@@ -293,6 +295,8 @@ typedef struct{
 
 }Identity;
 
+///////////////////////// INTERFACE PARA GESTIONAR IDENTIDADES /////////////////////
+
 void CrearIdentidades(tlcde* Etiquetas);
 
 static Scalar randomColor(RNG& rng);
@@ -306,6 +310,8 @@ void dejarId( STFly* fly, tlcde* identities );
 void mostrarIds( tlcde* Ids);
 
 #endif //_IDENTIDADES_
+
+/////////////////////////// GESTION FICHEROS //////////////////////////////
 
 #ifndef _FICHEROS_
 #define _FIHEROS_

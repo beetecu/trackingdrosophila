@@ -40,31 +40,40 @@ using namespace std;
 #define PRIMERO 0
 
 
-// Opciones de programa
+// Opciones generales de programa
 
 #define DETECTAR_PLATO 1
-
-//Opciones de visualización
+#define MEDIR_TIEMPOS 1
+//Opciones de visualización de datos y tiempos de procesos
 #define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
-#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
-#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
-#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
-#define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
-#define SHOW_BACKGROUND_DATA 0//!< Switch de 0 a 1 para visualizar el Background.
-#define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
-#define SHOW_SEGMENTACION_STRUCT 0
-#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 
-#define SHOW_BGMODEL_DATA 0
+#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 0//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
+
+#define SHOW_PROCESS_TIMES
+
+#define SHOW_BGMODEL_DATA 0 //!< Switch de 0 a 1 para visualizar el Background.
+#define SHOW_BGMODEL_TIMES 0
+
+#define SHOW_SEGMENTATION_TIMES 1 //!< Switch de 0 a 1 para visualizar los tiempos.
+#define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
+#define SHOW_SEGMENTATION_MATRIX 0
+
 #define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
+
+#define SHOW_VALIDATION_TIMES 1
+#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
+#define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
+#define SHOW_DATA_ASSIGNMENT 1
+
 #define SHOW_DATA_ASSIGNMENT 0
-#define SHOW_SHAPE_MODEL_DATA_AREAS 0
-#define SHOW_SHAPE_MODEL_DATA_MEDIANA 0
-#define SHOW_VALIDATION_DATA 1
+
 #define SHOW_KALMAN_RESULT 1
 
+// visualización en ventana
+#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
+#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 
 #ifndef DEFINICION_DE_ESTRUCTURAS
 #define DEFINICION_DE_ESTRUCTURAS
@@ -128,7 +137,7 @@ using namespace std;
 
 	typedef struct {
 		IplImage* Imed; //!< Imagen que contiene el modelo de fondo (Background Model).
-		IplImage* IDesv; //!< Imagen que contiene la desviación tipica del modelo de fondo estático.
+		IplImage* IDesvf; //!< Imagen que contiene la desviación tipica del modelo de fondo estático.
 		IplImage* ImFMask; //!<Imagen que contiene la  Mascara del plato
 		int PCentroX ;//!< Coordenada x del centro del plato.
 		int PCentroY ;//!< Coordenada y del centro del plato.
@@ -165,7 +174,7 @@ using namespace std;
 		int num_frame; //!< Identificación del Frame procesado.
 		IplImage* Frame;//!< Imagen fuente de 8 bit de niveles de gris preprocesada.
 		IplImage* BGModel;//!< Imagen de 8 bits que contiene e  BackGround Model Dinámico.
-		IplImage* IDesv;//!< Imagen de 8 bits que contiene la Desviación Típica del modelo de fondo dinámico.
+		IplImage* IDesvf;//!< Imagen de 32 bits que contiene la Desviación Típica del modelo de fondo dinámico.
 		IplImage* OldFG; //!< Imagen que contiene el OldForeGround ( blobs estáticos ).
 		IplImage* FG;  //!< Imagen que contiene el Foreground ( blobs en movimiento ).
 		IplImage* ImMotion;//!< Imagen que contiene la orientación de moscas.
