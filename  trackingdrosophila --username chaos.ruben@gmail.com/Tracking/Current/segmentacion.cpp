@@ -181,8 +181,11 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 
 		if( Mask != NULL ){
 		 // para evitar el offset de find contours
+		float angle;
+		if ( flyData->orientacion >=0 && flyData->orientacion < 180) angle = 180 - flyData->orientacion;
+		else angle = (360-flyData->orientacion)+180;
 		CvSize axes = cvSize( cvRound(flyData->a) , cvRound(flyData->b) );
-		cvEllipse( Mask, flyData->posicion , axes, flyData->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+		cvEllipse( Mask, flyData->posicion , axes, angle, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 		}
 
 	}// Fin de contornos
@@ -283,8 +286,7 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 	r2=cvGet2D(R,0,1);
 
 	//Hallar los semiejes y la orientación
-	// Tita valdra entre 0 y360ª
-
+	//tita varia entre 0 y 359.99999999 [0,360)
 	*semiejemayor=2*(sqrt(d1.val[0]));
 	*semiejemenor=2*(sqrt(d2.val[0]));
 	*tita = 0;
@@ -294,9 +296,12 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 	if(( sint == 0)&&( cost == 0)) *tita = 0;
 	else{
 		*tita=atan2( sint,cost );
-		*tita = *tita * 180 / PI;
-		if (*tita < 0 ) *tita = *tita + 360;
-		if (*tita == 360) *tita = 0; // tita varia entre 0 y 359
+		*tita = *tita * 180 / PI;//a grados
+		if (*tita < 0 ) *tita = *tita + 360; // tita [0 , 360)
+		if (*tita == 360) *tita = 0;
+		//corregimos ángulo para el origen del sistema cartesiano de derecha a izquierda
+		if ( *tita >=0 && *tita < 180)  *tita = 180 - *tita;
+		else *tita = ( 360-*tita)+180;
 	}
 
 	// Obtenemos el centro de la elipse
@@ -562,6 +567,9 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 //
 //		if( Mask != NULL ){
 //		 // para evitar el offset de find contours
+//		float angle;
+//		if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
+//		else angle = (360-fly->orientacion)+180;
 //		CvSize axes = cvSize( cvRound(flyData->a) , cvRound(flyData->b) );
 //		cvEllipse( Mask, flyData->posicion , axes, flyData->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 //		}
