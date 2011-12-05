@@ -51,5 +51,15 @@ void VerEstadoBuffer( IplImage* Imagen,int num );
 void VerEstadoBGModel( IplImage* Imagen );
 
 void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
+//!\brief //Representamos los blobs mediante triangulos isosceles
+//! dibujamos triangulo isosceles de altura el eje mayor de la elipse, formando el segmento
+//! (A,mcb), y de anchura el eje menor dando lugar al segmento (B,C), perpendicular
+//! a (A,mcb) cuyo centro es mcb. La unión de A,B,C dará el triangulo resultante.
+/*!
+ * \param lista_blobs lista con los datos de los blobs a dibujar.
+ */
+void dibujarBlobs( IplImage* Imagen,tlcde* lista_blobs );
+
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int posbuf );
 
 #endif /* VISUALIZACION_HPP_ */

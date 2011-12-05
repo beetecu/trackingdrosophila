@@ -132,7 +132,7 @@ static	int TBposDMax = 50;
 	cvMerge( mask, 0, 0, 0, frameIdx1->ImMotion );
    // calculate motion gradient orientation and valid orientation mask
 	cvCalcMotionGradient( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, 3 ); //0.01, 0.5
-	cvShowImage( "Foreground", orient);
+//	cvShowImage( "Foreground", orient);
 //	cvWaitKey(0);
 
 	// añade a la lista del frame actual los blobs que previamente estaban en el oldfg y
@@ -196,21 +196,19 @@ static	int TBposDMax = 50;
 			cvResetImageROI( silh );
 
 			// check for the case of little motion
-			if( count < comp_rect.width*comp_rect.height * 0.05 )
-				continue;
-
+			if( count < comp_rect.width*comp_rect.height * 0.05 )	continue;
 
 			fly = matchingIdentity(frameIdx1, frameIdx2, Etiquetas, comp_rect, angle );
 
-			// draw a clock with arrow indicating the direction
+			if(SHOW_MOTION_TEMPLATE){
+				// draw a clock with arrow indicating the direction
+				center = cvPoint( (comp_rect.x + comp_rect.width/2),
+								  (comp_rect.y + comp_rect.height/2) );
+				cvCircle( frameIdx1->ImMotion, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+				cvLine( frameIdx1->ImMotion, center, cvPoint( cvRound( center.x + magnitude*cos(angle*CV_PI/180)),
+						cvRound( center.y - magnitude*sin(angle*CV_PI/180))), color, 3, CV_AA, 0 );
+			}
 
-			center = cvPoint( (comp_rect.x + comp_rect.width/2),
-							  (comp_rect.y + comp_rect.height/2) );
-			cvCircle( frameIdx1->ImMotion, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-			cvLine( frameIdx1->ImMotion, center, cvPoint( cvRound( center.x + magnitude*cos(angle*CV_PI/180)),
-					cvRound( center.y - magnitude*sin(angle*CV_PI/180))), color, 3, CV_AA, 0 );
-	//		imshow( "Motion",frameData->ImMotion);
-	//					cvWaitKey(0);
 
 			}//ELSE
 	}// Fin asignaciones
