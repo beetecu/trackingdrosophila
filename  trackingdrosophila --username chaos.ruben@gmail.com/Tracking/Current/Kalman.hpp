@@ -22,7 +22,7 @@
  * \note en este caso coordenadas X e Y de la posición y componentes Vx y Vy de la velocidad (cte).
  */
 
-CvKalman* initKalman (CvMat** IndexMat ,CvPoint coord,float orientacion);
+CvKalman* initKalman (CvMat** IndexMat ,CvPoint coord,float orientacion,float direccion);
 
 
 //!\brief Inicializa los parametros del filtro de Kalman para la orientación - direccion.
