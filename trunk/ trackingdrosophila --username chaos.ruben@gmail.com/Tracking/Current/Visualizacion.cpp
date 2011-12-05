@@ -21,185 +21,125 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 
 	STFrame* frameData;
 	tlcde* flies;
-	STFly* fly;
 
-
-	irAl( pos, frameBuf );
-	frameData = (STFrame*)obtenerActual(frameBuf);
-	flies = frameData->Flies;
-//	if(!frameData->Frame) frameData->Frame = cvCreateImage(cvGetSize( frameData->Frame ), 8,3);
-
-	// si no se ha llenado el buffer y se pide visualizar el primero, esperar a llenar buffer.
-	if ( ( frameBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH-1) && pos == 0 ){
-		VerEstadoBuffer(frameData->Frame, frameBuf->numeroDeElementos );
-		return;
-	}
 
 	if (SHOW_VISUALIZATION == 1){
+		// OBTENER FRAME
+		irAl( pos, frameBuf );
+		frameData = (STFrame*)obtenerActual(frameBuf);
+		flies = frameData->Flies;
 
-		//Obtenemos la Imagen donde se visualizarán los resultados
+		// si no se ha llenado el buffer y se pide visualizar el primero, esperar a llenar buffer.
+		if ( ( frameBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH-1) && pos == 0 ){
+			VerEstadoBuffer(frameData->Frame, frameBuf->numeroDeElementos );
+			return;
+		}
 
-		//Dibujamos el plato en la imagen de visualizacion
+		// DIBUJAR PLATO
 		if( DETECTAR_PLATO ){
 			cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
 			cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 		}
-		// Dibujamos la ROI
-	//	cvRectangle( frameData->Frame,
-	//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
-	//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
-	//			CV_RGB(255,0,0),2);
-		if(frameData->Flies!= NULL && frameData->Flies->numeroDeElementos>0) {
-			//Dibujamos los blobs
-			cvCopy( frameData->Frame,frameData->Frame);
-			for( int i = 0; i <  flies->numeroDeElementos; i++ ){
-				fly = (STFly*)obtener(i, flies);
-				CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-				float angle;
-				if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
-				else angle = (360-fly->orientacion)+180;
-				if( fly->Estado == 1){
-					cvEllipse( frameData->Frame, fly->posicion, axes, angle, 0, 360, fly->Color, 1, 8);
-					// dibujamos triangulo CA,AB,BC
-					cvLine( frameData->Frame,
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									cvRound( fly->posicion.y + fly->b/2 )  ),
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									 cvRound( fly->posicion.y - fly->b/2 )  ),
 
-							fly->Color,
-							1,CV_AA, 0 );
-					cvLine( frameData->Frame,
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									 cvRound( fly->posicion.y - fly->b/2 )  ),
-							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
-									 fly->posicion.y ),
-							fly->Color,
-							1,CV_AA, 0 );
-					cvLine( frameData->Frame,
-							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
-														 fly->posicion.y ),
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									 cvRound( fly->posicion.y + fly->b/2 )  ),
-							fly->Color,
-							1,CV_AA, 0 );
-//					cvLine( frameData->Frame,
-//							fly->posicion,
-//							cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-//									 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
-//							fly->Color,
-//							1,CV_AA, 0 );
-				}
-				else{
-					cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
-					cvLine( frameData->Frame,
-										fly->posicion,
-										cvPoint( fly->posicion.x ,
-												 fly->posicion.y ),
-										fly->Color,
-										8,CV_AA, 0 );
-				}
-				// visualizar direccion
-				//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-				//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+		// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
+		dibujarBlobs( frameData->Frame, frameData->Flies );
 
-				double magnitude = 30;
-				cvLine( frameData->Frame,
-						fly->posicion,
-						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-								 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-						CVX_RED,
-						1, CV_AA, 0 );
-				visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
-			}
-		}
-//		cvLine( frameData->Frame,
-//						cvPoint( 193, 231 ),
-//						cvPoint( 447, 231 ),
-//								CVX_RED,
-//								1, CV_AA, 0 );
-		// Mostramos imagenes
+		// MOSTRAMOS IMAGENES
 		cvShowImage( "Visualización", frameData->Frame );
 		if (SHOW_BG_REMOVAL == 1){
 				cvShowImage("Background", frameData->BGModel);
 				cvShowImage( "Foreground",frameData->FG);
 		}
-		if ( SHOW_MOTION_TEMPLATE == 1)	cvShowImage( "Motion",frameData->ImMotion);
+		if ( SHOW_MOTION_TEMPLATE == 1){
+			cvShowImage( "Motion",frameData->ImMotion);
+		}
 
-		// si se pulsa p ó P  => pause = true
-		if( (cvWaitKey(5) & 255) == 80 || (cvWaitKey(5) & 255) == 112 ){
-			Params->pause = true;
-		}
-		if(Params->pause){
-			cvShowImage( "Visualización", frameData->Frame );
-			if (SHOW_BG_REMOVAL == 1){
-					cvShowImage("Background", frameData->BGModel);
-					cvShowImage( "Foreground",frameData->FG);
+		// OPCIONES
+		if(ACTIVAR_OPCIONES_VISUALIZACION){
+			// si se pulsa p ó P  => pause = true
+			if( (cvWaitKey(5) & 255) == 80 || (cvWaitKey(5) & 255) == 112 ){
+				Params->pause = true;
 			}
-			if ( SHOW_MOTION_TEMPLATE == 1)	cvShowImage( "Motion",frameData->ImMotion);
-			fflush( stdin);
-			if( cvWaitKey(0) == 'g' || cvWaitKey(0) == 'G'){
-				irAl( pos, frameBuf );
-				frameData = (STFrame*)obtenerActual(frameBuf);
-				cvSaveImage( "Captura.jpg", frameData->Frame);
+			// si se pulsa s ó S => stop = true
+			if( (cvWaitKey(5) & 255) == 83 || (cvWaitKey(5) & 255) == 115 ){
+				Params->stop = true;
 			}
-		}
-		// si se pulsa c ó C  => pause = false
-		if( (cvWaitKey(5) & 255) == 67 || (cvWaitKey(5) & 255) == 99 ){
-			Params->pause = false;
-		}
-		// si se pulsa v comienza a grabar un video hasta pulsar S
-//		if( opcion == 'v' || opcion == 'V'){
-//			Params->Grab = true;
-//		}
-		// si se pulsa s ó S => stop = true
-		if( (cvWaitKey(5) & 255) == 83 || (cvWaitKey(5) & 255) == 115 ){
-			Params->stop = true;
-		}
-		int posBuf = pos;
-		// mientras no se presione c ó C ( continue )
-		while(Params->stop){
-			unsigned char opcion;
-			Params->Grab = false;
-			fflush( stdin);
-			opcion = cvWaitKey(0);
+			// PAUSA
+			if(Params->pause){
+				cvShowImage( "Visualización", frameData->Frame );
+				if (SHOW_BG_REMOVAL == 1){
+						cvShowImage("Background", frameData->BGModel);
+						cvShowImage( "Foreground",frameData->FG);
+				}
+				if ( SHOW_MOTION_TEMPLATE == 1){
+					cvShowImage( "Motion",frameData->ImMotion);
+				}
+				fflush( stdin);
+				if( cvWaitKey(0) == 'g' || cvWaitKey(0) == 'G'){
+					cvSaveImage( "Captura.jpg", frameData->Frame);
+				}
+			}
+			// si se pulsa c ó C  => pause = false
+			if( (cvWaitKey(5) & 255) == 67 || (cvWaitKey(5) & 255) == 99 ){
+				Params->pause = false;
+			}
+			// si se pulsa v comienza a grabar un video hasta pulsar S
+	//		if( opcion == 'v' || opcion == 'V'){
+	//			Params->Grab = true;
+	//		}
+			//STOP
+			int posBuf = pos;
+			while(Params->stop){
+				visualizarBuffer( frameBuf,Flat, posBuf );
+				// mientras no se presione c ó C ( continue ) continuamos en el while
+				if(!Params->stop) break;
+			}
+			irAlFinal( frameBuf );
+		}//FIN OPCIONES
+	}// FIN VISUALIZACION
+}
 
-			// si pulsamos +, visualizamos el siguiente elemento del buffer
-			if( opcion == 43 ){
-				if (posBuf < frameBuf->numeroDeElementos-1) posBuf += 1;
+void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
+
+	STFly* fly;
+
+	if(flies!= NULL && flies->numeroDeElementos>0) {
+		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
+			// obtener lista de blobs.
+			fly = (STFly*)obtener(i, flies);
+			CvPoint A   = cvPoint( cvRound( fly->posicion.x + fly->a*cos(fly->orientacion*CV_PI/180) ),
+								   cvRound( fly->posicion.y - fly->a*sin(fly->orientacion*CV_PI/180)));
+			CvPoint Mcb = cvPoint( cvRound( fly->posicion.x - fly->a*cos(fly->orientacion*CV_PI/180)),
+								   cvRound( fly->posicion.y + fly->a*sin(fly->orientacion*CV_PI/180)));
+			CvPoint B =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion+90)*CV_PI/180) ),
+								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion+90)*CV_PI/180)));
+			CvPoint C =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion-90)*CV_PI/180) ),
+								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion-90)*CV_PI/180)));
+			if( fly->Estado == 1){
+				cvLine( Imagen,A,B,fly->Color,1,CV_AA, 0 );
+				cvLine( Imagen,B,C,fly->Color,1,CV_AA, 0 );
+				cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
 			}
-			// si pulsamos -, visualizamos el elemento anterior del buffer
-			if( opcion == 45 ){
-				if ( posBuf > 0 ) posBuf-=1;
+			else{
+				cvLine( Imagen,A,B,CVX_WHITE,1,CV_AA, 0 );
+				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
+				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
 			}
-			// si pulsamos i ó I, visualizamos el primer elemento del buffer
-			if( opcion == 49 || opcion == 69)  {
-				posBuf = 0;
-			}
-			// si pulsamos f +o F, visualizamos el último elemento del buffer
-			if( opcion == 70 || opcion == 102)  {
-				posBuf = frameBuf->numeroDeElementos-1;
-			}
-			// tomar instantanea del frame
-			if( opcion == 'g' || opcion == 'G'){
-				irAl( posBuf, frameBuf );
-				frameData = (STFrame*)obtenerActual(frameBuf);
-				cvSaveImage( "Captura.jpg", frameData->Frame);
-			}
-			irAl( posBuf, frameBuf );
-			frameData = (STFrame*)obtenerActual(frameBuf);
-			CvFont fuente1;
-			char PBuf[100];
-			sprintf(PBuf," Posicion del Buffer: %d ",posBuf );
-			cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
-			cvPutText( frameData->Frame, PBuf,  cvPoint( 10,frameData->Frame->height-10), &fuente1, CVX_RED );
-			VisualizarFr( frameData, Flat );
-			if( opcion == 67 || opcion == 99 ){
-					Params->stop = false;
-			}
+			// visualizar direccion
+			//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+			//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+
+			double magnitude = 30;
+			cvLine( Imagen,
+					fly->posicion,
+					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+					CVX_RED,
+					1, CV_AA, 0 );
+			visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
 		}
-		irAlFinal( frameBuf );
 	}
+	else return;
 }
 
 void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
@@ -210,79 +150,16 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 	STFly* fly;
 
 	if (SHOW_VISUALIZATION == 1){
-
-		//Obtenemos la Imagen donde se visualizarán los resultados
-
-		//Dibujamos el plato en la imagen de visualizacion
+		// DIBUJAR PLATO
 		if( DETECTAR_PLATO ){
 			cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
 			cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 		}
-		// Dibujamos la ROI
-	//	cvRectangle( frameData->Frame,
-	//			cvPoint(Flat->PCentroX-Flat->PRadio, Flat->PCentroY-Flat->PRadio),
-	//			cvPoint(Flat->PCentroX + Flat->PRadio,Flat->PCentroY + Flat->PRadio),
-	//			CV_RGB(255,0,0),2);
 
-		//Dibujamos los blobs
-		if(frameData->Flies!= NULL && frameData->Flies->numeroDeElementos>0) {
-			flies = frameData->Flies;
+		// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
+		dibujarBlobs( frameData->Frame, frameData->Flies );
 
-			for( int i = 0; i <  flies->numeroDeElementos; i++ ){
-				fly = (STFly*)obtener(i, flies);
-				float angle;
-				if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
-				else angle = (360-fly->orientacion)+180;
-				CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-				cvEllipse( frameData->Frame, fly->posicion, axes, angle, 0, 360, fly->Color, 1, 8);
-				if( fly->Estado == 1){
-					// dibujamos triangulo CA,AB,BC
-					cvLine( frameData->Frame,
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									cvRound( fly->posicion.y + fly->b/2 )  ),
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									 cvRound( fly->posicion.y - fly->b/2 )  ),
-
-							fly->Color,
-							1,CV_AA, 0 );
-					cvLine( frameData->Frame,
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									 cvRound( fly->posicion.y - fly->b/2 )  ),
-							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
-									 fly->posicion.y ),
-							fly->Color,
-							1,CV_AA, 0 );
-					cvLine( frameData->Frame,
-							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
-									                     fly->posicion.y ),
-							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
-									 cvRound( fly->posicion.y + fly->b/2 )  ),
-							fly->Color,
-							1,CV_AA, 0 );
-				}
-				else{
-					cvLine( frameData->Frame,
-										fly->posicion,
-										cvPoint( fly->posicion.x ,
-												 fly->posicion.y ),
-										fly->Color,
-										8,CV_AA, 0 );
-				}
-				// visualizar direccion
-				//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-				//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-				double magnitude = 30;
-				cvLine( frameData->Frame,
-						fly->posicion,
-						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-								 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-						CVX_RED,
-						1, CV_AA, 0 );
-				visualizarId( frameData->Frame,fly->posicion, fly->etiqueta, fly->Color);
-
-			}
-		}
-		// Mostramos imagenes
+		// MOSTRAR IMAGENES
 		cvShowImage( "Visualización", frameData->Frame );
 		if (SHOW_BG_REMOVAL == 1){
 				cvShowImage("Background", frameData->BGModel);
@@ -293,7 +170,6 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 }
 
 void ShowStatDataFr( IplImage* Im  ){
-
 
 	CvFont fuente1;
 	CvFont fuente2;
@@ -379,6 +255,56 @@ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
 	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
 }
 
+
+//Representamos los blobs mediante triangulos isosceles
+// dibujamos triangulo isosceles de altura el eje mayor de la elipse, formando el segmento
+// (A,mcb), y de anchura el eje menor dando lugar al segmento (B,C), perpendicular
+// a (A,mcb) cuyo centro es mcb. La unión de A,B,C dará el triangulo resultante.
+
+
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int posBuf ){
+
+	STFrame* frameData;
+	unsigned char opcion;
+
+	Params->Grab = false;
+	fflush( stdin);
+	opcion = cvWaitKey(0);
+	// si pulsamos +, visualizamos el siguiente elemento del buffer
+	if( opcion == 43 ){
+		if (posBuf < Buffer->numeroDeElementos-1) posBuf += 1;
+	}
+	// si pulsamos -, visualizamos el elemento anterior del buffer
+	if( opcion == 45 ){
+		if ( posBuf > 0 ) posBuf-=1;
+	}
+	// si pulsamos i ó I, visualizamos el primer elemento del buffer
+	if( opcion == 49 || opcion == 69)  {
+		posBuf = 0;
+	}
+	// si pulsamos f +o F, visualizamos el último elemento del buffer
+	if( opcion == 70 || opcion == 102)  {
+		posBuf = Buffer->numeroDeElementos-1;
+	}
+	// tomar instantanea del frame
+	if( opcion == 'g' || opcion == 'G'){
+		irAl( posBuf, Buffer );
+		frameData = (STFrame*)obtenerActual(Buffer);
+		cvSaveImage( "Captura.jpg", frameData->Frame);
+	}
+	irAl( posBuf,Buffer );
+	frameData = (STFrame*)obtenerActual(Buffer);
+	CvFont fuente1;
+	char PBuf[100];
+	sprintf(PBuf," Posicion del Buffer: %d ",posBuf );
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvPutText( frameData->Frame, PBuf,  cvPoint( 10,frameData->Frame->height-10), &fuente1, CVX_RED );
+	VisualizarFr( frameData, Flat );
+	if( opcion == 'C' || opcion == 'c' ){
+			Params->stop = false;
+	}
+}
+
 void DefaultVParams( VParams **Parameters){
     //init parameters
 	 VParams *params;
@@ -391,9 +317,6 @@ void DefaultVParams( VParams **Parameters){
     	params->stop = false;
     	*Parameters = params;
     }
-
-
-
 }
 //void VerEstadoSHModel( IplImage* Imagen,int num ){
 //

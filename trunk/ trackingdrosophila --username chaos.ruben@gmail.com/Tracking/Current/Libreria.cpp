@@ -642,8 +642,8 @@ void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* 
 	{
 		*direccion = atan( b / a );
 		//resolvemos ambiguedad debida a los signos en la atan
-		*direccion = *direccion + PI;
-		*direccion = ( (*direccion) *180)/PI; // a grados
+		*direccion = *direccion + CV_PI;
+		*direccion = ( (*direccion) *180)/CV_PI; // a grados
 	}
 	else if( ( b == 0) && ( a == 0) ){
 		*direccion = -1;
@@ -658,7 +658,7 @@ void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* 
 	}
 	else {
 		*direccion = atan( b / a );
-		*direccion = ( (*direccion) *180)/PI;
+		*direccion = ( (*direccion) *180)/CV_PI;
 	}
 
 	// calcular distancia para comprobar si hay desplazamiento. si es menor que un umbral

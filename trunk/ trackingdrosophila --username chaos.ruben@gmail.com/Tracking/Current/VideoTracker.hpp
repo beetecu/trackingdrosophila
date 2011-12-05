@@ -33,21 +33,18 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
-#define PI 3.14159265
-
 #define IMAGE_BUFFER_LENGTH 51 // valor impar
 #define ULTIMO IMAGE_BUFFER_LENGTH-1
 #define PRIMERO 0
 
 
-// Opciones generales de programa
+// OPCIONES GENERALES DE PROGRAMA
 
 #define DETECTAR_PLATO 1
 #define MEDIR_TIEMPOS 1
-//Opciones de visualización de datos y tiempos de procesos
-#define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
 
-#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+//OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
+
 #define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 0//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 
@@ -61,20 +58,24 @@ using namespace std;
 #define SHOW_SEGMENTATION_MATRIX 0
 
 #define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
-
 #define SHOW_VALIDATION_TIMES 1
-#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
-#define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
+
 #define SHOW_MT_DATA 1
 
 #define SHOW_KALMAN_RESULT 1
 
-// visualización en ventana
-#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
-#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+// VISUALIZACIÓN DE IMAGENES
 
-#ifndef DEFINICION_DE_ESTRUCTURAS
-#define DEFINICION_DE_ESTRUCTURAS
+#define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
+#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
+#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+#define ACTIVAR_OPCIONES_VISUALIZACION 0
+#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
+#define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
+
+#ifndef _ESTRUCTURAS_
+#define _ESTRUCTURAS_
 
 #ifndef _ELEMENTO_H
 #define _ELEMENTO_H

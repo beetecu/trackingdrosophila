@@ -97,7 +97,7 @@ double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData)
 
 double CalcProbMosca( SHModel* SH , STFly* FlyData ){
 	double Pxi;
-	Pxi = exp( -abs((PI*FlyData->a*FlyData->b) - SH->FlyAreaMed) / SH->FlyAreaDes);
+	Pxi = exp( -abs((CV_PI*FlyData->a*FlyData->b) - SH->FlyAreaMed) / SH->FlyAreaDes);
 	return Pxi;
 }
 
@@ -105,7 +105,7 @@ double CalcProbMosca( SHModel* SH , STFly* FlyData ){
 
 double CalcCircul( STFly* FlyData){
 	double circularidad;
-	circularidad = ( 4*PI*FlyData->a*FlyData->b*PI)/(FlyData->perimetro*FlyData->perimetro);
+	circularidad = ( 4*CV_PI*FlyData->a*FlyData->b*CV_PI)/(FlyData->perimetro*FlyData->perimetro);
 	return circularidad;
 }
 
@@ -119,7 +119,7 @@ int CalcProbUmbral( SHModel* SH,ValParams* VParams,STFly* FlieData ){
 	double Pth_H;
 	double Pth_L;
 
-	area_blob= PI*FlieData->a*FlieData->b;
+	area_blob= CV_PI*FlieData->a*FlieData->b;
 
 	area_L = VParams->UmbralProb*SH->FlyAreaDes + SH->FlyAreaMedia;
 	area_H= VParams->UmbralProb*SH->FlyAreaDes - SH->FlyAreaMedia;

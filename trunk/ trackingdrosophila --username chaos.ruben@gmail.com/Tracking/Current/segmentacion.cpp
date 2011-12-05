@@ -135,7 +135,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 											(tf.tv_usec - ti.tv_usec)/1000.0;
 				printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);
 			}
-		areaElipse = PI*flyData->b*flyData->a;
+		areaElipse = CV_PI*flyData->b*flyData->a;
 		err = abs(areaElipse - areaFG);
 		if( SHOW_SEGMENTATION_MATRIX == 1){
 			printf("\n BLOB %d\n",id);
@@ -296,7 +296,7 @@ void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 	if(( sint == 0)&&( cost == 0)) *tita = 0;
 	else{
 		*tita=atan2( sint,cost );
-		*tita = *tita * 180 / PI;//a grados
+		*tita = *tita * 180 / CV_PI;//a grados
 		if (*tita < 0 ) *tita = *tita + 360; // tita [0 , 360)
 		if (*tita == 360) *tita = 0;
 		//corregimos ángulo para el origen del sistema cartesiano de derecha a izquierda
@@ -521,7 +521,7 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 //											(tf.tv_usec - ti.tv_usec)/1000.0;
 //				printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);
 //			}
-//		areaElipse = PI*flyData->b*flyData->a;
+//		areaElipse = CV_PI*flyData->b*flyData->a;
 //		err = abs(areaElipse - areaFG);
 //		if( SHOW_SEGMENTATION_MATRIX == 1){
 //			printf("\n BLOB %d\n",id);
@@ -721,7 +721,7 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 //	if(( sint == 0)&&( cost == 0)) *tita = 0;
 //	else{
 //		*tita=atan2( sint,cost );
-//		*tita = *tita * 180 / PI;
+//		*tita = *tita * 180 / CV_PI;
 //		if (*tita < 0 ) *tita = *tita + 360;
 //		if (*tita == 360) *tita = 0; // tita varia entre 0 y 359
 //	}

@@ -85,7 +85,9 @@ int main(int argc, char* argv[]) {
 	//////////  PREPROCESADO   ////////////
 	gettimeofday(&ti, NULL);//para obtener el tiempo transcurrido desde el inicio del programa
 	printf("\nIniciando preprocesado...");
+
 	if (!PreProcesado( g_capture, &BGModel, &Shape) ) Finalizar();
+
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\nPreprocesado correcto.Tiempo total: %0.2f s\n", TiempoParcial);
 	printf("\n\nIniciando procesado...\n");
@@ -111,37 +113,41 @@ int main(int argc, char* argv[]) {
 		printf("\t\t\tFRAME %0.f ",NumFrame);
 		//////////  PROCESAR      ////////////
 		printf("\n1)Procesado:\n");
+
 		FrameData = Procesado(frame, BGModel, Shape );
+
 	//	FrameData = Procesado2(frame, BGModel, Shape );
 	//	FrameData = Procesado4(frame, BGModel,bg_model, Shape );
 //		muestrearLinea( FrameData->Frame,cvPoint( 0, 240 ),cvPoint( 640, 240 ), 20);
 		TiempoParcial = obtenerTiempo( ti , NULL);
 		printf("Procesado correcto.Tiempo total %5.4g ms\n", TiempoParcial);
 		anyadirAlFinal( FrameData, FramesBuf);
+
 		//////////  RASTREAR       ////////////
 		gettimeofday(&ti, NULL);
 		printf("\n2)Tracking:\n");
+
 		Tracking( FramesBuf );
+
 		TiempoParcial = obtenerTiempo( ti , NULL);
 		printf("Tracking correcto.Tiempo total %5.4g ms\n", TiempoParcial);
+
 		//////////  ALMACENAR ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
 		// ( buffer de datos  ) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ) .
 		// Los buffers son colas FIFO
-
-
 		// si buffer lleno
 		if( FramesBuf->numeroDeElementos == STRUCT_BUFFER_LENGTH){
 			// obtener primero
 			FrameData = (STFrame*) FramesBuf->ultimo->siguiente->dato;
 			//mostrarListaFlies(FramesBuf->numeroDeElementos-1,FramesBuf);// del ultimo elemento
 			// calculo de datos estadísticos simples en tiempo de ejecución
-//			CalcStatDataFrame();
+//
 
 //			VisualizarEl( PRIMERO , FramesBuf , BGModel );
 
 			// guardar datos del primer frame en fichero
-		//	if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);Finalizar();}
+			if(!GuardarPrimero( FramesBuf, nombreFichero ) ){error(6);Finalizar();}
 			// Liberar de memoria los datos del frame
 			if(!liberarPrimero( FramesBuf ) ){error(7);Finalizar();}
 			FrameData = NULL;
@@ -154,10 +160,14 @@ int main(int argc, char* argv[]) {
 		////////// ESTADISTICAS /////////////	//
 		gettimeofday(&ti, NULL);
 		printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
+
+//		CalcStatDataFrame();
+
 		TiempoParcial = obtenerTiempo( ti , NULL);
 		printf("Cálculos realizados. Tiempo total %5.4g ms\n", TiempoParcial);
 
 		TiempoFrame = obtenerTiempo( tif, 0 );
+
 		//////////  VISUALIZAR     ////////////
 		//
 		gettimeofday(&ti, NULL);
@@ -176,10 +186,7 @@ int main(int argc, char* argv[]) {
 
 		TiempoFrame = TiempoFrame + obtenerTiempo( tif, 0 );
 		TiempoGlobal = obtenerTiempo( tinicio, 1);
-//		gettimeofday(&tff, NULL);
-//		TiempoFrame = (tff.tv_sec - tif.tv_sec)*1000 + \
-//				(tff.tv_usec - tif.tv_usec)/1000.0;
-//		TiempoGlobal = TiempoGlobal + TiempoFrame;
+
 		// FramesBuf->ultimo->siguiente->dato
 
 	}
