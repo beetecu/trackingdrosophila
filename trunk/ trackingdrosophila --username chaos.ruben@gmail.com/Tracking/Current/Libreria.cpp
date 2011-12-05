@@ -492,9 +492,12 @@ int dibujarFG( tlcde* flies, IplImage* dst,bool clear){
 	irAlPrincipio( flies);
 	for( int j = 0; j < flies->numeroDeElementos; j++){
 		fly = (STFly*)obtener( j, flies);
+		float angle;
+		if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
+		else angle = (360-fly->orientacion)+180;
 		if( fly->Estado ){
 			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-			cvEllipse( dst, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+			cvEllipse( dst, fly->posicion, axes, angle, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 		}
 	}
 	return 1;
@@ -508,9 +511,12 @@ int dibujarBG( tlcde* flies, IplImage* dst, bool clear){
 	irAlPrincipio( flies);
 	for( int j = 0; j < flies->numeroDeElementos; j++){
 		fly = (STFly*)obtener( j, flies);
+		float angle;
+		if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
+		else angle = (360-fly->orientacion)+180;
 		if( !fly->Estado ){
 			CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-			cvEllipse( dst, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+			cvEllipse( dst, fly->posicion, axes, angle, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 		}
 	}
 	return 1;
@@ -524,8 +530,11 @@ int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear){
 	irAlPrincipio( flies);
 	for( int j = 0; j < flies->numeroDeElementos; j++){
 		fly = (STFly*)obtener( j, flies);
+		float angle;
+		if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
+		else angle = (360-fly->orientacion)+180;
 		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-		cvEllipse( dst, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+		cvEllipse( dst, fly->posicion, axes, angle, 0, 360, cvScalar( 255,0,0,0), -1, 8);
 	}
 	return 1;
 }
@@ -615,8 +624,8 @@ void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids ){
 	flyActual->Color = flyAnterior->Color;
 	float distancia;
 	//Establecemos la dirección y el modulo del vector de desplazamiento
-	EUDistance( flyAnterior->posicion,flyActual->posicion, &flyAnterior->direccion, &distancia );
-	flyActual->dstTotal = flyAnterior->dstTotal + distancia;
+	//EUDistance( flyAnterior->posicion,flyActual->posicion, &flyAnterior->direccion, &distancia );
+	//flyActual->dstTotal = flyAnterior->dstTotal + distancia;
 //	SetTita( flyActual, flyAnterior );
 }
 /// Haya la distancia ecuclidea entre dos puntos. Establece el modulo y y el argumento en grados.
@@ -658,51 +667,50 @@ void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* 
 
 }
 
-/// resuelve la ambiguedad en la orientación para cada cuadrante
+/// -resuelve la ambiguedad en la orientación para cada cuadrante
 ///estableciendo ésta en función de la dirección del desplazamiento
-/// en la decisión de si no se modifica el ángulo o bien se suma o resta pi
+/// -En la decisión de si no se modifica el ángulo o bien se suma o resta pi
 /// se consideran mayores y menores estrictos, de forma que si la dif absoluta
 ///entre la direccion y la orientación es exactamnte 90, no se modifica la orient
-//.Siempre devuelve un ángulo entre 0 y 359º
+//.Siempre devuelve un ángulo entre [0 , 360º)
 
 void SetTita( STFly* flyAnterior,STFly* flyActual,double angle ){
 
-	//flyAnterior->direccion = angle;
-	flyActual->direccion = angle;
-
-	if(  flyActual->orientacion >= 0 && flyActual->orientacion < 90 ){
-		if(  (flyActual->direccion > (flyActual->orientacion+90) )&&
-			 (flyActual->direccion < (flyActual->orientacion+270 ) )  ){
-			// no devolvemos un ángulo mayor de 359
-			if( flyActual->orientacion >= 180 )  flyActual->orientacion -= 180;
-			else flyActual->orientacion += 180;
+	// el ángulo entre [0,360)
+	float total;
+	if(angle == 360) flyActual->direccion = 0;
+	else flyActual->direccion = angle;
+	// si orientación en el primer cuadrante y dirección en el cuarto
+	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
+		(flyActual->direccion > 270 && flyActual->direccion < 360) )
+	{
+		total = flyActual->direccion - flyActual->orientacion;
+		if( total < 270){
+			// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
+			if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+			else								 flyActual->orientacion =flyActual->orientacion+ 180;
 		}
 	}
-	if(  flyActual->orientacion >= 90 && flyActual->orientacion < 270 ){
-		if(  (flyActual->direccion < (flyActual->orientacion-90) )||
-			 (flyActual->direccion > (flyActual->orientacion+90) )  ){
-			if( flyActual->orientacion >= 180 )  flyActual->orientacion -= 180;
-			else flyActual->orientacion += 180;
+	// si direccion en primer cuadrante y orientacion en cuarto
+	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
+			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
+	{
+		total = flyActual->orientacion - flyActual->direccion;
+		if( total< 270){
+			// girar 180.no devolvemos un ángulo negativo ni mayor o igual a 360
+			if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+			else								 flyActual->orientacion =flyActual->orientacion+ 180;
 		}
 	}
-	if(  flyActual->orientacion >= 270 && flyActual->orientacion < 360 ){
-		if(  (flyActual->direccion > (flyActual->orientacion-90) )&&
-			 (flyActual->direccion < (flyActual->orientacion-270 ) )  ){
-			// no devolvemos un ángulo mayor de 359
-			if( flyActual->orientacion >= 180 )  flyActual->orientacion -= 180;
-			else flyActual->orientacion += 180;
+	else{
+		total = abs( flyActual->direccion - flyActual->orientacion);
+		if( total > 90 )
+		{
+			// girar 180.no devolvemos un ángulo negativo ni mayor o igual a 360
+			if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+			else								 flyActual->orientacion =flyActual->orientacion+ 180;
 		}
 	}
-
-	// si la dirección y la orientación difieren en más de 90º o en menos de 270
-//	if ( ( abs( flyActual->orientacion - angle ) > 90) || (abs( flyActual->orientacion - angle ) < 270) )  {
-//		// establecemos la orientación según la dirección. Si sobrepasa los 360 le restamos 180
-//		// si no los sobrepasa se los sumamos. Así el resultado siempre estará entre 0 y 359.
-//		if (flyActual->orientacion >= 180) flyActual->orientacion = flyActual->orientacion - 180;
-//		else flyActual->orientacion = flyActual->orientacion + 180;
-//		//flyActual->orientacion = flyAnterior->orientacion;
-//	}
-
 }
 
 ///////////////////// INTERFACE PARA GESTIONAR BUFFER //////////////////////////////

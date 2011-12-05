@@ -116,14 +116,14 @@ int main(int argc, char* argv[]) {
 	//	FrameData = Procesado4(frame, BGModel,bg_model, Shape );
 //		muestrearLinea( FrameData->Frame,cvPoint( 0, 240 ),cvPoint( 640, 240 ), 20);
 		TiempoParcial = obtenerTiempo( ti , NULL);
-		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
+		printf("Procesado correcto.Tiempo total %5.4g ms\n", TiempoParcial);
 		anyadirAlFinal( FrameData, FramesBuf);
 		//////////  RASTREAR       ////////////
 		gettimeofday(&ti, NULL);
 		printf("\n2)Tracking:\n");
 		Tracking( FramesBuf );
 		TiempoParcial = obtenerTiempo( ti , NULL);
-		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
+		printf("Tracking correcto.Tiempo total %5.4g ms\n", TiempoParcial);
 		//////////  ALMACENAR ////////////
 		// Se mantienen en memoria las estructuras correspondientes a STRUCT_BUFFER_LENGTH frames
 		// ( buffer de datos  ) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ) .
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
 		gettimeofday(&ti, NULL);
 		printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
 		TiempoParcial = obtenerTiempo( ti , NULL);
-		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
+		printf("Cálculos realizados. Tiempo total %5.4g ms\n", TiempoParcial);
 
 		TiempoFrame = obtenerTiempo( tif, 0 );
 		//////////  VISUALIZAR     ////////////
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
 		if(FramesBuf->numeroDeElementos >0)
 		VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel );
 		TiempoParcial = obtenerTiempo( ti , NULL);
-		printf("\t-Tiempo total %5.4g ms\n", TiempoParcial);
+		printf("Visualización finalizada.Tiempo total %5.4g ms\n", TiempoParcial);
 
 		TiempoFrame = TiempoFrame + obtenerTiempo( tif, 0 );
 		TiempoGlobal = obtenerTiempo( tinicio, 1);

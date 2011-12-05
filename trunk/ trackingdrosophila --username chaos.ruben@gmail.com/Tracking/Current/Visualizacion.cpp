@@ -55,15 +55,40 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 			for( int i = 0; i <  flies->numeroDeElementos; i++ ){
 				fly = (STFly*)obtener(i, flies);
 				CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-
+				float angle;
+				if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
+				else angle = (360-fly->orientacion)+180;
 				if( fly->Estado == 1){
-					cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+					cvEllipse( frameData->Frame, fly->posicion, axes, angle, 0, 360, fly->Color, 1, 8);
+					// dibujamos triangulo CA,AB,BC
 					cvLine( frameData->Frame,
-							fly->posicion,
-							cvPoint( cvRound( fly->posicion.x - 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-									 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									cvRound( fly->posicion.y + fly->b/2 )  ),
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									 cvRound( fly->posicion.y - fly->b/2 )  ),
+
 							fly->Color,
 							1,CV_AA, 0 );
+					cvLine( frameData->Frame,
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									 cvRound( fly->posicion.y - fly->b/2 )  ),
+							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
+									 fly->posicion.y ),
+							fly->Color,
+							1,CV_AA, 0 );
+					cvLine( frameData->Frame,
+							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
+														 fly->posicion.y ),
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									 cvRound( fly->posicion.y + fly->b/2 )  ),
+							fly->Color,
+							1,CV_AA, 0 );
+//					cvLine( frameData->Frame,
+//							fly->posicion,
+//							cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
+//									 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+//							fly->Color,
+//							1,CV_AA, 0 );
 				}
 				else{
 					cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
@@ -77,6 +102,7 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 				// visualizar direccion
 				//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
 				//cvCircle( frameData->Frame, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+
 				double magnitude = 30;
 				cvLine( frameData->Frame,
 						fly->posicion,
@@ -204,13 +230,33 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 
 			for( int i = 0; i <  flies->numeroDeElementos; i++ ){
 				fly = (STFly*)obtener(i, flies);
+				float angle;
+				if ( fly->orientacion >=0 && fly->orientacion < 180) angle = 180 - fly->orientacion;
+				else angle = (360-fly->orientacion)+180;
 				CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-				cvEllipse( frameData->Frame, fly->posicion, axes, fly->orientacion, 0, 360, fly->Color, 1, 8);
+				cvEllipse( frameData->Frame, fly->posicion, axes, angle, 0, 360, fly->Color, 1, 8);
 				if( fly->Estado == 1){
+					// dibujamos triangulo CA,AB,BC
 					cvLine( frameData->Frame,
-							fly->posicion,
-							cvPoint( cvRound( fly->posicion.x + 1.5*fly->a*cos(fly->orientacion*CV_PI/180) ),
-									 cvRound( fly->posicion.y - 1.5*fly->a*sin(fly->orientacion*CV_PI/180) )  ),
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									cvRound( fly->posicion.y + fly->b/2 )  ),
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									 cvRound( fly->posicion.y - fly->b/2 )  ),
+
+							fly->Color,
+							1,CV_AA, 0 );
+					cvLine( frameData->Frame,
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									 cvRound( fly->posicion.y - fly->b/2 )  ),
+							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
+									 fly->posicion.y ),
+							fly->Color,
+							1,CV_AA, 0 );
+					cvLine( frameData->Frame,
+							cvPoint( cvRound( fly->posicion.x + fly->a/2 ),
+									                     fly->posicion.y ),
+							cvPoint( cvRound( fly->posicion.x - fly->a/2 ),
+									 cvRound( fly->posicion.y + fly->b/2 )  ),
 							fly->Color,
 							1,CV_AA, 0 );
 				}

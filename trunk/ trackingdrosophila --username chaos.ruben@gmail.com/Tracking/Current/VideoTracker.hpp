@@ -65,9 +65,7 @@ using namespace std;
 #define SHOW_VALIDATION_TIMES 1
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
-#define SHOW_DATA_ASSIGNMENT 1
-
-#define SHOW_DATA_ASSIGNMENT 0
+#define SHOW_MT_DATA 1
 
 #define SHOW_KALMAN_RESULT 1
 

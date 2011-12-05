@@ -109,7 +109,8 @@ static	int TBposDMax = 50;
 
 	flies = frameIdx1->Flies;
 
-	if( SHOW_DATA_ASSIGNMENT){
+	if( SHOW_MT_DATA ){
+		printf( "\nMostrando datos de Motion Template:\n");
 		if( framesBuf->numeroDeElementos > 1) {
 			printf(" \nFlies FRAME t inicial\n");
 			mostrarListaFlies(Idx1,framesBuf);
@@ -139,14 +140,14 @@ static	int TBposDMax = 50;
 
 //	establecerEstado(frameIdx1,frameIdx2,frameIdx3, orient);
 
-	if( SHOW_DATA_ASSIGNMENT){
-		if( framesBuf->numeroDeElementos > 1) {
-			printf(" \nFlies FRAME t tras establecer estado\n");
-			mostrarListaFlies(Idx1,framesBuf);
-			printf(" \nFlies FRAME t-1 tras establecer estado\n");
-			mostrarListaFlies(Idx2,framesBuf);
-		}
-	}
+//	if( SHOW_MT_DATA){
+//		if( framesBuf->numeroDeElementos > 1) {
+//			printf(" \nFlies FRAME t tras establecer estado\n");
+//			mostrarListaFlies(Idx1,framesBuf);
+//			printf(" \nFlies FRAME t-1 tras establecer estado\n");
+//			mostrarListaFlies(Idx2,framesBuf);
+//		}
+//	}
 
 	if( !storage )
 		storage = cvCreateMemStorage(0);
@@ -205,7 +206,6 @@ static	int TBposDMax = 50;
 
 			center = cvPoint( (comp_rect.x + comp_rect.width/2),
 							  (comp_rect.y + comp_rect.height/2) );
-			double op_angle = 360.0 - angle;  // adjust for images with top-left origin
 			cvCircle( frameIdx1->ImMotion, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
 			cvLine( frameIdx1->ImMotion, center, cvPoint( cvRound( center.x + magnitude*cos(angle*CV_PI/180)),
 					cvRound( center.y - magnitude*sin(angle*CV_PI/180))), color, 3, CV_AA, 0 );
@@ -222,14 +222,13 @@ static	int TBposDMax = 50;
 //	frameIdx2 = ( STFrame* )obtener(framesBuf->numeroDeElementos-3, framesBuf );
 //	fliesIdx2 = frameIdx2->Flies;
 
-
-	if( SHOW_DATA_ASSIGNMENT){
+	if( SHOW_MT_DATA){
 		if( framesBuf->numeroDeElementos > 1 ) {
-
 			printf(" \n\nFlies FRAME t tras asignacion\n");
 			mostrarListaFlies(Idx1,framesBuf);
 			printf(" \nFlies FRAME t-1\n");
 			mostrarListaFlies(Idx2,framesBuf);
+			printf("\n");
 		}
 	}
 }
