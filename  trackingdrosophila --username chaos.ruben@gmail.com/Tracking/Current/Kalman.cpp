@@ -9,6 +9,9 @@
 
 #define NUMBER_OF_MATRIX 6
 
+
+
+
 // Incializar los parámetro del filtro de Kalman para la posición.
 
 CvKalman* initKalman(CvMat** IndexMat,CvPoint coord,float orientacion,float direccion){
@@ -39,7 +42,8 @@ CvKalman* initKalman(CvMat** IndexMat,CvPoint coord,float orientacion,float dire
 
 		// Calcular las componentes de la velocidad
 
-		direccionR = (direccion*CV_PI)/180;
+//		direccionR = (direccion*CV_PI)/180;
+		direccionR = (orientacion*CV_PI)/180;
 
 		Vx=Velocidad*cos(direccionR);
 		Vy=Velocidad*sin(direccionR);
