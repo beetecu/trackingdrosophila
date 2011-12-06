@@ -10,6 +10,8 @@
 
 #include "VideoTracker.hpp"
 
+void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman);
+
 //!\brief Inicializa los parametros del filtro de Kalman para las coordenadas.
 /*!
  * \param IndexMat Matrices que forman parte del filtro de Kalman.
