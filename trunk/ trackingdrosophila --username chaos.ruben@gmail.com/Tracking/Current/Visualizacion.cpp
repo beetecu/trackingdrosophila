@@ -45,13 +45,19 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ){
 		dibujarBlobs( frameData->Frame, frameData->Flies );
 
 		// MOSTRAMOS IMAGENES
+		printf( "\t-Mostrando ventana de visualización...");
 		cvShowImage( "Visualización", frameData->Frame );
+		printf("Hecho\n");
 		if (SHOW_BG_REMOVAL == 1){
+			printf( "\t-Mostrando Background y Foreground...");
 				cvShowImage("Background", frameData->BGModel);
 				cvShowImage( "Foreground",frameData->FG);
+				printf("Hecho\n");
 		}
 		if ( SHOW_MOTION_TEMPLATE == 1){
+			printf("\t-Mostrando Motion...");
 			cvShowImage( "Motion",frameData->ImMotion);
+			printf("Hecho\n");
 		}
 
 		// OPCIONES

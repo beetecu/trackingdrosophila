@@ -281,7 +281,7 @@ void Finalizar(){
 	// liberar imagenes y datos de preprocesado
 	releaseDataPreProcess();
 	// liberar imagenes y datos de segmentacion
-	ReleaseDataSegm( );
+
 	// liberar imagenes y datos de procesado
 	releaseDataProcess();
 	//liberar listas

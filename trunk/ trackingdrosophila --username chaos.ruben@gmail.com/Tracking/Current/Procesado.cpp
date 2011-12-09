@@ -509,4 +509,5 @@ void releaseDataProcess(){
 	cvReleaseImage( &FGMask );
 	cvReleaseImage( &lastBG );
 	cvReleaseImage( &lastIdes );
+	ReleaseDataSegm( );
 }

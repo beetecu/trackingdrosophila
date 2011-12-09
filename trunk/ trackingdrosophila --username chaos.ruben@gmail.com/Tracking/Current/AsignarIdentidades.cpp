@@ -394,7 +394,6 @@ int buscarFlies( STFrame* frameData ,CvRect MotionRoi, int *p ){
 	STFly* fly;
 	tlcde* flies;
 
-
 	// recorremos el penúltimo frame y el anterior si procede buscando coincidencias de siluetas de la lista
 	// en la ROI del mhi
 	// De la lista solo buscaremos aquellos que estén en el foreground (estado  = 1)
@@ -417,33 +416,7 @@ int buscarFlies( STFrame* frameData ,CvRect MotionRoi, int *p ){
 				(fly->posicion.x > (MotionRoi.x + MotionRoi.width) ) ) continue;
 		if( ( fly->posicion.y < MotionRoi.y) ||
 							(fly->posicion.y > (MotionRoi.y + MotionRoi.height) ) ) continue;
-		// dibujamos su silueta
 
-		cvZero(img);
-		//cvZero(imgf);
-		CvSize axes = cvSize( cvRound(fly->a) , cvRound(fly->b) );
-		cvEllipse( img, fly->posicion, axes, fly->orientacion, 0, 360, cvScalar( 255,0,0,0), -1, 8);
-
-		cvSetImageROI( img, MotionRoi);
-		cvSetImageROI( imgf, MotionRoi);
-		cvSetImageROI( comp, MotionRoi);
-		cvSetImageROI( mhi, MotionRoi );
-
-		// comparamos con el mhi
-		imgNoZ = cvCountNonZero(img);
-		cvConvertScale( img, imgf,1,0);
-		cvAnd(imgf,mhi,comp);
-		compNoZ = cvCountNonZero(comp);
-
-		cvResetImageROI( mhi );
-		cvResetImageROI( comp );
-		cvResetImageROI( img );
-		cvResetImageROI( imgf );
-		// si el numero de elementos distintos de 0 coinciden
-		//if( ( abs(compNoZ - imgNoZ )< 20) &&( compNoZ != 0) &&( imgNoZ != 0) ){
-			// es el ultimo frame
-
-		// almacenamos la posicion
 		p[j] = i;
 		j++;
 		//}
