@@ -57,10 +57,10 @@ using namespace std;
 #define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
 #define SHOW_SEGMENTATION_MATRIX 0
 
-#define SHOW_VALIDATION_DATA 1//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
+#define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
 #define SHOW_VALIDATION_TIMES 1
 
-#define SHOW_MT_DATA 1
+#define SHOW_MT_DATA 0
 
 #define SHOW_KALMAN_RESULT 1
 
@@ -69,10 +69,11 @@ using namespace std;
 #define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
 #define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
 #define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
-#define ACTIVAR_OPCIONES_VISUALIZACION 0
+#define ACTIVAR_OPCIONES_VISUALIZACION 1
 #define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
+#define SHOW_KALMAN 1
 
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_

@@ -8,43 +8,30 @@
 #include"Tracking.hpp"
 #include "Kalman.hpp"
 
+// Parametros de Kalman para la linealidad ( Coordenadas)
+CvKalman* kalman = NULL; // Estructra de kalman para la linealizad
+CvMat* state = NULL;
+CvMat* measurement = NULL;
+CvMat* process_noise = NULL;
 
-#define NUMBER_OF_MATRIX 6
+CvRandState rng;
 
+// Parametros de Kalman para la orientación
+
+CvKalman* kalman_2=NULL;// Estructura de kalman para la orientacion.
+CvMat* state_2 = NULL;
+CvMat* measurement_2 = NULL;
+CvMat* process_noise_2 = NULL;
+
+CvRandState rng2;
+
+CvMat* indexMat[NUMBER_OF_MATRIX]; // Matrices para usar el filtro de Kalman
 
 void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
-
 
 	STFrame* frameData = NULL;
 	STFly* flyData = NULL;
 	tlcde* flies;
-
-	// Parametros de Kalman para la linealidad ( Coordenadas)
-
-	CvKalman* kalman = NULL; // Estructra de kalman para la linealizad
-	CvMat* state = NULL;
-	CvMat* measurement = NULL;
-	CvMat* process_noise = NULL;
-
-	CvPoint coordenadas; // Centro del blob.
-
-	CvRandState rng;
-
-	// Parametros de Kalman para la orientación
-
-	CvKalman* kalman_2=NULL;// Estructura de kalman para la orientacion.
-	CvMat* state_2 = NULL;
-	CvMat* measurement_2 = NULL;
-	CvMat* process_noise_2 = NULL;
-
-	CvRandState rng2;
-
-	float direccion; // Dirección del blob
-	float orientacion; // Orietación del blob
-
-	CvRect flieRoi;// Roi del blob.
-
-	CvMat* indexMat[NUMBER_OF_MATRIX]; // Matrices para usar el filtro de Kalman
 
 	// acceder al punto de trabajo
 
@@ -56,57 +43,37 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 	flies=frameData->Flies;
 
-
-		for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
-
-		flyData=(STFly*)obtener(flypos,flies);
-
-		coordenadas=flyData->posicion;
-		direccion=flyData->direccion;
-		orientacion=flyData->orientacion;
-
-
-		coordenadas.x=flyData->posicion.x;
-		coordenadas.y=flyData->posicion.y;
-
-		flieRoi=flyData->Roi;
-
-
-		////// INICIALIZAR FILTROS DE KALMAN//////
-
-		kalman = initKalman(indexMat,coordenadas,orientacion,direccion); // FK Lineal para las coodenadas
-
-		kalman_2 = initKalman2(direccion,orientacion);// FK para la orientación
-
+	////// INICIALIZAR FILTROS DE KALMAN//////
+	if(!kalman){
+		kalman = initKalman( ); // FK Lineal para las coodenadas
 		state=cvCreateMat(4,1,CV_32FC1);
 		measurement = cvCreateMat( 2, 1, CV_32FC1 );
 		process_noise = cvCreateMat(4, 1, CV_32FC1);
-
+	}
+	if(!kalman_2){
+		kalman_2 = initKalman2( );// FK para la orientación
 		state_2=cvCreateMat(2,1,CV_32FC1);
 		measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
 		process_noise_2 = cvCreateMat(2, 1, CV_32FC1);
+	}
 
+	//Predicción y correción de cada blob
+	for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
+		// obtener blob
+		flyData=(STFly*)obtener(flypos,flies);
 
-		cvZero(state);
-		cvZero(state_2);
-		cvZero(measurement);
-		cvZero(measurement_2);
-
-		state->data.fl[0]=coordenadas.x;
-		state->data.fl[1]=coordenadas.y;
-
-
-		state_2->data.fl[0]=orientacion;
-
-
+		// iniciar para predecir la posición del blob
+		initKpos( kalman,flyData->posicion,flyData->orientacion);
+		state->data.fl[0]=flyData->posicion.x;
+		state->data.fl[1]=flyData->posicion.y;
+		// iniciar para predecir la orientación del blob
+		initkdir( kalman_2,flyData->direccion,flyData->orientacion);
+		state_2->data.fl[0]=flyData->orientacion;
 		/////////////////// PREDICCION //////////////////////
-
-	//	predict = updateKalmanPredict(kalman);
 
 		const CvMat* yk = cvKalmanPredict( kalman, 0 ); // Predicción coordenadas
 
 		const CvMat* yk_2 = cvKalmanPredict( kalman_2, 0 ); // Predicción orientacion
-
 
 		cvRandSetRange(&rng,0,sqrt(kalman->measurement_noise_cov->data.fl[0]),0);
 		cvRand( &rng, measurement );
@@ -118,50 +85,51 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 		cvMatMulAdd(kalman_2->measurement_matrix,state_2,measurement_2,measurement_2);
 
-
 		if(workPos > 1){
 
-		////////////////////// CORRECCION ////////////////////////
+			////////////////////// CORRECCION ////////////////////////
 
-	//	correct = updateKalmanCorrect(kalman ,measurement);
+		//	correct = updateKalmanCorrect(kalman ,measurement);
 
-		cvKalmanCorrect( kalman,measurement);
+			cvKalmanCorrect( kalman,measurement);
 
-		cvKalmanCorrect( kalman_2,measurement_2);
+			cvKalmanCorrect( kalman_2,measurement_2);
 
-		cvRandSetRange(&rng,0,sqrt(kalman->process_noise_cov->data.fl[0]),0);
-		cvRand( &rng,process_noise );
+			cvRandSetRange(&rng,0,sqrt(kalman->process_noise_cov->data.fl[0]),0);
+			cvRand( &rng,process_noise );
 
-		cvRandSetRange(&rng2,0,sqrt(kalman_2->process_noise_cov->data.fl[0]),0);
-		cvRand( &rng2,process_noise_2 );
+			cvRandSetRange(&rng2,0,sqrt(kalman_2->process_noise_cov->data.fl[0]),0);
+			cvRand( &rng2,process_noise_2 );
 
-		cvMatMulAdd(kalman->transition_matrix,state,process_noise,state);
+			cvMatMulAdd(kalman->transition_matrix,state,process_noise,state);
 
-		cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
+			cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
 
+		}
 
 		////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
 
 		if(SHOW_KALMAN_RESULT){
 
-		printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
+			printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
 
-		printf("\n Dirección : %f ,  Orientación : %f y Coordenadas: ( %d , %d ) ",direccion,orientacion,coordenadas.x,coordenadas.y);
+			printf("\n Dirección : %f ,  Orientación : %f y Coordenadas: ( %d , %d ) ",flyData->direccion,flyData->orientacion,flyData->posicion.x,flyData->posicion.y);
 
-		printf("\n\n Real State Coordenadas: ( %f y %f )",state->data.fl[0],state->data.fl[1]);
-		printf("\n Predicted State Coordenadas: (%f y %f )",yk->data.fl[0],yk->data.fl[1]);
-		printf("\n Observed State: ( %f y %f )",measurement->data.fl[0],measurement->data.fl[1]);
+			printf("\n\n Real State Coordenadas: ( %f y %f )",state->data.fl[0],state->data.fl[1]);
+			printf("\n Predicted State Coordenadas: (%f y %f )",yk->data.fl[0],yk->data.fl[1]);
+			printf("\n Observed State: ( %f y %f )",measurement->data.fl[0],measurement->data.fl[1]);
 
 
-		printf("\n\n Real State Orientación : %f",state_2->data.fl[0]);
-		printf("\n Predicted State Orientation: %f",yk_2->data.fl[0]);
-		printf("\n Observer State:  %f", measurement_2->data.fl[0]);
+			printf("\n\n Real State Orientación : %f",state_2->data.fl[0]);
+			printf("\n Predicted State Orientation: %f",yk_2->data.fl[0]);
+			printf("\n Observer State:  %f", measurement_2->data.fl[0]);
 
-		printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
-		printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
-		printf("\n");
-
-		///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
+			printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
+			printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
+			printf("\n\n");
+		}
+		if(SHOW_KALMAN){
+			///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
 
 			cvCircle(IKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
 			cvShowImage( "Kalman", IKalman );
@@ -171,23 +139,14 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 			cvCircle(IKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
 			cvShowImage( "Kalman", IKalman );
-
-
 		}
 
-		}
-
-		cvReleaseKalman(&kalman);
-		cvReleaseKalman(&kalman_2);
-
-		}//FOR
+	}//FOR
 }
 
 // Incializar los parámetro del filtro de Kalman para la posición.
 
-CvKalman* initKalman(CvMat** IndexMat,CvPoint coord,float orientacion,float direccion){
-
-	const float Velocidad = 10.599; // pixeles por frame
+CvKalman* initKalman( ){
 
 	// Crear el flitro de Kalman
 
@@ -205,33 +164,12 @@ CvKalman* initKalman(CvMat** IndexMat,CvPoint coord,float orientacion,float dire
 	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-1) );
 	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1000));
 
-	    // Establecer el estado incial
-
-		float Vx=0;// componente X de la velocidad.
-		float Vy=0;// componente Y de la velociad.
-		float direccionR; // orientacion en radianes.
-
-		// Calcular las componentes de la velocidad
-
-//		direccionR = (direccion*CV_PI)/180;
-		direccionR = (orientacion*CV_PI)/180;
-
-		Vx=Velocidad*cos(direccionR);
-		Vy=Velocidad*sin(direccionR);
-
-		// Inicializar el vector de estado
-
-		float initialState[] = {coord.x , coord.y, Vx, Vy};
-
-		CvMat Ma=cvMat(1, 4, CV_32FC1, initialState);
-	    copyMat(&Ma, Kalman->state_post);
-
-	    return Kalman;
+	return Kalman;
 	}
 
 // Incializar los parámetro del filtro de Kalman para la orientación.
 
-CvKalman* initKalman2(float direccion, float orientacion){
+CvKalman* initKalman2( ){
 
 	// Crear el flitro de Kalman
 
@@ -240,7 +178,6 @@ CvKalman* initKalman2(float direccion, float orientacion){
 	// Inicializar las matrices parámetros para el flitro de Kalman
 
 	const float A[] = { 1, 1, 0, 1 };
-	const float angulo = 5.2;
 
 	memcpy( Kalman->transition_matrix->data.fl, A, sizeof(A));
 
@@ -249,16 +186,51 @@ CvKalman* initKalman2(float direccion, float orientacion){
 	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-2) );
 	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1000));
 
+    return Kalman;
+}
+
+void initKpos(CvKalman* kalman, CvPoint coord, float direccion){ // iniciar para predecir la posición del blob flypos
+
+// Establecer el estado incial
+
+	float Vx=0;// componente X de la velocidad.
+	float Vy=0;// componente Y de la velociad.
+	float direccionR; // orientacion en radianes.
+
+	// Calcular las componentes de la velocidad
+
+//		direccionR = (flyData->direccion*CV_PI)/180;
+	if ( direccion >=0 && direccion < 180) direccion = 180 - direccion;
+	else direccion = (360-direccion)+180;
+
+	direccionR = (direccion*CV_PI)/180;
+	Vx=-VELOCIDAD*cos(direccionR);
+	Vy=-VELOCIDAD*sin(direccionR);
+
+	// Inicializar el vector de estado
+
+	float initialState[] = {coord.x , coord.y, Vx, Vy};
+
+	CvMat Ma=cvMat(1, 4, CV_32FC1, initialState);
+	copyMat(&Ma, kalman->state_post);
+	cvZero(state);
+	cvZero(measurement);
+
+}
+
+void initkdir(CvKalman* kalman,float direccion,float orientacion){ // iniciar para predecir la direccion del blob
 
 	// Establecer el estado incial, calculando el sentido de la velocidad angular.
 
-	 float initialState[] = {orientacion,CalcDirection(direccion,orientacion,angulo)};
+	float initialState[] = {orientacion,CalcDirection(direccion,orientacion,V_ANGULAR )};
 
-     CvMat Ma=cvMat(2, 1, CV_32FC1, initialState);
-     copyMat(&Ma, Kalman->state_post);
+    CvMat Ma=cvMat(2, 1, CV_32FC1, initialState);
+    copyMat(&Ma, kalman->state_post);
+    cvZero(state_2);
+    cvZero(measurement_2);
 
-     return Kalman;
 }
+
 
 void copyMat (CvMat* source, CvMat* dest){
 
@@ -422,35 +394,22 @@ float CalcDirection(float direction,float orientation,float angulo){
 
 } // Fin de la Funcion
 
+/// Limpia de la memoria las imagenes usadas durante la ejecución
+void DeallocateKalman(  ){
 
-//
-//float* updateKalmanCorrect(CvKalman* kalman ,CvPoint coordenadas ){
-//
-//	int Meanx, Meany;
-//	CvMat* measurement = cvCreateMat(2,1, CV_32FC1 );
-//	Meanx = (int)coordenadas.x;
-//	Meany = (int)coordenadas.y;
-//	cvmSet(measurement,0,0,Meanx);
-//	cvmSet(measurement,1,0,Meany);
-//
-//	const CvMat* correct= cvKalmanCorrect(kalman, measurement);
-//
-//	return correct->data.fl;
-//}
-//
-//float* updateKalmanPredict(CvKalman* kalman){
-//
-//
-//	 CvMat* u = cvCreateMat(1,1, CV_32FC1 );
-//	 u->data.fl[0]=1;
-//
-//	 const CvMat* predict = cvKalmanPredict(kalman,0);
-//
-//	 return predict->data.fl;
-//
-//
-//}
-
+	if(kalman){
+		cvReleaseKalman(&kalman);
+		cvReleaseMat(&state);
+		cvReleaseMat( &measurement );
+		cvReleaseMat(&process_noise);
+	}
+	if(kalman_2)	{
+		cvReleaseKalman(&kalman_2);
+		cvReleaseMat(&state_2);
+		cvReleaseMat(&measurement_2 );
+		cvReleaseMat(&process_noise_2);
+	}
+}
 
 
 

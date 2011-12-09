@@ -10,6 +10,10 @@
 
 #include "VideoTracker.hpp"
 
+#define VELOCIDAD  10.599 // velocidad del blob en pixeles por frame
+#define V_ANGULAR 5.2 // velocidad angular del blob en pixeles por frame
+#define NUMBER_OF_MATRIX 6
+
 void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman);
 
 //!\brief Inicializa los parametros del filtro de Kalman para las coordenadas.
@@ -24,8 +28,7 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman);
  * \note en este caso coordenadas X e Y de la posición y componentes Vx y Vy de la velocidad (cte).
  */
 
-CvKalman* initKalman (CvMat** IndexMat ,CvPoint coord,float orientacion,float direccion);
-
+CvKalman* initKalman ( );
 
 //!\brief Inicializa los parametros del filtro de Kalman para la orientación - direccion.
 /*!
@@ -38,8 +41,11 @@ CvKalman* initKalman (CvMat** IndexMat ,CvPoint coord,float orientacion,float di
  * \note en este caso la posición angular y la velocidad angular(cte).
  */
 
-CvKalman* initKalman2 (float angulo,float orientacion);
+CvKalman* initKalman2 ( );
 
+void initKpos(CvKalman* kalman, CvPoint coord,float direccion);
+
+void initkdir(CvKalman* kalman,float direccion,float orientacion);
 
 //!\brief Copia una matriz fuente e otra matriz destino.
 /*!
@@ -65,5 +71,7 @@ float CalcDirection(float direction,float orientation,float angulo);
 //float* updateKalmanCorrect(CvKalman* kalman,CvPoint coordenadas );
 //
 //float* updateKalmanPredict(CvKalman* kalman);
+
+void DeallocateKalman(  );
 
 #endif /* KALMAN_HPP_ */

@@ -47,18 +47,16 @@ void Tracking( tlcde* framesBuf ){
 
 	hungarian_t prob;
 
-
-
 	// Establecemos el estado de los frames que se han ido al oldfg
-
-
 
 	/// resolvemos la ambiguedad en la orientación y hacemos una primera
 	/// asignación de identidad mediante una plantilla de movimiento.
 	gettimeofday(&ti, NULL);
 	printf("\t1)Motion Template\n");
 	cvZero(frameData->ImMotion);
-	MotionTemplate( framesBuf,Identities );//frameData->FG, frameData->ImMotion
+
+	MotionTemplate( framesBuf,Identities );
+
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 
@@ -74,9 +72,13 @@ void Tracking( tlcde* framesBuf ){
 	if(workPos == 0) firstbuf=true;
 
 	////// FILTRO DE KALMAN //////////////
+	gettimeofday(&ti, NULL);
+	printf("\t2)Filtro de Kalman\n");
 
 	Kalman(framesBuf,workPos,IKalman);
 
+	tiempoParcial= obtenerTiempo( ti, 0);
+	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
 	///////   FASE DE CORRECCIÓN  /////////
 	// esta etapa se encarga de hacer la asignación de identidad definitiva
 	// recibe información temporal de los últimos 48 frames ( Longitud_buffer
@@ -85,7 +87,6 @@ void Tracking( tlcde* framesBuf ){
 
 	//Reasignamos idendidades.
 	// enlazamos objetos etiquetados como nuevos con los que estaban parados
-
 
 	if (workPos == PRIMERO) return;
 
@@ -155,4 +156,6 @@ void ReleaseDataTrack(){
     		cvReleaseImage( &ImagenA);
     		cvReleaseImage( &ImagenB);
     		releaseMotionTemplate();
+    		DeallocateKalman(  );
+
 }
