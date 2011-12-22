@@ -97,7 +97,7 @@ double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData)
 
 double CalcProbMosca( SHModel* SH , STFly* FlyData ){
 	double Pxi;
-	Pxi = exp( -abs((CV_PI*FlyData->a*FlyData->b) - SH->FlyAreaMed) / SH->FlyAreaDes);
+	Pxi = exp( -abs((CV_PI*FlyData->a*FlyData->b) - SH->FlyAreaMedia) / SH->FlyAreaDes);
 	return Pxi;
 }
 
@@ -140,42 +140,29 @@ int CalcProbUmbral( SHModel* SH,ValParams* VParams,STFly* FlieData ){
 
 // Obtener la maxima distancia de los pixeles al fondo
 
-int ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi ){
+double* ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi ){
 	// obtener matriz de distancias normalizadas al background
 	if (SHOW_VALIDATION_DATA == 1) printf(" \n\n Busqueda del máximo umbral...");
 	IplImage* IDif = 0;
-	IplImage* pesos=0;
+	IplImage* peso=0;
 	CvSize size = cvSize(Imagen->width,Imagen->height); // get current frame size
 	if( !IDif || IDif->width != size.width || IDif->height != size.height ) {
 		        cvReleaseImage( &IDif );
-		        cvReleaseImage( &pesos );
+		        cvReleaseImage( &peso );
 		        IDif=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
-		        pesos=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
+		        peso=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_32F, 1);//Imagen resultado wi ( pesos)
 		        cvZero( IDif);
-		        cvZero(pesos);
+		        cvZero(peso);
 	}
+
 	// |I(p)-u(p)|/0(p)
 	cvAbsDiff(Imagen,FrameData->BGModel,IDif);
-	cvDiv(IDif,FrameData->IDesvf,pesos);
+	cvDiv(IDif,FrameData->IDesvf,peso);
+
 	// Buscar máximo
-	int Maximo = 0;
-	for (int y = Roi.y; y< Roi.y + Roi.height; y++){
-		uchar* ptr1 = (uchar*) ( FrameData->FG->imageData + y*FrameData->FG->widthStep + 1*Roi.x);
-		uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*Roi.x);
-		if (SHOW_VALIDATION_DATA == 1) printf(" \n\n");
-		for (int x = 0; x<Roi.width; x++){
-			if (SHOW_VALIDATION_DATA == 1) {
-				if( ( y == Roi.y) && ( x == 0) ){
-					printf("\n Origen: ( %d , %d )\n\n",(x + Roi.x),y);
-				}
-				printf("%d\t", ptr2[x]);
-			}
-			if ( ptr1[x] == 255 ){
-				if (ptr2[x] > Maximo ) Maximo = ptr2[x];
-			}
-		}
-	}
-	printf("\n Maximo: %d ", Maximo);
+	double* Maximo=0;;
+	cvMinMaxLoc(peso,Maximo,0,0,0,FrameData->FG);
+
 	return Maximo;
 }
 
@@ -203,24 +190,20 @@ tlcde* Validacion(IplImage *Imagen,
 
 	STFly *FlyData = NULL;
 
-	//Inicializar FrameData
+	//Inicializar FrameDataTemp
 
 	STFrame* FrameDataTemp=NULL;
 	FrameDataTemp = ( STFrame *) malloc( sizeof(STFrame));
 
+
 	double Pxi; // La probabilidad del blob actual
 	bool Exceso;//Flag que indica si la Pxi minima no se alcanza por exceso o por defecto.
 	double Circul; // Para almacenar la circularidad del blob actual
-	double N=4; // Permite establecer la probabilidad minima ( Vparams->PxiMin )
 	double Px; // Probabilidad de todas las mosca
-	static int first=1;
 	double Besthres=0;// el mejor de los umbrales perteneciente a la mejor probabilidad
 	double BestPxi=0; // la mejor probabilidad obtenida para cada mosca
 
 	cvZero(Mask);
-
-	IplImage* mask=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);;
-	IplImage* maskTemp=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);
 
 	// Copiar la lista procedente de la segmentación en otras lista para su mejor manejo
 
@@ -241,14 +224,9 @@ tlcde* Validacion(IplImage *Imagen,
 		setBGModParams( &BGParams);
 	}
 
-	Px = CalcProbTotal(FLIE_TEMP,SH,VParams,FlyData); // Calcular la probabilidad de todas las mosca
-
-	maskTemp=FrameData->FG;
-
 
 // Recorremos los blobs uno por uno y los validamos.
-// Bucle for desde el primero hasta el ultimo individuo de la Lista FrameData->Flie del frame actual
-
+// Bucle for desde el primero hasta el ultimo individuo de la Lista FrameData->Flie del frame actual.
 // Los blobs visitados y analizados se almacenan en una "cola" FIFO para una posterior busqueda en anchura
 // de los blobs validados
 
@@ -256,7 +234,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 	Temp=FLIE_TEMP;
-	Besthres=0;
+	Besthres=BGParams->LOW_THRESHOLD;
 	BestPxi=0;
 
 	// Almacenar la Roi del blob visitado antes de ser validado
@@ -264,44 +242,45 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 	FlyData=(STFly *)obtener(j, Temp);
 	CvRect FlyDataTemp=FlyData->Roi;
 
+
 	bool SEG = false; // Indica si el blob fue segmentado
 	FlyData->flag_seg = false; // Flag que indica si el blob fue validado
 	FlyData->flag_def = false; // Flag que indica si el blob deparece al validar en caso de Defecto
 
 	Pxi = CalcProbMosca( SH ,FlyData);
 	BestPxi=Pxi;
+
 	Circul = CalcCircul( FlyData );
 	Exceso = CalcProbUmbral( SH, VParams,FlyData); // Calcular los umbrales de la validación
 
+//	VParams->MaxLowTH = *ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
+	VParams->PxiMax=VParams->Umbral_H;// Establecer el Umbral Alto
+
+	// Comprobar si existe Exceso o Defecto de area, en caso de Exceso la probabilidad del blob es muy pequeña
+	// y el blob puede corresponder a varios blobs que forman parte de una misma moscas o puede corresponder a
+	// un espurio.
 
 
+				// En caso de EXCESO de Area
 
-				// Comprobamos si no alcanza la probabilidad umbral minima devido
-				// a un area superior al rango establecido
+				if( Exceso){
 
-				if( Exceso ){
+					/* Incrementar paulatinamente el umbral de resta de fondo hasta
+					* que no haya Exceso comprobando si hay o no segmentación, en este caso
+					* añadir los blobs resultantes al final de la "cola" para ser validados.
+					*
+					* En cada iteración se comprueba:
+					*
+					* 1.- Si el blob desaprace al incrementar el umbral, el blob es un espurio.
+					* 2.- Si se detecta mas de un blob, existe segmentación.
+					* 3.- Si el blob no desaparece y no queda segmentado, icrementar el umbral hasta que el
+					* 	  blob no tenga exceso.En este caso nos quedamos con el umbral que corresponde a la probabilidad
+					*     mas alta, qu será el blob valido.
+					*
+					*/
 
-					VParams->MaxLowTH = ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
-					VParams->PxiMin=VParams->Umbral_L;// Establecer el Umbral Bajo
-					VParams->PxiMax=VParams->Umbral_H;// Establecer el Umbral Alto
 
-
-//					while( !SEG  && BGParams->LOW_THRESHOLD < VParams->MaxLowTH){
-					while( !SEG){
-
-
-						/* Incrementar paulatinamente el umbral de resta de fondo hasta
-						 * que no haya Execeso comprobando si hay o no segmentación, en este caso
-						 * añadir los blobs resultantes al final de la "cola" para ser validados
-						 */
-
-						/* El máximo umbral será el pixel del blob con mayor distancia normalizada
-						 * al background. En general dicho punto coincidirá aproximadamente con el
-						 * centro del blob, habrá un tamaño del blob en el cual a probabilidad
-						 *  Pxi será maxima ( cerca de 1) y en para el cual ya no hay Exceso a
-						 *  partir del cual deje de aumentar el umbral.
-						 */
-
+					while( Exceso ){
 
 						// Incrementar umbral
 						BGParams->LOW_THRESHOLD += 1;
@@ -312,69 +291,38 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 						// Segmentar
-						FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
+						FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,Mask);
 
-						cvCopy(mask,FrameData->FG);
+						// Si blob desaparece al aumentar el umbral, poner el flag_def como NO mosca
 
+						if(FrameData->Flies->numeroDeElementos < 1){
 
-//						if (SHOW_VALIDATION_DATA == 1) {
-//							printf(" \n\nMatriz de distancia normalizada al background |I(p)-u(p)|/0(p)");
-//
-//						IplImage* IDif=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1); // imagen diferencia abs(I(pi)-u(p(i))
-//						IplImage* pesos=cvCreateImage(cvSize(FrameData->BGModel->width,FrameData->BGModel->height), IPL_DEPTH_8U, 1);//Imagen resultado wi ( pesos)
-//
-//						cvAbsDiff(Imagen,FrameData->BGModel,IDif);// |I(p)-u(p)|/0(p)
-//
-//						cvDiv( IDif,FrameData->IDesvf,pesos );// Calcular
-//
-//						cvSetImageROI(FrameData->FG,FlyDataTemp);
-//						cvSetImageROI(pesos,FlyDataTemp);
-//
-//						// Hallar Z y u={ux,uy}
-//						for (int y = FlyDataTemp.y; y< FlyDataTemp.y + FlyDataTemp.height; y++){
-//							uchar* ptr1 = (uchar*) ( FrameData->FG->imageData + y*FrameData->FG->widthStep + 1*FlyDataTemp.x);
-//							uchar* ptr2 = (uchar*) ( pesos->imageData + y*pesos->widthStep + 1*FlyDataTemp.x);
-//							printf(" \n\n");
-//
-//							for (int x = 0; x<FlyDataTemp.width; x++){
-//
-//									if( ( y == FlyDataTemp.y) && ( x == 0) ){
-//										printf("\n Origen: ( %d , %d )\n\n",(x + FlyDataTemp.x),y);
-//									}
-//									printf("%d\t", ptr2[x]);
-//
-//
-//								if ( ptr1[x] == 255 ) printf("%d\t", ptr2[x]);
-//
-//								else printf("0\t");
-//							}
-//
-//							cvResetImageROI( FrameData->FG );
-//							cvResetImageROI( pesos );
-//
-//							}//for
-//
-//
-//						cvReleaseImage(&IDif);
-//						cvReleaseImage(&pesos);
-//
-//						}
+							FlyData=(STFly *)obtener(j,FLIE_TEMP);
+							FlyData->flag_def = true;
+							FLIE->actual->dato=FlyData;
+
+							break;
+						}
+
 
 						// Comprobar si hay segmentacion
 
 						if ( FrameData->Flies->numeroDeElementos > 1 ){
 							SEG = true;
+							FrameDataTemp->Flies=FrameData->Flies;
 							break;
 						}
 
 						else SEG=false;
 
-						// Calcular Pxi de los blob resultantes
+						// Calcular Pxi del blob resultante
 
 						FlyData=(STFly *)obtener(0, FrameData->Flies);
 
-
 						Pxi = CalcProbMosca( SH , FlyData );
+
+
+						//Almacenar la probabilidad mas alta, así como el umbral correspondiente a esa probabilidad
 
 						if(Pxi>BestPxi) {
 
@@ -382,13 +330,10 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 							Besthres=BGParams->LOW_THRESHOLD;
 						}
 
-
+						//Si no hay execeso,salir del bucle y validar blob
 						Exceso = CalcProbUmbral( SH, VParams,FlyData); // calcula VParams->UmbralProb
-
 						if(!Exceso ) break;
 
-//						if(!Exceso && Pxi < VParams->PxiMin) break;
-//						if(Pxi > VParams->PxiMin) break;
 
 					}// Fin del While
 
@@ -406,21 +351,55 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 						if (SEG){
 
+							if(Besthres == BGParams->LOW_THRESHOLD) FlyData=(STFly*)obtener(j,FLIE_TEMP);
+
+							else{
+
+							BGParams->LOW_THRESHOLD=Besthres;
+
+
+							// Resta de fondo
+							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,BGParams, FlyDataTemp);
+
+							// Segmentar
+							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,Mask);
+
+							FlyData=(STFly*)obtener(0,FrameData->Flies);
+
+							}
+
+
+							Pxi = CalcProbMosca( SH , FlyData );
+
+							// Si la probabilidad de la mosca es menor que el umbral (Probabilidad para 3 veces la
+							// desviación típica), marcar la mosca como segmentada.Si la probabilidad de la mosca
+							// es mayor que el umbral, la mosca no se maraca como segmentada. Esto lo realizamos
+							// para descartar falsas segmentaciones. Si la probabilidad de oscaes muy baja = segementación true,
+							// y si la probabilidad de mosca es alta = segmentacion false.
+
+							if(Pxi < VParams->Umbral_H){
+
 							FlyData=(STFly *)obtener(j, FLIE);
 							FlyData->flag_seg=true;
 
-							for(int k=0;k < FrameData->Flies->numeroDeElementos;k++){
+							}
 
-							TempSeg=FrameData->Flies;
+							else insertar(FlyData,PxList);
+
+							FLIE->actual->dato=FlyData;
+
+							// Añadir los nuevos blobs resultantes de la segementación al final dela lista FIFO
+
+							for(int k=0;k < FrameDataTemp->Flies->numeroDeElementos;k++){
+
+							TempSeg=FrameDataTemp->Flies;
 
 							FlyData=(STFly *)obtener(k, TempSeg);
 
-							Pxi = CalcProbMosca( SH , FlyData );
-							Exceso = CalcProbUmbral( SH, VParams,FlyData);
+//							Pxi = CalcProbMosca( SH , FlyData );
+//							Exceso = CalcProbUmbral( SH, VParams,FlyData);
 
-							anyadirAlFinal(FlyData, FLIE_TEMP );// añadir al final dela Lista FLIE
-
-							insertar(FlyData,PxList); // insertar en lista  para calcular la Px final
+							anyadirAlFinal(FlyData, FLIE_TEMP );// añadir al final de la Lista FLIE
 
 
 							}//fin for
@@ -432,22 +411,24 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 						else{
 
-//							FLIE_TEMP->actual->dato=FlyData;
-//							insertar(FlyData,PxList); //Insertar en lista para calcular la Px final
+							if(FrameData->Flies->numeroDeElementos > 0){
 
 							BGParams->LOW_THRESHOLD=Besthres;
 
-							//Resta de fondo
-							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,maskTemp,BGParams, FlyDataTemp);
+							// Resta de fondo
+							BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,BGParams, FlyDataTemp);
 
-							//Segmentación
-							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
+							// Segmentar
+							FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,Mask);
 
 							FlyData=(STFly*)obtener(0,FrameData->Flies);
-							Pxi = CalcProbMosca( SH , FlyData );
+//							Pxi = CalcProbMosca( SH , FlyData );
 
 							FLIE->actual->dato=FlyData;
 							insertar(FlyData,PxList);
+
+							}
+
 						}
 
 						BGParams=NULL;// Inicializar LOW_THRESHOLD y demas valores
@@ -469,8 +450,6 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 					BGParams=NULL;// Inicializar LOW_THRESHOLD y demas valores
 					setBGModParams( &BGParams);
 
-
-//					while(!Exceso && BGParams->LOW_THRESHOLD >0 && Pxi > VParams->Umbral_H){
 					while(!Exceso && BGParams->LOW_THRESHOLD >0){
 
 					// Incrementar umbral
@@ -478,20 +457,18 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 
 					// Resta de fondo
-					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,BGParams, FlyDataTemp);
-
+					BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,BGParams, FlyData->Roi);
 
 					// Segmentar
-					FrameData->Flies = segmentacion(Imagen, FrameData, FlyDataTemp,mask);
+					FrameData->Flies = segmentacion(Imagen, FrameData, FlyData->Roi,Mask);
 
-					cvCopy(mask,FrameData->FG);
 
 					FlyData=(STFly *)obtener(0, FrameData->Flies);
 
 					if(!FrameData->Flies->numeroDeElementos) break;
 
-					Pxi = CalcProbMosca( SH , FlyData );
-					Exceso = CalcProbUmbral( SH, VParams,FlyData);
+//					Pxi = CalcProbMosca( SH , FlyData );
+//					Exceso = CalcProbUmbral( SH, VParams,FlyData);
 
 					}// while defecto
 
@@ -513,6 +490,7 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 
 						FlyData=(STFly *)obtener(j,FLIE_TEMP);
 						FLIE->actual->dato=FlyData;
+						insertar(FlyData,PxList);
 
 					}
 
@@ -555,8 +533,8 @@ for(int j=0;j<FLIE_TEMP->numeroDeElementos;j++){
 	cvReleaseImage(&FrameData->BGModel);
 	cvReleaseImage(&FrameData->FG);
 	cvReleaseImage(&FrameData->Frame);
-	cvReleaseImage(&mask);
-	cvReleaseImage(&maskTemp);
+	cvReleaseImage(&Mask);
+
 
 }//Fin de Validación
 

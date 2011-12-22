@@ -68,6 +68,8 @@ void copyMat (CvMat* source , CvMat* dest );
 
 float CalcDirection(float direction,float orientation,float angulo);
 
+CvRect ROIKalman(CvMat* Matrix,CvMat* Predict);
+
 //float* updateKalmanCorrect(CvKalman* kalman,CvPoint coordenadas );
 //
 //float* updateKalmanPredict(CvKalman* kalman);
