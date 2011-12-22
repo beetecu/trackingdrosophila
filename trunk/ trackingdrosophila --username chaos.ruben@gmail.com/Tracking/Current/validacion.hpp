@@ -136,6 +136,6 @@ int CalcProbUmbral( SHModel* SH ,ValParams* VParams,STFly* Flie);
  *
  * \note Se utiliza como límite superior a la hora de aumentar el umbral.
  */
-int ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi );
+double* ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi );
 
 #endif /* VALIDACION_HPP_ */

@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 	printf("\n\nIniciando procesado...\n");
 	gettimeofday(&tinicio, NULL);//para obtener el tiempo transcurrido desde el inicio del programa
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
-    for(int Fr = 1;frame; frame = cvQueryFrame(g_capture), Fr++ ){
+    for(int Fr = 1;frame; frame = cvQueryFrame(g_capture), Fr++ ){///////////////////////////////////
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
     	if( !frame ) RetryCap( g_capture );

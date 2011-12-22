@@ -167,7 +167,7 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 		flyData->CountState = 0;
 		flyData->direccion = 0;
 		flyData->dstTotal = 0;
-//		flyData->perimetro = cv::arcLength(contorno,0);
+		flyData->perimetro = CV_PI*((3*(flyData->a+flyData->b))-sqrt(((3*flyData->a) + flyData->b)*(flyData->a + (3*flyData->b))));
 		flyData->Roi = rect;
 		flyData->Estado = 1;  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
 		flyData->num_frame = FrameData->num_frame;

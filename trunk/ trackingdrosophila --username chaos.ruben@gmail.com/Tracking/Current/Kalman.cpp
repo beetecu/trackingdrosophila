@@ -45,20 +45,23 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 	////// INICIALIZAR FILTROS DE KALMAN//////
 	if(!kalman){
-		kalman = initKalman( ); // FK Lineal para las coodenadas
 		state=cvCreateMat(4,1,CV_32FC1);
 		measurement = cvCreateMat( 2, 1, CV_32FC1 );
 		process_noise = cvCreateMat(4, 1, CV_32FC1);
-	}
+
 	if(!kalman_2){
-		kalman_2 = initKalman2( );// FK para la orientación
 		state_2=cvCreateMat(2,1,CV_32FC1);
 		measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
 		process_noise_2 = cvCreateMat(2, 1, CV_32FC1);
 	}
+}
 
 	//Predicción y correción de cada blob
 	for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
+
+		kalman = initKalman( ); // FK Lineal para las coodenadas
+		kalman_2 = initKalman2( );// FK para la orientación
+
 		// obtener blob
 		flyData=(STFly*)obtener(flypos,flies);
 
@@ -69,11 +72,16 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 		// iniciar para predecir la orientación del blob
 		initkdir( kalman_2,flyData->direccion,flyData->orientacion);
 		state_2->data.fl[0]=flyData->orientacion;
+
+
+
 		/////////////////// PREDICCION //////////////////////
 
 		const CvMat* yk = cvKalmanPredict( kalman, 0 ); // Predicción coordenadas
 
 		const CvMat* yk_2 = cvKalmanPredict( kalman_2, 0 ); // Predicción orientacion
+
+		printf("\n");
 
 		cvRandSetRange(&rng,0,sqrt(kalman->measurement_noise_cov->data.fl[0]),0);
 		cvRand( &rng, measurement );
@@ -89,8 +97,6 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 			////////////////////// CORRECCION ////////////////////////
 
-		//	correct = updateKalmanCorrect(kalman ,measurement);
-
 			cvKalmanCorrect( kalman,measurement);
 
 			cvKalmanCorrect( kalman_2,measurement_2);
@@ -105,7 +111,12 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 			cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
 
-		}
+
+			// Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
+			// de Kalman.
+
+			CvRect Kalman_ROI = ROIKalman(kalman->error_cov_pre,kalman->state_pre);
+
 
 		////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
 
@@ -127,6 +138,8 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 			printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
 			printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
 			printf("\n\n");
+
+
 		}
 		if(SHOW_KALMAN){
 			///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
@@ -139,9 +152,23 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 			cvCircle(IKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
 			cvShowImage( "Kalman", IKalman );
+
+			// Dibujar la ROI
+
+			CvPoint pt1;
+			CvPoint pt2;
+
+			pt1.x = Kalman_ROI.x;
+			pt1.y = Kalman_ROI.y;
+			pt2.x = pt1.x + Kalman_ROI.width;
+			pt2.y = pt1.y + Kalman_ROI.height;
+
+			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
+			cvShowImage("Kalman",IKalman);
 		}
 
-	}//FOR
+		}//FOR
+	}
 }
 
 // Incializar los parámetro del filtro de Kalman para la posición.
@@ -162,7 +189,9 @@ CvKalman* initKalman( ){
 	cvSetIdentity( Kalman->measurement_matrix,cvRealScalar(1) );
 	cvSetIdentity( Kalman->process_noise_cov,cvRealScalar(1e-3) );
 	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-1) );
-	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1000));
+	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(100));
+	cvSet( Kalman->error_cov_pre, cvScalar(1) );
+
 
 	return Kalman;
 	}
@@ -186,7 +215,7 @@ CvKalman* initKalman2( ){
 	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-2) );
 	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1000));
 
-    return Kalman;
+	return Kalman;
 }
 
 void initKpos(CvKalman* kalman, CvPoint coord, float direccion){ // iniciar para predecir la posición del blob flypos
@@ -393,6 +422,28 @@ float CalcDirection(float direction,float orientation,float angulo){
 	return angle;
 
 } // Fin de la Funcion
+
+
+CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
+
+	float Matrix_Kalman_Cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
+
+	float Valor_X,Valor_Y;
+
+
+	CvRect ROI;
+
+	Valor_X = sqrt(Matrix_Kalman_Cov[0]);
+	Valor_Y = sqrt(Matrix_Kalman_Cov[3]);
+
+	ROI.x=(predict->data.fl[0]-Valor_X);
+	ROI.y=(predict->data.fl[1]-Valor_Y);
+	ROI.width=2*Valor_X;
+	ROI.height=2*Valor_Y;
+
+	return ROI;
+
+}
 
 /// Limpia de la memoria las imagenes usadas durante la ejecución
 void DeallocateKalman(  ){
