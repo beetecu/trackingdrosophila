@@ -43,6 +43,8 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 	flies=frameData->Flies;
 
+
+
 	////// INICIALIZAR FILTROS DE KALMAN//////
 	if(!kalman){
 		state=cvCreateMat(4,1,CV_32FC1);
@@ -430,6 +432,23 @@ CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
 
 	float Valor_X,Valor_Y;
 
+//	CvMat* MC=cvCreateMat(2,2,CV_32FC1);
+//	CvMat* Diag=cvCreateMat(2,2,CV_32FC1);
+//	CvMat* R=cvCreateMat(2,2,CV_32FC1);
+//	CvMat* Rt=cvCreateMat(2,2,CV_32FC1);
+//
+//	MC->data.fl[0]=Matrix->data.fl[0];
+//	MC->data.fl[1]=Matrix->data.fl[1];
+//	MC->data.fl[2]=Matrix->data.fl[4];
+//	MC->data.fl[3]=Matrix->data.fl[5];
+//
+//	//	cvEigenVV(MC,R,Rt,2);// Hallar los EigenVectores
+//	cvSVD(MC,Diag,R,Rt,0); // Hallar los EigenValores, MATRIX_C=R*Diagonal*RT
+//
+//	printf("\n");
+//	for(int i=0;i < R->cols*R->rows;i++){
+//		printf("\n %f",R->data.fl[i]);
+//	}
 
 	CvRect ROI;
 
