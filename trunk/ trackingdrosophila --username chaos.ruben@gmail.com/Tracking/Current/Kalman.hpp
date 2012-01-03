@@ -68,6 +68,15 @@ void copyMat (CvMat* source , CvMat* dest );
 
 float CalcDirection(float direction,float orientation,float angulo);
 
+//!\brief Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
+//! de Kalman.
+/*!
+ * \param Matrix Matriz de covarianza del error.
+ * \param Predict Matriz que contiene la estimación ( coordenadas).
+ *
+ * \return La matriz de busqueda.
+ */
+
 CvRect ROIKalman(CvMat* Matrix,CvMat* Predict);
 
 //float* updateKalmanCorrect(CvKalman* kalman,CvPoint coordenadas );
