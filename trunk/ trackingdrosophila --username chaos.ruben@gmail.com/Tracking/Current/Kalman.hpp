@@ -10,11 +10,11 @@
 
 #include "VideoTracker.hpp"
 
-#define VELOCIDAD  10.599 // velocidad del blob en pixeles por frame
-#define V_ANGULAR 5.2 // velocidad angular del blob en pixeles por frame
+#define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
+#define V_ANGULAR 2.6//5.2 // velocidad angular del blob en pixeles por frame
 #define NUMBER_OF_MATRIX 6
 
-void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman);
+void Kalman(tlcde* framesBuf,int  workPos );
 
 //!\brief Inicializa los parametros del filtro de Kalman para las coordenadas.
 /*!

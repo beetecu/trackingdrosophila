@@ -33,7 +33,7 @@ void DestroyWindows( );
 //		- frame inicial ( i )
 //		- grabar frame a fichero ( g )
 //		- continuar (c) : continua con el procesado
-void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat );
+void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ,CvCapture* Cap);
 
 void VisualizarFr( STFrame* frameData, StaticBGModel* Flat );
 
@@ -60,6 +60,6 @@ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
  */
 void dibujarBlobs( IplImage* Imagen,tlcde* lista_blobs );
 
-void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int posbuf );
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posbuf );
 
 #endif /* VISUALIZACION_HPP_ */

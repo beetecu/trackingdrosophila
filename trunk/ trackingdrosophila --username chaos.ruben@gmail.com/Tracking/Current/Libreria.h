@@ -58,6 +58,8 @@ void verMatrizIm( IplImage* Im, CvRect roi);
 
 void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs);
 
+void muestrearPosicion( tlcde* flies, int id );
+
 void invertirBW( IplImage* Imagen );
 
 #endif // _IMAGEN_
@@ -234,15 +236,15 @@ int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear);
  */
 
 
-//!\brief Mostrar llos elementos de la lista con sus datos.
+//!\brief Mostrar los datos de los elementos del frame indicado por pos
 /*!
  * \param pos posicion del elemento mostrado.
  * \param lcde Lista circular doblemente enlazada.
  */
 
-
 void mostrarListaFlies(int pos,tlcde *lista);
 
+void mostrarFliesFrame(STFrame *frameData);
 //!\brief Liberar espacio de datos de la lista.
 /*!
  * \param lcde Lista circular doblemente enlazada.
@@ -251,9 +253,11 @@ void liberarListaFlies(tlcde *lista);
 
 void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids = NULL );
 
+tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies );
+
 void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
 
-void SetTita( STFly* flyAnterior,STFly* flyActual, double angle );
+void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max );
 
 #endif //_FLIES_
 
@@ -341,6 +345,10 @@ void crearFichero(char *nombreFichero );
  */
 
 int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
+
+void QuitarCR (char *cadena);
+
+CvVideoWriter* iniciarAvi( CvCapture* capture, char* nombreVideo);
 
 #endif //_FICHEROS_
 

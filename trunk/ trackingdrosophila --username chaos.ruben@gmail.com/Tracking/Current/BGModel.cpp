@@ -570,7 +570,7 @@ void AllocateBGMImages( IplImage* I , StaticBGModel* bgmodel){
 }
 
 /// Limpia de la memoria las imagenes usadas durante la ejecución
-void DeallocateBGM( StaticBGModel* BGModel ){
+void DeallocateBGM( StaticBGModel* BGModel){
 
 	if(BGModel){
 		DeallocateTempImages();

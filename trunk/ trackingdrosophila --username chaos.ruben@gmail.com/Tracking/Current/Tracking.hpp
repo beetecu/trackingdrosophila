@@ -22,4 +22,6 @@ void AllocateTrackImages( IplImage *I );
 
 void ReleaseDataTrack();
 
+void crearMascara( IplImage* Frame, IplImage* FG,IplImage* mascara);
+
 #endif /* TRACKING_HPP_ */

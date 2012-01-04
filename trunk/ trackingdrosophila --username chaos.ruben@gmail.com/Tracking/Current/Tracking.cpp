@@ -11,13 +11,12 @@
 #include "Kalman.hpp"
 
 
-#define NUMBER_OF_MATRIX 6
 
 	IplImage *ImOpFlowX;
 	IplImage *ImOpFlowY;
 	IplImage *ImagenA;
 	IplImage *ImagenB;
-	IplImage *IKalman;
+
 
 	tlcde* Identities = NULL;
 
@@ -66,16 +65,13 @@ void Tracking( tlcde* framesBuf ){
 	// Cuando el buffer esté por la mitad comienza el rastreo en el segundo frame
 	// La posición de trabajo se irá incremetando a la par que el tamaño del buffer
 	// asta quedar finalmente situada en el centro.
-	if ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH)
-			workPos += 1;
-
-	if(workPos == 0) firstbuf=true;
+	if ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH) workPos += 1;
 
 	////// FILTRO DE KALMAN //////////////
 	gettimeofday(&ti, NULL);
 	printf("\t2)Filtro de Kalman\n");
 
-	Kalman(framesBuf,workPos,IKalman);
+	Kalman(framesBuf,workPos );
 
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
@@ -125,25 +121,25 @@ void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation 
 
         		cvReleaseImage( &ImOpFlowX);
         		cvReleaseImage( &ImOpFlowY);
-        		cvReleaseImage( &IKalman);
+
         		cvReleaseImage( &ImagenA);
         		cvReleaseImage( &ImagenB);
 
         		ImOpFlowX = cvCreateImage( sz,IPL_DEPTH_32F,1 );
         		ImOpFlowY = cvCreateImage(sz,IPL_DEPTH_32F,1 );
-        		IKalman = cvCreateImage( sz,8,3 );
+
         		ImagenA = cvCreateImage( sz ,8,1 );
         		ImagenB = cvCreateImage(sz ,8,1 );
 
         		cvZero( ImOpFlowX );
         		cvZero( ImOpFlowY );
-        		cvZero( IKalman);
+
         		cvZero( ImagenA );
         		cvZero( ImagenB );
         	}
 		cvZero( ImOpFlowX );
 		cvZero( ImOpFlowY );
-		cvZero(IKalman);
+
 		cvZero( ImagenA );
 		cvZero( ImagenB );
 
