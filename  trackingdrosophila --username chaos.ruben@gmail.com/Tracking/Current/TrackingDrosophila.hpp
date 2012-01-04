@@ -44,7 +44,10 @@
 int Inicializacion( IplImage* frame,
 			int argc,
 			char* argv[],
-			tlcde** FramesBuf);
+			tlcde** FramesBuf,
+			STStatFrame** Stats);
+
+void onMouse( int event, int x, int y, int, void* );
 
 	void AnalisisEstadistico();
 

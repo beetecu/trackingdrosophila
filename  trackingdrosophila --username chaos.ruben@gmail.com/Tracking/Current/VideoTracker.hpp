@@ -60,9 +60,9 @@ using namespace std;
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
 #define SHOW_VALIDATION_TIMES 1
 
-#define SHOW_MT_DATA 0
+#define SHOW_MT_DATA 1
 
-#define SHOW_KALMAN_RESULT 1
+#define SHOW_KALMAN_DATA 1
 
 // VISUALIZACIÓN DE IMAGENES
 
@@ -74,7 +74,7 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
-
+#define GRABAR_VISUALIZACION 1
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
 
@@ -111,23 +111,28 @@ using namespace std;
 
 	typedef struct {
 
-
 		int etiqueta;  //!< Identificación del blob
 		CvScalar Color; //!< Color para dibujar el blob
 		CvPoint posicion; //!< Posición del blob
+		float direccion; //!<almacena la dirección del desplazamiento
+		unsigned int num_frame; //!< Almacena el numero de frame (tiempo)
+
 		float a,b; //!< semiejes de la elipse
 		float orientacion; //!< Almacena la orientación
-		float direccion; //!<almacena la dirección del desplazamiento
+		int OrientCount; //!< Si es 0 no se suma PI a la orientacion. Si es 1 se suma PI
+
 		float dstTotal; //!< almacena la distancia total recorrida hasta el momento
 		double perimetro;
 		CvRect Roi; //!< region de interes para el blob
-		bool Estado;  //!< Flag para indicar que el blob permanece estático.Servirá para indicar si está en el foreground o en el oldforeground
+		int Estado;  //!< Indica si el blob se encuentra en el foreground (0) en el oldforeground (1) o en estado de predicción (2).
+		unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
+		unsigned int StaticFrames; //!< Contador del número de frames que el blob permanece estático;
+		bool flag_gir; //!< Indica si se le suman o no pi rad a la orientación del blob
 		bool flag_seg; //!< Indica si e blog a sido segmentado
 		bool flag_def; //!< indica si el blob ha  desaparecido durante el analisis del defecto
-		int CountState; //!< Si alcanza un valor umbral consideraremos que el blob permanece estático y estado = 0;
-		int num_frame; //!< Almacena el numero de frame (tiempo)
+
 		bool salto;	//!< Indica que la mosca ha saltado
-		bool Grupo; //!< Indica que la mosca permanece estática en un grupo de 2 o más moscas.
+		int Grupo; //!< Indica que la mosca permanece estática en un grupo de n moscas.
 		int Zona; //!< Si se seleccionan zonas de interes en el plato,
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
 
@@ -136,18 +141,19 @@ using namespace std;
 /// Estructura para almacenar el modelo de fondo estático.
 
 	typedef struct {
-		IplImage* Imed; //!< Imagen que contiene el modelo de fondo (Background Model).
+		IplImage* Imed; //!< Imagen que contiene el modelo de fondo estático (Background Model).
 		IplImage* IDesvf; //!< Imagen que contiene la desviación tipica del modelo de fondo estático.
 		IplImage* ImFMask; //!<Imagen que contiene la  Mascara del plato
 		int PCentroX ;//!< Coordenada x del centro del plato.
 		int PCentroY ;//!< Coordenada y del centro del plato.
 		int PRadio ;//!< Radio del plato.
-		CvRect DataFROI;//!< Region de interes del plato.
+		CvRect DataFROI;//!< Region de interes de la imagen.
 	}StaticBGModel;
 
 /// Estructura que almacena cálculos estadísticos globales simples para mostrar en tiempo de ejecución.
 
 	typedef struct {
+		CvRect ROIS; //!< Zonas de interes
 		int totalFrames; //!< Numero de Frames que posee en video
 		int numFrame; //!< Numero de Frame que se está procesando.
 		float TProces;
@@ -158,7 +164,7 @@ using namespace std;
 		float TiempoGlobal;
 		float CMov30;  //!< Cantidad de movimiento medio en los últimos 30 min.
 		float CMov1H;  //!< Cantidad de movimiento medio en la última hora.
-		float CMov2H;	//!< Cabtidad de movimiento medio en  últimas 2 horas.
+		float CMov2H;	//!< Cantidad de movimiento medio en  últimas 2 horas.
 		float CMov4H;
 		float CMov8H;
 		float CMov16H;
@@ -173,11 +179,13 @@ using namespace std;
 	typedef struct {
 		int num_frame; //!< Identificación del Frame procesado.
 		IplImage* Frame;//!< Imagen fuente de 8 bit de niveles de gris preprocesada.
-		IplImage* BGModel;//!< Imagen de 8 bits que contiene e  BackGround Model Dinámico.
+		IplImage* BGModel;//!< Imagen de 8 bits que contiene el  BackGround Model Dinámico.
 		IplImage* IDesvf;//!< Imagen de 32 bits que contiene la Desviación Típica del modelo de fondo dinámico.
 		IplImage* OldFG; //!< Imagen que contiene el OldForeGround ( blobs estáticos ).
 		IplImage* FG;  //!< Imagen que contiene el Foreground ( blobs en movimiento ).
+		IplImage* ImAdd;//!< FG + OldFG
 		IplImage* ImMotion;//!< Imagen que contiene la orientación de moscas.
+		IplImage* ImKalman;
 //		STStatFrame * Stat;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
 	}STFrame;

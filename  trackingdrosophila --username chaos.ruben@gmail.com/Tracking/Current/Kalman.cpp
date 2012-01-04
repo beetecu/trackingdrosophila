@@ -27,7 +27,7 @@ CvRandState rng2;
 
 CvMat* indexMat[NUMBER_OF_MATRIX]; // Matrices para usar el filtro de Kalman
 
-void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
+void Kalman(tlcde* framesBuf,int  workPos ){
 
 	STFrame* frameData = NULL;
 	STFly* flyData = NULL;
@@ -56,7 +56,8 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 		measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
 		process_noise_2 = cvCreateMat(2, 1, CV_32FC1);
 	}
-}
+
+	cvZero(frameData->ImKalman);
 
 	//Predicción y correción de cada blob
 	for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
@@ -122,7 +123,7 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 
 		////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
 
-		if(SHOW_KALMAN_RESULT){
+		if(SHOW_KALMAN_DATA){
 
 			printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
 
@@ -146,33 +147,30 @@ void Kalman(tlcde* framesBuf,int  workPos,IplImage* IKalman){
 		if(SHOW_KALMAN){
 			///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
 
-			cvCircle(IKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
-			cvShowImage( "Kalman", IKalman );
+			cvCircle(frameData->ImKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
 
-			cvCircle(IKalman,cvPoint(cvRound(yk->data.fl[0]),cvRound(yk->data.fl[1])),5,CVX_RED,1,8);
-			cvShowImage( "Kalman", IKalman );
+			cvCircle(frameData->ImKalman,cvPoint(cvRound(yk->data.fl[0]),cvRound(yk->data.fl[1])),5,CVX_RED,1,8);
 
-			cvCircle(IKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
-			cvShowImage( "Kalman", IKalman );
+			cvCircle(frameData->ImKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
 
 			// Dibujar la ROI
-
-			CvPoint pt1;
-			CvPoint pt2;
-
-			pt1.x = Kalman_ROI.x;
-			pt1.y = Kalman_ROI.y;
-			pt2.x = pt1.x + Kalman_ROI.width;
-			pt2.y = pt1.y + Kalman_ROI.height;
-
-			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
-			cvShowImage("Kalman",IKalman);
+//
+//			CvPoint pt1;
+//			CvPoint pt2;
+//
+//			pt1.x = Kalman_ROI.x;
+//			pt1.y = Kalman_ROI.y;
+//			pt2.x = pt1.x + Kalman_ROI.width;
+//			pt2.y = pt1.y + Kalman_ROI.height;
+//
+//			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
+//			cvShowImage("Kalman",IKalman);
 		}
 
 		}//FOR
 	}
 }
-
+}
 // Incializar los parámetro del filtro de Kalman para la posición.
 
 CvKalman* initKalman( ){

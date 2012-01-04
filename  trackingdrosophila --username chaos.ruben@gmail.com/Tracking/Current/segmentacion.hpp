@@ -35,11 +35,15 @@
 
 tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi, IplImage* Mask );
 
+tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect Roi,IplImage* Mask);
+
 //!\brief Crea las imagenes, matrices y estructuras utilizadas en la segementación.
 /*!
  * \param Brillo Imagen fuente de 8 bits de nivel de gris, contiene el frame actual.
  */
 void CreateDataSegm( IplImage* Brillo );
+
+STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_frame);
 
 //!\brief Extrae los datos de las elipses que corresponden a cada blob.
 /*!
@@ -54,7 +58,7 @@ void CreateDataSegm( IplImage* Brillo );
  *
  * \return Los valores de la elipse para cada blob.
  */
-void ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
+int ellipseFit( CvRect rect,IplImage* pesos, IplImage* mask,
 		float *semiejemenor,float* semiejemayor,CvPoint* centro,float* tita );
 
 //!\brief Limpiar y borrar las imagenes, matrices y estructuras usadas durante la segmentación.

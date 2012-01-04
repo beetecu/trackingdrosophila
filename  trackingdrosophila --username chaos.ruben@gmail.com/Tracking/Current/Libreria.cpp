@@ -178,7 +178,7 @@ void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
 
 	static int count = 0;
 	int max_buffer;
-	int	r[num_frs];
+
 	CvLineIterator iterator;
 
 	if(!existe("SamplelinesPC.csv")) crearFichero("SamplelinesPC.csv");
@@ -201,6 +201,35 @@ void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
 	fclose(fptr);
 }
 
+void muestrearPosicion( tlcde* flies, int id ){
+
+
+//	for( int i = 0; i < 1000; i++ ){
+//				sprintf(nombreFichero,"SamplePosfly1.csv ",i);
+//				if( !existe( nombreFichero) ) {
+//					crearFichero( nombreFichero );
+//					break;
+//			    }
+//			}
+	if(!existe("SamplePosFly1.csv")) crearFichero("SamplePosFly1.csv");
+
+	FILE *fptr = fopen("SamplePosFly1.csv","a"); // Store the data here
+
+	if(!flies || flies->numeroDeElementos < 1 ) return;
+	// Mostrar todos los elementos de la lista
+	int i = 0, tam = flies->numeroDeElementos;
+	STFly* flydata = NULL;
+
+	while( i < tam ){
+			flydata = (STFly*)obtener(i, flies);
+			if (flydata->etiqueta == id){
+				fprintf(fptr,"%d;%d",flydata->posicion.x,flydata->posicion.y);
+				fprintf(fptr,"\n");
+			}
+			i++;
+	}
+	fclose(fptr);
+}
 ///////////////////// INTERFAZ PARA MANIPULAR UNA LCDE //////////////////////////////
 
 //
@@ -482,6 +511,7 @@ void anyadirAlPrincipio(void *e, tlcde *lcde ){
 	insertar( e, lcde);
 }
 
+
 /////////////////////// INTERFACE PARA GESTIONAR LISTA FLIES //////////////////////////
 
 int dibujarFG( tlcde* flies, IplImage* dst,bool clear){
@@ -524,7 +554,7 @@ int dibujarBG( tlcde* flies, IplImage* dst, bool clear){
 
 int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear){
 	STFly* fly;
-	if( flies->numeroDeElementos < 1 ) return 0;
+	if( !flies || flies->numeroDeElementos < 1 ) return 0;
 	if( dst == NULL ) return 0;
 	if ( clear ) cvZero( dst );
 	irAlPrincipio( flies);
@@ -558,7 +588,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 6; j++){
+	for(int j = 0; j < 9; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -586,6 +616,18 @@ void mostrarListaFlies(int pos,tlcde *lista)
 				printf( "\t%d",flydata->Estado);
 			}
 			if( j == 5 ){
+				if (i == 0) printf( "\nFrameCount");
+				printf( "\t%d",flydata->FrameCount);
+			}
+			if( j == 6 ){
+				if (i == 0) printf( "\nOrientCount");
+				printf( "\t%d",flydata->OrientCount);
+			}
+			if( j == 7 ){
+				if (i == 0) printf( "\nStaticFrames");
+				printf( "\t%d",flydata->StaticFrames);
+			}
+			if( j == 8 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -593,10 +635,70 @@ void mostrarListaFlies(int pos,tlcde *lista)
 		}
 		i=0;
 	}
-	if (tam = 0 ) printf(" Lista vacía\n");
+	if (tam == 0 ) printf(" Lista vacía\n");
 	// regresamos lista al punto en que estaba antes de llamar a la funcion de mostrar lista.
 	irAlPrincipio(lista);
 	for (n = 0; n < pos_act; n++) irAlSiguiente(lista);
+}
+
+void mostrarFliesFrame(STFrame *frameData)
+{
+	int n;
+	tlcde* flies;
+	flies = frameData->Flies;
+	if(!flies || flies->numeroDeElementos < 1 ) return;
+	// Mostrar todos los elementos de la lista
+	int i = 0, tam = flies->numeroDeElementos;
+	STFly* flydata = NULL;
+	for(int j = 0; j < 9; j++){
+		while( i < tam ){
+			flydata = (STFly*)obtener(i, flies);
+			if (j == 0){
+				if (i == 0) printf( "\n\netiquetas");
+				printf( "\t%d",flydata->etiqueta);
+			}
+			if( j == 1 ){
+				if (i == 0) printf( "\nPosiciones");
+				int x,y;
+				x = flydata->posicion.x;
+				y = flydata->posicion.y;
+				printf( "\t%d %d",x,y);
+			}
+
+			if( j == 2 ){
+				if (i == 0) printf( "\nOrientacion");
+				printf( "\t%0.1f",flydata->orientacion);
+			}
+			if( j == 3 ){
+				if (i == 0) printf( "\nDirección");
+				printf( "\t%0.1f",flydata->direccion);
+			}
+			if( j == 4 ){
+				if (i == 0) printf( "\nEstado\t");
+				printf( "\t%d",flydata->Estado);
+			}
+			if( j == 5 ){
+				if (i == 0) printf( "\nFrameCount");
+				printf( "\t%d",flydata->FrameCount);
+			}
+			if( j == 6 ){
+				if (i == 0) printf( "\nOrientCount");
+				printf( "\t%d",flydata->OrientCount);
+			}
+			if( j == 7 ){
+				if (i == 0) printf( "\nStaticFrames");
+				printf( "\t%d",flydata->StaticFrames);
+			}
+			if( j == 8 ){
+				if (i == 0) printf( "\nNumFrame");
+				printf( "\t%d",flydata->num_frame);
+			}
+			i++;
+		}
+		i=0;
+	}
+	if (tam == 0 ) printf(" Lista vacía\n");
+
 }
 
 void liberarListaFlies(tlcde *lista)
@@ -622,11 +724,39 @@ void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids ){
 	if( flyActual->etiqueta && ids ) dejarId(flyActual,ids);
 	flyActual->etiqueta = flyAnterior->etiqueta;
 	flyActual->Color = flyAnterior->Color;
-	float distancia;
+	flyActual->FrameCount = flyAnterior->FrameCount +1;
+	flyActual->flag_gir = flyAnterior->flag_gir;
+//	float distancia;
 	//Establecemos la dirección y el modulo del vector de desplazamiento
 	//EUDistance( flyAnterior->posicion,flyActual->posicion, &flyAnterior->direccion, &distancia );
 	//flyActual->dstTotal = flyAnterior->dstTotal + distancia;
 //	SetTita( flyActual, flyAnterior );
+}
+
+tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies ){
+	tlcde* flies = NULL;
+	flies = ( tlcde * )malloc( sizeof(tlcde ));
+	iniciarLcde( flies );
+	//Inicializar estructura para almacenar los datos cada mosca
+	STFly *fly = NULL;
+
+	if( !OldFGFlies && !FGFlies ) return flies;
+	if( (FGFlies) && (FGFlies->numeroDeElementos > 0 ) ){
+		irAlPrincipio( FGFlies);
+		for( int j = 0; j < FGFlies->numeroDeElementos; j++){
+			fly = (STFly*)obtener( j, FGFlies);
+			anyadirAlFinal( fly, flies);
+		}
+	}
+	if(OldFGFlies!=NULL && OldFGFlies->numeroDeElementos > 0 ){
+			irAlPrincipio( OldFGFlies);
+			for( int j = 0; j < OldFGFlies->numeroDeElementos; j++){
+				fly = (STFly*)obtener( j, OldFGFlies);
+				anyadirAlFinal( fly, flies);
+			}
+	}
+	return flies;
+
 }
 /// Haya la distancia ecuclidea entre dos puntos. Establece el modulo y y el argumento en grados.
 ///
@@ -669,48 +799,157 @@ void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* 
 
 /// -resuelve la ambiguedad en la orientación para cada cuadrante
 ///estableciendo ésta en función de la dirección del desplazamiento
+/// - La orientación no se modifica hasta que el contador alcance el valor Max.
+/// La dirección y la orientación han de diferir mas de 90º durante Max frames
+/// para que la orientación sea modificada
 /// -En la decisión de si no se modifica el ángulo o bien se suma o resta pi
 /// se consideran mayores y menores estrictos, de forma que si la dif absoluta
-///entre la direccion y la orientación es exactamnte 90, no se modifica la orient
+///entre la direccion y la orientación es exactamnte 90, no se modifica el contador
 //.Siempre devuelve un ángulo entre [0 , 360º)
 
-void SetTita( STFly* flyAnterior,STFly* flyActual,double angle ){
+//void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max ){
+//
+//	// el ángulo entre [0,360)
+//	float diferencia;
+//	if(angle == 360) flyActual->direccion = 0;
+//	else flyActual->direccion = angle;
+//
+//	//resolvemos los casos en los que orientación y dirección se encuentran
+//	//en primer y cuarto cuadrante respectivamente y viceversa.
+//	// si orientación en el primer cuadrante y dirección en el cuarto
+//	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
+//		(flyActual->direccion > 270 && flyActual->direccion < 360) )
+//	{
+//		diferencia = flyActual->direccion - flyActual->orientacion;
+//		// si difieren en mas de 90º direccion y orientación
+//		if( diferencia < 270){
+//			// mientras no se alcance el maximo Incrementamos el contador. no modificamos la orientación
+//			// hasta que no se alcance Max
+//			if( flyAnterior->OrientCount< Max ) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+//			else { // si se alcanza Max, sumamos pi a la orientación y reiniciamos el contador
+//
+//				// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
+//				if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+//				else								 flyActual->orientacion =flyActual->orientacion+ 180;
+//			}
+//		}
+//		// si no difieren más de 90º
+//		else{
+//			// decrementamos el contador mientras sea mayor de 0.
+//			if(flyActual->OrientCount > 0) flyActual->OrientCount =  flyActual->OrientCount -1;
+//		}
+//	}
+//	// si direccion en primer cuadrante y orientacion en cuarto
+//	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
+//			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
+//	{
+//		diferencia = flyActual->orientacion - flyActual->direccion;
+//		if( diferencia< 270){
+//			if( flyAnterior->OrientCount < Max ) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+//			else{
+//
+//				if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+//				else								 flyActual->orientacion =flyActual->orientacion+ 180;
+//			}
+//		}
+//		else{
+//			if(flyActual->OrientCount > 0) flyActual->OrientCount =  flyActual->OrientCount -1;
+//		}
+//	}
+//	// Caso general
+//	else{
+//		diferencia = abs( flyActual->direccion - flyActual->orientacion);
+//		if( diferencia > 90 )
+//		{
+//			if( flyAnterior->OrientCount< Max ) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+//			else{
+//				if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+//				else								 flyActual->orientacion =flyActual->orientacion+ 180;
+//			}
+//		}
+//		else{
+//			if(flyActual->OrientCount > 0) flyActual->OrientCount =  flyActual->OrientCount -1;
+//		}
+//	}
+//}
+
+/// -resuelve la ambiguedad en la orientación para cada cuadrante
+///estableciendo ésta en función de la dirección del desplazamiento
+/// - La orientación no se modifica hasta que el contador alcance el valor Max.
+/// La dirección y la orientación han de diferir mas de 90º durante Max frames
+/// para que la orientación sea modificada ( histéresis ).
+/// -En la decisión de si no se modifica el ángulo o bien se suma o resta pi
+/// se consideran mayores y menores estrictos, de forma que si la dif absoluta
+///entre la direccion y la orientación es exactamnte 90, no se modifica el contador
+//.Siempre devuelve un ángulo entre [0 , 360º)
+void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max ){
 
 	// el ángulo entre [0,360)
-	float total;
+	float diferencia;
 	if(angle == 360) flyActual->direccion = 0;
 	else flyActual->direccion = angle;
+
+	//resolvemos los casos en los que orientación y dirección se encuentran
+	//en primer y cuarto cuadrante respectivamente y viceversa.
 	// si orientación en el primer cuadrante y dirección en el cuarto
 	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
 		(flyActual->direccion > 270 && flyActual->direccion < 360) )
 	{
-		total = flyActual->direccion - flyActual->orientacion;
-		if( total < 270){
-			// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
-			if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-			else								 flyActual->orientacion =flyActual->orientacion+ 180;
+		diferencia = flyActual->direccion - flyActual->orientacion;
+		// si difieren en mas de 90º direccion y orientación
+		if( diferencia < 270){
+			// si no se alcanza el maximo y estamos en la subida
+			// del ciclo de histéresis incrementamos
+			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+			// si no se alcanza el mínimo y estamos en el descenso
+		    // del ciclo de histéresis decrementamos
+			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
 		}
+		else{
+			//reiniciamos contador
+			if(flyActual->flag_gir) flyActual->OrientCount = Max;
+			else flyActual->OrientCount = 0;
+		}
+
 	}
 	// si direccion en primer cuadrante y orientacion en cuarto
 	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
 			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
 	{
-		total = flyActual->orientacion - flyActual->direccion;
-		if( total< 270){
-			// girar 180.no devolvemos un ángulo negativo ni mayor o igual a 360
-			if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-			else								 flyActual->orientacion =flyActual->orientacion+ 180;
+		diferencia = flyActual->orientacion - flyActual->direccion;
+		if( diferencia< 270){
+			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
+		}
+		else{
+			//reiniciamos contador
+			if(flyActual->flag_gir) flyActual->OrientCount = Max;
+			else flyActual->OrientCount = 0;
 		}
 	}
+	// Caso general
 	else{
-		total = abs( flyActual->direccion - flyActual->orientacion);
-		if( total > 90 )
+		diferencia = abs( flyActual->direccion - flyActual->orientacion);
+		if( diferencia > 90 )
 		{
-			// girar 180.no devolvemos un ángulo negativo ni mayor o igual a 360
-			if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-			else								 flyActual->orientacion =flyActual->orientacion+ 180;
+			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+		    if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
+		}
+		else{
+			//reiniciamos contador
+			if(flyActual->flag_gir) flyActual->OrientCount = Max;
+			else flyActual->OrientCount = 0;
 		}
 	}
+	// establecer el sentido de la histéresis
+	if( flyActual->OrientCount == Max ) flyActual->flag_gir = true; // hacia la izquierda
+	else if ( flyActual->OrientCount == 0 ) flyActual->flag_gir = false; // hacia la derecha
+	if( flyActual->flag_gir){
+		// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
+		if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+		else								 flyActual->orientacion =flyActual->orientacion+ 180;
+	}
+
 }
 
 ///////////////////// INTERFACE PARA GESTIONAR BUFFER //////////////////////////////
@@ -723,7 +962,6 @@ void SetTita( STFly* flyAnterior,STFly* flyActual,double angle ){
 int liberarPrimero(tlcde *FramesBuf ){
 
 	STFrame *frameData = NULL;
-	STFrame *frDataTemp = NULL;
 
 //Guardamos la posición actual.
 	int i = FramesBuf->posicion;
@@ -742,6 +980,8 @@ int liberarPrimero(tlcde *FramesBuf ){
 	cvReleaseImage(&frameData->IDesvf);
 	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
+	cvReleaseImage(&frameData->ImAdd);
+	cvReleaseImage(&frameData->ImKalman);
 	frameData = (STFrame *)borrar( FramesBuf );
 	if( !frameData ) {
 		printf( "Se ha borrado el último elemento.Buffer vacio" );
@@ -759,11 +999,14 @@ int liberarPrimero(tlcde *FramesBuf ){
 void liberarSTFrame( STFrame* frameData ){
 	liberarListaFlies( frameData->Flies);
 	free( frameData->Flies );
+	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
 	cvReleaseImage(&frameData->IDesvf);
 	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
+	cvReleaseImage(&frameData->ImAdd);
+	cvReleaseImage(&frameData->ImKalman);
     free(frameData); // borrar el área de datos del elemento eliminado
 }
 
@@ -779,11 +1022,14 @@ void liberarBuffer(tlcde *FramesBuf)
   {
 	liberarListaFlies( frameData->Flies);
 	free( frameData->Flies );
+	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
 	cvReleaseImage(&frameData->IDesvf);
 	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
+	cvReleaseImage(&frameData->ImAdd);
+	cvReleaseImage(&frameData->ImKalman);
     free(frameData); // borrar el área de datos del elemento eliminado
     frameData = (STFrame *)borrar( FramesBuf );
   }
@@ -819,7 +1065,6 @@ void liberarIdentidades(tlcde* lista){
 	  // borrar: borra siempre el elemento actual
 	  irAlPrincipio( lista );
 	  id = (Identity *)borrar(lista);
-	  int i = 0;
 	  while( id ){
 		  free (id);
 		  id = NULL;
@@ -912,7 +1157,7 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	//obtenemos la lista
 
 	Flies = frameData->Flies;
-	if (Flies->numeroDeElementos == 0) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
+	if (Flies->numeroDeElementos == 0||!Flies) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
 	int i = 0, tam = Flies->numeroDeElementos;
 	// Abrir el fichero nombreFichero para añadir "a".
 	if ((pf = fopen(nombreFichero, "a")) == NULL)
@@ -935,5 +1180,30 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	return 1;
 }
 
+void QuitarCR (char *cadena)
+{
 
+	int i;
+	for(i = strlen(cadena)-1; i && cadena[i] < ' '; i--)
+	cadena [i] = 0;
+}
+///!brief inicia la estructura para grabar un video.
+CvVideoWriter* iniciarAvi( CvCapture* capture, char* nombreVideo){
+	double fps = cvGetCaptureProperty (
+										capture,
+										CV_CAP_PROP_FPS
+										);
+	CvSize size = cvSize(
+						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_WIDTH),
+						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT)
+						);
+
+	CvVideoWriter *writer = cvCreateVideoWriter(
+							nombreVideo,
+							CV_FOURCC('P','I','M','1'),
+							fps,
+							size
+							);
+	return writer;
+}
 

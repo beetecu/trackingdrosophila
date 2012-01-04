@@ -26,9 +26,10 @@ double MHI_DURATION = 0.2;//0.3
 double MAX_TIME_DELTA = 0.5;	//0.5
 double MIN_TIME_DELTA = 0.05;	//0.05
 double dstUmbral = 1; // umbral en pixels para establecer si la mosca está quieta
+int FIJAR_ORIENTACION = 3 ;// numero de frames que transcurren
 // number of cyclic frame buffer used for motion detection
 // (should, probably, depend on FPS)
-const int N = 4;
+const int N = 3;
 
 // ring image buffer
 //IplImage **buf = 0;
@@ -46,9 +47,7 @@ IplImage *segmask = 0; // motion segmentation map
 
 void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 
-static	int TBposMHI = 20;
-static	int TBposDMin = 5;
-static	int TBposDMax = 50;
+
 
 	float div = 100;
 	int i;
@@ -73,22 +72,27 @@ static	int TBposDMax = 50;
 	tlcde* flies;
 	STFly* fly;
 
-	cvCreateTrackbar( "MHI Duration",
-							  "Motion",
-							  &TBposMHI,
-							  500);
-	cvCreateTrackbar( "MAX TIME DELTA",
+	// Trackbars para ajustar los parametros de la motion template
+	if(CREATE_TRACKBARS){
+		static	int TBposMHI = 20;
+		static	int TBposDMin = 5;
+		static	int TBposDMax = 50;
+		cvCreateTrackbar( "MHI Duration",
 								  "Motion",
-								  &TBposDMax,
-								  100);
-	cvCreateTrackbar( "MIN_TIME_DELTA",
-								  "Motion",
-								  &TBposDMin,
-								  50);
-	MHI_DURATION = TBposMHI / div;
-	MIN_TIME_DELTA = TBposDMin/div;
-	MAX_TIME_DELTA = TBposDMax/div;
-
+								  &TBposMHI,
+								  500);
+		cvCreateTrackbar( "MAX TIME DELTA",
+									  "Motion",
+									  &TBposDMax,
+									  100);
+		cvCreateTrackbar( "MIN_TIME_DELTA",
+									  "Motion",
+									  &TBposDMin,
+									  50);
+		MHI_DURATION = TBposMHI / div;
+		MIN_TIME_DELTA = TBposDMin/div;
+		MAX_TIME_DELTA = TBposDMax/div;
+	}
 
 	// obtenemos los frames de trabajo
 	irAl(Idx1,framesBuf);
@@ -266,13 +270,13 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
 		enlazarFlies( flyAnterior, flyActual, NULL);
-		SetTita( flyAnterior, flyActual, angle );
-		//flyAnterior->direccion = angle;
+		SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
 	else if( numAnterior == 0 && numActual == 1){
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		asignarNuevaId( flyActual, ids);
+		flyActual->FrameCount = flyActual->FrameCount +1;
 	}
 	// caso de fisión de blobs. un blob se separa en 2 o mas mientras su mhi permanece
 	// unido resultando en varias coincidencias en actual y una en anterior
