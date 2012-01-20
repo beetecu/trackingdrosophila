@@ -53,16 +53,16 @@ using namespace std;
 #define SHOW_BGMODEL_DATA 0 //!< Switch de 0 a 1 para visualizar el Background.
 #define SHOW_BGMODEL_TIMES 0
 
-#define SHOW_SEGMENTATION_TIMES 1 //!< Switch de 0 a 1 para visualizar los tiempos.
+#define SHOW_SEGMENTATION_TIMES 0 //!< Switch de 0 a 1 para visualizar los tiempos.
 #define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
 #define SHOW_SEGMENTATION_MATRIX 0
 
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
 #define SHOW_VALIDATION_TIMES 1
 
-#define SHOW_MT_DATA 1
+#define SHOW_MT_DATA 0
 
-#define SHOW_KALMAN_DATA 1
+#define SHOW_KALMAN_DATA 0
 
 // VISUALIZACIÓN DE IMAGENES
 
@@ -74,7 +74,7 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
-#define GRABAR_VISUALIZACION 1
+#define GRABAR_VISUALIZACION 0
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
 
@@ -118,6 +118,9 @@ using namespace std;
 		unsigned int num_frame; //!< Almacena el numero de frame (tiempo)
 
 		float a,b; //!< semiejes de la elipse
+		float Px; // almacena la probabilidad del blob que dependerá de su area y del modelo de forma:
+				  // Px = e^(⁻|areaElipse - area_media|/desviacion )
+		float areaElipse;
 		float orientacion; //!< Almacena la orientación
 		int OrientCount; //!< Si es 0 no se suma PI a la orientacion. Si es 1 se suma PI
 
@@ -128,8 +131,10 @@ using namespace std;
 		unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
 		unsigned int StaticFrames; //!< Contador del número de frames que el blob permanece estático;
 		bool flag_gir; //!< Indica si se le suman o no pi rad a la orientación del blob
+
 		bool flag_seg; //!< Indica si e blog a sido segmentado
-		bool flag_def; //!< indica si el blob ha  desaparecido durante el analisis del defecto
+		bool failSeg; //!< indica si el blob ha  desaparecido durante el analisis del defecto
+		int bestTresh;//!< Mejor umbral de binarización obtenido tras validar.
 
 		bool salto;	//!< Indica que la mosca ha saltado
 		int Grupo; //!< Indica que la mosca permanece estática en un grupo de n moscas.

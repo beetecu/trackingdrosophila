@@ -55,19 +55,30 @@ typedef struct {
 
 tlcde* Validacion(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,BGModelParams* BGParams, ValParams* VParams,IplImage* Mask);
 
-//!\brief Inicializa los Parametros para la validación.
-/*!
- * \param Params Parametros de validación.
- */
+void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH ,IplImage* Mask);
 
-void setValParams( ValParams* Params);
-
+tlcde* ValidarBLOB(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,IplImage* Mask);
 //!\brief Inicializada los Parametros del modelado de fondo.
 /*!
  * \param Params Parametros para el modelado de fondo.
  */
 
-void setBGModParams( BGModelParams* Params);
+void iniciarBGModParams( BGModelParams** Params);
+
+void setBGModParams(BGModelParams* Params);
+
+
+float CalcPxMin( SHModel* SH,float Umbral_L );
+
+float CalcPxMax( SHModel* SH,float Umbral_H );
+
+//!\brief Inicializa los Parametros para la validación.
+/*!
+ * \param Params Parametros de validación.
+ */
+
+
+void iniciarValParams( ValParams** Parameters, SHModel* SH);
 
 //!\brief Calcula la probabilidad total de todos los blos detectados en el frame.
 /*!
@@ -83,18 +94,18 @@ void setBGModParams( BGModelParams* Params);
 
 double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData);
 
-//!\brief Calcula la probabilidad del blob.
+//!\brief Calcula la probabilidad del blob u comprueba si ésta está dentro de los límites. Almacena el valor en FlyData->Px
 /*!
  * \param SH Valores del modelado de forma.
  * \param Flie Estructura que contiene los datos del blob.
+ * \param ValParams Estructura que contiene los límites superior e inferior de la probabilidad.
+ * \return 1 si exceso, -1 si defecto , 0 si está dentro de los limites.
  *
- * \return La probabilidad del blob ( Pxi ).
- *
- * \note Esta probabilidad debe estar dentro de unos umbrales para que el blob sea valiadado.
+ * \note FlyData->Px = exp( -abs( areablob - SH->FlyAreaMedia) / SH->FlyAreaDesviacion);
  */
 
-double CalcProbMosca( SHModel* SH , STFly* Flie );
 
+int CalcProbFly( SHModel* SH , STFly* FlyData, ValParams* VParams );
 //!\brief Calcula la circlaridad de la mosca.
 /*!
  * \param Flie Estructura que contiene los datos del blob.
@@ -124,6 +135,8 @@ double CalcCircul( STFly* Flie);
 	\endverbatim
  */
 
+
+
 int CalcProbUmbral( SHModel* SH ,ValParams* VParams,STFly* Flie);
 
 //!\brief Obtiene la maxima distancia de los pixeles al fonfo.
@@ -137,5 +150,23 @@ int CalcProbUmbral( SHModel* SH ,ValParams* VParams,STFly* Flie);
  * \note Se utiliza como límite superior a la hora de aumentar el umbral.
  */
 double* ObtenerMaximo(IplImage* Imagen, STFrame* FrameData,CvRect Roi );
+
+void Restaurar(tlcde* lista, IplImage* Fg, IplImage* Origin, CvRect Roi, int elemento);
+
+void RestaurarElMejor(tlcde* lista, IplImage* Fg, STFly* MejorFly, CvRect Roi, int elemento );
+
+//!\brief Comprueba si todas las px de la lista estan dentro de los limites
+/*!
+ * \param TempSeg. Lista
+ * \param ValParams Parametros de validación
+ *
+ *
+ * \return 1 si son todas correctas y 0 si alguna no lo es.
+ *
+ *
+ */
+int comprobarPxi( tlcde* TempSeg,SHModel* SH, ValParams* Params);
+
+void releaseDataVal();
 
 #endif /* VALIDACION_HPP_ */

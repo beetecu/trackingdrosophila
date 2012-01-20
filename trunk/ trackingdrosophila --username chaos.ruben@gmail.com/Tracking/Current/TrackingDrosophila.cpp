@@ -324,6 +324,10 @@ int Inicializacion( IplImage* frame,
 //
 //		}
 	}
+	// seleccionar regiones de interes
+	if( argc == 5 ){
+
+	}
 	//inicializar buffer de datos.
 	tlcde* framesBuf = ( tlcde * )malloc( sizeof(tlcde));
 	if( !framesBuf ) {error(4);Finalizar();}
@@ -339,6 +343,8 @@ int Inicializacion( IplImage* frame,
 
 	return 1;
 }
+
+
 //void onMouse( int event, int x, int y, int, void* )
 //{
 //    if( selectObject )
