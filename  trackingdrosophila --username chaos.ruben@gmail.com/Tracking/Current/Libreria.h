@@ -133,6 +133,10 @@ void insertar(void *e, tlcde *lcde);
 
 void *borrar(tlcde *lcde);
 
+
+
+void *sustituirEl( void *e, tlcde *lcde, int i);
+
 //!\brief Borra el elemento apuntado de la posición posición i.
 //! Devuelve un puntero al área de datos del objeto borrado
 //! o NULL si la lista está vacía. Si la posición es el último
@@ -228,6 +232,7 @@ int dibujarBG( tlcde* flies, IplImage* dst,bool clear);
 
 int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear);
 
+void dibujarBlob( STFly* blob, IplImage* dst );
 
 //!\brief Mostrar llos elementos de la lista con sus datos.
 /*!

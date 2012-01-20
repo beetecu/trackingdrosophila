@@ -305,6 +305,12 @@ void insertar(void *e, tlcde *lcde)
   lcde->posicion = posicion;
 }
 
+void *sustituirEl( void *e, tlcde *lcde, int i){
+	irAl( i, lcde);
+	insertar( e, lcde );
+	irAlAnterior( lcde );
+	borrar(lcde);
+}
 
 void *borrarEl(int i,tlcde *lcde)
 {
@@ -569,6 +575,14 @@ int dibujarBGFG( tlcde* flies, IplImage* dst,bool clear){
 	return 1;
 }
 
+void dibujarBlob( STFly* blob, IplImage* dst ){
+	float angle;
+	if ( blob->orientacion >=0 && blob->orientacion < 180) angle = 180 - blob->orientacion;
+	else angle = (360-blob->orientacion)+180;
+	CvSize axes = cvSize( cvRound(blob->a) , cvRound(blob->b) );
+	cvEllipse( dst, blob->posicion, axes, angle, 0, 360, cvScalar( 255,0,0,0), -1, 8);
+}
+
 
 void mostrarListaFlies(int pos,tlcde *lista)
 {
@@ -588,7 +602,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 9; j++){
+	for(int j = 0; j < 10; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -602,7 +616,6 @@ void mostrarListaFlies(int pos,tlcde *lista)
 				y = flydata->posicion.y;
 				printf( "\t%d %d",x,y);
 			}
-
 			if( j == 2 ){
 				if (i == 0) printf( "\nOrientacion");
 				printf( "\t%0.1f",flydata->orientacion);
@@ -612,22 +625,26 @@ void mostrarListaFlies(int pos,tlcde *lista)
 				printf( "\t%0.1f",flydata->direccion);
 			}
 			if( j == 4 ){
+				if (i == 0) printf( "\nArea\t");
+				printf( "\t%0.1f",flydata->areaElipse);
+			}
+			if( j == 5 ){
 				if (i == 0) printf( "\nEstado\t");
 				printf( "\t%d",flydata->Estado);
 			}
-			if( j == 5 ){
+			if( j == 6 ){
 				if (i == 0) printf( "\nFrameCount");
 				printf( "\t%d",flydata->FrameCount);
 			}
-			if( j == 6 ){
+			if( j == 7 ){
 				if (i == 0) printf( "\nOrientCount");
 				printf( "\t%d",flydata->OrientCount);
 			}
-			if( j == 7 ){
+			if( j == 8 ){
 				if (i == 0) printf( "\nStaticFrames");
 				printf( "\t%d",flydata->StaticFrames);
 			}
-			if( j == 8 ){
+			if( j == 9 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -650,7 +667,7 @@ void mostrarFliesFrame(STFrame *frameData)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 9; j++){
+	for(int j = 0; j < 10; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -674,22 +691,26 @@ void mostrarFliesFrame(STFrame *frameData)
 				printf( "\t%0.1f",flydata->direccion);
 			}
 			if( j == 4 ){
+				if (i == 0) printf( "\nArea\t");
+				printf( "\t%0.1f",flydata->areaElipse);
+			}
+			if( j == 5 ){
 				if (i == 0) printf( "\nEstado\t");
 				printf( "\t%d",flydata->Estado);
 			}
-			if( j == 5 ){
+			if( j == 6 ){
 				if (i == 0) printf( "\nFrameCount");
 				printf( "\t%d",flydata->FrameCount);
 			}
-			if( j == 6 ){
+			if( j == 7 ){
 				if (i == 0) printf( "\nOrientCount");
 				printf( "\t%d",flydata->OrientCount);
 			}
-			if( j == 7 ){
+			if( j == 8 ){
 				if (i == 0) printf( "\nStaticFrames");
 				printf( "\t%d",flydata->StaticFrames);
 			}
-			if( j == 8 ){
+			if( j == 9 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}

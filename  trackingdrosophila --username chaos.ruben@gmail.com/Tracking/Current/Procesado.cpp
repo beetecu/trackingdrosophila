@@ -191,12 +191,16 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	gettimeofday(&ti, NULL);
 	printf("\t3)Segmentación:\n");
 	frameData->Flies = segmentacion2(Imagen, frameData->BGModel,frameData->FG, BGModel->DataFROI, NULL);
+
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
+	dibujarBGFG( frameData->Flies,frameData->FG,1);
+//	cvShowImage( "Foreground",frameData->FG);
+//	cvWaitKey(0);
 
 	/////// VALIDACIÓN
 	gettimeofday(&ti, NULL);
-//	frameData->Flies = Validacion(Imagen, frameData , Shape, BGModel->DataFROI, NULL, NULL,FGMask);
+	Validacion2(Imagen, frameData , Shape, FGMask);
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t4)Validación de blobs %5.4g ms\n", tiempoParcial);
 
@@ -204,6 +208,8 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	gettimeofday(&ti, NULL);
 	//	Obtención de máscara de foreground
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
+//	cvShowImage( "Foreground",frameData->FG);
+//	cvWaitKey(0);
 	cvZero( FGMask);
 	cvAdd( BGModel->ImFMask, frameData->FG, FGMask);
 	UpdateBGModel( Imagen, lastBG, lastIdes, BGPrParams, BGModel->DataFROI, FGMask );
@@ -480,9 +486,9 @@ void putBGModelParams( BGModelParams* Params){
 	 if (CREATE_TRACKBARS == 1){
 				 // La primera vez inicializamos los valores.
 				 if (first == 1){
-					 Params->HIGHT_THRESHOLD = 10;
+					 Params->HIGHT_THRESHOLD = 20;
 
-					 Params->LOW_THRESHOLD = 3;
+					 Params->LOW_THRESHOLD = 10;
 
 					 first = 0;
 				 }
@@ -495,8 +501,8 @@ void putBGModelParams( BGModelParams* Params){
 	 							  &Params->LOW_THRESHOLD,
 	 							  100  );
 	 }else{
-		 Params->HIGHT_THRESHOLD = 10;
-		 Params->LOW_THRESHOLD = 3;
+		 Params->HIGHT_THRESHOLD = 20;
+		 Params->LOW_THRESHOLD = 15;
 	 }
 }
 
@@ -522,4 +528,5 @@ void releaseDataProcess(){
 	cvReleaseImage( &lastBG );
 	cvReleaseImage( &lastIdes );
 	ReleaseDataSegm( );
+	releaseDataVal();
 }

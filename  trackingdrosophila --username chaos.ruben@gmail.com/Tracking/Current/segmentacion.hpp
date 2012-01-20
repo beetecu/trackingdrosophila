@@ -35,6 +35,11 @@
 
 tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi, IplImage* Mask );
 
+//!\brief Igual que segmentación pero en ved de pasarsele la estructura de frameDara, se le pasa directamente
+//! las imagenes que usa. con esto se consigue que aumente la velocidad de ejecución y que
+/*!
+ *
+ */
 tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect Roi,IplImage* Mask);
 
 //!\brief Crea las imagenes, matrices y estructuras utilizadas en la segementación.

@@ -64,18 +64,18 @@ tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* 
 
 	cvAbsDiff(Brillo,FrameData->BGModel,pesos);// |I(p)-u(p)|
 	if( SHOW_SEGMENTATION_MATRIX == 1){
-				printf("\n ANTES \n");
+		printf("\n ANTES \n");
 
-				CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-				//ventana = rect;
-				printf("\n\n Matriz Brillo ");
-				verMatrizIm(Brillo, ventana);
-				printf("\n\n Matriz BGModel ");
-				verMatrizIm(FrameData->BGModel, ventana);
-				printf("\n\n Matriz pesos(p) = |I(p)-u(p)|/0(p) ");
-				verMatrizIm(pesos, ventana);
-			}
-
+		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
+		//ventana = rect;
+		printf("\n\n Matriz Brillo ");
+		verMatrizIm(Brillo, ventana);
+		printf("\n\n Matriz BGModel ");
+		verMatrizIm(FrameData->BGModel, ventana);
+		printf("\n\n Matriz pesos(p) = |I(p)-u(p)|/0(p) ");
+		verMatrizIm(pesos, ventana);
+	}
+	//verMatrizIm(pesos, Roi);
 	if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
 		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 									(tf.tv_usec - ti.tv_usec)/1000.0;
@@ -182,7 +182,7 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 
 	// crear imagenes y datos si no se ha hecho e inicializar
 	CreateDataSegm( Brillo );
-	cvCopy(FG,FGTemp);
+	cvCopy( FG , FGTemp);
 	cvSetImageROI( Brillo , Roi);
 	cvSetImageROI( BGModel, Roi );
 	cvSetImageROI( FG, Roi );
@@ -216,16 +216,6 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 		printf("\t\t1)Ajuste de blobs a elipses\n");
 	}
 
-	if( SHOW_SEGMENTATION_MATRIX == 1){
-				printf("\n DESPUES \n");
-				CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-				printf("\n\n Matriz Brillo ");
-				verMatrizIm(Brillo, ventana);
-				printf("\n\n Matriz BGModel ");
-				verMatrizIm(BGModel, ventana);
-				printf("\n\n Matriz pesos(p) = |I(p)-u(p)|/0(p) ");
-				verMatrizIm(pesos, ventana);
-			}
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
 	int Nc = cvFindContours(FGTemp,
@@ -249,6 +239,7 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 		id++;
 
 		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
+		//verMatrizIm(pesos, rect);
 		if( areaFG <= 5 ) continue;
 		//reserva de espacio para los datos del blob
 		if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
@@ -262,8 +253,8 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 			printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);
 		}
 		// error de ajuste
-		areaElipse = CV_PI*flyData->b*flyData->a;
-		err = abs(areaElipse - areaFG);
+
+		err = abs(flyData->areaElipse - areaFG);
 		// Añadir a lista
 		if( flyData ) insertar( flyData, flies );
 		if( SHOW_SEGMENTATION_MATRIX == 1){
@@ -285,7 +276,7 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 					2*flyData->b,
 					flyData->orientacion);
 		}
-
+		//verMatrizIm(pesos, Roi);
 		// dibujar la máscara
 		if( Mask != NULL ){
 		 // corrige el origen de ángulos
@@ -339,6 +330,10 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 		fly->salto = false;	//!< Indica que la mosca ha saltado
 		fly->Grupo = 0; //!< Indica que la mosca permanece estática en un grupo de n moscas.
 		fly->Zona = 0; //!< Si se seleccionan zonas de interes en el plato,
+		fly->failSeg = false;
+		fly->flag_seg = false;
+		fly->Px = 0;
+		fly->areaElipse = CV_PI*fly->b*fly->a;
 		return fly;
 	}
 	else{

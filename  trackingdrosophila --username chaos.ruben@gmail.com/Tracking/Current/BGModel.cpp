@@ -295,7 +295,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 //			cvShowImage( "Background",bg_model);
 //			cvWaitKey(0);
 	}
-	gettimeofday(&ti, NULL);
+	 gettimeofday(&ti, NULL);
 	for (int y = ROI.y; y < ROI.y + ROI.height; y++){
 		uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
 		uchar* ptr2 = (uchar*) ( bg_model->imageData + y*bg_model->widthStep + 1*ROI.x);
@@ -312,8 +312,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		}
 	}
 
-	tiempoParcial = obtenerTiempo( ti , NULL);
-	printf("\t\tUmbralizacion low trhreshold: %5.4g ms\n", tiempoParcial);
+	if(SHOW_BGMODEL_TIMES) {tiempoParcial = obtenerTiempo( ti , NULL);
+	printf("\t\tUmbralizacion low trhreshold: %5.4g ms\n", tiempoParcial);}
 
 	if( SHOW_BGMODEL_DATA ){
 			printf("\n\nTRAS resta de fondo");
@@ -329,10 +329,10 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 	//			cvWaitKey(0);
 		}
 	// limpieza de FG
-	gettimeofday(&ti, NULL);
+	if(SHOW_BGMODEL_TIMES) gettimeofday(&ti, NULL);
 	FGCleanup( fg, Idesvf,Param, ROI );
-	tiempoParcial = obtenerTiempo( ti , NULL);
-	printf("\t\tLimpieza de FG: %5.4g ms\n", tiempoParcial);
+	if(SHOW_BGMODEL_TIMES){tiempoParcial = obtenerTiempo( ti , NULL);
+	printf("\t\tLimpieza de FG: %5.4g ms\n", tiempoParcial);}
 
 	if( SHOW_BGMODEL_DATA ){
 		printf("\n\nTRAS limpieza de fondo");
