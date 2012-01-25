@@ -56,13 +56,13 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat, CvCapture* Cap
 		cvShowImage( "Visualización", frameData->Frame );
 		printf("Hecho\n");
 		if (SHOW_BG_REMOVAL == 1){
-			printf( "\t-Mostrando Background, Foreground, OldBackground ");
+			printf( "\t-Mostrando Background, Foreground, OldBackground... ");
 			cvShowImage("Background", frameData->BGModel);
 
 			cvShowImage( "Foreground",frameData->FG);
 			//cvShowImage( "OldForeground",frameData->OldFG);
 
-				printf("Hecho\n");
+			printf("Hecho\n");
 		}
 		if ( SHOW_MOTION_TEMPLATE == 1){
 			printf("\t-Mostrando Motion...");
@@ -417,22 +417,22 @@ void CreateWindows( ){
 void DestroyWindows( ){
 
 	//cvDestroyWindow( "Drosophila.avi" );
-free(Params);
+	free(Params);
 
-if (SHOW_BG_REMOVAL == 1){
-	cvDestroyWindow( "Background");
-	cvDestroyWindow( "Foreground");
-}
-if (SHOW_OPTICAL_FLOW == 1){
-	cvDestroyWindow( "Flujo Optico X");
-	cvDestroyWindow( "Flujo Optico Y");
-}
-if ( SHOW_MOTION_TEMPLATE == 1){
-	cvDestroyWindow( "Motion");
-}
-if (SHOW_VISUALIZATION == 1) {
-	cvDestroyWindow( "Visualización" );
-}
-	cvDestroyWindow( "Motion" );
+	if (SHOW_BG_REMOVAL == 1){
+		cvDestroyWindow( "Background");
+		cvDestroyWindow( "Foreground");
+	}
+	if (SHOW_OPTICAL_FLOW == 1){
+		cvDestroyWindow( "Flujo Optico X");
+		cvDestroyWindow( "Flujo Optico Y");
+	}
+	if ( SHOW_MOTION_TEMPLATE == 1){
+		cvDestroyWindow( "Motion");
+	}
+	if (SHOW_VISUALIZATION == 1) {
+		cvDestroyWindow( "Visualización" );
+	}
+
 }
 

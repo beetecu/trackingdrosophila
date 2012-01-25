@@ -74,7 +74,7 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
-#define GRABAR_VISUALIZACION 0
+#define GRABAR_VISUALIZACION 1
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
 

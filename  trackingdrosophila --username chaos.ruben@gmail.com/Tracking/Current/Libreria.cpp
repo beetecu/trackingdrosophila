@@ -37,8 +37,9 @@ float obtenerTiempo( timeval ti, int unidad ){
 
 ///////////////////// TRATAMIENTO DE IMAGENES //////////////////////////////
 
-int RetryCap( CvCapture* g_capture ){
-	IplImage* frame = cvQueryFrame(g_capture); // intentar de nuevo
+IplImage* RetryCap( CvCapture* g_capture ){
+	IplImage* frame = NULL;
+	frame = cvQueryFrame(g_capture); // intentar de nuevo
 	if ( !frame ) { // intentar de nuevo cn los siguientes frame
 		double n_frame = cvGetCaptureProperty( g_capture, 1);
 		int i = 1;
@@ -52,13 +53,9 @@ int RetryCap( CvCapture* g_capture ){
 			if ( !frame ) printf("\n Fallo en captura");
 			i++;
 		}
-		if ( !frame ) {
-			error(2);
-			return 0;
-		}
-		else return 1;
+		if ( !frame ) error(2);
 	}
-	else return 1;
+	return frame;
 }
 
 int getAVIFrames(char * fname) {
