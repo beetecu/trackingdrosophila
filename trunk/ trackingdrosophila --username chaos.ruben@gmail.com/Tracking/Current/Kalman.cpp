@@ -50,7 +50,7 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 		state=cvCreateMat(4,1,CV_32FC1);
 		measurement = cvCreateMat( 2, 1, CV_32FC1 );
 		process_noise = cvCreateMat(4, 1, CV_32FC1);
-
+	}
 	if(!kalman_2){
 		state_2=cvCreateMat(2,1,CV_32FC1);
 		measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
@@ -123,53 +123,52 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 
 		////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
 
-		if(SHOW_KALMAN_DATA){
+			if(SHOW_KALMAN_DATA){
 
-			printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
+				printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
 
-			printf("\n Dirección : %f ,  Orientación : %f y Coordenadas: ( %d , %d ) ",flyData->direccion,flyData->orientacion,flyData->posicion.x,flyData->posicion.y);
+				printf("\n Dirección : %f ,  Orientación : %f y Coordenadas: ( %d , %d ) ",flyData->direccion,flyData->orientacion,flyData->posicion.x,flyData->posicion.y);
 
-			printf("\n\n Real State Coordenadas: ( %f y %f )",state->data.fl[0],state->data.fl[1]);
-			printf("\n Predicted State Coordenadas: (%f y %f )",yk->data.fl[0],yk->data.fl[1]);
-			printf("\n Observed State: ( %f y %f )",measurement->data.fl[0],measurement->data.fl[1]);
-
-
-			printf("\n\n Real State Orientación : %f",state_2->data.fl[0]);
-			printf("\n Predicted State Orientation: %f",yk_2->data.fl[0]);
-			printf("\n Observer State:  %f", measurement_2->data.fl[0]);
-
-			printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
-			printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
-			printf("\n\n");
+				printf("\n\n Real State Coordenadas: ( %f y %f )",state->data.fl[0],state->data.fl[1]);
+				printf("\n Predicted State Coordenadas: (%f y %f )",yk->data.fl[0],yk->data.fl[1]);
+				printf("\n Observed State: ( %f y %f )",measurement->data.fl[0],measurement->data.fl[1]);
 
 
+				printf("\n\n Real State Orientación : %f",state_2->data.fl[0]);
+				printf("\n Predicted State Orientation: %f",yk_2->data.fl[0]);
+				printf("\n Observer State:  %f", measurement_2->data.fl[0]);
+
+				printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
+				printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
+				printf("\n\n");
+
+
+			}
+			if(SHOW_KALMAN){
+				///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
+
+				cvCircle(frameData->ImKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
+
+				cvCircle(frameData->ImKalman,cvPoint(cvRound(yk->data.fl[0]),cvRound(yk->data.fl[1])),5,CVX_RED,1,8);
+
+				cvCircle(frameData->ImKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
+
+				// Dibujar la ROI
+	//
+	//			CvPoint pt1;
+	//			CvPoint pt2;
+	//
+	//			pt1.x = Kalman_ROI.x;
+	//			pt1.y = Kalman_ROI.y;
+	//			pt2.x = pt1.x + Kalman_ROI.width;
+	//			pt2.y = pt1.y + Kalman_ROI.height;
+	//
+	//			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
+	//			cvShowImage("Kalman",IKalman);
+			}
 		}
-		if(SHOW_KALMAN){
-			///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
 
-			cvCircle(frameData->ImKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
-
-			cvCircle(frameData->ImKalman,cvPoint(cvRound(yk->data.fl[0]),cvRound(yk->data.fl[1])),5,CVX_RED,1,8);
-
-			cvCircle(frameData->ImKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
-
-			// Dibujar la ROI
-//
-//			CvPoint pt1;
-//			CvPoint pt2;
-//
-//			pt1.x = Kalman_ROI.x;
-//			pt1.y = Kalman_ROI.y;
-//			pt2.x = pt1.x + Kalman_ROI.width;
-//			pt2.y = pt1.y + Kalman_ROI.height;
-//
-//			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
-//			cvShowImage("Kalman",IKalman);
-		}
-
-		}//FOR
-	}
-}
+	}//FOR
 }
 // Incializar los parámetro del filtro de Kalman para la posición.
 

@@ -37,7 +37,7 @@ int gettimeofday( struct timeval *tv, struct timezone *tz );
 
 int getAVIFrames( char* );
 
-int RetryCap( CvCapture* g_capture );
+IplImage* RetryCap( CvCapture* g_capture );
 //! \brief ImPreProcess: Recibe una imagen RGB 8 bit y devuelve una imagen en escala de grises con un
 //!   filtrado gaussiano 5x5. Si el último parámetro es verdadero se binariza, si
 
