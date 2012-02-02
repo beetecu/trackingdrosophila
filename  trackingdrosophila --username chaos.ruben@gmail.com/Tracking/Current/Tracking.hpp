@@ -16,7 +16,7 @@
 #include "FlujoOptico.hpp"
 
 
-void Tracking( tlcde* frammeBuf );
+void Tracking( STFrame* frameDataIn, tlcde** framesBuff );
 
 void AllocateTrackImages( IplImage *I );
 

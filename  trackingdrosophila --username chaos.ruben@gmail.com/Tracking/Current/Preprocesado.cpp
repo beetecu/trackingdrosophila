@@ -9,17 +9,28 @@
 
 BGModelParams *BGParams = NULL;
 
-int PreProcesado(CvCapture* g_capture, StaticBGModel** BGModel,SHModel** Shape ){
+int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 	struct timeval ti,tif; // iniciamos la estructura
 	float TiempoParcial;
+	float TiempoTotal;
 	int hecho = 0;
 
-	extern double NumFrame;
+	CvCapture* capture;
+
 	StaticBGModel* bgmodel;
 	SHModel *shape;
 
-
+	gettimeofday(&tif, NULL);
 	gettimeofday(&ti, NULL);
+	printf("\nIniciando preprocesado...");
+
+	//captura
+	capture = cvCaptureFromAVI( nombreVideo );
+		if ( !capture ) {
+			error( 1 );
+			help();
+			return -1;
+		}
 	// Iniciar estructura para parametros del modelo de fondo en primera actualización
 	BGModelParams *BGParams = NULL;
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
@@ -30,10 +41,10 @@ int PreProcesado(CvCapture* g_capture, StaticBGModel** BGModel,SHModel** Shape )
 	// establecer parametros
 	InitialBGModelParams( BGParams );
 
-	bgmodel = initBGModel( g_capture , BGParams );
+	bgmodel = initBGModel( capture , BGParams );
 	if(!bgmodel) return 0;
 	TiempoParcial = obtenerTiempo( ti , 1);
-	printf("\t-Tiempo total: %0.2f seg\n", TiempoParcial);
+	printf("Hecho. Tiempo empleado: %0.2f seg\n", TiempoParcial);
 
 	gettimeofday(&ti, NULL);
 	// Crear modelo de forma
@@ -47,23 +58,26 @@ int PreProcesado(CvCapture* g_capture, StaticBGModel** BGModel,SHModel** Shape )
 	shape->FlyAreaMedia=0;
 	gettimeofday(&ti, NULL);
 
-	ShapeModel( g_capture, shape , bgmodel->ImFMask, bgmodel->DataFROI );
+	ShapeModel( capture, shape , bgmodel->ImFMask, bgmodel->DataFROI );
 
 	TiempoParcial = obtenerTiempo( ti , 1 );
 
-	printf("Hecho. Tiempo: %0.2f seg\n", TiempoParcial);
-
-	NumFrame = cvGetCaptureProperty( g_capture, 1 ); //Actualizamos los frames
+	printf("Hecho. Tiempo empleado: %0.2f seg\n", TiempoParcial);
 
 	*BGModel = bgmodel;
 	*Shape = shape;
+
+	cvReleaseCapture(&capture);
+
+	TiempoTotal = obtenerTiempo( tif , 1);
+	printf("\nPreprocesado correcto.Tiempo total empleado: %0.2f s\n", TiempoTotal);
 
 	return hecho = 1;
 }
 
 void InitialBGModelParams( BGModelParams* Params){
 
-	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 50;
+	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 2;
 	 else Params->FLAT_FRAMES_TRAINING = 0;
 	 Params->FRAMES_TRAINING = 30;
 	 Params->ALPHA = 0 ;

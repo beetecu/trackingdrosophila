@@ -8,15 +8,17 @@
 #ifndef TRACKING_H_
 #define TRACKING_H_
 
-#include "VideoTracker.hpp"
-#include "Libreria.h"
+//#include "VideoTracker.hpp"
+//#include "Libreria.h"
 
-#include "Tracking.hpp"
-#include "Procesado.hpp"
+#include "Inicializacion.hpp"
 #include "Preprocesado.hpp"
+#include "Procesado.hpp"
+#include "Tracking.hpp"
+#include "Stats.hpp"
 #include "Visualizacion.hpp"
 
-#define STRUCT_BUFFER_LENGTH IMAGE_BUFFER_LENGTH //!< máximo número de frames que almacenará la estructura.
+#define MAX_BUFFER IMAGE_BUFFER_LENGTH //!< máximo número de frames que almacenará la estructura.
 
 //#define INTERVAL_BACKGROUND_UPDATE 10000
 
@@ -49,31 +51,11 @@ int Inicializacion( IplImage* frame,
 
 void onMouse( int event, int x, int y, int, void* );
 
-	void AnalisisEstadistico();
 
 //!\brief FinalizarTraking: Destruir todas las ventanas,imagenes,estructuras etc.
 
-	void Finalizar();
+	void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter);
 
-
-
-//!\brief RetryCap: Reintenta la captura del frame, en caso de fallo de captura.
-/*!
- * \return Un 1 o True si el frame ha sido capturado correctamente.
- *
- * Ejemplo:
- * \verbatim
-  		if ( !frame ) {
-			error(2);
-			return 0;
-		}
-		else return 1;
-	}
-	else return 1;
-	\endverbatim
- */
-
-//	int RetryCap();
 
 //!\brief onTrackbarSlider: Crea una trackbar para posicionarse en puntos concretos del video.
 /*!

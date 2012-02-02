@@ -11,6 +11,8 @@
 #ifndef LIBRERIA_H_
 #define LIBRERIA_H_
 
+void help();
+
 ///////////////////// MEDIDA DE TIEMPOS //////////////////////////////
 
 #ifndef CLK_TCK
@@ -276,7 +278,7 @@ void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max );
  * \param FramesBuf \param FramesBuf Lista circular doblemente enlazada que contiene los frames con las listas de las moscas validadas..
  */
 
-int liberarPrimero(tlcde *FramesBuf );
+void* liberarPrimero(tlcde *FramesBuf );
 
 //!\brief borra todos los elementos del buffer.
 /*!
@@ -350,6 +352,8 @@ void crearFichero(char *nombreFichero );
  */
 
 int GuardarPrimero( tlcde* framesBuf , char *nombreFichero);
+
+int GuardarSTFrame( STFrame* frameData , char *nombreFichero);
 
 void QuitarCR (char *cadena);
 

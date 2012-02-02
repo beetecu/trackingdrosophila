@@ -3,6 +3,10 @@
  *
  *	Hasta aquí el algoritmo trabaja solo con información espacial
  *	En este punto añadimos la información temporal
+ *  Se mantienen en memoria las estructuras correspondientes a MAX_BUFFER frames
+ *	( buffer de datos  ) e IMAGE_BUFFER_LENGHT ( buffer de imagenes ) .
+ *	Los buffers son colas FIFO
+ *
  *  Created on: 20/10/2011
  *      Author: chao
  */
@@ -20,49 +24,59 @@
 
 	tlcde* Identities = NULL;
 
-void Tracking( tlcde* framesBuf ){
+void Tracking( STFrame* frameDataIn, tlcde** framesBuff ){
 
-	struct timeval ti; // iniciamos la estructura
+	struct timeval ti,tif; // iniciamos la estructura
 	float tiempoParcial;
-	STFrame* frameData = NULL;
-
-	bool firstbuf = false;
+	tlcde* framesBuf;
 
 	static int workPos = -1; // punto de trabajo en el buffer
+	gettimeofday(&tif, NULL);
 
-	// Inicializar
-	// creamos una cola Lifo de identidades
+	printf("\n2)Tracking:\n");
+
+	// Inicializar:
+	framesBuf = *framesBuff;
+	// Imagenes
+	AllocateTrackImages( frameDataIn->FG );
+	// cola Lifo de identidades
 	if(!Identities) {
 		Identities = ( tlcde * )malloc( sizeof(tlcde ));
 		iniciarLcde( Identities );
 		CrearIdentidades(Identities);
 		//mostrarIds( Identities );
 	}
-	if( framesBuf->numeroDeElementos < 1) return;
-	irAlFinal( framesBuf );
-	frameData = ( STFrame* )obtenerActual( framesBuf );
+	//buffer de Imagenes y datos.
+	if(!*framesBuff){
+		framesBuf = ( tlcde * )malloc( sizeof(tlcde));
+		if( !framesBuf ) {error(4);return;}
+		iniciarLcde( framesBuf );
+		*framesBuff = framesBuf;
+	}
 
-	AllocateTrackImages( frameData->FG );
+	////////// AÑADIR Frame de entrada AL BUFFER /////
+	anyadirAlFinal( frameDataIn, framesBuf);
+	if( framesBuf->numeroDeElementos < 1) return;
+
+	irAlFinal( framesBuf );
+	frameDataIn = ( STFrame* )obtenerActual( framesBuf );
 
 	hungarian_t prob;
 
-	// Establecemos el estado de los frames que se han ido al oldfg
+	// Asignar identidades y orientación. Establecer estado (fg o oldFG)
 
-	/// resolvemos la ambiguedad en la orientación y hacemos una primera
-	/// asignación de identidad mediante una plantilla de movimiento.
 	gettimeofday(&ti, NULL);
 	printf("\t1)Motion Template\n");
-	cvZero(frameData->ImMotion);
+	cvZero(frameDataIn->ImMotion);
 
 	MotionTemplate( framesBuf,Identities );
 
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 
-
 	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
 	if( framesBuf->numeroDeElementos < 25) return;
-	// Cuando el buffer esté por la mitad comienza el rastreo en el segundo frame
+	// Cuando el buffer esté por la mitad comienza el rastreo en el primer frame
 	// La posición de trabajo se irá incremetando a la par que el tamaño del buffer
 	// asta quedar finalmente situada en el centro.
 	if ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH) workPos += 1;
@@ -84,33 +98,32 @@ void Tracking( tlcde* framesBuf ){
 	//Reasignamos idendidades.
 	// enlazamos objetos etiquetados como nuevos con los que estaban parados
 
-	if (workPos == PRIMERO) return;
+	if (workPos == PRIMERO) return ;
 
 //	framesBuf = matchingIdentity( framesBuf , 0 );
 
 	if (SHOW_OPTICAL_FLOW == 1){
 		irAlFinal( framesBuf);
-		frameData = ( STFrame* )obtenerActual( framesBuf );
-		cvCopy(frameData->FG,ImagenB);
-		//cvCvtColor( frameData->Frame, ImagenB, CV_BGR2GRAY);
+		frameDataIn = ( STFrame* )obtenerActual( framesBuf );
+		cvCopy(frameDataIn->FG,ImagenB);
+		//cvCvtColor( frameDataIn->Frame, ImagenB, CV_BGR2GRAY);
 		irAlAnterior( framesBuf);
-		frameData = ( STFrame* )obtenerActual( framesBuf );
-		cvCopy(frameData->FG,ImagenA);
-	//	cvCvtColor( frameData->Frame, ImagenA, CV_BGR2GRAY);
-	//	LKOptFlow( frameData->FG, ImOpFlowX, ImOpFlowY );
+		frameDataIn = ( STFrame* )obtenerActual( framesBuf );
+		cvCopy(frameDataIn->FG,ImagenA);
+	//	cvCvtColor( frameDataIn->Frame, ImagenA, CV_BGR2GRAY);
+	//	LKOptFlow( frameDataIn->FG, ImOpFlowX, ImOpFlowY );
 		PLKOptFlow( ImagenA, ImagenB, ImOpFlowX );
 	cvShowImage( "Flujo Optico X", ImOpFlowX );
 	cvShowImage( "Flujo Optico Y", ImOpFlowY);
 	}
 
-
-
-	////////// FASE DE PREDICCIÓN /////////
-
-	// aplicamos kalman a objetos en movimiento
+	tiempoParcial = obtenerTiempo( tif , NULL);
+	printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 
 	irAlFinal( framesBuf );
+
 }
+
 
 void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation purposes
 

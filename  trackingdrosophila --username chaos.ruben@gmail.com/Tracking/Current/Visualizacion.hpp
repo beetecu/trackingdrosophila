@@ -11,10 +11,18 @@
 #include "VideoTracker.hpp"
 #include "Libreria.h"
 
+#include <opencv2/video/tracking.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <iostream>
+#include <ctype.h>
+#include <stdio.h>
+
 typedef struct VisualParams{
 	bool pause;
 	bool stop;
 	bool Grab;
+	int VisualPos;
 }VParams;
 
 /// Crea las ventanas de visualización
@@ -33,9 +41,9 @@ void DestroyWindows( );
 //		- frame inicial ( i )
 //		- grabar frame a fichero ( g )
 //		- continuar (c) : continua con el procesado
-void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ,CvCapture* Cap);
+void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ,CvCapture* Cap,CvVideoWriter* Writer);
 
-void VisualizarFr( STFrame* frameData, StaticBGModel* Flat );
+void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer  );
 
 void DefaultVParams( VParams **Parameters);
 
@@ -44,7 +52,7 @@ void DefaultVParams( VParams **Parameters);
  * \param Im Imagen de 8 bits, donde se visualiza el frame actual.
  */
 
-void ShowStatDataFr( IplImage* Im  );
+void ShowStatDataFr( STStatFrame* Stats, IplImage* ImVisual);
 
 void VerEstadoBuffer( IplImage* Imagen,int num );
 
@@ -60,6 +68,6 @@ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
  */
 void dibujarBlobs( IplImage* Imagen,tlcde* lista_blobs );
 
-void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posbuf );
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posbuf,CvVideoWriter* writer );
 
 #endif /* VISUALIZACION_HPP_ */

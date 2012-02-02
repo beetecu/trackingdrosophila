@@ -65,13 +65,15 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
 	AllocateBGMImages(frame, bgmodel );
 
-	// Obtencion de mascara del plato
+	/////// BUSCAR PLATO Y OBTENER MÁSCARA /////
 
 	gettimeofday(&ti, NULL);
 	if  ( Param->FLAT_FRAMES_TRAINING >0){
 		printf("\n\t\t1)Localizando y parametrizando plato...\n ");
 		MascaraPlato( t_capture, bgmodel, Param->FLAT_FRAMES_TRAINING);
-		if (bgmodel->PRadio == 0  ) {error(3);return(0);}
+		if (bgmodel->PRadio == 0  ){
+			error(3);
+		}
 	}
 	else{
 		bgmodel->DataFROI = cvRect(0,
@@ -86,6 +88,8 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
 	printf("\n\t\t2)Aprendiendo fondo...\n ");
 	gettimeofday(&ti, NULL);
+
+	///// APRENDER FONDO /////
 
 	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 	while( num_frames < Param->FRAMES_TRAINING ){
@@ -429,7 +433,7 @@ void MascaraPlato(CvCapture* t_capture,
 	//int* centro_x, int* centro_y, int* radio
 	CvMemStorage* storage = cvCreateMemStorage(0);
 	CvSeq* circles = NULL;
-	IplImage* Im;
+	IplImage* Im = NULL;
 
 // LOCALIZACION
 
@@ -458,15 +462,18 @@ void MascaraPlato(CvCapture* t_capture,
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
 //		VerEstadoBGModel( frame );
-		Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+		if(!Im) Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 //
 		// Imagen a un canal de niveles de gris
 		cvCvtColor( frame , Im, CV_BGR2GRAY);
 
 		// Filtrado gaussiano 5x
-		cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
+		//cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
 
-		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,300, 150,
+//		cvShowImage( "Foreground",Im);
+//		cvWaitKey(0);
+
+		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,400, 50,
 				cvRound( Im->height/2 ));
 		int i;
 		for (i = 0; i < circles->total; i++)
@@ -530,7 +537,7 @@ void DefaultBGMParams( BGModelParams *Parameters){
 	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
     if( Parameters == NULL )
       {
-    	Params->FLAT_FRAMES_TRAINING = 0;
+    	Params->FLAT_FRAMES_TRAINING = 50;
     	Params->FRAMES_TRAINING = 20;
     	Params->ALPHA = 0.5 ;
     	Params->MORFOLOGIA = 0;

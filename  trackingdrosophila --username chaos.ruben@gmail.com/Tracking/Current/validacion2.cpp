@@ -104,15 +104,19 @@ void Validacion2(IplImage *Imagen,
 				// Segmentar
 				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, FlyDataRoi, NULL);
 
-//				cvShowImage( "Foreground",FrameData->FG);
-//				cvWaitKey(0);
+				if( SHOW_VALIDATION_DATA){
+						cvShowImage( "Foreground",FrameData->FG);
+						cvWaitKey(0);
+				}
 				// Comprobar si se ha conseguido dividir el blob y verificar si el resultado es optimo
 
 				// 1) No hay fisión. El blob desaparece antes de alcanzar la pximin. Restauramos el blob y pasamos al siguiente elemento.
 				if(TempSeg->numeroDeElementos < 1 || TempSeg == NULL)	{
 					RestaurarElMejor( FrameData->Flies,  FrameData->FG, MejorFly,  FlyDataRoi, i );
-//					cvShowImage( "Foreground",FrameData->FG);
-//					cvWaitKey(0);
+					if( SHOW_VALIDATION_DATA){
+							cvShowImage( "Foreground",FrameData->FG);
+							cvWaitKey(0);
+					}
 					// liberar lista
 					liberarListaFlies( TempSeg );
 					break;
@@ -139,8 +143,10 @@ void Validacion2(IplImage *Imagen,
 						RestaurarElMejor( FrameData->Flies,  FrameData->FG, MejorFly,  FlyDataRoi, i );
 						//Restaurar(FrameData->Flies, FrameData->FG, Mask, FlyDataRoi, i);
 						liberarListaFlies( TempSeg );
-//							cvShowImage( "Foreground",FrameData->FG);
-//							cvWaitKey(0);
+						if( SHOW_VALIDATION_DATA){
+								cvShowImage( "Foreground",FrameData->FG);
+								cvWaitKey(0);
+						}
 						break;
 					}
 				}
@@ -206,8 +212,10 @@ void Validacion2(IplImage *Imagen,
 				// Segmentar
 				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, newRoi, NULL);
 				//TempSeg = segmentacion(Imagen, FrameData, newRoi,NULL);
-//				cvShowImage( "Foreground",FrameData->FG);
-//				cvWaitKey(0);
+				if( SHOW_VALIDATION_DATA){
+					cvShowImage( "Foreground",FrameData->FG);
+					cvWaitKey(0);
+				}
 				if (TempSeg == NULL||TempSeg->numeroDeElementos <1) continue;
 				// Calcular la pxi
 				FlyData=(STFly *)obtener(0, TempSeg);
@@ -223,7 +231,10 @@ void Validacion2(IplImage *Imagen,
 				else if(FlyData->Px < BestPxi || j == VParams->MaxDecLTHIters){
 					// cuando deje de mejorar o bien se llegue al máximo de iteraciones
 					//nos quedamos con aquel que dio la mejor probabilidad. Lo insertamos en la lista en la misma posición.
-
+					if( SHOW_VALIDATION_DATA){
+							cvShowImage( "Foreground",FrameData->FG);
+							cvWaitKey(0);
+					}
 					sustituirEl( MejorFly, FrameData->Flies, i);
 					break;
 				}
