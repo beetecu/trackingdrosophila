@@ -14,7 +14,9 @@ void error(int err){
 	switch( err ){
 		case 1:
 			fprintf( stderr, "ERROR: No se puede abrir el video. Esto puede suceder"
-					"por:\n - El formato de video no está soportado.\n - Los códecs"
+					" por:\n - El video no se encuentra en el directorio de ejecución.\n"
+					"  - El nombre es incorrecto.\n"
+					"- El formato de video no está soportado.\n - Los códecs"
 					"no están correctamente instalados.\n - El video está corrupto.\n");
 			DestroyWindows( );
 			break;
@@ -26,10 +28,9 @@ void error(int err){
 
 			fprintf( stderr, "ERROR: No se ha encontrado el plato \n" );
 			fprintf( stderr, "Puede ser debido a:\n "
-					"- Tipo de video cargado incorrecto "
 					"- Iluminación deficiente \n"
-					"- Iluminación oblicua que genera sombras pronunciadas\n"
-					"- Plato  fuera del área de visualización\n" );
+					"- Plato  fuera del área de visualización\n"
+					"La velocidad de ejecución se verá afectada de forma significativa");
 			getchar();
 			DestroyWindows( );
 			break;

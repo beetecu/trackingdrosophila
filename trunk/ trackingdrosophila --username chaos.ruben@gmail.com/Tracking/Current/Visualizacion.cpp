@@ -6,140 +6,208 @@
  */
 
 #include "Visualizacion.hpp"
-
-	extern float TiempoGlobal ;
-	extern float TiempoFrame;
-	extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
-	extern double TotalFrames ;
-
-	VParams* Params = NULL;
 #include <opencv2/video/tracking.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <iostream>
 #include <ctype.h>
-#include <stdio.h>
+
 using namespace cv;
 using namespace std;
 
-void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat, CvCapture* Cap ){
+extern float TiempoGlobal ;
+extern float TiempoFrame;
+extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
+extern double TotalFrames ;
 
-	DefaultVParams( &Params);
+VParams* Params = NULL;
+IplImage* ImVisual = NULL;
 
+void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat, CvCapture* Cap, CvVideoWriter* Writer ){
+
+	struct timeval tif;
+	float TiempoParcial;
 	STFrame* frameData;
 	tlcde* flies;
-	irAl( pos, frameBuf );
+
+	gettimeofday(&tif, NULL);
+	printf("\n4)Visualización:\n");
+	// Establecer parámetros
+	DefaultVParams( &Params);
+
+	// Establecer la posición en del bufer para visualizar
+	if(Params->VisualPos == -1) irAl( pos, frameBuf );
+	else irAl(Params->VisualPos, frameBuf );
+
+	// OBTENER FRAME
 	frameData = (STFrame*)obtenerActual(frameBuf);
 	flies = frameData->Flies;
 
-	if (SHOW_VISUALIZATION == 1){
-		// OBTENER FRAME
+	if (SHOW_VISUALIZATION == 1||GRABAR_VISUALIZACION == 1){
 
-
-		// si no se ha llenado el buffer y se pide visualizar el primero, esperar a llenar buffer.
-		if ( ( frameBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH-1) && pos == 0 ){
-			VerEstadoBuffer(frameData->Frame, frameBuf->numeroDeElementos );
-			return;
-		}
+		if(!ImVisual) ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,3);
+		cvCopy(frameData->Frame,ImVisual);
 
 		// DIBUJAR PLATO
 		if( DETECTAR_PLATO ){
-			cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-			cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+			cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+			cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 		}
 
 		// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
-		dibujarBlobs( frameData->Frame, frameData->Flies );
+		dibujarBlobs( ImVisual, frameData->Flies );
 
-		// MOSTRAMOS IMAGENES
-		printf( "\t-Mostrando ventana de visualización...");
-		cvShowImage( "Visualización", frameData->Frame );
+		// MOSTRAR datos estadísticos en la ventana de visualización
+		ShowStatDataFr( frameData->Stats, ImVisual);
+
+		// GUARDAR VISUALIZACION
+		if( GRABAR_VISUALIZACION){
+			cvWriteFrame( Writer,ImVisual);
+		}
 		printf("Hecho\n");
-		if (SHOW_BG_REMOVAL == 1){
-			printf( "\t-Mostrando Background, Foreground, OldBackground... ");
-			cvShowImage("Background", frameData->BGModel);
+		if (SHOW_VISUALIZATION){
+			// MOSTRAMOS IMAGENES
+			printf( "\t-Mostrando ventana de visualización...");
+			cvShowImage( "Visualización", ImVisual );
+			if (SHOW_BG_REMOVAL == 1){
+				printf( "\t-Mostrando Background, Foreground, OldBackground... ");
+				cvShowImage("Background", frameData->BGModel);
+				cvShowImage( "Foreground",frameData->FG);
+				//cvShowImage( "OldForeground",frameData->OldFG);
 
-			cvShowImage( "Foreground",frameData->FG);
-			//cvShowImage( "OldForeground",frameData->OldFG);
-
-			printf("Hecho\n");
-		}
-		if ( SHOW_MOTION_TEMPLATE == 1){
-			printf("\t-Mostrando Motion...");
-			cvShowImage( "Motion",frameData->ImMotion);
-			printf("Hecho\n");
-		}
-
-		if(SHOW_KALMAN){
-			printf("\t-Mostrando predicciones del filtro de Kalman...");
-			cvShowImage( "Filtro de Kalman", frameData->ImKalman );
-			printf("Hecho\n");
-		}
-
-		// OPCIONES
-		if(ACTIVAR_OPCIONES_VISUALIZACION){
-			// si se pulsa p ó P  => pause = true
-			if( (cvWaitKey(5) & 255) == 80 || (cvWaitKey(5) & 255) == 112 ){
-				Params->pause = true;
+				printf("Hecho\n");
 			}
-			// si se pulsa s ó S => stop = true
-			if( (cvWaitKey(5) & 255) == 83 || (cvWaitKey(5) & 255) == 115 ){
-				Params->stop = true;
+			if ( SHOW_MOTION_TEMPLATE == 1){
+				printf("\t-Mostrando Motion...");
+				cvShowImage( "Motion",frameData->ImMotion);
+				printf("Hecho\n");
 			}
-			// si se pulsa v ó V => grab = true
-			if( (cvWaitKey(5) & 255) == 'v' || (cvWaitKey(5) & 255) == 'V' ){
-				Params->Grab = true;
+
+			if(SHOW_KALMAN){
+				printf("\t-Mostrando predicciones del filtro de Kalman...");
+				cvShowImage( "Filtro de Kalman", frameData->ImKalman );
+				printf("Hecho\n");
 			}
-			// PAUSA
-			if(Params->pause){
-				cvShowImage( "Visualización", frameData->Frame );
-				if (SHOW_BG_REMOVAL == 1){
-					cvShowImage("Background", frameData->BGModel);
-					cvShowImage( "Foreground",frameData->FG);
-				//	cvShowImage( "OldForeground",frameData->OldFG);
-				//	cvShowImage( "Foreground+Oldforeground", frameData->ImAdd);
+
+			// OPCIONES
+			if(ACTIVAR_OPCIONES_VISUALIZACION){
+				// si se pulsa p ó P  => pause = true
+				if( (cvWaitKey(5) & 255) == 80 || (cvWaitKey(5) & 255) == 112 ){
+					Params->pause = true;
 				}
-				if ( SHOW_MOTION_TEMPLATE == 1){
-					cvShowImage( "Motion",frameData->ImMotion);
+				// si se pulsa s ó S => stop = true
+				if( (cvWaitKey(5) & 255) == 83 || (cvWaitKey(5) & 255) == 115 ){
+					Params->stop = true;
 				}
-				fflush( stdin);
-				if( cvWaitKey(0) == 'f' || cvWaitKey(0) == 'F'){
-					cvSaveImage( "Captura.jpg", frameData->Frame);
+				// si se pulsa v ó V => grab = true
+				if( (cvWaitKey(5) & 255) == 'v' || (cvWaitKey(5) & 255) == 'V' ){
+					Params->Grab = true;
 				}
-			}
-			// si se pulsa c ó C  => pause = false
-			if( (cvWaitKey(5) & 255) == 67 || (cvWaitKey(5) & 255) == 99 ){
-				Params->pause = false;
-			}
-			if(Params->Grab){
-//
-//				static int first = 0;
-//				char videoName[30];
-//				for( int i = 0; i < 1000; i++ ){
-//							sprintf(nombreVideo,"Muestra%d.avi",i);
-//							if( !existe( videoName ) ) {
-//								break;
-//							}
-//				}
-//				writer = iniciarAvi( cap, nombreVideo);
-//				cvWriteFrame( VWriter,frameData->Frame);
-			}
-			// si se pulsa v comienza a grabar un video hasta pulsar S
-	//		if( opcion == 'v' || opcion == 'V'){
-	//			Params->Grab = true;
-	//		}
-			//STOP
-			int posBuf = pos;
-			while(Params->stop){
-				visualizarBuffer( frameBuf,Flat, &posBuf );
-				// mientras no se presione c ó C ( continue ) continuamos en el while
-				if(!Params->stop) break;
-			}
-			irAlFinal( frameBuf );
-		}//FIN OPCIONES
-	}// FIN VISUALIZACION
+				// PAUSA
+				if(Params->pause){
+					cvShowImage( "Visualización", frameData->Frame );
+					if (SHOW_BG_REMOVAL == 1){
+						cvShowImage("Background", frameData->BGModel);
+						cvShowImage( "Foreground",frameData->FG);
+					//	cvShowImage( "OldForeground",frameData->OldFG);
+					//	cvShowImage( "Foreground+Oldforeground", frameData->ImAdd);
+					}
+					if ( SHOW_MOTION_TEMPLATE == 1){
+						cvShowImage( "Motion",frameData->ImMotion);
+					}
+					fflush( stdin);
+					if( cvWaitKey(0) == 'f' || cvWaitKey(0) == 'F'){
+						cvSaveImage( "Captura.jpg", frameData->Frame);
+					}
+				}
+				// si se pulsa c ó C  => pause = false
+				if( (cvWaitKey(5) & 255) == 67 || (cvWaitKey(5) & 255) == 99 ){
+					Params->pause = false;
+				}
+				if(Params->Grab){
+	//
+	//				static int first = 0;
+	//				char videoName[30];
+	//				for( int i = 0; i < 1000; i++ ){
+	//							sprintf(nombreVideo,"Muestra%d.avi",i);
+	//							if( !existe( videoName ) ) {
+	//								break;
+	//							}
+	//				}
+	//				writer = iniciarAvi( cap, nombreVideo);
+	//				cvWriteFrame( VWriter,frameData->Frame);
+				}
+				// si se pulsa v comienza a grabar un video hasta pulsar S
+		//		if( opcion == 'v' || opcion == 'V'){
+		//			Params->Grab = true;
+		//		}
+				//STOP
+
+				while(Params->stop){
+					if(Params->VisualPos == -1) Params->VisualPos = pos;
+					visualizarBuffer( frameBuf,Flat, &Params->VisualPos, Writer);
+					// mientras no se presione c ó C ( continue ) continuamos en el while
+					if(!Params->stop) break;
+				}
+				irAlFinal( frameBuf );
+			}//FIN OPCIONES
+		} // FIN VISUALIZAR
+	}// FIN VISUALIZAR O GRABAR
+	TiempoParcial = obtenerTiempo( tif , NULL);
+	printf("Visualización finalizada.Tiempo total %5.4g ms\n", TiempoParcial);
 }
 
+void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer ){
+
+	DefaultVParams( &Params);
+	if(!ImVisual) ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,3);
+
+	if (SHOW_VISUALIZATION == 1||GRABAR_VISUALIZACION == 1){
+
+		if(!ImVisual) ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,1);
+		cvCopy(frameData->Frame,ImVisual);
+
+		// DIBUJAR PLATO
+		if( DETECTAR_PLATO ){
+			cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
+			cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
+		}
+
+		// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
+		dibujarBlobs( ImVisual, frameData->Flies );
+
+		// MOSTRAR datos estadísticos en la ventana de visualización
+		ShowStatDataFr( frameData->Stats, ImVisual);
+
+		// GUARDAR VISUALIZACION
+		if( GRABAR_VISUALIZACION){
+			cvWriteFrame( Writer,ImVisual);
+		}
+		printf("Hecho\n");
+		if (SHOW_VISUALIZATION){
+			// MOSTRAMOS IMAGENES
+			printf( "\t-Mostrando ventana de visualización...");
+			cvShowImage( "Visualización", ImVisual );
+			if (SHOW_BG_REMOVAL == 1){
+				printf( "\t-Mostrando Background, Foreground, OldBackground... ");
+				cvShowImage("Background", frameData->BGModel);
+				cvShowImage( "Foreground",frameData->FG);
+				//cvShowImage( "OldForeground",frameData->OldFG);
+
+				printf("Hecho\n");
+			}
+			if ( SHOW_MOTION_TEMPLATE == 1){
+				printf("\t-Mostrando Motion...");
+				cvShowImage( "Motion",frameData->ImMotion);
+				printf("Hecho\n");
+			}
+
+			if(SHOW_KALMAN){
+				printf("\t-Mostrando predicciones del filtro de Kalman...");
+				cvShowImage( "Filtro de Kalman", frameData->ImKalman );
+				printf("Hecho\n");
+			}
+		}
+	}
+
+}
 void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 
 	STFly* fly;
@@ -191,35 +259,9 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 	else return;
 }
 
-void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 
-	DefaultVParams( &Params);
 
-	if (SHOW_VISUALIZATION ){
-		// DIBUJAR PLATO
-		if( DETECTAR_PLATO ){
-			cvCircle( frameData->Frame, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
-			cvCircle( frameData->Frame, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
-		}
-
-		// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
-		dibujarBlobs( frameData->Frame, frameData->Flies );
-		mostrarFliesFrame(frameData);
-		// MOSTRAR IMAGENES
-		cvShowImage( "Visualización", frameData->Frame );
-		if (SHOW_BG_REMOVAL){
-				cvShowImage("Background", frameData->BGModel);
-				cvShowImage( "Foreground",frameData->FG);
-			//	cvShowImage( "OldForeground",frameData->OldFG);
-			//	cvShowImage( "Foreground+Oldforeground", frameData->ImAdd);
-		}
-		if ( SHOW_MOTION_TEMPLATE )	cvShowImage( "Motion",frameData->ImMotion);
-		if(SHOW_KALMAN)  			cvShowImage( "Filtro de Kalman", frameData->ImKalman );
-	}
-
-}
-
-void ShowStatDataFr( IplImage* Im  ){
+void ShowStatDataFr( STStatFrame* Stats,IplImage* ImVisual ){
 
 	CvFont fuente1;
 	CvFont fuente2;
@@ -230,20 +272,20 @@ void ShowStatDataFr( IplImage* Im  ){
 	char PComplet[100];
 	char FPS[100];
 
-	sprintf(NFrame,"Frame %.0f ",NumFrame);
-	sprintf(TProcesF,"Tiempo de procesado del Frame : %5.4g ms", TiempoFrame);
-	sprintf(TProces,"Segundos de video procesados: %.3f seg ", TiempoGlobal/1000);
-	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(NumFrame/TotalFrames)*100 );
-	sprintf(FPS,"FPS: %.2f ",(1000/TiempoFrame));
+	sprintf(NFrame,"Frame %d ",Stats->numFrame);
+	sprintf(TProcesF,"Tiempo de procesado del Frame : %5.4g ms",Stats->TiempoFrame);
+	sprintf(TProces,"Segundos de video procesados: %0.f seg ", Stats->TiempoGlobal);
+	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(Stats->numFrame/TotalFrames)*100 );
+	sprintf(FPS,"FPS: %.2f ",(1000/Stats->TiempoFrame));
 
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.7, 0.7, 0, 1, 8);
 
-	cvPutText( Im, NFrame, cvPoint( 10,20), &fuente1, CVX_BLUE );
-	cvPutText( Im, TProcesF, cvPoint( 10,40), &fuente2, CVX_WHITE );
-	cvPutText( Im, TProces, cvPoint( 10,60), &fuente2, CVX_WHITE);
-	cvPutText( Im, PComplet, cvPoint( 10,80), &fuente2, CVX_WHITE);
-	cvPutText( Im, FPS, cvPoint( 10,100), &fuente1, CVX_RED);
+	cvPutText( ImVisual, NFrame, cvPoint( 10,20), &fuente1, CVX_BLUE );
+	cvPutText( ImVisual, TProcesF, cvPoint( 10,40), &fuente2, CVX_WHITE );
+	cvPutText( ImVisual, TProces, cvPoint( 10,60), &fuente2, CVX_WHITE);
+	cvPutText( ImVisual, PComplet, cvPoint( 10,80), &fuente2, CVX_WHITE);
+	cvPutText( ImVisual, FPS, cvPoint( 10,100), &fuente1, CVX_RED);
 }
 // Genera una imagen que representa el llenado del buffer
 void VerEstadoBuffer( IplImage* Imagen,int num ){
@@ -293,14 +335,32 @@ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
 // a (A,mcb) cuyo centro es mcb. La unión de A,B,C dará el triangulo resultante.
 
 
-void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posBuf ){
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posBuf,CvVideoWriter* writer ){
 
 	STFrame* frameData;
-	unsigned char opcion;
+
+	unsigned char opcion = 0;
 
 	Params->Grab = false;
 	fflush( stdin);
+
+
+	irAl( *posBuf,Buffer );
+	frameData = (STFrame*)obtenerActual(Buffer);
+//	cvCopy(frameData->Frame,ImVisual);
+
+
+	VisualizarFr( frameData, Flat, writer);
+	CvFont fuente1;
+	char PBuf[100];
+	sprintf(PBuf," Posicion del Buffer: %d ",*posBuf );
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvPutText( ImVisual, PBuf,  cvPoint( 10,frameData->Frame->height-10), &fuente1, CVX_RED );
+	cvShowImage( "Visualización", ImVisual );
 	opcion = cvWaitKey(0);
+	if( opcion == 'C' || opcion == 'c' ){
+			Params->stop = false;
+	}
 	// si pulsamos +, visualizamos el siguiente elemento del buffer
 	if( opcion == 43 ){
 		if (*posBuf < Buffer->numeroDeElementos-1) *posBuf=*posBuf+1;
@@ -323,18 +383,6 @@ void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posBuf ){
 		frameData = (STFrame*)obtenerActual(Buffer);
 		cvSaveImage( "Captura.jpg", frameData->Frame);
 	}
-	irAl( *posBuf,Buffer );
-	frameData = (STFrame*)obtenerActual(Buffer);
-	CvFont fuente1;
-	char PBuf[100];
-	sprintf(PBuf," Posicion del Buffer: %d ",*posBuf );
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
-	cvPutText( frameData->Frame, PBuf,  cvPoint( 10,frameData->Frame->height-10), &fuente1, CVX_RED );
-	VisualizarFr( frameData, Flat );
-
-	if( opcion == 'C' || opcion == 'c' ){
-			Params->stop = false;
-	}
 }
 
 void DefaultVParams( VParams **Parameters){
@@ -348,6 +396,7 @@ void DefaultVParams( VParams **Parameters){
     	params->pause = false;
     	params->stop = false;
     	params->Grab = false;
+    	params->VisualPos = -1;
     	*Parameters = params;
     }
 }

@@ -19,8 +19,8 @@
 #include <sys/time.h>
 #include <cvaux.h>
 #include <stdio.h>
-#include <cv.h>
 #include <cxcore.h>
+
 
 
 using namespace cv;
@@ -45,8 +45,8 @@ using namespace std;
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
 
-#define SHOW_SHAPE_MODEL_DATA_AREAS 0//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
-#define SHOW_SHAPE_MODEL_DATA_MEDIANA 0//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
+#define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
+#define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 
 #define SHOW_PROCESS_TIMES
 
@@ -58,7 +58,7 @@ using namespace std;
 #define SHOW_SEGMENTATION_MATRIX 0
 
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
-#define SHOW_VALIDATION_TIMES 1
+#define SHOW_VALIDATION_TIMES 0
 
 #define SHOW_MT_DATA 0
 
@@ -167,8 +167,11 @@ using namespace std;
 		float CantidadMov;
 		float TiempoFrame;
 		float TiempoGlobal;
-		float CMov30;  //!< Cantidad de movimiento medio en los últimos 30 min.
-		float CMov1H;  //!< Cantidad de movimiento medio en la última hora.
+		float TotalFrames;
+		float CMov30Med;  //!< Cantidad de movimiento medio en los últimos 30 min.
+		float CMov30Des;
+		float CMov1HMed;  //!< Cantidad de movimiento medio en la última hora.
+		float CMov1HDes;
 		float CMov2H;	//!< Cantidad de movimiento medio en  últimas 2 horas.
 		float CMov4H;
 		float CMov8H;
@@ -191,7 +194,7 @@ using namespace std;
 		IplImage* ImAdd;//!< FG + OldFG
 		IplImage* ImMotion;//!< Imagen que contiene la orientación de moscas.
 		IplImage* ImKalman;
-//		STStatFrame * Stat;
+		STStatFrame * Stats;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
 	}STFrame;
 

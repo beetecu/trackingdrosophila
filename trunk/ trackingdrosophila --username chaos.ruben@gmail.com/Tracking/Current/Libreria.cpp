@@ -7,7 +7,15 @@
 
 #include "Libreria.h"
 
-
+void help(){
+	printf("\n Para ejecutar el programa escriba en la consola: "
+			"TrackingDrosophila [nombre_video.avi] [Nombre_Fichero.csv]\n  "
+			"Donde:\n - [nombre_video.avi] es el nombre del video a analizar. Ha de "
+			"estar en formato avi. Se deberán tener instalados los codecs ffmpeg.\n"
+			"[Nombre_Fichero.csv] Será el nombre del fichero donde se guardarán los datos."
+			"Si no se especifica se le solicitará uno al usuario. Si continúa sin especificarse"
+			"se establecerá [Data_n] por defecto hasta un máximo de n = 29. ");
+}
 ///////////////////// MEDIDA DE TIEMPOS //////////////////////////////
 
 float obtenerTiempo( timeval ti, int unidad ){
@@ -210,7 +218,7 @@ void muestrearPosicion( tlcde* flies, int id ){
 //			}
 	if(!existe("SamplePosFly1.csv")) crearFichero("SamplePosFly1.csv");
 
-	FILE *fptr = fopen("SamplePosFly1.csv","a"); // Store the data here
+	FILE *fptr = fopen("SamplePosFly1.csv","a");
 
 	if(!flies || flies->numeroDeElementos < 1 ) return;
 	// Mostrar todos los elementos de la lista
@@ -973,33 +981,21 @@ void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max ){
 ///////////////////// INTERFACE PARA GESTIONAR BUFFER //////////////////////////////
 
 
-///! Borra y libera el espacio del primer elemento del buffer ( el frame mas antiguo )
+///! libera el primer elemento del buffer  ( el frame mas antiguo )
 ///! El puntero actual seguirá apuntando al mismo elemento que apuntaba antes de llamar
 ///! a la función.
 
-int liberarPrimero(tlcde *FramesBuf ){
+void* liberarPrimero(tlcde *FramesBuf ){
 
 	STFrame *frameData = NULL;
 
 //Guardamos la posición actual.
 	int i = FramesBuf->posicion;
-//
-
-	if( FramesBuf->numeroDeElementos == 0 ) {printf("\nBuffer vacio");return 1;}
+	if( FramesBuf->numeroDeElementos == 0 ) {printf("\nBuffer vacio");return 0;}
 	irAl(0, FramesBuf);
 	frameData = (STFrame*)obtenerActual( FramesBuf );
 	 // por cada nuevo frame se libera el espacio del primer frame
-	liberarListaFlies( frameData->Flies );
-	free( frameData->Flies);
-	//borra el primer elemento
-	cvReleaseImage(&frameData->Frame);
-	cvReleaseImage(&frameData->BGModel);
-	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesvf);
-	cvReleaseImage(&frameData->ImMotion);
-	cvReleaseImage(&frameData->OldFG);
-	cvReleaseImage(&frameData->ImAdd);
-	cvReleaseImage(&frameData->ImKalman);
+
 	frameData = (STFrame *)borrar( FramesBuf );
 	if( !frameData ) {
 		printf( "Se ha borrado el último elemento.Buffer vacio" );
@@ -1007,16 +1003,15 @@ int liberarPrimero(tlcde *FramesBuf ){
 		return 0;
 	}
 	else{
-		free( frameData );
-		frameData = NULL;
 		irAl(i - 1, FramesBuf);
-		return 1;
+		return frameData;
 	}
 }
 
 void liberarSTFrame( STFrame* frameData ){
 	liberarListaFlies( frameData->Flies);
-	free( frameData->Flies );
+	if (frameData->Flies ) free( frameData->Flies);
+	if( frameData->Stats) free(frameData->Stats);
 	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
@@ -1040,6 +1035,7 @@ void liberarBuffer(tlcde *FramesBuf)
   {
 	liberarListaFlies( frameData->Flies);
 	free( frameData->Flies );
+	if( frameData->Stats) free(frameData->Stats);
 	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
@@ -1196,6 +1192,34 @@ int GuardarPrimero( tlcde* framesBuf , char *nombreFichero){
 	fclose(pf);
 	irAl( posicion, framesBuf);
 	return 1;
+}
+
+int GuardarSTFrame( STFrame* frameData , char *nombreFichero){
+
+	tlcde* Flies = NULL;
+	FILE * pf;
+	STFly* fly = NULL;
+
+	//obtenemos la lista
+
+	Flies = frameData->Flies;
+	if (Flies->numeroDeElementos == 0||!Flies) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
+	int i = 0, tam = Flies->numeroDeElementos;
+	// Abrir el fichero nombreFichero para añadir "a".
+	if ((pf = fopen(nombreFichero, "a")) == NULL)
+	{
+		printf("El fichero no puede abrirse.");
+		return 0;
+	}
+	while( i < tam ){
+		fly = (STFly*)obtener(i, Flies);
+		fprintf(pf,"%d;%d",fly->posicion.x,fly->posicion.y);
+		fprintf(pf,"\n");
+		i++;
+	}
+	fclose(pf);
+	return 1;
+
 }
 
 void QuitarCR (char *cadena)

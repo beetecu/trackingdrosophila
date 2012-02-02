@@ -18,7 +18,7 @@
  * \return Un 1 o True si el procesado se ha realizado correctamente.
  */
 
-int PreProcesado(CvCapture* g_capture, StaticBGModel** BGModel,SHModel** Shape );
+int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape );
 
 void releaseDataPreProcess();
 

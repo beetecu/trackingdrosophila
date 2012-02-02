@@ -123,7 +123,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 
 	extern double NumFrame;
-	struct timeval ti, tf,tif,tff; // iniciamos la estructura
+	struct timeval ti, tif; // iniciamos la estructura
 	float tiempoParcial;
 	// otros parámetros
 	int fr = 0;
@@ -133,6 +133,8 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	STFrame* frameData = NULL;
 	tlcde* OldFGFlies = NULL;
 	tlcde* FGFlies = NULL;
+
+	printf("\n1)Procesado:\n");
 	printf("\nIniciando Procesado:\n");
 	gettimeofday(&tif, NULL);
 
@@ -143,8 +145,8 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t0)Preprocesado : %5.4g ms\n", tiempoParcial);
 
-
 	static bool first = true;
+
 	// Iniciar estructura para datos del nuevo frame
 	frameData = InitNewFrameData( frame );
 	// Cargamos datos
@@ -225,7 +227,8 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 
-
+	tiempoParcial = obtenerTiempo( tif , NULL);
+	printf("Procesado correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 	return frameData;
 }
 
@@ -413,8 +416,7 @@ STFrame* Procesado4( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 //	frameData->Flies = segmentacion(Imagen, frameData, BGModel->DataFROI, FGMask);
 	//cvCopy( FGMask,frameData->FG );
 	
-	
-									tiempoParcial = obtenerTiempo( ti, 0);
+	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t3)Obtención de blobs: %5.4g ms\n", tiempoParcial);
 
 	/////// VALIDACIÓN
@@ -434,7 +436,7 @@ STFrame* Procesado4( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	cvCopy(  lastIdes, frameData->IDesvf);
 	
 	
-									tiempoParcial = obtenerTiempo( ti, 0);
+	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t5)Actualización selectiva del Modelo de fondo: %5.4g ms\n", tiempoParcial);
 
 	gettimeofday(&tff, NULL);
@@ -450,7 +452,7 @@ STFrame* InitNewFrameData(IplImage* I ){
 
 	STFrame* FrameData;
 	FrameData = ( STFrame *) malloc( sizeof(STFrame));
-
+	FrameData->Stats = ( STStatFrame *) malloc( sizeof(STStatFrame));
 	extern double NumFrame;
 	CvSize size = cvGetSize( I );
 	FrameData->Frame = cvCreateImage(size,8,3);
@@ -471,6 +473,18 @@ STFrame* InitNewFrameData(IplImage* I ){
 	cvZero( FrameData->ImAdd);
 	FrameData->Flies = NULL;
 	FrameData->num_frame = (int)NumFrame;
+
+	FrameData->Stats->TiempoFrame = 0;
+	FrameData->Stats->TiempoGlobal =0;
+	FrameData->Stats->numFrame = FrameData->num_frame;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
+//	FrameData->Stats->;
 
 	return FrameData;
 }
