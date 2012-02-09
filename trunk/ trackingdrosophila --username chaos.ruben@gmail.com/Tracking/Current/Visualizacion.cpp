@@ -157,11 +157,14 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat, CvCapture* Cap
 void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer ){
 
 	DefaultVParams( &Params);
+	CvSize size;
+	size = cvSize(800,600);
 	if(!ImVisual) ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,3);
 
 	if (SHOW_VISUALIZATION == 1||GRABAR_VISUALIZACION == 1){
 
 		if(!ImVisual) ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,1);
+
 		cvCopy(frameData->Frame,ImVisual);
 
 		// DIBUJAR PLATO
@@ -433,15 +436,14 @@ void releaseVParams( VParams **Parameters);
 //}
 
 // Creación de ventanas
-void CreateWindows( ){
+void CreateWindows( IplImage* ImRef){
 
 //	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
 	if (SHOW_BG_REMOVAL == 1){
 		cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
 		cvNamedWindow( "Foreground",CV_WINDOW_AUTOSIZE);
-
-		cvMoveWindow("Background", 0, 0 );
-		cvMoveWindow("Foreground", 640, 0);
+		cvMoveWindow("Background", 0, ImRef->height );
+		cvMoveWindow("Foreground", ImRef->width, ImRef->height);
 	}
 	if ( SHOW_MOTION_TEMPLATE == 1){
 		cvNamedWindow( "Motion", 1 );
@@ -456,6 +458,7 @@ void CreateWindows( ){
 	}
 	if (SHOW_VISUALIZATION == 1){
 			cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
+			cvMoveWindow("Visualización", 0, 0 );
 	}
 	//        cvNamedWindow( "Imagen", CV_WINDOW_AUTOSIZE);
     //	cvNamedWindow( "Region_Of_Interest", CV_WINDOW_AUTOSIZE);

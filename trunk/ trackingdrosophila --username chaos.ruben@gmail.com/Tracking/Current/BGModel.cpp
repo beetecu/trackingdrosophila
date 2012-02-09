@@ -51,7 +51,7 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 			}
 			if ( (cvWaitKey(10) & 255) == 27 ) exit(-1);
 
-	 if( Param == NULL ) DefaultBGMParams( Param );
+	 if( Param == NULL ) DefaultBGMParams( &Param );
 
 	//Iniciar estructura para el modelo de fondo estático
 	StaticBGModel* bgmodel;
@@ -72,14 +72,33 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 		printf("\n\t\t1)Localizando y parametrizando plato...\n ");
 		MascaraPlato( t_capture, bgmodel, Param->FLAT_FRAMES_TRAINING);
 		if (bgmodel->PRadio == 0  ){
+			char Opcion[2];
+			int hecho = 0;
 			error(3);
+			do{
+				printf("\n Indique si desea detener la ejecución (D/d)"
+						"o si prefiere continuar sin la detección del plato (C/c):");
+				fscanf(stdin,"%s",Opcion );
+				fflush(stdin);
+				if (Opcion[0] == 'd'|| Opcion[0] =='D') return 0;
+				else if (Opcion[0] == 'c'||Opcion[0] =='C'){
+					bgmodel->DataFROI = cvRect(0,0,frame->width,frame->height );
+					cvZero(bgmodel->ImFMask);
+					hecho = 1;
+				}
+				else{
+					printf("\nPorfavor, indique D/d detener ó c/C continuar\n");
+				}
+			}
+			while(!hecho);
 		}
 	}
+	// Datos para establecer ROI si no se quiere detectar el plato
 	else{
-		bgmodel->DataFROI = cvRect(0,
-		0,
-		frame->width,
-		frame->height ); // Datos para establecer ROI si no se quiere detectar el plato
+		printf("\n No ha activado la detección del plato. Esto afectará a la velocidad"
+				"de ejecución.\nEscoja si desea activar dicha opción:");
+
+		bgmodel->DataFROI = cvRect(0,0,frame->width,frame->height );
 		cvZero(bgmodel->ImFMask);
 	}
 
@@ -111,11 +130,15 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 		}
 		// Aprendizaje del fondo
 		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesvf, bgmodel->DataFROI, bgmodel->ImFMask);
-
+		if(SHOW_INIT_BACKGROUND){
+			cvShowImage("Aprendiendo fondo...", bgmodel->Imed);
+			cvMoveWindow("Aprendiendo fondo...", 0, 0 );
+		}
 		num_frames += 1;
 	}
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\t\t-Tiempo total %0.2f s\n", TiempoParcial);
+	cvDestroyAllWindows();
 	return bgmodel;
 }
 
@@ -434,6 +457,7 @@ void MascaraPlato(CvCapture* t_capture,
 	CvMemStorage* storage = cvCreateMemStorage(0);
 	CvSeq* circles = NULL;
 	IplImage* Im = NULL;
+	IplImage* Visual;
 
 // LOCALIZACION
 
@@ -462,8 +486,11 @@ void MascaraPlato(CvCapture* t_capture,
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
 //		VerEstadoBGModel( frame );
-		if(!Im) Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-//
+		if(!Im){
+			Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+			Visual =  cvCreateImage(cvSize(frame->width,frame->height),8,3);
+		}
+		cvCopy( frame, Visual );
 		// Imagen a un canal de niveles de gris
 		cvCvtColor( frame , Im, CV_BGR2GRAY);
 
@@ -481,6 +508,15 @@ void MascaraPlato(CvCapture* t_capture,
 
 			// Excluimos los radios que se salgan de la imagen
 			 float* p = (float*)cvGetSeqElem( circles, i );
+
+			 if( SHOW_LEARNING_FLAT){
+				 if (Flat->PRadio>0)
+					 cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+				 cvCircle( Visual, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
+				 cvShowImage("Buscando Plato...",Visual);
+				 //cvWaitKey(0);
+			 }
+
 			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
 				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
 				  (  cvRound( p[1] )  < cvRound( p[2] ) ) ||
@@ -524,6 +560,8 @@ void MascaraPlato(CvCapture* t_capture,
 	}
 	printf("\t\t-Creación de máscara de plato finalizada.");
 	cvReleaseImage(&Im);
+	cvReleaseImage(&Visual);
+	cvDestroyAllWindows();
 	return;
 }
 
@@ -531,12 +569,13 @@ void MascaraPlato(CvCapture* t_capture,
 //void onTrackbarSlide(pos, BGModelParams* Param) {
 //   Param->ALPHA = pos / 100;
 //}
-void DefaultBGMParams( BGModelParams *Parameters){
+void DefaultBGMParams( BGModelParams **Parameters){
     //init parameters
 	 BGModelParams *Params;
-	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
-    if( Parameters == NULL )
+
+    if( *Parameters == NULL )
       {
+    	Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
     	Params->FLAT_FRAMES_TRAINING = 50;
     	Params->FRAMES_TRAINING = 20;
     	Params->ALPHA = 0.5 ;
@@ -547,10 +586,21 @@ void DefaultBGMParams( BGModelParams *Parameters){
     	Params->HIGHT_THRESHOLD = 20;
     	Params->LOW_THRESHOLD = 10;
     	Params->INITIAL_DESV = 0.5;
+    	*Parameters = Params ;
     }
     else
     {
-        Params = Parameters;
+        Params = *Parameters;
+        Params->FLAT_FRAMES_TRAINING = 50;
+		Params->FRAMES_TRAINING = 20;
+		Params->ALPHA = 0.5 ;
+		Params->MORFOLOGIA = 0;
+		Params->CVCLOSE_ITR = 0;
+		Params->MAX_CONTOUR_AREA = 0 ;
+		Params->MIN_CONTOUR_AREA = 0;
+		Params->HIGHT_THRESHOLD = 20;
+		Params->LOW_THRESHOLD = 10;
+		Params->INITIAL_DESV = 0.5;
     }
 
 }
