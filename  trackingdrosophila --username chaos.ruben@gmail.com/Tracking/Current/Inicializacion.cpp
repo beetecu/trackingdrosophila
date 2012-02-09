@@ -13,8 +13,6 @@ int Inicializacion( int argc,
 		char* nombreVideo,
 		STStatFrame** Stats){
 
-	// Creación de ventanas de visualizacion
-	CreateWindows( );
 
 	/// Crear fichero de datos.
 	/// si no se especifican nombres en la ejecución establecerlos por defecto

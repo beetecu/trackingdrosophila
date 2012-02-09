@@ -80,6 +80,8 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	VWriter = iniciarAvi( g_capture, nombreVideo);
+	// Creación de ventanas de visualizacion
+	CreateWindows( BGModel->Imed );
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
 	if(!TotalFrames) TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
 	printf("\n\nIniciando procesado...\n");

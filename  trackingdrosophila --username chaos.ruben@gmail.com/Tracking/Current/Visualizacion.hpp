@@ -26,7 +26,7 @@ typedef struct VisualParams{
 }VParams;
 
 /// Crea las ventanas de visualización
-void CreateWindows();
+void CreateWindows(IplImage* ImRef);
 
 /// destruye las ventanas
 void DestroyWindows( );

@@ -29,8 +29,7 @@ void error(int err){
 			fprintf( stderr, "ERROR: No se ha encontrado el plato \n" );
 			fprintf( stderr, "Puede ser debido a:\n "
 					"- Iluminación deficiente \n"
-					"- Plato  fuera del área de visualización\n"
-					"La velocidad de ejecución se verá afectada de forma significativa");
+					"- Plato  fuera del área de visualización\n");
 			getchar();
 			DestroyWindows( );
 			break;
@@ -48,5 +47,12 @@ void error(int err){
 			break;
 		case 7:
 			fprintf( stderr, "ERROR: Fallo al liberar buffer 0 \n" );
+			break;
+		case 8:
+			fprintf( stderr, "ERROR: Fallo al crear modelo de fondo 0 \n" );
+			break;
+		case 9:
+			fprintf( stderr, "ERROR: Fallo al crear modelo de forma 0 \n" );
+			break;
 	}
 }

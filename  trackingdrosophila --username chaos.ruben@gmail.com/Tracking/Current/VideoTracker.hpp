@@ -45,6 +45,7 @@ using namespace std;
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
 
+
 #define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 
@@ -68,7 +69,9 @@ using namespace std;
 
 #define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
 #define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
-#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+#define SHOW_LEARNING_FLAT 1
+#define SHOW_INIT_BACKGROUND 1
+#define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 #define ACTIVAR_OPCIONES_VISUALIZACION 1
 #define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.

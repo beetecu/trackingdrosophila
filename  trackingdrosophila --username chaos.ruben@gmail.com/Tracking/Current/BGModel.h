@@ -40,7 +40,7 @@ typedef struct{
  * \see Viodeotracker.hpp
  */
 
-void DefaultBGMParams(BGModelParams *Parameters);
+void DefaultBGMParams(BGModelParams **Parameters);
 
 //! \brief Inicializa el modelo de fondo como una Gaussiana con una estimación
 //! de la mediana y de la de desviación típica según:

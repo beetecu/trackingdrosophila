@@ -206,7 +206,7 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t4)Validación de blobs %5.4g ms\n", tiempoParcial);
 
-	// ACTUALIZACIÓN SELECTIVA. Modelo de fondo estático.
+	/////// ACTUALIZACIÓN SELECTIVA. Modelo de fondo estático.
 	gettimeofday(&ti, NULL);
 	//	Obtención de máscara de foreground
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
