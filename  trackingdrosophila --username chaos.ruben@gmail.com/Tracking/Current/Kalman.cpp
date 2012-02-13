@@ -7,12 +7,16 @@
 
 #include"Tracking.hpp"
 #include "Kalman.hpp"
+#include "math.h"
+
 
 // Parametros de Kalman para la linealidad ( Coordenadas)
 CvKalman* kalman = NULL; // Estructra de kalman para la linealizad
 CvMat* state = NULL;
 CvMat* measurement = NULL;
 CvMat* process_noise = NULL;
+CvMat* CoordReal = NULL;
+CvMat* Matrix_Hungarian = NULL;
 
 CvRandState rng;
 
@@ -27,11 +31,18 @@ CvRandState rng2;
 
 CvMat* indexMat[NUMBER_OF_MATRIX]; // Matrices para usar el filtro de Kalman
 
-void Kalman(tlcde* framesBuf,int  workPos ){
+CvMat* Kalman(tlcde* framesBuf,int  workPos ){
 
 	STFrame* frameData = NULL;
+	STFrame* frameDataX1 = NULL;
 	STFly* flyData = NULL;
+	STFly* FlyData = NULL;
 	tlcde* flies;
+	tlcde* Flies;
+
+	int p=0; // Incrementa puntero de la Matriz Hungarian;
+	int TX1=framesBuf->posicion+1;// Frame t+1;
+	int kk=0;
 
 	// acceder al punto de trabajo
 
@@ -40,9 +51,10 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 	// cargar datos del frame
 
 	frameData = ( STFrame* )obtenerActual( framesBuf );
+	frameDataX1 = (STFrame*)obtener(TX1,framesBuf);
 
 	flies=frameData->Flies;
-
+	Flies=frameDataX1->Flies;
 
 
 	////// INICIALIZAR FILTROS DE KALMAN//////
@@ -50,7 +62,10 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 		state=cvCreateMat(4,1,CV_32FC1);
 		measurement = cvCreateMat( 2, 1, CV_32FC1 );
 		process_noise = cvCreateMat(4, 1, CV_32FC1);
+		CoordReal = cvCreateMat(2,1,CV_32FC1);
+
 	}
+
 	if(!kalman_2){
 		state_2=cvCreateMat(2,1,CV_32FC1);
 		measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
@@ -58,6 +73,9 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 	}
 
 	cvZero(frameData->ImKalman);
+
+	Matrix_Hungarian = cvCreateMat(flies->numeroDeElementos,Flies->numeroDeElementos,CV_32FC1);
+	double Hungarian_Matrix [flies->numeroDeElementos][Flies->numeroDeElementos];
 
 	//Predicción y correción de cada blob
 	for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
@@ -77,14 +95,12 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 		state_2->data.fl[0]=flyData->orientacion;
 
 
-
 		/////////////////// PREDICCION //////////////////////
 
 		const CvMat* yk = cvKalmanPredict( kalman, 0 ); // Predicción coordenadas
 
 		const CvMat* yk_2 = cvKalmanPredict( kalman_2, 0 ); // Predicción orientacion
 
-		printf("\n");
 
 		cvRandSetRange(&rng,0,sqrt(kalman->measurement_noise_cov->data.fl[0]),0);
 		cvRand( &rng, measurement );
@@ -96,29 +112,79 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 
 		cvMatMulAdd(kalman_2->measurement_matrix,state_2,measurement_2,measurement_2);
 
+//		printf("\n");
+//		for(int i =0;i < kalman->error_cov_post->cols*kalman->error_cov_post->rows; i++){
+//			printf("\t %f",kalman->error_cov_post->data.fl[i]);
+//		}
+//
+//
+//		printf("\n");
+//		for(int i =0;i < kalman->error_cov_pre->cols*kalman->error_cov_pre->rows; i++){
+//			printf("\t %f",kalman->error_cov_pre->data.fl[i]);
+//		}
+
+
 		if(workPos > 1){
 
 			////////////////////// CORRECCION ////////////////////////
 
-			cvKalmanCorrect( kalman,measurement);
+		cvKalmanCorrect( kalman,measurement);
 
-			cvKalmanCorrect( kalman_2,measurement_2);
+		cvKalmanCorrect( kalman_2,measurement_2);
 
-			cvRandSetRange(&rng,0,sqrt(kalman->process_noise_cov->data.fl[0]),0);
-			cvRand( &rng,process_noise );
+		cvRandSetRange(&rng,0,sqrt(kalman->process_noise_cov->data.fl[0]),0);
+		cvRand( &rng,process_noise );
 
-			cvRandSetRange(&rng2,0,sqrt(kalman_2->process_noise_cov->data.fl[0]),0);
-			cvRand( &rng2,process_noise_2 );
+		cvRandSetRange(&rng2,0,sqrt(kalman_2->process_noise_cov->data.fl[0]),0);
+		cvRand( &rng2,process_noise_2 );
 
-			cvMatMulAdd(kalman->transition_matrix,state,process_noise,state);
+		cvMatMulAdd(kalman->transition_matrix,state,process_noise,state);
 
-			cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
+		cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
 
 
-			// Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
-			// de Kalman.
+//				printf("\n");
+//				for(int i =0;i < kalman->error_cov_post->cols*kalman->error_cov_post->rows; i++){
+//					printf("\t %f",kalman->error_cov_post->data.fl[i]);
+//				}
+//
+//
+//				printf("\n");
+//				for(int i =0;i < kalman->error_cov_pre->cols*kalman->error_cov_pre->rows; i++){
+//					printf("\t %f",kalman->error_cov_pre->data.fl[i]);
+//				}
 
-			CvRect Kalman_ROI = ROIKalman(kalman->error_cov_pre,kalman->state_pre);
+
+		// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION EN T+1 Y EL VALOR OBSERVADO EN T
+
+		for(int f=0;f < Flies->numeroDeElementos;f++){
+
+			FlyData=(STFly*)obtener(f,Flies);
+			CoordReal->data.fl[0] = FlyData->posicion.x;
+			CoordReal->data.fl[1] = FlyData->posicion.y;
+
+			double Peso = PesosKalman(kalman->error_cov_pre,kalman->state_pre,CoordReal);
+
+			Matrix_Hungarian->data.fl[p] = Peso;
+			p++;
+
+			Hungarian_Matrix[flypos][f]=Peso;
+
+			}
+
+//		printf("\n");
+//		for(int m=0;m<flies->numeroDeElementos;m++){
+//			printf("\n");
+//			for(int n=0;n<Flies->numeroDeElementos;n++){
+//				printf("\t %f",Hungarian_Matrix[m][n]);
+//			}
+//		}
+
+
+		// Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
+		// de Kalman.
+
+		CvRect Kalman_ROI = ROIKalman(kalman->error_cov_pre,kalman->state_pre);
 
 
 		////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
@@ -153,6 +219,20 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 
 				cvCircle(frameData->ImKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
 
+
+			// Dibujar la ROI
+
+			CvPoint pt1;
+			CvPoint pt2;
+
+			pt1.x = Kalman_ROI.x;
+			pt1.y = Kalman_ROI.y;
+			pt2.x = pt1.x + Kalman_ROI.width;
+			pt2.y = pt1.y + Kalman_ROI.height;
+
+			cvRectangle(frameData->ImKalman,pt1,pt2,CVX_BLUE,1);
+			cvShowImage("Kalman",frameData->ImKalman);
+
 				// Dibujar la ROI
 	//
 	//			CvPoint pt1;
@@ -166,10 +246,17 @@ void Kalman(tlcde* framesBuf,int  workPos ){
 	//			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
 	//			cvShowImage("Kalman",IKalman);
 			}
+
+
+
+		}//FOR
+
 		}
 
-	}//FOR
-}
+		return Matrix_Hungarian;
+
+}// Fin de Kalman
+
 // Incializar los parámetro del filtro de Kalman para la posición.
 
 CvKalman* initKalman( ){
@@ -188,7 +275,7 @@ CvKalman* initKalman( ){
 	cvSetIdentity( Kalman->measurement_matrix,cvRealScalar(1) );
 	cvSetIdentity( Kalman->process_noise_cov,cvRealScalar(1e-3) );
 	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-1) );
-	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(100));
+	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(500));
 	cvSet( Kalman->error_cov_pre, cvScalar(1) );
 
 
@@ -461,6 +548,36 @@ CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
 
 }
 
+double PesosKalman(CvMat* Matrix,CvMat* Predict,CvMat* Correct){
+
+	float Matrix_error_cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
+
+	float X = Correct->data.fl[0];
+	float Y = Correct->data.fl[1];
+	float EX = Predict->data.fl[0];
+	float EY = Predict->data.fl[1];
+	float VarX = sqrt(Matrix_error_cov[0]);
+	float VarY = sqrt(Matrix_error_cov[3]);
+
+	double ValorX,ValorY;
+	double DIVX,DIVY;
+	double ProbKalman;
+
+	ValorX=X-EX;
+	ValorY=Y-EY;
+	DIVX=-((ValorX/VarX)*(ValorX/VarX))/2;
+	DIVY=-((ValorY/VarY)*(ValorY/VarY))/2;
+
+	ProbKalman =exp (-abs(DIVX + DIVY));
+
+	ProbKalman = 100*ProbKalman;
+
+	if (ProbKalman < 1) ProbKalman = 1;
+
+	return ProbKalman;
+
+}
+
 /// Limpia de la memoria las imagenes usadas durante la ejecución
 void DeallocateKalman(  ){
 
@@ -477,6 +594,5 @@ void DeallocateKalman(  ){
 		cvReleaseMat(&process_noise_2);
 	}
 }
-
 
 

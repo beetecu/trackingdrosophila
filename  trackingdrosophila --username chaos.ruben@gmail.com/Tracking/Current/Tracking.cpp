@@ -61,7 +61,7 @@ void Tracking( STFrame* frameDataIn, tlcde** framesBuff ){
 	irAlFinal( framesBuf );
 	frameDataIn = ( STFrame* )obtenerActual( framesBuf );
 
-	hungarian_t prob;
+//	hungarian_t prob;
 
 	// Asignar identidades y orientación. Establecer estado (fg o oldFG)
 
@@ -85,7 +85,16 @@ void Tracking( STFrame* frameDataIn, tlcde** framesBuff ){
 	gettimeofday(&ti, NULL);
 	printf("\t2)Filtro de Kalman\n");
 
-	Kalman(framesBuf,workPos );
+	CvMat* Matrix_Hungarian = Kalman(framesBuf,workPos ); // Nos devuelve la matriz de pesos
+
+//	printf("\n");
+//			for(int i =0;i < Matrix_Hungarian->rows* Matrix_Hungarian->cols; i++){
+//					printf("\t %f",Matrix_Hungarian->data.fl[i]);
+//				}
+
+	// APLICAR EL METODO DE OPTIMIZACION HUNGARO A LA MATRIZ DE PESOS
+
+	Hungaro(Matrix_Hungarian);
 
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
@@ -94,7 +103,6 @@ void Tracking( STFrame* frameDataIn, tlcde** framesBuff ){
 	// recibe información temporal de los últimos 48 frames ( Longitud_buffer
 	// - frame_Inicio - frame_final - (frame_final-1) que son aprox 2 seg )
 	//
-
 	//Reasignamos idendidades.
 	// enlazamos objetos etiquetados como nuevos con los que estaban parados
 

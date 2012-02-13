@@ -10,11 +10,12 @@
 
 #include "VideoTracker.hpp"
 
+
 #define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
 #define V_ANGULAR 2.6//5.2 // velocidad angular del blob en pixeles por frame
 #define NUMBER_OF_MATRIX 6
 
-void Kalman(tlcde* framesBuf,int  workPos );
+CvMat* Kalman(tlcde* framesBuf,int  workPos );
 
 //!\brief Inicializa los parametros del filtro de Kalman para las coordenadas.
 /*!
@@ -78,6 +79,10 @@ float CalcDirection(float direction,float orientation,float angulo);
  */
 
 CvRect ROIKalman(CvMat* Matrix,CvMat* Predict);
+
+double PesosKalman(CvMat* Matrix,CvMat* Predict,CvMat* Correct);
+
+
 
 //float* updateKalmanCorrect(CvKalman* kalman,CvPoint coordenadas );
 //
