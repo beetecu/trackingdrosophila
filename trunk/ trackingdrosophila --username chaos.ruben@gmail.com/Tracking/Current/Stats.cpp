@@ -13,15 +13,17 @@ void CalcStatsFrame( STFrame* frameData,tlcde* Buffer ){
 	float TiempoParcial;
 	STStatFrame* stats;
 
-	gettimeofday(&ti, NULL);
+#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
 	printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
 
 	printf( "Rastreo finalizado con éxito ..." );
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
 	printf( "Análisis finalizado ...\n" );
-
+#ifdef MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , NULL);
 	printf("Cálculos realizados. Tiempo total %5.4g ms\n", TiempoParcial);
+#endif
 }
 
 

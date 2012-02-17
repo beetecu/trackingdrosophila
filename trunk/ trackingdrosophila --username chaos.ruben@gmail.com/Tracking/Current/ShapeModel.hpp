@@ -15,7 +15,7 @@
 #include <BlobResult.h>
 #include <Blob.h>
 
-#define SM_FRAMES_TRAINING 500 /// Numero de frames utilizados para los calculos del modelado de forma.
+#define SM_FRAMES_TRAINING 200 /// Numero de frames utilizados para los calculos del modelado de forma.
 
 //!\brief ShapeModel: Establece los valores del area media y la desviacion tipica de las areas
 //! del total de los blobs detectados en los frames_training, con el fin de realizar el

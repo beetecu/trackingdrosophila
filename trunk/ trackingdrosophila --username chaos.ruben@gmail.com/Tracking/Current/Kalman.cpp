@@ -210,7 +210,7 @@ CvMat* Kalman(tlcde* framesBuf,int  workPos ){
 
 
 			}
-			if(SHOW_KALMAN){
+			if(SHOW_VISUALIZATION && SHOW_KALMAN){
 				///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
 
 				cvCircle(frameData->ImKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);

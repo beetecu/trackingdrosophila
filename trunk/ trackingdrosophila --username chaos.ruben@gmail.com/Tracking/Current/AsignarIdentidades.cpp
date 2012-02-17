@@ -204,7 +204,7 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 
 			fly = matchingIdentity(frameIdx1, frameIdx2, Etiquetas, comp_rect, angle );
 
-			if(SHOW_MOTION_TEMPLATE){
+			if(SHOW_VISUALIZATION&&SHOW_MOTION_TEMPLATE){
 				// draw a clock with arrow indicating the direction
 				center = cvPoint( (comp_rect.x + comp_rect.width/2),
 								  (comp_rect.y + comp_rect.height/2) );

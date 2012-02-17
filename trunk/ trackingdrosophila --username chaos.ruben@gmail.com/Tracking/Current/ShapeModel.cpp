@@ -41,7 +41,7 @@ void ShapeModel( CvCapture* g_capture, SHModel* SH,IplImage* ImMask, CvRect ROI 
 
 		ImPreProcess( frame, ImGray, ImMask, true, ROI);
 		cvSetImageROI( ImGray, ROI);
-		if (SHOW_SHAPE_MODELING == 1){
+		if (SHOW_VISUALIZATION && SHOW_SHAPE_MODELING ){
 			    cvShowImage( "Visualización", ImGray );
 		}
 
@@ -80,7 +80,7 @@ void ShapeModel( CvCapture* g_capture, SHModel* SH,IplImage* ImMask, CvRect ROI 
 			if(SHOW_SHAPE_MODEL_DATA_AREAS) printf("Area blob %d = %f ",i,currentBlob->area);
 
 			currentBlob->FillBlob( Imblob, CV_RGB(255,0,0));
-			if (SHOW_SHAPE_MODELING == 1){
+			if (SHOW_VISUALIZATION && SHOW_SHAPE_MODELING ){
 				cvShowImage("Foreground", Imblob);
 					}
 
@@ -135,7 +135,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 	STFrame* frameData = NULL;
 	BGModelParams* BGParams = NULL;
 	SHModel* Shape = NULL;
-
+	VisParams* visParams = NULL;
 	CBlobResult blobs;
 	CBlob *currentBlob;
 
@@ -167,17 +167,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
-
-		gettimeofday(&tif, NULL);
-		gettimeofday(&ti, NULL);
-
-
-
 		ImPreProcess( frame, ImGray, BGModel->ImFMask, 0, BGModel->DataFROI);
-		tiempoParcial = obtenerTiempo( ti, 0);
-		printf("\t0)Preprocesado : %5.4g ms\n", tiempoParcial);
-
-
 
 		// Cargamos datos del fondo
 		if(!frameData ) { //en la primera iteración iniciamos el modelo dinamico al estático
@@ -191,33 +181,19 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 			cvCopy( lastBG, frameData->BGModel);
 			cvCopy( lastIdes,frameData->IDesvf );
 		}
-
 	//	obtener la mascara del FG y la lista con los datos de sus blobs.
-
 		//// BACKGROUND UPDATE
 		// Actualización del fondo
 		// establecer parametros
-		gettimeofday(&ti, NULL); printf("\t1)Actualización del modelo de fondo:\n");
-
 		if( BGParams == NULL ) DefaultBGMParams( &BGParams);
-
 		UpdateBGModel( ImGray,frameData->BGModel,frameData->IDesvf, BGParams, BGModel->DataFROI, BGModel->ImFMask );
-	//	cvShowImage("Background",frameData->BGModel);
-	//	cvWaitKey(0);
-		tiempoParcial = obtenerTiempo( ti, 0);
-		printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-		gettimeofday(&ti, NULL);printf("\t2)Resta de Fondo \n");
 		BackgroundDifference( ImGray, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGParams, BGModel->DataFROI);
 		// guardamos las imagenes para iniciar el siguiente frame
 		cvCopy( frameData->BGModel, lastBG);
 		cvCopy(  frameData->IDesvf,lastIdes);
-		tiempoParcial = obtenerTiempo( ti, 0);
-		printf("\t\t-Tiempo total : %5.4g ms\n", tiempoParcial);
 
-	//	VisualizarFr( frameData, BGModel );
-	//	cvWaitKey(0);
 		//Obtener los Blobs y excluir aquellos que no interesan por su tamaño
 		cvSetImageROI(  frameData->FG , BGModel->DataFROI);
 
@@ -261,7 +237,11 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		}//Fin del For 1
 		num_frames += 1;
 		cvResetImageROI(frameData->FG);
-		if (SHOW_SHAPE_MODELING){
+		if(SHOW_WINDOW){
+			if(!visParams) AllocDefaultVisParams(&visParams, frame );
+			DraWWindow(frameData->FG, BGModel,  NULL , visParams, NULL, NULL , SHAPE);
+		}
+		if (SHOW_VISUALIZATION && SHOW_SHAPE_MODELING ){
 				cvShowImage("Modelando forma...",Imblob);
 				cvMoveWindow("Modelando forma...", 0, 0 );
 				cvShowImage("Foreground", frameData->FG);
@@ -269,7 +249,11 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		}
 
 	}//Fin del while
-
+	if(SHOW_WINDOW){
+		CvRect rect = cvRect(0,	0,visParams->Resolucion.width,
+					visParams->Resolucion.height);
+		desvanecer( NULL, 20, rect);
+	}
 	Shape->FlyAreaMedia=Shape->FlyAreaMedia/total_blobs;// Media de las Areas para cada frame
 
 	//Calcular la desvición típica
@@ -291,7 +275,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 
 	if(SHOW_SHAPE_MODEL_DATA_MEDIANA )
 		printf("\n MEDIANA AREAS: %f \t MEDIA AREAS: %f \t DESVIACION AREAS: %f",Shape->FlyAreaMed,Shape->FlyAreaMedia,Shape->FlyAreaDes);
-
+	if( visParams) free( visParams);
 	free( BGParams);
 	liberarSTFrame( frameData );
 	cvReleaseImage( &ImGray);

@@ -18,12 +18,25 @@
 #include <ctype.h>
 #include <stdio.h>
 
-typedef struct VisualParams{
+#define FLAT 1
+#define BG_MODEL 2
+#define SHAPE 3
+#define TRAKING 4
+#define CENTRAR cvPoint(-1,-1)
+#define CENTRAR_SUP cvPoint(-2, -2 )
+#define CENTRAR_INF cvPoint(-3, -3 )
+
+typedef struct {
 	bool pause;
 	bool stop;
 	bool Grab;
 	int VisualPos;
-}VParams;
+	CvSize Resolucion;
+	CvRect ROITracking;
+	CvRect ROIPreProces;
+	int DelayLogo;
+	int BPrWidth; // ancho de la barra de progeso
+}VisParams;
 
 /// Crea las ventanas de visualización
 void CreateWindows(IplImage* ImRef);
@@ -41,20 +54,43 @@ void DestroyWindows( );
 //		- frame inicial ( i )
 //		- grabar frame a fichero ( g )
 //		- continuar (c) : continua con el procesado
-void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ,CvCapture* Cap,CvVideoWriter* Writer);
+void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat ,CvCapture* Cap,CvVideoWriter* Writer,VisParams* visParams);
 
-void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer  );
+void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer, VisParams* visParams );
 
-void DefaultVParams( VParams **Parameters);
+void DraWPresent( );
 
+void DraWWindow( IplImage* ImRaw, StaticBGModel* Flat,CvVideoWriter* Writer,VisParams* params,tlcde* flies, STStatFrame* Stats ,int num );
+
+void AllocDefaultVisParams(VisParams** visParams,IplImage* Image );
+
+void SetVisParams(VisParams* visparams,IplImage* Image );
+
+void Incrustar( IplImage* src1, IplImage* src2, IplImage* dst, CvRect ROI );
+
+void DibujarFondo( VisParams* params);
+
+void IncrustarTxt(VisParams* params,int num);
+
+void IncrustarLogo(const char Cad[100], IplImage* ImLogos,CvPoint Origen,int Delay, bool Clear );
+
+void Transicion( const char texto[],int delay_up, int delay_on, int delay_down);
+
+void Transicion2( const char texto[],VisParams* params, int delay_up );
+
+void Transicion3( const char texto[],VisParams* params, int delay_up );
+
+void Transicion4(const char texto[],VisParams* params, int delay_down);
+
+void desvanecer( IplImage* Imagen , int Delay,CvRect ROI );
 //!\brief ShowstatDataFr: Imprime en la visualización del frame los datos correspondientes a su procesado.
 /*!
  * \param Im Imagen de 8 bits, donde se visualiza el frame actual.
  */
 
-void ShowStatDataFr( STStatFrame* Stats, IplImage* ImVisual);
+void ShowStatDataFr( STStatFrame* Stats, IplImage* ImVisual,VisParams* visParams);
 
-void VerEstadoBuffer( IplImage* Imagen,int num );
+void VerEstadoBuffer( IplImage* Imagen,int num, VisParams* params, int max );
 
 void VerEstadoBGModel( IplImage* Imagen );
 
@@ -68,6 +104,7 @@ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
  */
 void dibujarBlobs( IplImage* Imagen,tlcde* lista_blobs );
 
-void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, int *posbuf,CvVideoWriter* writer );
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, VisParams *Params,CvVideoWriter* writer );
 
+void releaseVisParams( VisParams *Parameters);
 #endif /* VISUALIZACION_HPP_ */

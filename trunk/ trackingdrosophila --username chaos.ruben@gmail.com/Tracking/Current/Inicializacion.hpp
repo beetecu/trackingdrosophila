@@ -16,7 +16,6 @@
 int Inicializacion( int argc,
 		char* argv[],
 		char* nombreFichero,
-		char* nombrevideo,
-		STStatFrame** Stats);
+		char* nombrevideo);
 
 #endif /* INICIALIZACION_HPP_ */

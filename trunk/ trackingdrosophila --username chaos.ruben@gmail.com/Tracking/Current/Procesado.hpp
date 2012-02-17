@@ -63,7 +63,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
  * \see VideoTracker.hpp
  */
 
-STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
+STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValParams* valParams, BGModelParams *BGPrParams );
 
 ///! Igual que procesado uno pero con modelo de fondo gaussiano simple
 STFrame* Procesado3( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape );
@@ -88,6 +88,5 @@ void putBGModelParams( BGModelParams* Params);
 
 void AllocateDataProcess( IplImage *I );
 
-void releaseDataProcess();
-
+void releaseDataProcess(ValParams* valParams, BGModelParams *BGPrParams);
 #endif /* PROCESADO_HPP_ */

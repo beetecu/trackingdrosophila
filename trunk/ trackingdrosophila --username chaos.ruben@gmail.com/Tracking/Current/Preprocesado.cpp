@@ -19,9 +19,10 @@ int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 
 	StaticBGModel* bgmodel;
 	SHModel *shape;
-
+#ifdef	MEDIR_TIEMPOS
 	gettimeofday(&tif, NULL);
 	gettimeofday(&ti, NULL);
+#endif
 	printf("\nIniciando preprocesado...");
 
 	//captura
@@ -32,7 +33,7 @@ int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 			return -1;
 		}
 	// Iniciar estructura para parametros del modelo de fondo en primera actualización
-	BGModelParams *BGParams = NULL;
+
 	BGParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
 	if ( !BGParams ) {error(4);return 0;}
 
@@ -46,23 +47,26 @@ int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 	printf("Hecho. Tiempo empleado: %0.2f seg\n", TiempoParcial);
 
 	// Crear modelo de forma
-	gettimeofday(&ti, NULL);
+
 	printf("\t2)Creando modelo de forma..... ");
-	gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS	gettimeofday(&ti, NULL);
+#endif
 //	ShapeModel( capture, shape , bgmodel->ImFMask, bgmodel->DataFROI );
 	shape = ShapeModel2( capture, bgmodel );
 	if(!shape) {error(9); return 0;}
+#ifdef	MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , 1 );
 	printf("Hecho. Tiempo empleado: %0.2f seg\n", TiempoParcial);
-
+#endif
 	*BGModel = bgmodel;
 	*Shape = shape;
 
 	cvReleaseCapture(&capture);
-
+#ifdef	MEDIR_TIEMPOS
 	TiempoTotal = obtenerTiempo( tif , 1);
 	printf("\nPreprocesado correcto.Tiempo total empleado: %0.2f s\n", TiempoTotal);
-	cvDestroyAllWindows();
+#endif
+	//	cvDestroyAllWindows();
 	return 1;
 }
 
@@ -70,7 +74,7 @@ void InitialBGModelParams( BGModelParams* Params){
 
 	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 100;
 	 else Params->FLAT_FRAMES_TRAINING = 0;
-	 Params->FRAMES_TRAINING = 100;
+	 Params->FRAMES_TRAINING = 200;
 	 Params->ALPHA = 0 ;
 	 Params->INITIAL_DESV = 0.05;
 

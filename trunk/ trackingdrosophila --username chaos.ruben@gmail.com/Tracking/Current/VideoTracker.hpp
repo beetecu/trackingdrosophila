@@ -39,11 +39,12 @@ using namespace std;
 
 
 // OPCIONES GENERALES DE PROGRAMA
-
+#define MODO_DEPURACION
 #define DETECTAR_PLATO 1
-#define MEDIR_TIEMPOS 1
+//#define MEDIR_TIEMPOS 0
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
+
 
 
 #define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
@@ -66,9 +67,9 @@ using namespace std;
 #define SHOW_KALMAN_DATA 0
 
 // VISUALIZACIÓN DE IMAGENES
-
+#define SHOW_WINDOW 0
 #define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
-#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar el resultado.
+#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar resultados.
 #define SHOW_LEARNING_FLAT 1
 #define SHOW_INIT_BACKGROUND 1
 #define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
