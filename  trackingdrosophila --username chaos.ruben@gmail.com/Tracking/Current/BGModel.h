@@ -10,6 +10,7 @@
 
 #include "VideoTracker.hpp"
 #include "Libreria.h"
+#include "Visualizacion.hpp"
 
 #define K 0.6745	/// Para la corrección de la MAD ( Median Absolute Deviation )
 					/// con el que se estima la desviación típica.

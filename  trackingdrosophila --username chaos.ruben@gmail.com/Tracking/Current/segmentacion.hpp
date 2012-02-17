@@ -25,21 +25,15 @@
 //! entre otras).
 /*!
  * \param Brillo Imagen fuente de 8 bits de niveles de gris del frame actual.
- * \param FrameData Estructura que contiene las diferentes capas.
- * \param Roi Contiene los datos para establcer la region de interes ( Plato ).
- * \param Mask Imagen mascara del plato.
+ * \param BGModel Modelo de fondo.Contiene el valor medio de cada píxel
+ * \param FG Foreground
+ * \param Roi Región a segmentar
+ * \param Opcionalmete se le puede pasar una máscara.
  *
- * \return La Lista con los blobs detectados en el frame.
+ * \return La Lista con los blobs detectados y aproximados a una elipse en el frame.
  *
  */
 
-tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi, IplImage* Mask );
-
-//!\brief Igual que segmentación pero en ved de pasarsele la estructura de frameDara, se le pasa directamente
-//! las imagenes que usa. con esto se consigue que aumente la velocidad de ejecución y que
-/*!
- *
- */
 tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect Roi,IplImage* Mask);
 
 //!\brief Crea las imagenes, matrices y estructuras utilizadas en la segementación.
@@ -47,6 +41,17 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
  * \param Brillo Imagen fuente de 8 bits de nivel de gris, contiene el frame actual.
  */
 void CreateDataSegm( IplImage* Brillo );
+
+//!\brief // realiza el ajuste a una elipse de los pesos del rectangulo que coincidan con la máscara
+//! y rellena los datos de la estructura fly. Si no es posible el ajuste, devuelve null
+/*!
+ * \param rect Region de interes corespondiente a cada blob.
+ * \param pesos Imagen que contiene la distancia normalizada de cada pixel a su modelo de fondo.
+ * \param mask Mascara correspondiente a cada blob.
+ * \param num_frame El numero de frame para introducir su dato en la lista
+ *
+ * \return Los valores de la elipse para cada blob.
+ */
 
 STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_frame);
 

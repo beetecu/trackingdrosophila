@@ -10,8 +10,7 @@
 int Inicializacion( int argc,
 		char* argv[],
 		char* nombreFichero,
-		char* nombreVideo,
-		STStatFrame** Stats){
+		char* nombreVideo ){
 
 
 	/// Crear fichero de datos.

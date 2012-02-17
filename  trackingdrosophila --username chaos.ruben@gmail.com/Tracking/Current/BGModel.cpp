@@ -67,7 +67,10 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
 	/////// BUSCAR PLATO Y OBTENER MÁSCARA /////
 
-	gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
+
+
 	if  ( Param->FLAT_FRAMES_TRAINING >0){
 		printf("\n\t\t1)Localizando y parametrizando plato...\n ");
 		MascaraPlato( t_capture, bgmodel, Param->FLAT_FRAMES_TRAINING);
@@ -102,14 +105,17 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 		cvZero(bgmodel->ImFMask);
 	}
 
+#ifdef	MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\n\t\t-Tiempo total %0.2f s\n", TiempoParcial);
+#endif
 
 	printf("\n\t\t2)Aprendiendo fondo...\n ");
-	gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
 
 	///// APRENDER FONDO /////
-
+	VisParams* visParams=NULL;
 	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
 	while( num_frames < Param->FRAMES_TRAINING ){
 		frame = cvQueryFrame( t_capture );
@@ -130,15 +136,23 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 		}
 		// Aprendizaje del fondo
 		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesvf, bgmodel->DataFROI, bgmodel->ImFMask);
-		if(SHOW_INIT_BACKGROUND){
+		if(SHOW_VISUALIZATION && SHOW_INIT_BACKGROUND){
+
 			cvShowImage("Aprendiendo fondo...", bgmodel->Imed);
 			cvMoveWindow("Aprendiendo fondo...", 0, 0 );
 		}
+		if(SHOW_WINDOW){
+			if(!visParams) AllocDefaultVisParams(&visParams, bgmodel->Imed );
+			DraWWindow( bgmodel->Imed, bgmodel,  NULL , visParams, NULL, NULL, BG_MODEL );
+		}
 		num_frames += 1;
 	}
+	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...",visParams, 50);
+#ifdef	MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\t\t-Tiempo total %0.2f s\n", TiempoParcial);
-	cvDestroyAllWindows();
+#endif
+	if( visParams) free( visParams);
 	return bgmodel;
 }
 
@@ -169,11 +183,13 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,Cv
 
 	// Se estima la mediana. Se actualiza el fondo usando la máscara.
 	// median(p)
-	gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
 	updateMedian( ImGray, BGMod, Imaskt, ROI);
+#ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti , NULL);
 	printf("\t\tActualización de mediana: %5.4g ms\n", tiempoParcial);
-
+#endif
 	if( SHOW_BGMODEL_DATA ){
 			printf("\n\n Imagenes tras actualizar fondo" );
 			CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
@@ -322,7 +338,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 //			cvShowImage( "Background",bg_model);
 //			cvWaitKey(0);
 	}
-	 gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
 	for (int y = ROI.y; y < ROI.y + ROI.height; y++){
 		uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
 		uchar* ptr2 = (uchar*) ( bg_model->imageData + y*bg_model->widthStep + 1*ROI.x);
@@ -338,10 +355,10 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 			else ptr4[x] = 0;
 		}
 	}
-
+#ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) {tiempoParcial = obtenerTiempo( ti , NULL);
 	printf("\t\tUmbralizacion low trhreshold: %5.4g ms\n", tiempoParcial);}
-
+#endif
 	if( SHOW_BGMODEL_DATA ){
 			printf("\n\nTRAS resta de fondo");
 			CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
@@ -356,11 +373,14 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 	//			cvWaitKey(0);
 		}
 	// limpieza de FG
+#ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) gettimeofday(&ti, NULL);
+#endif
 	FGCleanup( fg, Idesvf,Param, ROI );
+#ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES){tiempoParcial = obtenerTiempo( ti , NULL);
 	printf("\t\tLimpieza de FG: %5.4g ms\n", tiempoParcial);}
-
+#endif
 	if( SHOW_BGMODEL_DATA ){
 		printf("\n\nTRAS limpieza de fondo");
 		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
@@ -458,8 +478,13 @@ void MascaraPlato(CvCapture* t_capture,
 	CvSeq* circles = NULL;
 	IplImage* Im = NULL;
 	IplImage* Visual;
+	VisParams* visParams = NULL;
+
 
 // LOCALIZACION
+
+
+
 
 	int num_frames = 0;
 
@@ -509,13 +534,22 @@ void MascaraPlato(CvCapture* t_capture,
 			// Excluimos los radios que se salgan de la imagen
 			 float* p = (float*)cvGetSeqElem( circles, i );
 
-			 if( SHOW_LEARNING_FLAT){
+			 if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
 				 if (Flat->PRadio>0)
-					 cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+				 //cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
 				 cvCircle( Visual, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
-				 cvShowImage("Buscando Plato...",Visual);
-				 //cvWaitKey(0);
+				 if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
+					 cvShowImage("Buscando Plato...",Visual);
+		 //cvWaitKey(0);
 			 }
+			 if(SHOW_WINDOW){
+					 if(!visParams){
+						 AllocDefaultVisParams(&visParams, frame );
+						 Transicion("Iniciando preprocesado...", 1,1000, 50 );
+						 Transicion2( "Buscando plato... ",visParams, 20 );
+					 }
+					 DraWWindow( Visual, Flat,  NULL , visParams, NULL, NULL, FLAT);
+				 }
 
 			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
 				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
@@ -558,10 +592,11 @@ void MascaraPlato(CvCapture* t_capture,
 			else	ptr[x] = 0;
 		}
 	}
+	if(SHOW_WINDOW) Transicion4("Buscando plato...",visParams, 50);
 	printf("\t\t-Creación de máscara de plato finalizada.");
 	cvReleaseImage(&Im);
 	cvReleaseImage(&Visual);
-	cvDestroyAllWindows();
+	if( visParams) free( visParams);
 	return;
 }
 

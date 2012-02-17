@@ -1240,6 +1240,7 @@ CvVideoWriter* iniciarAvi( CvCapture* capture, char* nombreVideo){
 						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT)
 						);
 
+//	CvSize size = cvSize(1024,768);
 	CvVideoWriter *writer = cvCreateVideoWriter(
 							nombreVideo,
 							CV_FOURCC('P','I','M','1'),

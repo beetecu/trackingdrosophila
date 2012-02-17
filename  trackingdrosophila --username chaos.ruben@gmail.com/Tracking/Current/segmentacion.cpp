@@ -39,136 +39,6 @@ CvMat *RT;
 CvMemStorage* storage;
 CvSeq* first_contour;
 
-
-tlcde* segmentacion( IplImage *Brillo, STFrame* FrameData ,CvRect Roi,IplImage* Mask){
-
-	struct timeval ti, tf; // iniciamos la estructura
-	float tiempoParcial;
-	//Iniciar lista para almacenar las moscas
-	tlcde* flies = NULL;
-	flies = ( tlcde * )malloc( sizeof(tlcde ));
-	iniciarLcde( flies );
-	//Inicializar estructura para almacenar los datos cada mosca
-	STFly *flyData = NULL;
-
-	// crear imagenes y datos si no se ha hecho e inicializar
-	CreateDataSegm( Brillo );
-	cvCopy(FrameData->FG,FGTemp);
-	establecerROIS( FrameData, Brillo, Roi );
-	cvZero( Mask);
-
-	// Distancia de cada pixel a su modelo de fondo.
-//		cvShowImage("Foreground",FGTemp);
-//				cvWaitKey(0);
-	if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
-
-	cvAbsDiff(Brillo,FrameData->BGModel,pesos);// |I(p)-u(p)|
-	if( SHOW_SEGMENTATION_MATRIX == 1){
-		printf("\n ANTES \n");
-
-		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-		//ventana = rect;
-		printf("\n\n Matriz Brillo ");
-		verMatrizIm(Brillo, ventana);
-		printf("\n\n Matriz BGModel ");
-		verMatrizIm(FrameData->BGModel, ventana);
-		printf("\n\n Matriz pesos(p) = |I(p)-u(p)|/0(p) ");
-		verMatrizIm(pesos, ventana);
-	}
-	//verMatrizIm(pesos, Roi);
-	if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
-		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-									(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\t\t0)Calculo de |I(p)-u(p)|/0(p) : %5.4g ms\n", tiempoParcial);
-		printf("\t\t1)Ajuste de blobs a elipses\n");
-	}
-
-	if( SHOW_SEGMENTATION_MATRIX == 1){
-				printf("\n DESPUES \n");
-				CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-				printf("\n\n Matriz Brillo ");
-				verMatrizIm(Brillo, ventana);
-				printf("\n\n Matriz BGModel ");
-				verMatrizIm(FrameData->BGModel, ventana);
-				printf("\n\n Matriz pesos(p) = |I(p)-u(p)|/0(p) ");
-				verMatrizIm(pesos, ventana);
-			}
-	//Buscamos los contornos de las moscas en movimiento en el foreground
-
-	int Nc = cvFindContours(FGTemp,
-			storage,
-			&first_contour,
-			sizeof(CvContour),
-			CV_RETR_EXTERNAL,
-			CV_CHAIN_APPROX_NONE,
-			cvPoint(Roi.x,Roi.y));
-	int id=0; // contador de blobs
-	if( SHOW_SEGMENTATION_DATA ) printf( "\nTotal Contornos Detectados: %d ", Nc );
-
-	for( CvSeq *c=first_contour; c!=NULL; c=c->h_next) {
-		// Parámetros para calcular el error del ajuste en base a la diferencia de areas entre el Fg y la ellipse
-		float err;
-		float areaFG;
-		float areaElipse;
-		areaFG = cvContourArea(c);
-		id++;
-
-		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
-		//reserva de espacio para los datos del blob
-		if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
-
-		flyData = parametrizarFly( rect, pesos, FrameData->FG, FrameData->num_frame);
-
-		if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
-			tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
-			printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);
-		}
-		// error de ajuste
-		areaElipse = CV_PI*flyData->b*flyData->a;
-		err = abs(areaElipse - areaFG);
-		// Añadir a lista
-		insertar( flyData, flies );
-		if( SHOW_SEGMENTATION_MATRIX == 1){
-			printf("\n BLOB %d\n",id);
-			id++; //incrmentar el Id de las moscas
-			CvRect ventana;// = cvRect(137,261,30,14);	// 321,113,17,14
-			ventana = rect;
-			printf("\n\n Matriz Brillo ");
-			verMatrizIm(Brillo, ventana);
-			printf("\n\n Matriz BGModel ");
-			verMatrizIm(FrameData->BGModel, ventana);
-			printf("\n\n Matriz pesos(p) = |I(p)-u(p)|/0(p) ");
-			verMatrizIm(pesos, ventana);
-		}
-		if (SHOW_SEGMENTATION_DATA == 1){
-			printf("\n AreaElipse = %f  Area FG = %f  Error del ajuste = %f", areaElipse,areaFG,err);
-			printf("\n\nElipse\nEJE MAYOR : %f EJE MENOR: %f ORIENTACION: %f ",
-					2*flyData->a,
-					2*flyData->b,
-					flyData->orientacion);
-		}
-
-		// dibujar la máscara
-		if( Mask != NULL ){
-		 // corrige el origen de ángulos
-			float angle;
-			if ( flyData->orientacion >=0 && flyData->orientacion < 180) angle = 180 - flyData->orientacion;
-			else angle = (360-flyData->orientacion)+180;
-			CvSize axes = cvSize( cvRound(flyData->a) , cvRound(flyData->b) );
-			cvEllipse( Mask, flyData->posicion , axes, angle, 0, 360, cvScalar( 255,0,0,0), -1, 8);
-		}
-
-	}// Fin de contornos
-
-
-	resetearROIS( FrameData, Brillo );
-
-	return flies;
-
-}//Fin de la función
-
-
 tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect Roi,IplImage* Mask){
 
 	extern double NumFrame;
@@ -178,7 +48,6 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 	tlcde* flies = NULL;
 	flies = ( tlcde * )malloc( sizeof(tlcde ));
 	iniciarLcde( flies );
-
 
 	// crear imagenes y datos si no se ha hecho e inicializar
 	CreateDataSegm( Brillo );
@@ -193,8 +62,8 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 	// Distancia de cada pixel a su modelo de fondo.
 //		cvShowImage("Foreground",FGTemp);
 //				cvWaitKey(0);
-	if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
-
+#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
 	cvAbsDiff(Brillo,BGModel,pesos);// |I(p)-u(p)|
 	if( SHOW_SEGMENTATION_MATRIX == 1){
 				printf("\n ANTES \n");
@@ -209,12 +78,14 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 				verMatrizIm(pesos, ventana);
 			}
 
-	if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
+#ifdef MEDIR_TIEMPOS
+	gettimeofday(&tf, NULL);
 		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 									(tf.tv_usec - ti.tv_usec)/1000.0;
 		printf("\t\t0)Calculo de |I(p)-u(p)|/0(p) : %5.4g ms\n", tiempoParcial);
+#endif
 		printf("\t\t1)Ajuste de blobs a elipses\n");
-	}
+
 
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
@@ -242,16 +113,17 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 		//verMatrizIm(pesos, rect);
 		if( areaFG <= 5 ) continue;
 		//reserva de espacio para los datos del blob
-		if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
-
+#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#endif
 		flyData = parametrizarFly( rect, pesos, FG, NumFrame);
 		// si no se consigue parametrizar pasamos al siguiente contorno
 		if( !flyData ) continue;
-		if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
+#ifdef MEDIR_TIEMPOS gettimeofday(&tf, NULL);
 			tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 										(tf.tv_usec - ti.tv_usec)/1000.0;
+
 			printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);
-		}
+#endif
 		// error de ajuste
 
 		err = abs(flyData->areaElipse - areaFG);
@@ -591,7 +463,7 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 //	// Distancia de cada pixel a su modelo de fondo.
 ////		cvShowImage("Foreground",FGTemp);
 ////				cvWaitKey(0);
-//	if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
+//	#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 //
 //	cvAbsDiff(Brillo,FrameData->BGModel,IDif);// |I(p)-u(p)|
 //	if( SHOW_SEGMENTATION_MATRIX == 1){
@@ -614,7 +486,7 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 //	cvConvertScale(IDif ,IDifF,1,0);// A float
 //	cvDiv( IDifF,FrameData->IDesvf,pesos );// Calcular |I(p)-u(p)|/0(p)
 //
-//	if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
+//	#ifdef MEDIR_TIEMPOS{ gettimeofday(&tf, NULL);
 //		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 //									(tf.tv_usec - ti.tv_usec)/1000.0;
 //		printf("\t\t0)Calculo de |I(p)-u(p)|/0(p) : %5.4g ms\n", tiempoParcial);
@@ -659,13 +531,13 @@ void resetearROIS( STFrame* FrameData, IplImage* Brillo ){
 //
 //		CvRect rect=cvBoundingRect(c,0); // Hallar los rectangulos para establecer las ROIs
 //		// realiza el ajuste a una elipse de los pesos del rectangulo que coincidan con la máscara
-//		if(SHOW_SEGMENTATION_TIMES == 1) gettimeofday(&ti, NULL);
+//		#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 //		ellipseFit( rect, pesos, FrameData->FG,
 //				&flyData->b,  // semieje menor
 //				&flyData->a,  // senueje mayor
 //				&flyData->posicion, // centro elipse
 //				&flyData->orientacion ); // orientación en grados 0-360
-//		if(SHOW_SEGMENTATION_TIMES == 1){ gettimeofday(&tf, NULL);
+//		#ifdef MEDIR_TIEMPOS{ gettimeofday(&tf, NULL);
 //				tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
 //											(tf.tv_usec - ti.tv_usec)/1000.0;
 //				printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);

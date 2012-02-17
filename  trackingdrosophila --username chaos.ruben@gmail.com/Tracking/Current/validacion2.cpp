@@ -17,18 +17,16 @@
 
 ////////////////// VALIDACION /////////////////
 
-BGModelParams* ValBGParams = NULL;
-STFly *FlyData = NULL;
-ValParams* VParams= NULL;
-
 void Validacion2(IplImage *Imagen,
 		STFrame* FrameData,
 		SHModel* SH,
-		IplImage* Mask){
+		IplImage* Mask,
+		ValParams* Params){
 
 
 	//Inicializar estructura para almacenar los datos cada mosca
-
+	STFly *FlyData = NULL;
+	BGModelParams* ValBGParams = NULL;
 
 	int Exceso;//Flag que indica si la Pxi minima no se alcanza por exceso o por defecto.
 	double Circul; // Para almacenar la circularidad del blob actual
@@ -37,8 +35,8 @@ void Validacion2(IplImage *Imagen,
 	double BestPxi=0; // la mejor probabilidad obtenida para cada mosca
 
 	// Establecemos los parámetros de validación por defecto
-	if ( VParams == NULL ){
-		iniciarValParams( &VParams, SH);
+	if ( Params == NULL ){
+		iniciarValParams( &Params, SH);
 	}
 
 	// Establecemos parámetros para los umbrales en la resta de fondo por defecto
@@ -68,11 +66,12 @@ void Validacion2(IplImage *Imagen,
 		// Comprobar si existe Exceso o Defecto de area, en caso de Exceso la probabilidad del blob es muy pequeña
 		// y el blob puede corresponder a varios blobs que forman parte de una misma moscas o puede corresponder a
 		// un espurio.
-		Exceso = CalcProbFly( SH ,FlyData, VParams); // Calcular la px de la mosca.
+		Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
 		BestPxi  =	FlyData->Px;
+		STFly* MejorFly = FlyData;// = NULL;
 		// comprobar si está dentro de los límites:
 
-		//	VParams->MaxLowTH = *ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
+		//	Params->MaxLowTH = *ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
 
 		// En caso de EXCESO de Area
 		/* Incrementar paulatinamente el umbral de resta de fondo hasta
@@ -88,7 +87,7 @@ void Validacion2(IplImage *Imagen,
 		if( Exceso > 0){
 			//Inicializar estructura para almacenar la lista de los blobs divididos.
 			tlcde* TempSeg=NULL;
-			STFly* MejorFly;// = NULL;
+
 			setBGModParams( ValBGParams);
 			// sustituir por un for con el número máximo de iteraciones.
 			while( !FlyData->flag_seg && !FlyData->failSeg ){
@@ -127,7 +126,7 @@ void Validacion2(IplImage *Imagen,
 				else if(  TempSeg->numeroDeElementos == 1 ) {
 
 					FlyData=(STFly *)obtener(0, TempSeg);
-					Exceso = CalcProbFly( SH , FlyData, VParams);
+					Exceso = CalcProbFly( SH , FlyData, Params);
 					// no se rebasa la pximin continuar
 					if (Exceso > -1 ){
 						if(FlyData->Px > BestPxi ){
@@ -154,7 +153,7 @@ void Validacion2(IplImage *Imagen,
 				else if ( TempSeg->numeroDeElementos > 1 ){
 					// comprobar si las pxi son válidas. En caso de que todas lo sean eliminar de la lista el blob segmentado
 					// y añadirlas a la lista al final.
-					int exito = comprobarPxi( TempSeg, SH, VParams);
+					int exito = comprobarPxi( TempSeg, SH, Params);
 					if (exito){
 						borrarEl(i,FrameData->Flies); // se borra el elemento dividido
 						for(int j = 0; j < TempSeg->numeroDeElementos; j++){ // se añaden los nuevos al final
@@ -193,18 +192,18 @@ void Validacion2(IplImage *Imagen,
 			newRoi = FlyDataRoi;
 			BestPxi = 0;
 			int j=0 ;
-			while( j< VParams->MaxDecLTHIters ){
+			while( j< Params->MaxDecLTHIters ){
 				newRoi.height +=1;
 				newRoi.width +=1;
 				newRoi.x-=1;
 				newRoi.y-=1;
 				ValBGParams->LOW_THRESHOLD -=1;
-				if(ValBGParams->LOW_THRESHOLD == VParams->MinLowTH){
+				if(ValBGParams->LOW_THRESHOLD == Params->MinLowTH){
 					Restaurar(FrameData->Flies, FrameData->FG, Mask, FlyDataRoi, i);
 					break;
 				}
 
-			//while(Exceso < 0 && ValBGParams->LOW_THRESHOLD > VParams->MinLowTH && VParams->MaxDecLTHIters){
+			//while(Exceso < 0 && ValBGParams->LOW_THRESHOLD > Params->MinLowTH && Params->MaxDecLTHIters){
 
 				// Restar fondo
 				BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,ValBGParams, newRoi);
@@ -219,7 +218,7 @@ void Validacion2(IplImage *Imagen,
 				if (TempSeg == NULL||TempSeg->numeroDeElementos <1) continue;
 				// Calcular la pxi
 				FlyData=(STFly *)obtener(0, TempSeg);
-				Exceso = CalcProbFly( SH ,FlyData, VParams); // Calcular la px de la mosca.
+				Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
 
 				// mientras la probabilidad se incremente continuamos decrementando el umbral
 				j++;
@@ -228,7 +227,7 @@ void Validacion2(IplImage *Imagen,
 					BestPxi=FlyData->Px;
 					Besthres=ValBGParams->LOW_THRESHOLD;
 				}
-				else if(FlyData->Px < BestPxi || j == VParams->MaxDecLTHIters){
+				else if(FlyData->Px < BestPxi || j == Params->MaxDecLTHIters){
 					// cuando deje de mejorar o bien se llegue al máximo de iteraciones
 					//nos quedamos con aquel que dio la mejor probabilidad. Lo insertamos en la lista en la misma posición.
 					if( SHOW_VALIDATION_DATA){
@@ -265,7 +264,7 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 	STFly *FlyData = NULL;
 	//Inicializar estructura para almacenar los datos cada mosca
 	BGModelParams* ValBGParams;
-	ValParams* VParams;
+	ValParams* Params;
 
 	double Pxi; // La probabilidad del blob actual
 	bool Exceso;//Flag que indica si la Pxi minima no se alcanza por exceso o por defecto.
@@ -275,8 +274,8 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 	double BestPxi=0; // la mejor probabilidad obtenida para cada mosca
 
 	// Establecemos los parámetros de validación por defecto
-	if ( VParams == NULL ){
-		iniciarValParams( &VParams, SH);
+	if ( Params == NULL ){
+		iniciarValParams( &Params, SH);
 	}
 
 	// Establecemos parámetros para los umbrales en la resta de fondo por defecto
@@ -299,7 +298,7 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 		CvRect FlyDataRoi= Segroi;
 
 		// calcular su probabilidad
-		FlyData->Px = CalcProbFly( SH ,FlyData, VParams);
+		FlyData->Px = CalcProbFly( SH ,FlyData, Params);
 		BestPxi  =	FlyData->Px;
 
 		// calcular su circularidad
@@ -308,12 +307,12 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 		// Comprobar si existe Exceso o Defecto de area, en caso de Exceso la probabilidad del blob es muy pequeña
 		// y el blob puede corresponder a varios blobs que forman parte de una misma moscas o puede corresponder a
 		// un espurio.
-		Exceso = CalcProbFly( SH ,FlyData, VParams); // Calcular la px de la mosca.
+		Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
 		// comprobar si está dentro de los límites:
-		if( Exceso && FlyData->Px > VParams->PxiMax) Exceso = 1; // exceso
-		else if( !Exceso && FlyData->Px < VParams->PxiMin ) Exceso = -1; // defecto
+		if( Exceso && FlyData->Px > Params->PxiMax) Exceso = 1; // exceso
+		else if( !Exceso && FlyData->Px < Params->PxiMin ) Exceso = -1; // defecto
 		else Exceso = 0; // dentro de los límites
-		//	VParams->MaxLowTH = *ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
+		//	Params->MaxLowTH = *ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
 
 		// En caso de EXCESO de Area
 		/* Incrementar paulatinamente el umbral de resta de fondo hasta
@@ -342,7 +341,7 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 				BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,ValBGParams, Segroi);
 
 				// Segmentar
-				TempSeg = segmentacion(Imagen, FrameData, Segroi,NULL);
+				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, Segroi, NULL);
 
 				// Comprobar si se ha conseguido dividir el blob y verificar si el resultado es optimo
 
@@ -363,9 +362,9 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 				// y continuar incrementando el umbral en caso de no rebasar la pximin.
 				else if(  TempSeg->numeroDeElementos == 1 ) {
 					FlyData=(STFly *)obtener(0, TempSeg);
-					Exceso = CalcProbFly( SH , FlyData, VParams );
+					Exceso = CalcProbFly( SH , FlyData, Params );
 					if (!Exceso ){
-						if(FlyData->Px > VParams->PxiMin) continue;
+						if(FlyData->Px > Params->PxiMin) continue;
 
 						else { // no hay fisión y se ha rebasado la pxmin. Restaurar
 							FlyData=(STFly *)obtener(0,TempSeg);
@@ -392,8 +391,8 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 					for(int j = 0; j < TempSeg->numeroDeElementos; j++){
 						// Calcular Pxi del/los blob/s resultante/s
 						FlyData=(STFly *)obtener(j, TempSeg);
-						Pxi = CalcProbFly( SH , FlyData, VParams );
-						if (FlyData->Px < VParams->PxiMin )
+						Pxi = CalcProbFly( SH , FlyData, Params );
+						if (FlyData->Px < Params->PxiMin )
 							FlyData->flag_seg = true;
 						else break;
 					}
@@ -436,21 +435,20 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 			setBGModParams( ValBGParams);
 
 			for( int j = 0;
-					ValBGParams->LOW_THRESHOLD == VParams->MinLowTH, j< VParams->MaxDecLTHIters;
+					ValBGParams->LOW_THRESHOLD == Params->MinLowTH, j< Params->MaxDecLTHIters;
 					j++, ValBGParams->LOW_THRESHOLD -=1 ){
-			//while(Exceso < 0 && ValBGParams->LOW_THRESHOLD > VParams->MinLowTH && VParams->MaxDecLTHIters){
+			//while(Exceso < 0 && ValBGParams->LOW_THRESHOLD > Params->MinLowTH && Params->MaxDecLTHIters){
 
 				// Restar fondo
 				BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,ValBGParams, Segroi);
 
 				// Segmentar
-				TempSeg = segmentacion(Imagen, FrameData, Segroi,NULL);
-
+				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, Segroi, NULL);
 				// Calcular la pxi
-				Exceso = CalcProbFly( SH ,FlyData, VParams); // Calcular la px de la mosca.
+				Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
 				// comprobar si está dentro de los límites:
-				if( Exceso && FlyData->Px > VParams->PxiMax) Exceso = 1; // exceso
-				else if( !Exceso && FlyData->Px < VParams->PxiMin ) Exceso = -1; // defecto
+				if( Exceso && FlyData->Px > Params->PxiMax) Exceso = 1; // exceso
+				else if( !Exceso && FlyData->Px < Params->PxiMin ) Exceso = -1; // defecto
 				else Exceso = 0; // dentro de los límites
 				// si la probabilidad mejora actualizamos la lista con el blob
 				if(Pxi > BestPxi ){
@@ -542,7 +540,7 @@ void setBGModParams( BGModelParams* Params){
 }
 //Probabilidad de todas las moscas
 
-double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData){
+double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* Params,STFly* FlyData){
 
 	double PX=1;
 	double Pxi=0;
@@ -550,7 +548,7 @@ double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData)
 	for(int i=0;i < Lista->numeroDeElementos;i++){
 
 		FlyData=(STFly *)obtener(i, Lista);
-		CalcProbFly( SH, FlyData,VParams);
+		CalcProbFly( SH, FlyData,Params);
 		PX=PX*Pxi;
 	}
 
@@ -559,13 +557,13 @@ double CalcProbTotal(tlcde* Lista,SHModel* SH,ValParams* VParams,STFly* FlyData)
 
 // Probabilidad de cada mosca
 
-int CalcProbFly( SHModel* SH , STFly* FlyData, ValParams* VParams ){
+int CalcProbFly( SHModel* SH , STFly* FlyData, ValParams* Params ){
 	int Exceso;
 	FlyData->Px = exp( -abs( FlyData->areaElipse - SH->FlyAreaMedia) / SH->FlyAreaDes);
 	//Si el area del blob es menor que la media, el error es por defecto,
 	//si es mayor que la media el error será por exceso.
-	if( Exceso && FlyData->Px < VParams->PxiMax) Exceso = 1; // exceso
-	else if( !Exceso && FlyData->Px < VParams->PxiMin ) Exceso = -1; // defecto
+	if( Exceso && FlyData->Px < Params->PxiMax) Exceso = 1; // exceso
+	else if( !Exceso && FlyData->Px < Params->PxiMin ) Exceso = -1; // defecto
 	else Exceso = 0; // dentro de los límites
 	return Exceso;
 
@@ -673,7 +671,4 @@ void RestaurarElMejor(tlcde* lista, IplImage* Fg, STFly* MejorFly, CvRect Roi, i
 	dibujarBlob( MejorFly, Fg);
 }
 
-void releaseDataVal(){
-	free(ValBGParams);
-	free( VParams );
-}
+

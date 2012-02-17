@@ -21,29 +21,37 @@ float TiempoGlobal;
 double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
 double TotalFrames ;
 
-///HightGui
-int g_slider_pos = 0;
 
-/// MODELADO DE FONDO
+/// PREPROCESADO
+//Modelado de fondo
 StaticBGModel* BGModel = NULL;
-
 // Modelado de forma
 SHModel* Shape;
 
+// PROCESADO
 /// Estructura fly
 STFly* Fly = NULL;
 /// Lista flies
 tlcde *Flies = NULL;
-
 /// Estructura frame
 STFrame* FrameDataIn = NULL;
 STFrame* FrameDataOut = NULL;
+///Parámetros fondo para procesado
+BGModelParams *BGPrParams = NULL;
+///Parámetros Validación para procesado
+ValParams* valParams = NULL;
 
+///TRACKING
 /// Buffer frames
 tlcde *FramesBuf = NULL;
 
 /// Estructura estadísticas
 STStatFrame* Stats;
+
+///HightGui
+int g_slider_pos = 0;
+// parametros de visualización
+VisParams* visParams = NULL;
 
 int main(int argc, char* argv[]) {
 
@@ -63,12 +71,15 @@ int main(int argc, char* argv[]) {
 
 	///////////  INICIALIZACIÓN ////////////
 	printf("\nInicializando parámetros...");
+	if(SHOW_WINDOW) DraWPresent(  );
+
 	TiempoGlobal = 0;
 	NumFrame = 0;
 	TiempoFrame = 0;
-	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo, &Stats) ) return -1;
+	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
 
 	//////////  PREPROCESADO   ////////////
+
 	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(&g_capture, &VWriter);
 
 	printf( "Iniciando captura...\n" );
@@ -81,11 +92,12 @@ int main(int argc, char* argv[]) {
 	}
 	VWriter = iniciarAvi( g_capture, nombreVideo);
 	// Creación de ventanas de visualizacion
-	CreateWindows( BGModel->Imed );
+	AllocDefaultVisParams(&visParams, BGModel->Imed);
+
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
 	if(!TotalFrames) TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
 	printf("\n\nIniciando procesado...\n");
-
+	if(SHOW_WINDOW) Transicion("Iniciando Tracking...", 1,1000, 50 );
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
 
     for(int Fr = 1;; Fr++ ){
@@ -113,7 +125,7 @@ int main(int argc, char* argv[]) {
 		printf("\t\t\tFRAME %0.f ",NumFrame);
 
 		//////////  PROCESAR     ////////////
-		FrameDataIn = Procesado2(frame, BGModel, Shape );
+		FrameDataIn = Procesado2(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR       ////////////
 		Tracking( FrameDataIn, &FramesBuf );
@@ -132,22 +144,24 @@ int main(int argc, char* argv[]) {
 
 			//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-
+			if(SHOW_WINDOW) DraWWindow( FrameDataOut->Frame, BGModel,VWriter,visParams, FrameDataOut->Flies,FrameDataOut->Stats, TRAKING );
 			//////////  ALMACENAR ////////////
 			if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
 		}
-//		else VerEstadoBuffer( frame, FramesBuf->numeroDeElementos);
+		else VerEstadoBuffer( frame, FramesBuf->numeroDeElementos, visParams, IMAGE_BUFFER_LENGTH);
 
 		//visualizar primer frame del buffer
-// 		VisualizarEl( 0, FramesBuf , BGModel,g_capture, VWriter );
+// 		VisualizarEl( 0, FramesBuf , BGModel,g_capture, VWriter, visParams );
 		// visualizar ultimo frame del buffer
 		FrameDataIn->Stats->TiempoFrame = FrameDataIn->Stats->TiempoFrame + obtenerTiempo( tif, 0 );
 		FrameDataIn->Stats->TiempoGlobal = obtenerTiempo( tinicio, 1);
+		FrameDataIn->Stats->totalFrames = TotalFrames;
 
-   		VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel, g_capture, VWriter );
+if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel, g_capture, VWriter, visParams );
    		///// MEDIR TIEMPOS Del frame de entrada
 //   		VisualizarFr( FrameDataIn , BGModel, VWriter );
 //   		liberarSTFrame( FrameDataIn );
+
 	}
 	///////// LIBERAR MEMORIA Y TERMINAR////////
     Finalizar(&g_capture, &VWriter);
@@ -158,34 +172,40 @@ void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
 
 	CvCapture *capture;
 	CvVideoWriter *Writer;
-	//liberar buffer
 
+	// liberar imagenes y datos de preprocesado
+	releaseDataPreProcess();
+	//liberar modelo de fondo
+	DeallocateBGM( BGModel );
+	//liberar modelo de forma
+	if( Shape) free(Shape);
+
+	// liberar imagenes y datos de procesado
+	releaseDataProcess(valParams, BGPrParams);
+	if( FrameDataIn ) liberarSTFrame( FrameDataIn);
+	if( FrameDataOut ) liberarSTFrame( FrameDataOut);
+	if(Fly) free(Fly);
+	//liberar listas
+	if(Flies) free( Flies );
+
+	// liberar imagenes y datos de tracking
+	ReleaseDataTrack();
 	if(FramesBuf) {
 		liberarBuffer( FramesBuf );
 		free( FramesBuf);
 	}
-	//liberar estructuras
-	DeallocateBGM( BGModel );
-	if( FrameDataIn ) liberarSTFrame( FrameDataIn);
-	if( FrameDataOut ) liberarSTFrame( FrameDataOut);
-	if(Fly) free(Fly);
-	if( Shape) free(Shape);
+	// liberar estructura estadísticas
 	if( Stats ) free(Stats);
-	// liberar imagenes y datos de preprocesado
-	releaseDataPreProcess();
-	// liberar imagenes y datos de segmentacion
+	// liberar imagenes y datos de visualización
+	releaseVisParams( visParams);
+	DestroyWindows( );
 
-	// liberar imagenes y datos de procesado
-	releaseDataProcess();
-	//liberar listas
-	if(Flies) free( Flies );
-	// liberar imagenes y datos de tracking
-	ReleaseDataTrack();
+	//liberar resto de estructuras
 	capture = *g_capture;
 	Writer = *VWriter;
 	if (capture)cvReleaseCapture(&capture);
 	if (Writer) cvReleaseVideoWriter(&Writer);
-	DestroyWindows( );
+
 	exit (1);
 }
 
