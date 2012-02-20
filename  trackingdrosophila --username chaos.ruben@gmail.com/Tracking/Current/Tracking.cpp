@@ -96,7 +96,7 @@ void Tracking( STFrame* frameDataIn, tlcde** framesBuff ){
 
 	// APLICAR EL METODO DE OPTIMIZACION HUNGARO A LA MATRIZ DE PESOS
 
-//	Hungaro(Matrix_Hungarian);
+	Hungaro(Matrix_Hungarian);
 
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
