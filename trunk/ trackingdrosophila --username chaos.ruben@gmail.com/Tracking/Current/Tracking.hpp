@@ -20,7 +20,6 @@
 
 STFrame* Tracking(  tlcde** framesBuff, STFrame* FrameDataIn);
 
-
 void AllocateTrackImages( IplImage *I );
 
 void ReleaseDataTrack( tlcde* FramesBuf);
