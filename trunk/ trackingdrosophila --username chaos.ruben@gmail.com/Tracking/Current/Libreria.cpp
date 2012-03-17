@@ -45,12 +45,13 @@ float obtenerTiempo( timeval ti, int unidad ){
 
 ///////////////////// TRATAMIENTO DE IMAGENES //////////////////////////////
 
-IplImage* RetryCap( CvCapture* g_capture ){
-	IplImage* frame = NULL;
+int RetryCap( CvCapture* g_capture, IplImage* frame ){
+
 	frame = cvQueryFrame(g_capture); // intentar de nuevo
+	int i = 1;
 	if ( !frame ) { // intentar de nuevo cn los siguientes frame
 		double n_frame = cvGetCaptureProperty( g_capture, 1);
-		int i = 1;
+
 		printf("\n Fallo en captura del frame %0.1f",n_frame);
 		while( !frame && i<4){
 			printf("\n Intentándo captura del frame %0.1f",n_frame+i);
@@ -63,7 +64,7 @@ IplImage* RetryCap( CvCapture* g_capture ){
 		}
 		if ( !frame ) error(2);
 	}
-	return frame;
+	return i;
 }
 
 int getAVIFrames(char * fname) {
@@ -607,72 +608,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 10; j++){
-		while( i < tam ){
-			flydata = (STFly*)obtener(i, flies);
-			if (j == 0){
-				if (i == 0) printf( "\netiquetas");
-				printf( "\t%d",flydata->etiqueta);
-			}
-			if( j == 1 ){
-				if (i == 0) printf( "\nPosiciones");
-				int x,y;
-				x = flydata->posicion.x;
-				y = flydata->posicion.y;
-				printf( "\t%d %d",x,y);
-			}
-			if( j == 2 ){
-				if (i == 0) printf( "\nOrientacion");
-				printf( "\t%0.1f",flydata->orientacion);
-			}
-			if( j == 3 ){
-				if (i == 0) printf( "\nDirección");
-				printf( "\t%0.1f",flydata->direccion);
-			}
-			if( j == 4 ){
-				if (i == 0) printf( "\nArea\t");
-				printf( "\t%0.1f",flydata->areaElipse);
-			}
-			if( j == 5 ){
-				if (i == 0) printf( "\nEstado\t");
-				printf( "\t%d",flydata->Estado);
-			}
-			if( j == 6 ){
-				if (i == 0) printf( "\nFrameCount");
-				printf( "\t%d",flydata->FrameCount);
-			}
-			if( j == 7 ){
-				if (i == 0) printf( "\nOrientCount");
-				printf( "\t%d",flydata->OrientCount);
-			}
-			if( j == 8 ){
-				if (i == 0) printf( "\nStaticFrames");
-				printf( "\t%d",flydata->StaticFrames);
-			}
-			if( j == 9 ){
-				if (i == 0) printf( "\nNumFrame");
-				printf( "\t%d",flydata->num_frame);
-			}
-			i++;
-		}
-		i=0;
-	}
-	if (tam == 0 ) printf(" Lista vacía\n");
-	// regresamos lista al punto en que estaba antes de llamar a la funcion de mostrar lista.
-	irAlPrincipio(lista);
-	for (n = 0; n < pos_act; n++) irAlSiguiente(lista);
-}
-
-void mostrarFliesFrame(STFrame *frameData)
-{
-	int n;
-	tlcde* flies;
-	flies = frameData->Flies;
-	if(!flies || flies->numeroDeElementos < 1 ) return;
-	// Mostrar todos los elementos de la lista
-	int i = 0, tam = flies->numeroDeElementos;
-	STFly* flydata = NULL;
-	for(int j = 0; j < 10; j++){
+	for(int j = 0; j < 13; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -696,26 +632,116 @@ void mostrarFliesFrame(STFrame *frameData)
 				printf( "\t%0.1f",flydata->direccion);
 			}
 			if( j == 4 ){
+				if (i == 0) printf( "\nDir_filter");
+				printf( "\t%0.1f",flydata->dir_filtered);
+			}
+			if( j == 5 ){
+				if (i == 0) printf( "\nVx\t");
+				printf( "\t%0.1f",flydata->Vx);
+			}
+			if( j == 6 ){
+				if (i == 0) printf( "\nVy\t");
+				printf( "\t%0.1f",flydata->Vy);
+			}
+			if( j == 7 ){
 				if (i == 0) printf( "\nArea\t");
 				printf( "\t%0.1f",flydata->areaElipse);
 			}
-			if( j == 5 ){
+			if( j == 8 ){
 				if (i == 0) printf( "\nEstado\t");
 				printf( "\t%d",flydata->Estado);
 			}
-			if( j == 6 ){
+			if( j == 9 ){
 				if (i == 0) printf( "\nFrameCount");
 				printf( "\t%d",flydata->FrameCount);
 			}
-			if( j == 7 ){
+			if( j == 10 ){
 				if (i == 0) printf( "\nOrientCount");
 				printf( "\t%d",flydata->OrientCount);
 			}
-			if( j == 8 ){
+			if( j == 11 ){
 				if (i == 0) printf( "\nStaticFrames");
 				printf( "\t%d",flydata->StaticFrames);
 			}
+			if( j == 12 ){
+				if (i == 0) printf( "\nNumFrame");
+				printf( "\t%d",flydata->num_frame);
+			}
+			i++;
+		}
+		i=0;
+	}
+	if (tam == 0 ) printf(" Lista vacía\n");
+	// regresamos lista al punto en que estaba antes de llamar a la funcion de mostrar lista.
+	irAlPrincipio(lista);
+	for (n = 0; n < pos_act; n++) irAlSiguiente(lista);
+}
+
+void mostrarFliesFrame(STFrame *frameData)
+{
+	int n;
+	tlcde* flies;
+	flies = frameData->Flies;
+	if(!flies || flies->numeroDeElementos < 1 ) return;
+	// Mostrar todos los elementos de la lista
+	int i = 0, tam = flies->numeroDeElementos;
+	STFly* flydata = NULL;
+	for(int j = 0; j < 13; j++){
+		while( i < tam ){
+			flydata = (STFly*)obtener(i, flies);
+			if (j == 0){
+				if (i == 0) printf( "\n\netiquetas");
+				printf( "\t%d",flydata->etiqueta);
+			}
+			if( j == 1 ){
+				if (i == 0) printf( "\nPosiciones");
+				int x,y;
+				x = flydata->posicion.x;
+				y = flydata->posicion.y;
+				printf( "\t%d %d",x,y);
+			}
+
+			if( j == 2 ){
+				if (i == 0) printf( "\nOrientacion");
+				printf( "\t%0.1f",flydata->orientacion);
+			}
+			if( j == 3 ){
+				if (i == 0) printf( "\nDirección");
+				printf( "\t%0.1f",flydata->direccion);
+			}
+			if( j == 4 ){
+				if (i == 0) printf( "\nDir_filtered");
+				printf( "\t%0.1f",flydata->dir_filtered);
+			}
+			if( j == 5 ){
+				if (i == 0) printf( "\nVx\t");
+				printf( "\t%0.1f",flydata->Vx);
+			}
+			if( j == 6 ){
+				if (i == 0) printf( "\nVy\t");
+				printf( "\t%0.1f",flydata->Vy);
+			}
+			if( j == 7 ){
+				if (i == 0) printf( "\nArea\t");
+				printf( "\t%0.1f",flydata->areaElipse);
+			}
+			if( j == 8 ){
+				if (i == 0) printf( "\nEstado\t");
+				printf( "\t%d",flydata->Estado);
+			}
 			if( j == 9 ){
+				if (i == 0) printf( "\nFrameCount");
+				printf( "\t%d",flydata->FrameCount);
+			}
+			if( j == 10 ){
+				if (i == 0) printf( "\nOrientCount");
+				printf( "\t%d",flydata->OrientCount);
+			}
+			if( j == 11 ){
+				if (i == 0) printf( "\nStaticFrames");
+				printf( "\t%d",flydata->StaticFrames);
+			}
+			if( j == 12 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -744,20 +770,8 @@ void liberarListaFlies(tlcde *lista)
     flydata = (STFly *)borrar(lista);
   }
 }
-// si el ultimo parámetro no es nullindica
-void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids ){
-	// si la actual ya habia sido etiquetada dejamos su etiqueta
-	if( flyActual->etiqueta && ids ) dejarId(flyActual,ids);
-	flyActual->etiqueta = flyAnterior->etiqueta;
-	flyActual->Color = flyAnterior->Color;
-	flyActual->FrameCount = flyAnterior->FrameCount +1;
-	flyActual->flag_gir = flyAnterior->flag_gir;
-//	float distancia;
-	//Establecemos la dirección y el modulo del vector de desplazamiento
-	//EUDistance( flyAnterior->posicion,flyActual->posicion, &flyAnterior->direccion, &distancia );
-	//flyActual->dstTotal = flyAnterior->dstTotal + distancia;
-//	SetTita( flyActual, flyAnterior );
-}
+
+
 
 tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies ){
 	tlcde* flies = NULL;
@@ -784,44 +798,7 @@ tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies ){
 	return flies;
 
 }
-/// Haya la distancia ecuclidea entre dos puntos. Establece el modulo y y el argumento en grados.
-///
-void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia){
 
-
-	float b;
-	float a;
-	b = posicion2.x - posicion1.x;
-	a =  posicion2.y - posicion1.y;
-
-	if( ( b < 0)&&(a < 0) )
-	{
-		*direccion = atan( b / a );
-		//resolvemos ambiguedad debida a los signos en la atan
-		*direccion = *direccion + CV_PI;
-		*direccion = ( (*direccion) *180)/CV_PI; // a grados
-	}
-	else if( ( b == 0) && ( a == 0) ){
-		*direccion = -1;
-	}
-	else if( (b == 0)&&( a != 0) ){
-		if (a < 0) *direccion = 180;
-		else *direccion = 0;
-	}
-	else if( (b != 0)&&( a == 0) ){
-		if( b > 0 ) *direccion = 270;
-		else *direccion = 90;
-	}
-	else {
-		*direccion = atan( b / a );
-		*direccion = ( (*direccion) *180)/CV_PI;
-	}
-
-	// calcular distancia para comprobar si hay desplazamiento. si es menor que un umbral
-	// consideramos que esta quieto.
-	*distancia = sqrt( pow( (posicion2.y-posicion1.y) ,2 )  + pow( (posicion2.x - posicion1.x) ,2 ) );
-
-}
 
 /// -resuelve la ambiguedad en la orientación para cada cuadrante
 ///estableciendo ésta en función de la dirección del desplazamiento
@@ -1009,6 +986,8 @@ void* liberarPrimero(tlcde *FramesBuf ){
 }
 
 void liberarSTFrame( STFrame* frameData ){
+
+	if( !frameData) return;
 	liberarListaFlies( frameData->Flies);
 	if (frameData->Flies ) free( frameData->Flies);
 	if( frameData->Stats) free(frameData->Stats);
@@ -1095,9 +1074,10 @@ void asignarNuevaId( STFly* fly, tlcde* identities){
 	id = NULL;
 }
 
-void dejarId( STFly* fly, tlcde* identities ){
-	Identity *Id;
+int dejarId( STFly* fly, tlcde* identities ){
+	Identity *Id = NULL;
 	Id = ( Identity* )malloc( sizeof(Identity ));
+	if( !Id){error(4);return 0 ;}
 	Id->etiqueta = fly->etiqueta;
 	Id->color = fly->Color;
 	anyadirAlFinal( Id , identities );

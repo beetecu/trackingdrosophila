@@ -12,171 +12,156 @@
  */
 
 #include "Tracking.hpp"
-#include "Kalman.hpp"
 
+tlcde* Identities = NULL;
+tlcde* lsTracks = NULL;
+CvMat* Matrix_Hungarian = NULL;
 
+STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
-	IplImage *ImOpFlowX;
-	IplImage *ImOpFlowY;
-	IplImage *ImagenA;
-	IplImage *ImagenB;
+	tlcde* framesBuf;
+	STFrame* frameDataOut = NULL; // frame de salida
+	STFrame* frameData = NULL; // frame t. penultimo frame del buffer.
+	STFrame* frameDataSig = NULL; // frame t + 1 (ultimo frame del buffer.
 
-
-	tlcde* Identities = NULL;
-
-void Tracking( STFrame* frameDataIn, tlcde** framesBuff ){
-
+#ifdef MEDIR_TIEMPOS
 	struct timeval ti,tif; // iniciamos la estructura
 	float tiempoParcial;
-	tlcde* framesBuf;
-
-	static int workPos = -1; // punto de trabajo en el buffer
-#ifdef MEDIR_TIEMPOS	gettimeofday(&tif, NULL);
+	gettimeofday(&tif, NULL);
 #endif
 	printf("\n2)Tracking:\n");
 
-	// Inicializar:
+	/////////////// Inicializar /////////////////
 	framesBuf = *framesBuff;
-	// Imagenes
-	AllocateTrackImages( frameDataIn->FG );
+
 	// cola Lifo de identidades
 	if(!Identities) {
 		Identities = ( tlcde * )malloc( sizeof(tlcde ));
+		if( !Identities ) {error(4);exit(1);}
 		iniciarLcde( Identities );
 		CrearIdentidades(Identities);
 		//mostrarIds( Identities );
 	}
+
 	//buffer de Imagenes y datos.
 	if(!*framesBuff){
 		framesBuf = ( tlcde * )malloc( sizeof(tlcde));
-		if( !framesBuf ) {error(4);return;}
+		if( !framesBuf ) {error(4);exit(1);}
 		iniciarLcde( framesBuf );
 		*framesBuff = framesBuf;
 	}
 
-	////////// AÑADIR Frame de entrada AL BUFFER /////
+	//Tracks
+	if(!lsTracks){
+		lsTracks = ( tlcde * )malloc( sizeof(tlcde ));
+		if( !lsTracks ) {error(4);exit(1);}
+		iniciarLcde( lsTracks );
+	}
+
+	//Imagenes
+//	AllocateTrackImages( frameDataIn->FG );
+
+	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
-	if( framesBuf->numeroDeElementos < 1) return;
+	MotionTemplate( framesBuf,Identities );
+	if( framesBuf->numeroDeElementos < 2  )	return 0;
 
-	irAlFinal( framesBuf );
-	frameDataIn = ( STFrame* )obtenerActual( framesBuf );
-
-//	hungarian_t prob;
-
-	// Asignar identidades y orientación. Establecer estado (fg o oldFG)
-
-#ifdef MEDIR_TIEMPOS	gettimeofday(&ti, NULL);
+#ifdef MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 #endif
-	printf("\t1)Motion Template\n");
+
+	////////////// ASIGNACIÓN DE IDENTIDADES ///////////
+
+	//APLICAR EL METODO DE OPTIMIZACION HUNGARO A LA MATRIZ DE PESOS
+	// Asignar identidades y orientación.
+	// resolver las asociaciones usando las predicciones de kalman mediante el algoritmo Hungaro
+	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
+	// Se trabaja en las posiciones frame MAX_BUFFER -3 y MAX_BUFFER -2.
+	printf("\t1)Asignación de identidades\n");
+	if( Matrix_Hungarian ){
+		Hungaro(Matrix_Hungarian);
+		asignarIdentidades( Matrix_Hungarian, frameData, frameDataSig, Identities);
+		cvReleaseMat(&Matrix_Hungarian);
+	}
 	cvZero(frameDataIn->ImMotion);
 
-	MotionTemplate( framesBuf,Identities );
+
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 #endif
-	// el rastreo no se inicia hasta que el buffer tenga almenos 25 elementos
-	if( framesBuf->numeroDeElementos < 25) return;
-	// Cuando el buffer esté por la mitad comienza el rastreo en el primer frame
-	// La posición de trabajo se irá incremetando a la par que el tamaño del buffer
-	// asta quedar finalmente situada en el centro.
-	if ( framesBuf->numeroDeElementos < IMAGE_BUFFER_LENGTH) workPos += 1;
 
 
-#ifdef MEDIR_TIEMPOS	gettimeofday(&ti, NULL);
+
+#ifdef MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 #endif
-	////// FILTRO DE KALMAN //////////////
-	printf("\t2)Filtro de Kalman\n");
-	CvMat* Matrix_Hungarian = Kalman(framesBuf,workPos ); // Nos devuelve la matriz de pesos
 
-//	printf("\n");
-//			for(int i =0;i < Matrix_Hungarian->rows* Matrix_Hungarian->cols; i++){
-//					printf("\t %f",Matrix_Hungarian->data.fl[i]);
-//				}
+	/////////////// FILTRO DE KALMAN //////////////
+	// El filtro de kalman trabaja en las posiciones MAX_BUFFER -2 y MAX_BUFFER -1.
 
-	// APLICAR EL METODO DE OPTIMIZACION HUNGARO A LA MATRIZ DE PESOS
+	// cargar datos del frame
+	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
+	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
+	// Aplicar kalman
+	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
 
-	Hungaro(Matrix_Hungarian);
 
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
 #endif
+
 	///////   FASE DE CORRECCIÓN  /////////
 	// esta etapa se encarga de hacer la asignación de identidad definitiva
-	// recibe información temporal de los últimos 48 frames ( Longitud_buffer
-	// - frame_Inicio - frame_final - (frame_final-1) que son aprox 2 seg )
+	// recibe información temporal de los últimos 51 frames ( Longitud_buffer)
+	// La posición de trabajo será la 0. Este frame será el de salida.
 	//
 	//Reasignamos idendidades.
 	// enlazamos objetos etiquetados como nuevos con los que estaban parados
 
-	if (workPos == PRIMERO) return ;
+	// SI BUFFER LLENO
+	if( framesBuf->numeroDeElementos == IMAGE_BUFFER_LENGTH ){
 
-//	framesBuf = matchingIdentity( framesBuf , 0 );
+		irAlPrincipio( framesBuf );
 
-	if (SHOW_VISUALIZATION&&SHOW_OPTICAL_FLOW == 1){
-		irAlFinal( framesBuf);
-		frameDataIn = ( STFrame* )obtenerActual( framesBuf );
-		cvCopy(frameDataIn->FG,ImagenB);
-		//cvCvtColor( frameDataIn->Frame, ImagenB, CV_BGR2GRAY);
-		irAlAnterior( framesBuf);
-		frameDataIn = ( STFrame* )obtenerActual( framesBuf );
-		cvCopy(frameDataIn->FG,ImagenA);
-	//	cvCvtColor( frameDataIn->Frame, ImagenA, CV_BGR2GRAY);
-	//	LKOptFlow( frameDataIn->FG, ImOpFlowX, ImOpFlowY );
-		PLKOptFlow( ImagenA, ImagenB, ImOpFlowX );
-	cvShowImage( "Flujo Optico X", ImOpFlowX );
-	cvShowImage( "Flujo Optico Y", ImOpFlowY);
-	}
+		////////// LIBERAR MEMORIA  ////////////
+		frameDataOut = (STFrame*)liberarPrimero( framesBuf ) ;
+		if(!frameDataOut){error(7); exit(1);}
+
 #ifdef MEDIR_TIEMPOS
-	tiempoParcial = obtenerTiempo( tif , NULL);
-	printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
+		tiempoParcial = obtenerTiempo( tif , NULL);
+		printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 #endif
-	irAlFinal( framesBuf );
+
+		return frameDataOut;
+	}
+	else {
+#ifdef MEDIR_TIEMPOS
+		tiempoParcial = obtenerTiempo( tif , NULL);
+		printf("Llenando buffer.Tiempo total %5.4g ms\n", tiempoParcial);
+#endif
+		return 0;
+	}
+}
+
+void ReleaseDataTrack( tlcde* FramesBuf ){
+	if(Identities){
+		liberarIdentidades( Identities );
+		free( Identities) ;
+	}
+	if(FramesBuf) {
+		liberarBuffer( FramesBuf );
+		free( FramesBuf);
+	}
+//	cvReleaseImage( &ImOpFlowX);
+//	cvReleaseImage( &ImOpFlowY);
+//	cvReleaseImage( &ImagenA);
+//	cvReleaseImage( &ImagenB);
+//	releaseMotionTemplate();
+	DeallocateKalman( lsTracks );
+	free(lsTracks);
+	if(Matrix_Hungarian) cvReleaseMat(&Matrix_Hungarian);
 
 }
 
-
-void AllocateTrackImages( IplImage *I ) {  // I is just a sample for allocation purposes
-
-        CvSize sz = cvGetSize( I );
-        if( !ImOpFlowX ||
-        		ImOpFlowX->width != sz.width ||
-        		ImOpFlowX->height != sz.height ) {
-
-        		cvReleaseImage( &ImOpFlowX);
-        		cvReleaseImage( &ImOpFlowY);
-
-        		cvReleaseImage( &ImagenA);
-        		cvReleaseImage( &ImagenB);
-
-        		ImOpFlowX = cvCreateImage( sz,IPL_DEPTH_32F,1 );
-        		ImOpFlowY = cvCreateImage(sz,IPL_DEPTH_32F,1 );
-
-        		ImagenA = cvCreateImage( sz ,8,1 );
-        		ImagenB = cvCreateImage(sz ,8,1 );
-
-        		cvZero( ImOpFlowX );
-        		cvZero( ImOpFlowY );
-
-        		cvZero( ImagenA );
-        		cvZero( ImagenB );
-        	}
-		cvZero( ImOpFlowX );
-		cvZero( ImOpFlowY );
-
-		cvZero( ImagenA );
-		cvZero( ImagenB );
-
-}
-void ReleaseDataTrack(){
-		if(Identities) liberarIdentidades( Identities );
-		if (Identities) free( Identities) ;
-		cvReleaseImage( &ImOpFlowX);
-    		cvReleaseImage( &ImOpFlowY);
-    		cvReleaseImage( &ImagenA);
-    		cvReleaseImage( &ImagenB);
-    		releaseMotionTemplate();
-    		DeallocateKalman(  );
-
-}

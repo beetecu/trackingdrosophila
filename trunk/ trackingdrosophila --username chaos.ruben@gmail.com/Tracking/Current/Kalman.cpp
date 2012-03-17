@@ -5,550 +5,329 @@
  *      Author: german
  */
 
-#include"Tracking.hpp"
+
 #include "Kalman.hpp"
-#include "math.h"
 
 
-// Parametros de Kalman para la linealidad ( Coordenadas)
-CvKalman* kalman = NULL; // Estructra de kalman para la linealizad
-CvMat* state = NULL;
-CvMat* measurement = NULL;
-CvMat* process_noise = NULL;
-CvMat* CoordReal = NULL;
-CvMat* Matrix_Hungarian = NULL;
+// Se genera un track por cada blob ( un track por cada nueva etiqueta).
+// En la literatura en general primero se hace la predicción para frame t ( posible estado del blob en el frame t) en base
+// al modelo y luego se incorpora la medida de t con la cual se hace la corrección. En nuestro caso el proceso es:
+// Se incorpora la medida del frame t. Se hace la corrección y se predice para el frame t+1, de modo que en cada track y para cada
+// frame disponemos por un lado de la predicción para el frame t hecha en el t-1, con la cual se hace la corrección, y por otro lado de
+// la predicción para el frame t+1.
 
-CvRandState rng;
+CvMat* CoordReal;
 
-// Parametros de Kalman para la orientación
+//Imagenes
+IplImage* ImReal = NULL;
+IplImage* ImPredict = NULL;
 
-CvKalman* kalman_2=NULL;// Estructura de kalman para la orientacion.
-CvMat* state_2 = NULL;
-CvMat* measurement_2 = NULL;
-CvMat* process_noise_2 = NULL;
+CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks) {
 
-CvRandState rng2;
-
-CvMat* indexMat[NUMBER_OF_MATRIX]; // Matrices para usar el filtro de Kalman
-
-CvMat* Kalman(tlcde* framesBuf,int  workPos ){
-
-	STFrame* frameData = NULL;
-	STFrame* frameDataX1 = NULL;
-	STFly* flyData = NULL;
-	STFly* FlyData = NULL;
-	tlcde* flies;
 	tlcde* Flies;
-
-	int p=0; // Incrementa puntero de la Matriz Hungarian;
-	int TX1=framesBuf->posicion+1;// Frame t+1;
-	int kk=0;
-
-	// acceder al punto de trabajo
-
-	irAl( workPos , framesBuf);
+	tlcde* Flies_sig;
+	STTrack* Track;
+	STFly* Fly = NULL;
 
 	// cargar datos del frame
+	Flies=frameData->Flies;
+	Flies_sig = frameData_sig->Flies;
 
-	frameData = ( STFrame* )obtenerActual( framesBuf );
-	frameDataX1 = (STFrame*)obtener(TX1,framesBuf);
+	// Inicializar imagenes y parámetros
+	if( !ImReal ){
+		ImReal = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
+		ImPredict = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
+		cvZero(ImReal);
+		cvZero(ImPredict);
 
-	flies=frameData->Flies;
-	Flies=frameDataX1->Flies;
-
-
-	////// INICIALIZAR FILTROS DE KALMAN//////
-	if(!kalman){
-		state=cvCreateMat(4,1,CV_32FC1);
-		measurement = cvCreateMat( 2, 1, CV_32FC1 );
-		process_noise = cvCreateMat(4, 1, CV_32FC1);
 		CoordReal = cvCreateMat(2,1,CV_32FC1);
-
 	}
-
-	if(!kalman_2){
-		state_2=cvCreateMat(2,1,CV_32FC1);
-		measurement_2 = cvCreateMat( 1, 1, CV_32FC1 );
-		process_noise_2 = cvCreateMat(2, 1, CV_32FC1);
-	}
-
 	cvZero(frameData->ImKalman);
+	////////////////////// CORRECCION ////////////////////////
 
-	Matrix_Hungarian = cvCreateMat(flies->numeroDeElementos,Flies->numeroDeElementos,CV_32FC1);
-	double Hungarian_Matrix [flies->numeroDeElementos][Flies->numeroDeElementos];
+	if(lsTracks->numeroDeElementos>0){
+		for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+			// para cada track, buscar su id en el frame de trabajo //
+			Track = (STTrack*)obtener(i, lsTracks);
+			int j ;
+			if( Flies->numeroDeElementos>0){
+				for(j = 0; j< Flies->numeroDeElementos ;j++ ){
+					Fly = (STFly*)obtener(j, frameData->Flies);
+					// si se encuentra la id (caso general)
+					if(Fly->etiqueta == Track->id){
+						// Añadimos la nueva medida
+						generarMedida( Track, Fly );
+						// actualizamos kalman
+						cvKalmanCorrect( Track->kalman, Track->z_k);
+						// actualizamos parámetros
+						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+						break;
+					}
+					// llegamos al último elemento y no se encuentra la id.
+					if( (j == Flies->numeroDeElementos)){
 
-	//Predicción y correción de cada blob
-	for(int flypos=0;flypos < flies->numeroDeElementos;flypos++){
+						//si se asigna a una id0 junto con otros tracks ( caso normal de solapamiento de trayectorias):
+						//generarMedida2( Track, Fly );
+						//cvKalmanCorrect( Track->kalman, Track->z_k);
+						//Track->x_k_Pos = Track->kalman->state_post;
+						//Track->P_k_Pos = Track->kalman->error_cov_post;
 
-		kalman = initKalman( ); // FK Lineal para las coodenadas
-		kalman_2 = initKalman2( );// FK para la orientación
-
-		// obtener blob
-		flyData=(STFly*)obtener(flypos,flies);
-
-		// iniciar para predecir la posición del blob
-		initKpos( kalman,flyData->posicion,flyData->orientacion);
-		state->data.fl[0]=flyData->posicion.x;
-		state->data.fl[1]=flyData->posicion.y;
-		// iniciar para predecir la orientación del blob
-		initkdir( kalman_2,flyData->direccion,flyData->orientacion);
-		state_2->data.fl[0]=flyData->orientacion;
-
-
-		/////////////////// PREDICCION //////////////////////
-
-		const CvMat* yk = cvKalmanPredict( kalman, 0 ); // Predicción coordenadas
-
-		const CvMat* yk_2 = cvKalmanPredict( kalman_2, 0 ); // Predicción orientacion
-
-
-		cvRandSetRange(&rng,0,sqrt(kalman->measurement_noise_cov->data.fl[0]),0);
-		cvRand( &rng, measurement );
-
-		cvRandSetRange(&rng2,0,sqrt(kalman_2->measurement_noise_cov->data.fl[0]),0);
-		cvRand( &rng2, measurement_2 );
-
-		cvMatMulAdd(kalman->measurement_matrix,state,measurement,measurement);
-
-		cvMatMulAdd(kalman_2->measurement_matrix,state_2,measurement_2,measurement_2);
-
-//		printf("\n");
-//		for(int i =0;i < kalman->error_cov_post->cols*kalman->error_cov_post->rows; i++){
-//			printf("\t %f",kalman->error_cov_post->data.fl[i]);
-//		}
-//
-//
-//		printf("\n");
-//		for(int i =0;i < kalman->error_cov_pre->cols*kalman->error_cov_pre->rows; i++){
-//			printf("\t %f",kalman->error_cov_pre->data.fl[i]);
-//		}
-
-
-		if(workPos > 1){
-
-			////////////////////// CORRECCION ////////////////////////
-
-		cvKalmanCorrect( kalman,measurement);
-
-		cvKalmanCorrect( kalman_2,measurement_2);
-
-		cvRandSetRange(&rng,0,sqrt(kalman->process_noise_cov->data.fl[0]),0);
-		cvRand( &rng,process_noise );
-
-		cvRandSetRange(&rng2,0,sqrt(kalman_2->process_noise_cov->data.fl[0]),0);
-		cvRand( &rng2,process_noise_2 );
-
-		cvMatMulAdd(kalman->transition_matrix,state,process_noise,state);
-
-		cvMatMulAdd(kalman_2->transition_matrix,state_2,process_noise_2,state_2);
-
-
-//				printf("\n");
-//				for(int i =0;i < kalman->error_cov_post->cols*kalman->error_cov_post->rows; i++){
-//					printf("\t %f",kalman->error_cov_post->data.fl[i]);
-//				}
-//
-//
-//				printf("\n");
-//				for(int i =0;i < kalman->error_cov_pre->cols*kalman->error_cov_pre->rows; i++){
-//					printf("\t %f",kalman->error_cov_pre->data.fl[i]);
-//				}
-
-
-		// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION EN T+1 Y EL VALOR OBSERVADO EN T
-
-		for(int f=0;f < Flies->numeroDeElementos;f++){
-
-			FlyData=(STFly*)obtener(f,Flies);
-			CoordReal->data.fl[0] = FlyData->posicion.x;
-			CoordReal->data.fl[1] = FlyData->posicion.y;
-
-			double Peso = PesosKalman(kalman->error_cov_pre,kalman->state_pre,CoordReal);
-
-			Matrix_Hungarian->data.fl[p] = Peso;
-			p++;
-
-			Hungarian_Matrix[flypos][f]=Peso;
-
+						// si no se encuentra su id el frame y no hay ninguna asignación válida corregimos con la predicción anterior de kalman.
+						//podría tratarse de un trackdead. Kalman toma el control ( Se genera la nueva medida a partir de las predicciones).
+						kalmanControl( Track );
+						cvKalmanCorrect( Track->kalman, Track->z_k);
+						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+					}
+				}
 			}
-
-//		printf("\n");
-//		for(int m=0;m<flies->numeroDeElementos;m++){
-//			printf("\n");
-//			for(int n=0;n<Flies->numeroDeElementos;n++){
-//				printf("\t %f",Hungarian_Matrix[m][n]);
-//			}
-//		}
-
-
-		// Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
-		// de Kalman.
-
-		CvRect Kalman_ROI = ROIKalman(kalman->error_cov_pre,kalman->state_pre);
-
-
-		////////////////////// VISUALIZAR RESULTADOS KALMAN///////////////////////////////
-
-			if(SHOW_KALMAN_DATA){
-
-				printf("\n***********************FRAMEBUF %d BLOB NUMERO %d ************************",workPos,flypos);
-
-				printf("\n Dirección : %f ,  Orientación : %f y Coordenadas: ( %d , %d ) ",flyData->direccion,flyData->orientacion,flyData->posicion.x,flyData->posicion.y);
-
-				printf("\n\n Real State Coordenadas: ( %f y %f )",state->data.fl[0],state->data.fl[1]);
-				printf("\n Predicted State Coordenadas: (%f y %f )",yk->data.fl[0],yk->data.fl[1]);
-				printf("\n Observed State: ( %f y %f )",measurement->data.fl[0],measurement->data.fl[1]);
-
-
-				printf("\n\n Real State Orientación : %f",state_2->data.fl[0]);
-				printf("\n Predicted State Orientation: %f",yk_2->data.fl[0]);
-				printf("\n Observer State:  %f", measurement_2->data.fl[0]);
-
-				printf("\n\n Coordenadas corrección ( %f y %f )",kalman->state_post->data.fl[0],kalman->state_post->data.fl[1]);
-				printf("\n Orientacion Corrección %f",kalman_2->state_post->data.fl[0]);
-				printf("\n\n");
-
-
+			// si no hay elementos en el frame ( frame erróneo o perdido) , corregimos con la predicción anterior de kalman.
+			else{
+				kalmanControl( Track );
+				cvKalmanCorrect( Track->kalman, Track->z_k);
+				Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
 			}
-			if(SHOW_VISUALIZATION && SHOW_KALMAN){
-				///////////////////// DIBUJAR COOREDENADAS DE KALMAN /////////
-
-				cvCircle(frameData->ImKalman,cvPoint(cvRound(measurement->data.fl[0]),cvRound(measurement->data.fl[1])),4,CVX_GREEN,1,8);
-
-				cvCircle(frameData->ImKalman,cvPoint(cvRound(yk->data.fl[0]),cvRound(yk->data.fl[1])),5,CVX_RED,1,8);
-
-				cvCircle(frameData->ImKalman,cvPoint(cvRound(state->data.fl[0]),cvRound(state->data.fl[1])),3,CVX_WHITE,1,8);
-
-
-			// Dibujar la ROI
-
-			CvPoint pt1;
-			CvPoint pt2;
-
-			pt1.x = Kalman_ROI.x;
-			pt1.y = Kalman_ROI.y;
-			pt2.x = pt1.x + Kalman_ROI.width;
-			pt2.y = pt1.y + Kalman_ROI.height;
-
-			cvRectangle(frameData->ImKalman,pt1,pt2,CVX_BLUE,1);
-			cvShowImage("Kalman",frameData->ImKalman);
-
-				// Dibujar la ROI
-	//
-	//			CvPoint pt1;
-	//			CvPoint pt2;
-	//
-	//			pt1.x = Kalman_ROI.x;
-	//			pt1.y = Kalman_ROI.y;
-	//			pt2.x = pt1.x + Kalman_ROI.width;
-	//			pt2.y = pt1.y + Kalman_ROI.height;
-	//
-	//			cvRectangle(IKalman,pt1,pt2,CVX_BLUE,1);
-	//			cvShowImage("Kalman",IKalman);
-			}
-
-
-
-		}//FOR
 
 		}
+	}
+	////////////////////// AÑADIR NUEVoS TRACKS //////////////
 
-		return Matrix_Hungarian;
+	////// Comprobar si es necesario crear nuevos tracks ( nuevas ids ). En caso afirmativo
+	// crearlos e inicializar filtro de kalman para cada nuevo track ( blob )
+	initNewsTracks( frameData, lsTracks );
+
+	////////////////////// PREDICCION ////////////////////////
+	//Recorremos cada track y hacemos la predicción para el siguiente frame
+	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+		Track = (STTrack*)obtener(i, lsTracks);
+		if( Track->x_k_Pre != NULL ){
+			cvCopy(Track->x_k_Pre,Track->x_k_Pre_);
+			cvCopy(Track->P_k_Pre,Track->P_k_Pre_);
+//			memcpy( Track->x_k_Pre_->data.fl, Track->x_k_Pre->data.fl, sizeof(Track->x_k_Pre));
+//			memcpy( Track->P_k_Pre_->data.fl, Track->P_k_Pre->data.fl, sizeof(Track->P_k_Pre));
+		}
+
+		Track->x_k_Pre = cvKalmanPredict( Track->kalman, 0);
+	}
+
+	// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION Para T+1 Y EL VALOR OBSERVADO EN T + 1
+
+	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
+	cvZero(Matrix_Hungarian);
+	//	int p = 0;
+//	for(int f=0;f < Flies->numeroDeElementos;f++){
+//
+//		Fly =(STFly*)obtener(f,Flies_sig);
+//		CoordReal->data.fl[0] = Fly->posicion.x;
+//		CoordReal->data.fl[1] = Fly->posicion.y;
+//
+//		double Peso = PesosKalman(Track->kalman->error_cov_pre,Track->kalman->state_pre,CoordReal);
+//
+//		Matrix_Hungarian->data.fl[p] = Peso;
+//		p++;
+//
+//	}
+
+	///////////////////// VISUALIZAR RESULTADOS ////////////////
+	if( SHOW_KALMAN_DATA || (SHOW_VISUALIZATION && SHOW_KALMAN) ){
+		for(int i = 0; i < lsTracks->numeroDeElementos ; i++){
+			Track = (STTrack*)obtener(i, lsTracks);
+			// EN CONSOLA
+			if(SHOW_KALMAN_DATA ){
+				printf("\n*********************** FRAME %d; BLOB NUMERO %d ************************",frameData->num_frame,Track->id);
+				showKalmanData( Track );
+			}
+			if(SHOW_VISUALIZATION && SHOW_KALMAN){
+				// EN IMAGEN
+				cvCircle(ImReal,cvPoint(cvRound(Track->z_k->data.fl[0]),cvRound(Track->z_k->data.fl[1] )),1,CVX_BLUE,-1,8); // observado ( con el error de medida)
+				cvCircle(frameData->ImKalman,cvPoint(cvRound(Track->x_k_Pos->data.fl[0]),cvRound(Track->x_k_Pos->data.fl[1])),3,CVX_WHITE,1,8); // Corregida
+				cvCircle(ImPredict,cvPoint(cvRound(Track->x_k_Pre->data.fl[0]),cvRound(Track->x_k_Pre->data.fl[1])),1,CVX_RED,-1,8); // predicción t+1
+
+			}
+		}
+		cvAdd(ImReal,ImPredict,frameData->ImKalman );
+	}
+	return Matrix_Hungarian;
 
 }// Fin de Kalman
 
-// Incializar los parámetro del filtro de Kalman para la posición.
+// Compara la lista trcks y la lista flies. Si se ha asignado una nueva id, se inicia un nuevo track,
+void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 
-CvKalman* initKalman( ){
+	STTrack* Track = NULL;
+	STFly* Fly = NULL;
 
-	// Crear el flitro de Kalman
-
-	CvKalman* Kalman = cvCreateKalman(4,2,0);
-
-	// Inicializar las matrices parámetros para el flitro de Kalman
-
-	const float A[] = {1,0,1,0, 0,1,0,1, 0,0,1,0, 0,0,0,1};
-
-
-	memcpy( Kalman->transition_matrix->data.fl, A, sizeof(A));
-
-	cvSetIdentity( Kalman->measurement_matrix,cvRealScalar(1) );
-	cvSetIdentity( Kalman->process_noise_cov,cvRealScalar(1e-3) );
-	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-1) );
-	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(500));
-	cvSet( Kalman->error_cov_pre, cvScalar(1) );
-
-
-	return Kalman;
+	// En primera iteración iniciar un track para cada id
+	if( lsTracks->numeroDeElementos == 0){
+		// INICIAR TRACK
+		for(int i = 0; i < frameData->Flies->numeroDeElementos;i++){
+			Fly = (STFly*)obtener(i, frameData->Flies);
+			Track = initTrack( Fly ,frameData->Stats->fps );
+			anyadirAlFinal(Track, lsTracks );
+		}
 	}
+	else{
+		// recorrer lista flies y comprueba si cada id tiene su correspondiente track. Si no lo tiene, se crea.
+		for(int i = 0; i < frameData->Flies->numeroDeElementos ;i++){
+			Fly = (STFly*)obtener(i, frameData->Flies);
 
-// Incializar los parámetro del filtro de Kalman para la orientación.
-
-CvKalman* initKalman2( ){
-
-	// Crear el flitro de Kalman
-
-	CvKalman* Kalman = cvCreateKalman(2,1,0);
-
-	// Inicializar las matrices parámetros para el flitro de Kalman
-
-	const float A[] = { 1, 1, 0, 1 };
-
-	memcpy( Kalman->transition_matrix->data.fl, A, sizeof(A));
-
-	cvSetIdentity( Kalman->measurement_matrix,cvRealScalar(1) );
-	cvSetIdentity( Kalman->process_noise_cov,cvRealScalar(1e-3) );
-	cvSetIdentity( Kalman->measurement_noise_cov,cvRealScalar(1e-2) );
-	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1000));
-
-	return Kalman;
+			int j ;
+			for( j = 0; j < lsTracks->numeroDeElementos ; j++){
+				Track = (STTrack*)obtener(i, lsTracks);
+				if(Fly->etiqueta == Track->id) break;
+			}// si la j llega al final quiere decir que no se ha encontrado coincidencia
+			if (j == lsTracks->numeroDeElementos){
+				// INICIAR TRACK
+				Track = initTrack( Fly ,frameData->Stats->fps );
+				anyadirAlFinal(Track, lsTracks );
+			}
+		}
+	}
 }
 
-void initKpos(CvKalman* kalman, CvPoint coord, float direccion){ // iniciar para predecir la posición del blob flypos
+STTrack* initTrack( STFly* Fly ,float fps ){
 
-// Establecer el estado incial
+
+	STTrack* Track = NULL;
+
+	Track = (STTrack*)malloc(sizeof(STTrack));
+	if(!Track) {error(4); exit(1);}
+
+	Track->id = Fly->etiqueta;
+	// iniciar kalman
+	Track->kalman = initKalman( Fly , fps);
+
+	Track->x_k_Pre_ = cvCreateMat( 5,1, CV_32FC1 );
+	Track->P_k_Pre_ = cvCreateMat( 5,5, CV_32FC1 );
+	cvZero(Track->x_k_Pre_);
+	cvZero(Track->P_k_Pre_);
+
+	Track->x_k_Pos = Track->kalman->state_post ;
+	Track->P_k_Pos = Track->kalman->error_cov_post;
+
+	Track->x_k_Pre = NULL; // es creada por kalman
+	Track->P_k_Pre = Track->kalman->error_cov_pre;
+
+	Track->Medida = cvCreateMat( 5, 1, CV_32FC1 );
+	Track->Measurement_noise = cvCreateMat( 5, 1, CV_32FC1 );
+	Track->Measurement_noise_cov = Track->kalman->measurement_noise_cov;
+	Track->z_k = cvCreateMat( 5, 1, CV_32FC1 );
+	cvZero(Track->Medida);
+	cvZero(Track->z_k );
+
+	return Track;
+	//		direccionR = (flyData->direccion*CV_PI)/180;
+	// Calcular e iniciar estado
+
+}
+
+CvKalman* initKalman( STFly* Fly, float dt ){
 
 	float Vx=0;// componente X de la velocidad.
 	float Vy=0;// componente Y de la velociad.
-	float direccionR; // orientacion en radianes.
 
-	// Calcular las componentes de la velocidad
+	// Crear el flitro de Kalman
 
-//		direccionR = (flyData->direccion*CV_PI)/180;
-	if ( direccion >=0 && direccion < 180) direccion = 180 - direccion;
-	else direccion = (360-direccion)+180;
+	CvKalman* Kalman = cvCreateKalman(5,5,0);
+	dt = 1 / 1 ;
 
-	direccionR = (direccion*CV_PI)/180;
-	Vx=-VELOCIDAD*cos(direccionR);
-	Vy=-VELOCIDAD*sin(direccionR);
+	// Inicializar las matrices parámetros para el filtro de Kalman
+	// en la primera iteración iniciamos la dirección con la orientación
 
-	// Inicializar el vector de estado
+	Vx= VELOCIDAD*cos(Fly->orientacion*CV_PI/180);
+	Vy=-VELOCIDAD*sin(Fly->orientacion*CV_PI/180);
 
-	float initialState[] = {coord.x , coord.y, Vx, Vy};
-
-	CvMat Ma=cvMat(1, 4, CV_32FC1, initialState);
-	copyMat(&Ma, kalman->state_post);
-	cvZero(state);
-	cvZero(measurement);
-
-}
-
-void initkdir(CvKalman* kalman,float direccion,float orientacion){ // iniciar para predecir la direccion del blob
-
-	// Establecer el estado incial, calculando el sentido de la velocidad angular.
-
-	float initialState[] = {orientacion,CalcDirection(direccion,orientacion,V_ANGULAR )};
-
-    CvMat Ma=cvMat(2, 1, CV_32FC1, initialState);
-    copyMat(&Ma, kalman->state_post);
-    cvZero(state_2);
-    cvZero(measurement_2);
-
-}
-
-
-void copyMat (CvMat* source, CvMat* dest){
-
-	int i,j;
-
-	for (i=0; i<source->rows; i++)
-		for (j=0; j<source->cols;j++)
-			dest->data.fl[i*source->cols+j]=source->data.fl[i*source->cols+j];
-
-}
-
-// Funcion para calcular el sentido de la velocidad angular y por tanto de la orientación
-
-float CalcDirection(float direction,float orientation,float angulo){
-
-	float angle = 0;// angulo con su sentido que devuelve la función.
-	float alpha,beta;
-	bool signo=false;// sentido de la dirección angular, false = resta angulo, true = suma angulo.
-
-	// Si ORIENTACION pertenece al 1º Cuadrante
-
-	if(0 < orientation && orientation < 90){
-
-		// Si direccion pretenece al Cuadrante 1
-
-		if(0 <= direction && direction <= 90){
-
-			if( orientation > direction) signo = false;
-
-			else signo = true;
-		}
-
-		// Si dirección pertene al Cuadrante 2
-
-		if(90 <= direction && direction <= 180) signo = true;
-
-		// Si dirección pertenece al Cuadrante 3
-
-		if(180 < direction && direction < 270){
-
-			alpha = direction - orientation;
-			beta = (360 - alpha);
-
-			if(alpha > beta) signo = false;
-			else signo = true;
-		}
-
-		// Si dirección pertenece al Cuadrante 4
-
-		if(270 <= direction && direction < 360) signo = false; // Direccion C 4
-
-		}
-
-	//Si ORIENTACION pertenece al 2º Cuadrante
-
-	if(90 < orientation && orientation < 180){
-
-		// Si dirección pertenece al Cuadrante 1
-
-		if(0 <= direction && direction <= 90 ) signo = false;
-
-		// Si dirección pertenece al Cuadrante 2
-
-		if(90 < direction && direction < 180){
-
-			if( orientation > direction) signo = true;
-			else signo = false;
-		}
-
-		// Si dirección pertenece al Cuadrante 3
-
-		if(180 <= direction && direction <= 270) signo = true;
-
-		// Si dirección pertenece al Cuadrante 4
-
-		if(270 < direction && direction < 360){
-
-			beta = (360 - direction) + orientation;
-			alpha = 360 - beta;
-			if(alpha > beta) signo = false;
-			else signo = true;
-		}
-
-
-	}
-
-	// Si ORIENTACION pertenece al 3º Cuadrante
-
-	if(180 < orientation && orientation < 270){
-
-		// Si dirección pertenece al Cuadrante 1
-
-		if(0 <= direction && direction < 90){
-
-
-			alpha = orientation - direction;
-			beta= 360 - alpha;
-
-			if(alpha > beta) signo = true;
-			else signo = false;
-		}
-
-		// Si dirección pertenece al Cuadrante 2
-
-		if(90 <= direction && direction  <= 180) signo = false;
-
-		// Si dirección pertenece al Cuadrante 3
-
-		if(180 < direction && direction < 270){
-
-			if(orientation > direction) signo = false;
-			else signo = true;
-		}
-
-		// Si dirección pertenece al Cuadrante 4
-
-		if(270 <= direction && direction < 360 ) signo = true;
-
-	}
-
-
-	// Si ORIENTACION pertenece al 4º Cuadrante
-
-	if(270 < orientation && orientation < 360){
-
-		// Si dirección pertenece al Cuadrante 1
-
-		if(0 <= direction && direction <= 90) signo = true;
-
-		// Si dirección pertenece al Cuadrante 2
-
-		if(90 < direction && direction < 180){
-
-			beta = (360 - orientation) + direction;
-			alpha = 360 - beta;
-
-			if (alpha > beta) signo = true;
-			else signo = false;
-		}
-
-		// Si dirección pertenece al Cuadrante 3
-
-		if(180 <= direction && direction <= 270) signo = false;
-
-		// Si dirección pertenece al Cuadrante 4
-
-		if(270 < direction && direction < 360){
-
-			if(orientation > direction) signo = false;
-			else signo = true;
-		}
-
-	}
-
-	// Si signo = false se produce la resta de ángulo, si signo = true la suma de ángulo.
-
-	if( !signo) angle = -angulo;
-	else angle = angulo;
-
-	return angle;
-
-} // Fin de la Funcion
-
-
-CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
-
-	float Matrix_Kalman_Cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
-
-	float Valor_X,Valor_Y;
-
-//	CvMat* MC=cvCreateMat(2,2,CV_32FC1);
-//	CvMat* Diag=cvCreateMat(2,2,CV_32FC1);
-//	CvMat* R=cvCreateMat(2,2,CV_32FC1);
-//	CvMat* Rt=cvCreateMat(2,2,CV_32FC1);
+	const float F[] = {1,0,dt,0,0, 0,1,0,dt,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1}; // Matriz de transición F
+	// Matriz R inicial. Errores en medidas. ( x, y, Vx, Vy, phi ). Al inicio el error en el angulo es de +-180º
+	const float R_inicial[] = {50,0,0,0,0, 0,50,0,0,0, 0,0,50,0,0, 0,0,0,50,0, 0,0,0,0,180};//{50,50,50,50,180};
+	const float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
+	float initialState[] = {Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion};
 //
-//	MC->data.fl[0]=Matrix->data.fl[0];
-//	MC->data.fl[1]=Matrix->data.fl[1];
-//	MC->data.fl[2]=Matrix->data.fl[4];
-//	MC->data.fl[3]=Matrix->data.fl[5];
-//
-//	//	cvEigenVV(MC,R,Rt,2);// Hallar los EigenVectores
-//	cvSVD(MC,Diag,R,Rt,0); // Hallar los EigenValores, MATRIX_C=R*Diagonal*RT
-//
-//	printf("\n");
-//	for(int i=0;i < R->cols*R->rows;i++){
-//		printf("\n %f",R->data.fl[i]);
-//	}
+	CvMat x_k =cvMat(1, 5, CV_32FC1, initialState);
 
-	CvRect ROI;
+	// establecer parámetros
+	memcpy( Kalman->transition_matrix->data.fl, F, sizeof(F)); // F
 
-	Valor_X = sqrt(Matrix_Kalman_Cov[0]);
-	Valor_Y = sqrt(Matrix_Kalman_Cov[3]);
+	cvSetIdentity( Kalman->measurement_matrix,cvRealScalar(1) ); // H Matriz de medida
+	cvSetIdentity( Kalman->process_noise_cov,cvRealScalar(1 ) ); // error asociado al modelo del sistema Q = f(F,B y H).
+	cvSetIdentity( Kalman->error_cov_pre, cvScalar(1) ); // Incertidumbre en predicción. (P_k' = F P_k-1 Ft) + Q
+	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1)); // Incertidumbre tras añadir medida. P_k = ( I - K_k H) P_k'
 
-	ROI.x=(predict->data.fl[0]-Valor_X);
-	ROI.y=(predict->data.fl[1]-Valor_Y);
-	ROI.width=2*Valor_X;
-	ROI.height=2*Valor_Y;
+	memcpy( Kalman->measurement_noise_cov->data.fl, R_inicial, sizeof(R_inicial)); // Incertidumbre en la medida Vk; Vk->N(0,R)
+//	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1)); // Incertidumbre tras añadir medida. P_k = ( I - K_k H) P_k'
+	//copyMat(&x_k, Kalman->state_post);
+	memcpy( Kalman->state_post->data.fl, X_k, sizeof(X_k)); // Estado inicial
 
-	return ROI;
+
+	return Kalman;
+}
+// Generamos la medida a partir de los datos obtenidos de la cámara añadiendo una incertidumbre baja. En la orientación
+// será elevada pues es kalman quien corrige dicho parámetro
+void generarMedida( STTrack* Track, STFly* Fly ){
+
+	const CvMat* H = Track->kalman->measurement_matrix;
+
+	// Medida
+	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy, Fly->direccion};
+	memcpy( Track->Medida->data.fl, Medida, sizeof(Medida)); // Medida;
+
+	// incertidumbre en la medida
+	// para el ángulo: Si la dirección del blob difiere en más de 90º de la dirección anterior, aumentar la incertidumbre.
+	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,360};//covarianza del ruido
+	float V[] = {0,0,0,0,0}; // media del ruido
+	// cargamos el error en la medida en el filtro para calcular la ganancia de kalman
+	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // V->N(0,R);
+	// y en la matriz para aplicarselo a la medida
+	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
+//	cvMatMulAdd( H->data.fl, Track->Medida->data.fl, Track->kalman->measurement_noise_cov->data.fl, Track->z_k->data.fl ); // Zk = H Medida + R
+//	cvGEMM(H->data.fl, Track->Medida->data.fl,1, Track->kalman->measurement_noise_cov->data.fl, 1, Track->z_k->data.fl,0 ); // Zk = H Medida + R
+	cvGEMM(H, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
 
 }
 
-double PesosKalman(CvMat* Matrix,CvMat* Predict,CvMat* Correct){
+// Generamos la medida a partir de los datos obtenidos de la camara añadiendo incertidumbre. En este caso la incertidumbre será mayor, pues
+// hay varios tracks que apuntan al mismo blob.
+void generarMedida2( STTrack* Track, STFly* Fly  ){
+
+	CvMat* H = Track->kalman->measurement_matrix;
+
+	// Medida
+	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy, Fly->direccion};
+	memcpy( Track->Medida->data.fl, Medida, sizeof(Medida)); // Medida;
+	// incertidumbre en la medida
+	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,180};// covarianza
+	float V[] =  {0,0,0,0,0};//media
+	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // V->N(0,R);
+	// y en la matriz para aplicarselo a la medida
+	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
+	// Obtener el error en la velocidad y orientación a partir del error en la medida.
+	//¿¿  1 asignar la id0 con el centro el asignado en la predicción con un error de posición igual al diametro del blob??
+	// o bien  2  ( como el el libro ) ???? o bien usamos EM para estimar los centros?
+	//La velocidad la predicha
+	// aumentamos la incertidumbre en la medida estableciendo unos valores altos en la matriz de covarianza.
+	// Si 1, En caso de la incertidumbre en la velocidad, ésta tenderá a 0 a medida que pasen frames sin que aparezca el blob, de modo que
+	// kalman predecirá que la mosca se está parando  o está quieta (V proxima a 0).
+
+	cvGEMM(H, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
+}
+// generar medida para el frame t
+// en este caso la medida se genera a partir de las predicciones de kalman añadiendo una incertidumbre elevada
+void kalmanControl( STTrack* Track ){
+
+	// Matriz de entrada
+	CvMat* H = Track->kalman->measurement_matrix;
+
+	//la medida se genera a partir de las predicciones de kalman
+	// La incertidumbre en la medida de posición será muy elevada ( no se ha obtenido medida se los sensores).
+	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,180};// Covarianza
+	float V[] =  {0,0,0,0,0};// media
+	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // R;
+	// y en la matriz para aplicarselo a la medida
+	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
+	cvGEMM(H,  Track->x_k_Pre ,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
+
+}
+
+double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct){
 
 	float Matrix_error_cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
 
@@ -578,21 +357,161 @@ double PesosKalman(CvMat* Matrix,CvMat* Predict,CvMat* Correct){
 
 }
 
-/// Limpia de la memoria las imagenes usadas durante la ejecución
-void DeallocateKalman(  ){
+CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
 
-	if(kalman){
-		cvReleaseKalman(&kalman);
-		cvReleaseMat(&state);
-		cvReleaseMat( &measurement );
-		cvReleaseMat(&process_noise);
+	float Matrix_Kalman_Cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
+
+	float Valor_X,Valor_Y;
+
+	CvRect ROI;
+
+	Valor_X = sqrt(Matrix_Kalman_Cov[0]);
+	Valor_Y = sqrt(Matrix_Kalman_Cov[3]);
+
+	ROI.x=(predict->data.fl[0]-Valor_X);
+	ROI.y=(predict->data.fl[1]-Valor_Y);
+	ROI.width=2*Valor_X;
+	ROI.height=2*Valor_Y;
+
+	return ROI;
+
+}
+
+void showKalmanData( STTrack *Track){
+
+	printf("\n\nReal State: ");
+	printf("\n\tCoordenadas: ( %f , %f )",Track->Medida->data.fl[0],Track->Medida->data.fl[1]);
+	printf("\n\tVelocidad: ( %f , %f )",Track->Medida->data.fl[2],Track->Medida->data.fl[3]);
+	printf("\n\tDirección:  %f ",Track->Medida->data.fl[4]);
+
+	printf("\n\n Observed State: "); // sumandole el error de medida.
+	printf("\n\tCoordenadas: ( %f , %f )",Track->z_k->data.fl[0],Track->z_k->data.fl[1]);
+	printf("\n\tVelocidad: ( %f , %f )",Track->z_k->data.fl[2],Track->z_k->data.fl[3]);
+	printf("\n\tDirección:  %f ",Track->z_k->data.fl[4]);
+
+	printf("\n Media Measurement noise:\n\n\t%0.f\n\t%0.f\n\t%0.f\n\t%0.f\n\t%0.f",
+			Track->Measurement_noise->data.fl[0],
+			Track->Measurement_noise->data.fl[1],
+			Track->Measurement_noise->data.fl[2],
+			Track->Measurement_noise->data.fl[3],
+			Track->Measurement_noise->data.fl[4]);
+
+	printf("\n Error Process noise:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+			Track->Measurement_noise_cov->data.fl[0],
+			Track->Measurement_noise_cov->data.fl[6],
+			Track->Measurement_noise_cov->data.fl[12],
+			Track->Measurement_noise_cov->data.fl[18],
+			Track->Measurement_noise_cov->data.fl[24]);
+
+	printf("\n Error Process noise:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+			Track->kalman->process_noise_cov->data.fl[0],
+			Track->kalman->process_noise_cov->data.fl[6],
+			Track->kalman->process_noise_cov->data.fl[12],
+			Track->kalman->process_noise_cov->data.fl[18],
+			Track->kalman->process_noise_cov->data.fl[24]);
+
+
+	printf("\n\n Predicted State t:");
+	printf("\n\tCoordenadas: ( %f , %f )",Track->x_k_Pre_->data.fl[0],Track->x_k_Pre_->data.fl[1]);
+	printf("\n\tVelocidad: ( %f , %f )",Track->x_k_Pre_->data.fl[2],Track->x_k_Pre_->data.fl[3]);
+	printf("\n\tDirección:  %f ",Track->x_k_Pre_->data.fl[4]);
+	printf("\n Error Cov Predicted:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+			Track->P_k_Pre_->data.fl[0],
+			Track->P_k_Pre_->data.fl[6],
+			Track->P_k_Pre_->data.fl[12],
+			Track->P_k_Pre_->data.fl[18],
+			Track->P_k_Pre_->data.fl[24]);
+
+	printf("\n\n Corrected State:" );
+	printf("\n\tCoordenadas: ( %f , %f )",Track->x_k_Pos->data.fl[0],Track->x_k_Pos->data.fl[1]);
+	printf("\n\tVelocidad: ( %f , %f )",Track->x_k_Pos->data.fl[2],Track->x_k_Pos->data.fl[3]);
+	printf("\n\tDirección:  %f ",Track->x_k_Pos->data.fl[4]);
+	printf("\n Error Cov Corrected:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+			Track->P_k_Pos->data.fl[0],
+			Track->P_k_Pos->data.fl[6],
+			Track->P_k_Pos->data.fl[12],
+			Track->P_k_Pos->data.fl[18],
+			Track->P_k_Pos->data.fl[24]);
+
+	printf("\n\n Predicted State t+1:");
+	printf("\n\tCoordenadas: ( %f , %f )",Track->x_k_Pre->data.fl[0],Track->x_k_Pre->data.fl[1]);
+	printf("\n\tVelocidad: ( %f , %f )",Track->x_k_Pre->data.fl[2],Track->x_k_Pre->data.fl[3]);
+	printf("\n\tDirección:  %f ",Track->x_k_Pre->data.fl[4]);
+	printf("\n Error Cov Predicted:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+			Track->P_k_Pre->data.fl[0],
+			Track->P_k_Pre->data.fl[6],
+			Track->P_k_Pre->data.fl[12],
+			Track->P_k_Pre->data.fl[18],
+			Track->P_k_Pre->data.fl[24]);
+	printf("\n\n");
+}
+
+int deadTrack( tlcde* Tracks, int id ){
+
+	STTrack* Track = NULL;
+	Track = (STTrack*)borrarEl( id , Tracks);
+	if(Track) {
+		cvReleaseKalman(&Track->kalman);
+
+		cvReleaseMat( &Track->x_k_Pre_ );
+
+		cvReleaseMat( &Track->P_k_Pre_ );
+
+		cvReleaseMat( &Track->Medida );
+		cvReleaseMat(&Track->z_k );
+		cvReleaseMat(&Track->Measurement_noise );
+		free(Track);
+		Track = NULL;
+		return 1;
 	}
-	if(kalman_2)	{
-		cvReleaseKalman(&kalman_2);
-		cvReleaseMat(&state_2);
-		cvReleaseMat(&measurement_2 );
-		cvReleaseMat(&process_noise_2);
+	else return 0;
+}
+
+void liberarTracks( tlcde* lista){
+	// Borrar todos los elementos de la lista
+	STTrack *Track = NULL;
+	// Comprobar si hay elementos
+	if(lista == NULL || lista->numeroDeElementos<1)  return;
+	// borrar: borra siempre el elemento actual
+
+	irAlPrincipio(lista);
+	Track = (STTrack *)borrar(lista);
+	while (Track)
+	{
+		cvReleaseKalman(&Track->kalman);
+
+		cvReleaseMat( &Track->x_k_Pre_ );
+
+		cvReleaseMat( &Track->P_k_Pre_ );
+
+		cvReleaseMat( &Track->Medida );
+		cvReleaseMat(&Track->z_k );
+		cvReleaseMat(&Track->Measurement_noise );
+
+
+		free(Track); // borrar el área de datos del elemento eliminado
+		Track = NULL;
+		Track = (STTrack *)borrar(lista);
 	}
 }
 
+/// Limpia de la memoria las imagenes usadas durante la ejecución
+void DeallocateKalman( tlcde* lista ){
 
+	cvReleaseImage( &ImReal);
+	cvReleaseImage( &ImPredict);
+	cvReleaseMat( &CoordReal);
+
+	liberarTracks( lista);
+
+}
+
+void copyMat (CvMat* source, CvMat* dest){
+
+	int i,j;
+
+	for (i=0; i<source->rows; i++)
+		for (j=0; j<source->cols;j++)
+			dest->data.fl[i*source->cols+j]=source->data.fl[i*source->cols+j];
+
+}

@@ -10,17 +10,20 @@
 
 #include "VideoTracker.hpp"
 #include "Libreria.h"
+
 #include "hungarian.hpp"
+#include "Kalman.hpp"
 #include <opencv2/video/background_segm.hpp>
 #include "AsignarIdentidades.hpp"
 #include "FlujoOptico.hpp"
 
 
-void Tracking( STFrame* frameDataIn, tlcde** framesBuff );
+STFrame* Tracking(  tlcde** framesBuff, STFrame* FrameDataIn);
+
 
 void AllocateTrackImages( IplImage *I );
 
-void ReleaseDataTrack();
+void ReleaseDataTrack( tlcde* FramesBuf);
 
 void crearMascara( IplImage* Frame, IplImage* FG,IplImage* mascara);
 

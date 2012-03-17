@@ -59,12 +59,15 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 	cvSetImageROI( pesos, Roi );
 	cvZero( Mask);
 
-	// Distancia de cada pixel a su modelo de fondo.
+
 //		cvShowImage("Foreground",FGTemp);
 //				cvWaitKey(0);
 #ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
+
+	//////  DISTANCIA DE CADA PIXEL A SU MODELO DE FONDO.
 	cvAbsDiff(Brillo,BGModel,pesos);// |I(p)-u(p)|
+
 	if( SHOW_SEGMENTATION_MATRIX == 1){
 				printf("\n ANTES \n");
 
@@ -200,12 +203,18 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 		fly->Estado = 1;  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
 		fly->num_frame = num_frame;
 		fly->salto = false;	//!< Indica que la mosca ha saltado
-		fly->Grupo = 0; //!< Indica que la mosca permanece estática en un grupo de n moscas.
+		fly->Blobs = 0; //!< Indica que la mosca permanece estática en un grupo de n moscas.
 		fly->Zona = 0; //!< Si se seleccionan zonas de interes en el plato,
 		fly->failSeg = false;
 		fly->flag_seg = false;
 		fly->Px = 0;
 		fly->areaElipse = CV_PI*fly->b*fly->a;
+		fly->Vx = 0;
+		fly->Vy = 0;
+		fly->Ax = 0;
+		fly->Ay = 0;
+		fly->dir_filtered = 0;
+		fly->siguiente = NULL;
 		return fly;
 	}
 	else{

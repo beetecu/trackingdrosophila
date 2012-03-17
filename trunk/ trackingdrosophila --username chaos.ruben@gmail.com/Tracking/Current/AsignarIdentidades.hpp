@@ -24,9 +24,11 @@ void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 
 STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* ids , CvRect MotionRoi, double angle );
 
+int asignarIdentidades( CvMat* Matrix_Hungarian, STFrame* frameActual , STFrame*frameAnterior, tlcde* ids  );
 
-void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
+int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids);
 
+void EUDistance( int a, int b, float* direccion, float* distancia);
 
 void corregirEstado( STFrame* frame0, STFrame* frame1, STFrame* frame2, int pos );
 
