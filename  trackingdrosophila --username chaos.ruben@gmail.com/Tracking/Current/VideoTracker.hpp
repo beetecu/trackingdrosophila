@@ -194,7 +194,7 @@ using namespace std;
 		float CMov16H;
 		float CMov24H;
 		float CMov48H;
-		float CMovMedio;	//!< Cantidad de movimiento medio desde el comienzo.
+		float CMovMedio; //!< Cantidad de movimiento medio desde el comienzo.
 	}STStatFrame;
 
 /// Estructura que almacena las capas del frame, los datos para realizar calculos estadisticos simples en
