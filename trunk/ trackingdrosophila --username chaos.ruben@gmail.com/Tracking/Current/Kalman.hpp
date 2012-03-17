@@ -33,6 +33,9 @@ typedef struct{
 	CvMat* Medida;	// Valor real ( medido )
 	CvMat* z_k; // Zk = H Medida + V. Valor observado
 
+	STFly* Flysig; // Fly asignada en t+1. Obtenemos de aqui la nueva medida
+	STFly* FlyActual;
+
 }STTrack;
 
 CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks);

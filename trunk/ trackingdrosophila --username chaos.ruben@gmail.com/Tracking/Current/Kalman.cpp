@@ -45,6 +45,17 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 	cvZero(frameData->ImKalman);
 	////////////////////// CORRECCION ////////////////////////
 
+	// obtener Track
+	// si fly Null kalman control
+	// si  fly no null
+		// obtener fly
+		// si fly->track es uno
+			//generarmedida
+		// si fly->track es mayor de uno
+			// generarmedida2
+	// Recorrer lista flies.
+		// si fly id0 iniciarTrack
+
 	if(lsTracks->numeroDeElementos>0){
 		for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 			// para cada track, buscar su id en el frame de trabajo //
@@ -172,7 +183,7 @@ void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 
 			int j ;
 			for( j = 0; j < lsTracks->numeroDeElementos ; j++){
-				Track = (STTrack*)obtener(i, lsTracks);
+				Track = (STTrack*)obtener(j, lsTracks);
 				if(Fly->etiqueta == Track->id) break;
 			}// si la j llega al final quiere decir que no se ha encontrado coincidencia
 			if (j == lsTracks->numeroDeElementos){
@@ -186,6 +197,7 @@ void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 
 STTrack* initTrack( STFly* Fly ,float fps ){
 
+	// etiquetar fly e iniciar nuevo track
 
 	STTrack* Track = NULL;
 
