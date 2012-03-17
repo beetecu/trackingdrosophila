@@ -79,8 +79,9 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Se trabaja en las posiciones frame MAX_BUFFER -3 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
 	if( Matrix_Hungarian ){
-		Hungaro(Matrix_Hungarian);
-		asignarIdentidades( Matrix_Hungarian, frameData, frameDataSig, Identities);
+//		Hungaro(Matrix_Hungarian);
+//		asignarIdentidades( lsTracks, frameData->Fliesanterior,frameDataSig->Flies , Identities);
+
 		cvReleaseMat(&Matrix_Hungarian);
 	}
 	cvZero(frameDataIn->ImMotion);

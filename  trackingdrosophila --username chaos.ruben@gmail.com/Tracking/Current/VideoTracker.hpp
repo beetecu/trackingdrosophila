@@ -64,7 +64,7 @@ using namespace std;
 
 #define SHOW_MT_DATA 1
 
-#define SHOW_KALMAN_DATA 1
+#define SHOW_KALMAN_DATA 0
 
 // VISUALIZACIÓN DE IMAGENES
 #define SHOW_WINDOW 0

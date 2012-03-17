@@ -421,10 +421,17 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 
 }
 
-int asignarIdentidades( CvMat* Matrix_Hungarian, STFrame* frameActual , STFrame*frameAnterior, tlcde* ids  ){
+int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids  ){
 
+// hungarian
 
+	// enlazar flies
 
+	//	enlazarFlies( Track->FlyActual, STFly* flyActual,float dt, tlcde* ids )
+
+	// rellenar para cada track puntero a fly con la que enlaza Trak->Fliesig ; NULL si no hay
+
+	// rellenar para cada blob vector fly->tracks; Tracks que apuntan a ese blob.
 
 
 }
