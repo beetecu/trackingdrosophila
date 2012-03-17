@@ -12,14 +12,11 @@
 using namespace cv;
 using namespace std;
 
-extern float TiempoFrame;
-extern float TiempoGlobal;
 extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
-extern double TotalFrames ;
-float TiempoFrame;
-float TiempoGlobal;
+
+
 double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
-double TotalFrames ;
+
 
 
 /// PREPROCESADO
@@ -36,6 +33,7 @@ tlcde *Flies = NULL;
 /// Estructura frame
 STFrame* FrameDataIn = NULL;
 STFrame* FrameDataOut = NULL;
+STFrame* FrameDataStats = NULL;
 ///Parámetros fondo para procesado
 BGModelParams *BGPrParams = NULL;
 ///Parámetros Validación para procesado
@@ -56,6 +54,10 @@ VisParams* visParams = NULL;
 int main(int argc, char* argv[]) {
 
 	struct timeval ti,  tif, tinicio; // iniciamos la estructura de medida de tiempos
+	float TiempoFrame;
+	float TiempoGlobal;
+	double TotalFrames ;
+	double FPS;
 
 	char nombreFichero[30];
 	char nombreVideo[30];
@@ -63,11 +65,6 @@ int main(int argc, char* argv[]) {
 
 	if( argc<1) {help(); return -1;};
 
-	///////////  CAPTURA  ////////////
-
-	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
-	CvVideoWriter* VWriter;
-	IplImage* frame;
 
 	///////////  INICIALIZACIÓN ////////////
 	printf("\nInicializando parámetros...");
@@ -80,7 +77,15 @@ int main(int argc, char* argv[]) {
 
 	//////////  PREPROCESADO   ////////////
 
-	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(&g_capture, &VWriter);
+	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(NULL, NULL);
+
+	/////////	PROCESADO   ///////////////
+
+	//  CAPTURA  //
+
+	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
+	CvVideoWriter* VWriter;
+	IplImage* frame;
 
 	printf( "Iniciando captura...\n" );
 	gettimeofday(&tinicio, NULL);//para obtener el tiempo transcurrido desde el inicio del programa
@@ -96,72 +101,63 @@ int main(int argc, char* argv[]) {
 
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
 	if(!TotalFrames) TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
+	FPS = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FPS);
+
 	printf("\n\nIniciando procesado...\n");
 	if(SHOW_WINDOW) Transicion("Iniciando Tracking...", 1,1000, 50 );
+
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
 
-    for(int Fr = 1;; Fr++ ){
+    for( NumFrame = 1;; NumFrame++ ){
 
     	frame = cvQueryFrame(g_capture);
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
     	gettimeofday(&tif, NULL);
-    	if( !frame ) RetryCap( g_capture );
+    	gettimeofday(&ti, NULL);
+    	if( !frame ){
+    		NumFrame = NumFrame + RetryCap( g_capture, frame );
+    	}
     	if( !frame ) Finalizar(&g_capture, &VWriter);
-
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
-		NumFrame = cvGetCaptureProperty( g_capture, 1);
- 		if(FramesBuf && FramesBuf->numeroDeElementos>0){
- 			irAl(FramesBuf->numeroDeElementos-1, FramesBuf );
- 			FrameDataIn = (STFrame*)obtenerActual(FramesBuf);
- 			printf("\n//////////////////////////////////////////////////\n");
- 			printf("\nTiempo de procesado del  Frame (incluida visualización) %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->Stats->TiempoFrame);
-			printf("Segundos de video procesados: %0.f seg \n", FrameDataIn->Stats->TiempoGlobal);
-			printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/TotalFrames)*100 );
-			printf("\n//////////////////////////////////////////////////\n");
- 		}
-		gettimeofday(&ti, NULL);
+
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\t\t\tFRAME %0.f ",NumFrame);
 
-		//////////  PROCESAR     ////////////
+		//////////  PROCESAR  ////////////
 		FrameDataIn = Procesado2(frame, BGModel, Shape, valParams, BGPrParams );
 
-		//////////  RASTREAR       ////////////
-		Tracking( FrameDataIn, &FramesBuf );
+		//////////  RASTREAR  ////////////
+		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn );
 
 		// SI BUFFER LLENO
-		if( FramesBuf->numeroDeElementos == MAX_BUFFER){
+		if( FrameDataOut ){
 
 			////////// ESTADISTICAS //////////
-			// para su cálculo usamos el frameDataOut anterior
-			if( FrameDataOut ) CalcStatsFrame( FrameDataOut,FramesBuf );
-
-			////////// LIBERAR MEMORIA  ////////////
-			if(FrameDataOut) liberarSTFrame( FrameDataOut );
-			FrameDataOut = (STFrame*)liberarPrimero( FramesBuf ) ;
-			if(!FrameDataOut){error(7); Finalizar(&g_capture, &VWriter);}
+			// para su cálculo usamos el frameDataOut anterior.
+			CalcStatsFrame( FrameDataStats,FrameDataOut );
 
 			//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
 			if(SHOW_WINDOW) DraWWindow( FrameDataOut->Frame, BGModel,VWriter,visParams, FrameDataOut->Flies,FrameDataOut->Stats, TRAKING );
+
 			//////////  ALMACENAR ////////////
 			if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
+
+			////////// LIBERAR MEMORIA  ////////////
+			liberarSTFrame( FrameDataStats );
 		}
 		else VerEstadoBuffer( frame, FramesBuf->numeroDeElementos, visParams, IMAGE_BUFFER_LENGTH);
 
-		//visualizar primer frame del buffer
-// 		VisualizarEl( 0, FramesBuf , BGModel,g_capture, VWriter, visParams );
-		// visualizar ultimo frame del buffer
-		FrameDataIn->Stats->TiempoFrame = FrameDataIn->Stats->TiempoFrame + obtenerTiempo( tif, 0 );
-		FrameDataIn->Stats->TiempoGlobal = obtenerTiempo( tinicio, 1);
-		FrameDataIn->Stats->totalFrames = TotalFrames;
+		FrameDataStats = FrameDataOut;
+		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
 
-if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel, g_capture, VWriter, visParams );
-   		///// MEDIR TIEMPOS Del frame de entrada
-//   		VisualizarFr( FrameDataIn , BGModel, VWriter );
-//   		liberarSTFrame( FrameDataIn );
-
+		if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel, g_capture, VWriter, visParams );
+		printf("\n//////////////////////////////////////////////////\n");
+		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->Stats->TiempoFrame);
+		printf("Segundos de video procesados: %0.f seg \n", FrameDataIn->Stats->TiempoGlobal);
+		printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/TotalFrames)*100 );
+		printf("\n//////////////////////////////////////////////////\n");
 	}
 	///////// LIBERAR MEMORIA Y TERMINAR////////
     Finalizar(&g_capture, &VWriter);
@@ -189,11 +185,8 @@ void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
 	if(Flies) free( Flies );
 
 	// liberar imagenes y datos de tracking
-	ReleaseDataTrack();
-	if(FramesBuf) {
-		liberarBuffer( FramesBuf );
-		free( FramesBuf);
-	}
+	ReleaseDataTrack( FramesBuf );
+
 	// liberar estructura estadísticas
 	if( Stats ) free(Stats);
 	// liberar imagenes y datos de visualización

@@ -39,7 +39,7 @@ int gettimeofday( struct timeval *tv, struct timezone *tz );
 
 int getAVIFrames( char* );
 
-IplImage* RetryCap( CvCapture* g_capture );
+int RetryCap( CvCapture* g_capture, IplImage* frame );
 //! \brief ImPreProcess: Recibe una imagen RGB 8 bit y devuelve una imagen en escala de grises con un
 //!   filtrado gaussiano 5x5. Si el último parámetro es verdadero se binariza, si
 
@@ -258,11 +258,7 @@ void mostrarFliesFrame(STFrame *frameData);
  */
 void liberarListaFlies(tlcde *lista);
 
-void enlazarFlies( STFly* flyAnterior, STFly* flyActual, tlcde* ids = NULL );
-
 tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies );
-
-void EUDistance( CvPoint posicion1, CvPoint posicion2, float* direccion, float* distancia );
 
 void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max );
 
@@ -316,7 +312,7 @@ void liberarIdentidades(tlcde* lista);
 
 void asignarNuevaId( STFly* fly, tlcde* identities);
 
-void dejarId( STFly* fly, tlcde* identities );
+int dejarId( STFly* fly, tlcde* identities );
 
 void mostrarIds( tlcde* Ids);
 

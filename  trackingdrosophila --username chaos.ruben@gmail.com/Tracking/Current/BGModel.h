@@ -12,10 +12,17 @@
 #include "Libreria.h"
 #include "Visualizacion.hpp"
 
+#define GAUSSIAN 1	//MODELO GAUSSIANO SIN ACTUALIZACIÓN SELECTIVA
+#define GAUSSIAN_S_UP 2 //MODELO GAUSSIANO CON ACTUALIZACIÓN SELECTIVA
+#define MEDIAN 3	//MODELO MEDIANA SIN ACTUALIZACIÓN SELECTIVA
+#define MEDIAN_S_UP 4	//MODELO MEDIANA CON ACTUALIZACIÓN SELECTIVA
+
 #define K 0.6745	/// Para la corrección de la MAD ( Median Absolute Deviation )
 					/// con el que se estima la desviación típica.
 typedef struct{
 	//Parametros del modelo
+	int MODEL_TYPE; // tipo de modelo de fondo. Afecta a la resta y a la actualización.
+					//Cuando se inicia se hace automaticamente el gaussiano
 	int FLAT_FRAMES_TRAINING;//!< Nº de frames para aprendizaje del plato.
 	int FRAMES_TRAINING ;//!< Nº de frames para el aprendizaje del fondo.
 	int HIGHT_THRESHOLD; //!< Umbral alto para la resta de fondo.

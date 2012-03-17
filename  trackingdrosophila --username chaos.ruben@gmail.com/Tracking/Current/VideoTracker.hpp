@@ -62,9 +62,9 @@ using namespace std;
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
 #define SHOW_VALIDATION_TIMES 0
 
-#define SHOW_MT_DATA 0
+#define SHOW_MT_DATA 1
 
-#define SHOW_KALMAN_DATA 0
+#define SHOW_KALMAN_DATA 1
 
 // VISUALIZACIÓN DE IMAGENES
 #define SHOW_WINDOW 0
@@ -75,7 +75,7 @@ using namespace std;
 #define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 #define ACTIVAR_OPCIONES_VISUALIZACION 1
 #define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
-#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
+#define SHOW_OPTICAL_FLOW 1 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
 #define GRABAR_VISUALIZACION 1
@@ -120,6 +120,7 @@ using namespace std;
 		CvPoint posicion; //!< Posición del blob
 		float direccion; //!<almacena la dirección del desplazamiento
 		unsigned int num_frame; //!< Almacena el numero de frame (tiempo)
+		void* siguiente; //! puntero al siguiente blob con la misma id.
 
 		float a,b; //!< semiejes de la elipse
 		float Px; // almacena la probabilidad del blob que dependerá de su area y del modelo de forma:
@@ -134,14 +135,22 @@ using namespace std;
 		int Estado;  //!< Indica si el blob se encuentra en el foreground (0) en el oldforeground (1) o en estado de predicción (2).
 		unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
 		unsigned int StaticFrames; //!< Contador del número de frames que el blob permanece estático;
-		bool flag_gir; //!< Indica si se le suman o no pi rad a la orientación del blob
 
+		// Validacion
 		bool flag_seg; //!< Indica si e blog a sido segmentado
 		bool failSeg; //!< indica si el blob ha  desaparecido durante el analisis del defecto
 		int bestTresh;//!< Mejor umbral de binarización obtenido tras validar.
-
+		// Tracking
+		bool flag_gir; //!< Indica si se le suman o no pi rad a la orientación del blob
+		float Vx;
+		float Vy;
+		int Ax; //!< incremento de la posición en x entre frame t-1 y el actual
+		int Ay; //!< incremento de la posición en x entre frame t-1 y el actual
+		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
+		float Estim; //!< Predicción de kalman para el siguiente frame
+		float Des;
 		bool salto;	//!< Indica que la mosca ha saltado
-		int Grupo; //!< Indica que la mosca permanece estática en un grupo de n moscas.
+		int Blobs; //!< Indica el número de moscas que contiene el blob. Dato para validar blob (con EM)
 		int Zona; //!< Si se seleccionan zonas de interes en el plato,
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
 
@@ -165,13 +174,16 @@ using namespace std;
 		CvRect ROIS; //!< Zonas de interes
 		int totalFrames; //!< Numero de Frames que posee en video
 		int numFrame; //!< Numero de Frame que se está procesando.
+		float fps;
+		float TiempoFrame;
+		float TiempoGlobal;
+
 		float TProces;
 		float TTacking;
 		float staticBlobs; //!< blobs estáticos en tanto por ciento.
-		float CantidadMov;
-		float TiempoFrame;
-		float TiempoGlobal;
-		float TotalFrames;
+		float dinamicBlobs; //!< blobs en movimiento en tanto por ciento
+		int TotalBlobs; //!< Número total de blobs.
+
 		float CMov30Med;  //!< Cantidad de movimiento medio en los últimos 30 min.
 		float CMov30Des;
 		float CMov1HMed;  //!< Cantidad de movimiento medio en la última hora.

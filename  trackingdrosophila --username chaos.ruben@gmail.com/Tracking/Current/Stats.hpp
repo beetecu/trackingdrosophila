@@ -10,6 +10,8 @@
 
 #include "Libreria.h"
 
-void CalcStatsFrame( STFrame* frameData,tlcde* Buffer );
+void CalcStatsFrame( STFrame* frameDataStats,STFrame* frameDataOut );
+
+STStatFrame* InitStatsFrame( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS  );
 
 #endif /* STATS_HPP_ */

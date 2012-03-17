@@ -34,7 +34,7 @@ IplImage* fgTemp; // copia del fg para buscar los contornos
 IplImage *IlowF; /// La mediana menos x veces la desviación típica
 IplImage *IHiF;
 
-extern float TiempoGlobal ;
+
 
 /********************************************************************
  *			 			MODELO MEDIANA      						*
@@ -132,7 +132,7 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 			cvCopy( ImGray, bgmodel->Imed );
 			// Iniciamos la desviación a un valor muy pequeño
 			//apropiado para fondos con poco movimiento (unimodales).
-			//iniciarIdesv( bgmodel->IDesvf,Param->INITIAL_DESV, bgmodel->ImFMask );
+			iniciarIdesv( bgmodel->IDesvf,Param->INITIAL_DESV, bgmodel->ImFMask );
 		}
 		// Aprendizaje del fondo
 		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesvf, bgmodel->DataFROI, bgmodel->ImFMask);
@@ -186,6 +186,9 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,Cv
 #ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
 	updateMedian( ImGray, BGMod, Imaskt, ROI);
+	if( Idesvf != NULL){
+		updateDesv( ImGray, BGMod, Idesvf, Imaskt, ROI );
+	}
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti , NULL);
 	printf("\t\tActualización de mediana: %5.4g ms\n", tiempoParcial);
@@ -270,7 +273,7 @@ void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Ima
 				dif[ i*step2+j ] = abs( Gray[i*step5+j] - BG[i*step6+j]);
 				if ( dif[ i*step2+j ] < des[ i*step1+j ] ){
 					des[ i*step1+j ] -=1;
-					desvf[i*step4+j] = K*des[ i*step1+j ];
+					desvf[i*step4+j] = K*des[ i*step1+j ]; // Corrección MAD
 				}
 				if ( dif[ i*step2+j ] > des[ i*step1+j ] ){
 					des[ i*step1+j ] +=1;
@@ -282,10 +285,10 @@ void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Ima
 
 }
 
-void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
+void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
 
-	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,DESVI, DataROI , 0);
-	else accumulateBackground( tmp_frame, BGModel,DESVI, DataROI ,Mask);
+	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI , 0);
+	else accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Mask);
 
 }
 void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesf, double ALPHA,CvRect dataroi ){
@@ -340,21 +343,51 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 	}
 #ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
-	for (int y = ROI.y; y < ROI.y + ROI.height; y++){
-		uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
-		uchar* ptr2 = (uchar*) ( bg_model->imageData + y*bg_model->widthStep + 1*ROI.x);
-		uchar* ptr3 = (uchar*) ( Idif->imageData + y*Idif->widthStep + 1*ROI.x);
-		uchar* ptr4 =  (uchar*) ( fg->imageData + y*fg->widthStep + 1*ROI.x);
-		for (int x = 0; x<ROI.width; x++){
-			// si (I(p) - Me(p)) >= 0 Idif(p) = -1 => pixel de bg mas oscuro que fg ( fantasma ). lo eliminamos
-			if ( (ptr1[x]-ptr2[x]) > 0 ) ptr3[x] = 0;
-			// sino Idif = |I(p) - Me(p)|
-			else ptr3[x] = abs( ptr1[x]-ptr2[x]);
-			// Si Idif(p) > LowT*Idesv(p) => Al FG sino al BG
-			if ( ptr3[x] > (Param->LOW_THRESHOLD) ) ptr4[x] = 255; //Normal: (Param->LOW_THRESHOLD)*ptr4[i*step4+j]
-			else ptr4[x] = 0;
+	if(!Idesvf){
+		// umbralizamos la diferencia
+		for (int y = ROI.y; y < ROI.y + ROI.height; y++){
+			uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
+			uchar* ptr2 = (uchar*) ( bg_model->imageData + y*bg_model->widthStep + 1*ROI.x);
+			uchar* ptr3 = (uchar*) ( Idif->imageData + y*Idif->widthStep + 1*ROI.x);
+			uchar* ptr4 =  (uchar*) ( fg->imageData + y*fg->widthStep + 1*ROI.x);
+			for (int x = 0; x<ROI.width; x++){
+				// si (I(p) - Me(p)) >= 0 Idif(p) = 0 => pixel de bg mas oscuro que fg ( fantasma ). lo eliminamos
+				if ( (ptr1[x]-ptr2[x]) > 0 ) ptr3[x] = 0;
+				// sino Idif = |I(p) - Me(p)|
+				else ptr3[x] = abs( ptr1[x]-ptr2[x]);
+				// Si Idif(p) > LowT => Al FG sino al BG
+				if ( ptr3[x] > (Param->LOW_THRESHOLD) ) ptr4[x] = 255; //Normal: (Param->LOW_THRESHOLD)*ptr4[i*step4+j]
+				else ptr4[x] = 0;
+			}
 		}
 	}
+	else{
+		// Umbralizamos la diferencia normalizada
+			int step1		= ImGray->widthStep/sizeof(uchar);
+			int step2		= bg_model->widthStep/sizeof(uchar);
+			int step3		= Idif->widthStep/sizeof(uchar);
+			int step4       = Idesvf->widthStep/sizeof(float);
+			int step5		= fg->widthStep/sizeof(uchar);
+
+			uchar* ptr1    = (uchar*) ImGray->imageData;
+			uchar* ptr2    = (uchar*) bg_model->imageData ;
+			uchar* ptr3    = (uchar*) Idif->imageData ;
+		    float* ptr4    = (float*) Idesvf->imageData;
+		    uchar* ptr5    = (uchar*) fg->imageData;
+
+			for (int i = ROI.y; i< ROI.y + ROI.height; i++){
+				for (int j = ROI.x; j < ROI.x + ROI.width; j++){
+					// si (I(p) - Me(p)) >= 0 Idif(p) = -1 => pixel de bg mas oscuro que fg ( fantasma ). lo eliminamos
+					if ( (ptr1[i*step1+j]-ptr2[i*step2+j]) > 0 ) ptr3[i*step3+j] = 0;
+					// sino Idif = |I(p) - Me(p)|
+					else ptr3[i*step3+j] = abs( ptr1[i*step1+j]-ptr2[i*step2+j]);
+					// Si Idif(p) > LowT*Idesv(p) => Al FG sino al BG
+					if ( ptr3[i*step3+j] > (Param->LOW_THRESHOLD)*ptr4[i*step4+j] ) ptr5[i*step5+j] = 255; //Normal:
+					else ptr5[i*step5+j] = 0;
+				}
+			}
+	}
+
 #ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) {tiempoParcial = obtenerTiempo( ti , NULL);
 	printf("\t\tUmbralizacion low trhreshold: %5.4g ms\n", tiempoParcial);}
@@ -446,16 +479,42 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 		// Primero obtenermos ROI del contorno del LOW_THRESHOLD
 		CvRect ContROI = cvBoundingRect( c );
 		flag = false;
-		for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
-			uchar* ptr0 = (uchar*) ( fgTemp->imageData + y*fgTemp->widthStep + ContROI.x);
-			uchar* ptr1 = (uchar*) ( Idif->imageData + y*Idif->widthStep + ContROI.x);
-			for (int x = 0; x < ContROI.width; x++){
-				if ( ptr1[x] > Param->HIGHT_THRESHOLD ){
-					flag = true;
-					break;
+		if( !DES){
+			for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
+				uchar* ptr0 = (uchar*) ( fgTemp->imageData + y*fgTemp->widthStep + ContROI.x);
+				uchar* ptr1 = (uchar*) ( Idif->imageData + y*Idif->widthStep + ContROI.x);
+				for (int x = 0; x < ContROI.width; x++){
+					if ( ptr1[x] > Param->HIGHT_THRESHOLD ){
+						flag = true;
+						break;
+					}
 				}
+				if (flag == true) break;
 			}
-			if (flag == true) break;
+		}
+		else{
+			int step1		= Idif->widthStep/sizeof(uchar);
+			int step2       = DES->widthStep/sizeof(float);
+
+
+			uchar* ptr1    = (uchar*) Idif->imageData ;
+			float* ptr2    = (float*) DES->imageData;
+
+			flag = false;
+			for (int i = ContROI.y; i< ContROI.y + ContROI.height; i++){
+				for (int j = ContROI.x; j < ContROI.x + ContROI.width; j++){
+					// Si alguno de los pixeles del blob supera en HiF veces la
+					// desviación típica del modelo,activamos el flag para
+					// dibujar el contorno
+					//if( ptr0[i*step0 + j] == 255){
+						if ( ptr1[ i*step1 + j]*ptr2[i*step2 + j] > Param->HIGHT_THRESHOLD ){//
+							flag = true;
+							break;
+						}
+					//}
+				}
+				if (flag == true) break;
+			}
 		}
 		if ( flag == true){ // Se dibuja el contorno
 			c_new = cvConvexHull2( c, mem_storage, CV_CLOCKWISE, 1);
@@ -734,612 +793,7 @@ void DeallocateTempImages() {
 		Imaskt = NULL;
 		fgTemp = NULL;
 }
-/********************************************************************
- *			 				MODELO GAUSSIANO 						*
- * 																	*
- ********************************************************************/
 
-//StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
-//
-//
-//	int num_frames = 0;
-//	IplImage* frame = cvQueryFrame( t_capture );
-//			if ( !frame ) {
-//				error(2);
-//				exit(-1);
-//			}
-//			if ( (cvWaitKey(10) & 255) == 27 ) exit(-1);
-//
-//	 if( Param == NULL ) DefaultBGMParams( Param );
-//
-//	//Iniciar estructura para el modelo de fondo estático
-//	StaticBGModel* bgmodel;
-//
-//	bgmodel = ( StaticBGModel*) malloc( sizeof( StaticBGModel));
-//	if ( !bgmodel ) {error(4);return(0);}
-//
-//	bgmodel->PCentroX = 0;
-//	bgmodel->PCentroY = 0;
-//	bgmodel->PRadio = 0;
-//
-//	AllocateBGMImages(frame, bgmodel );
-//
-//	// Obtencion de mascara del plato
-//	printf("Localizando plato... ");
-//	gettimeofday(&ti, NULL);
-//	if  ( Param->FLAT_FRAMES_TRAINING >0){
-//		MascaraPlato( t_capture, bgmodel, Param->FLAT_FRAMES_TRAINING);
-//		if (bgmodel->PRadio == 0  ) {error(3);return(0);}
-//	}
-//	else{
-//		bgmodel->DataFROI = cvRect(0,
-//		0,
-//		frame->width,
-//		frame->height ); // Datos para establecer ROI si no se quiere detectar el plato
-//		cvZero(bgmodel->ImFMask);
-//	}
-//
-//	TiempoParcial = obtenerTiempo( ti , NULL);
-//	printf(" %5.4g ms\n", TiempoParcial);
-//
-//	printf("Aprendiendo fondo... ");
-//	gettimeofday(&ti, NULL);
-//
-//	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
-//	while( num_frames < Param->FRAMES_TRAINING ){
-//		frame = cvQueryFrame( t_capture );
-//		if ( !frame ) {
-//			error(2);
-//			break;
-//		}
-//		if ( (cvWaitKey(10) & 255) == 27 ) break;
-//
-//		ImPreProcess( frame, ImGray, bgmodel->ImFMask, false, bgmodel->DataFROI);
-//		//Inicialización
-//		if ( num_frames == 0){
-//			// iniciar mediana
-//			cvCopy( ImGray, bgmodel->Imed );
-//			// Iniciamos la desviación a un valor muy pequeño
-//			//apropiado para fondos con poco movimiento (unimodales).
-//			iniciarIdesv( bgmodel->IDesvf,Param->INITIAL_DESV, bgmodel->ImFMask );
-//		}
-//		// Aprendizaje del fondo
-//		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesvf, bgmodel->DataFROI, bgmodel->ImFMask);
-//		if(num_frames == 0){
-//
-//		}
-//		num_frames += 1;
-//	}
-//	TiempoParcial = obtenerTiempo( ti , NULL);
-//	printf(" %5.4g ms\n", TiempoParcial);
-//	return bgmodel;
-//}
-//
-//void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , IplImage* mask = NULL ) {
-//	// si la máscara es null, se crea una inicializada a 0, lo que implicará
-//	// la actualización de todos los pixeles del background
-//	struct timeval ti, tf; // iniciamos la estructura
-//	double tiempoParcial;
-//	if (mask == NULL){
-//		cvZero( Imaskt);
-//	}
-//	else cvCopy(mask, Imaskt);
-//
-////	muestrearLinea( ImGray,cvPoint( 120, 267 ),	cvPoint( 220, 267 ), 5000);
-//
-//	if( SHOW_BGMODEL_DATA ){
-//			printf("\n\n Imagenes antes de actualizar fondo" );
-//			CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-//			printf("\n\n Matriz Brillo ");
-//			verMatrizIm(ImGray, ventana);
-//			printf("\n\n Matriz BGModel ");
-//			verMatrizIm(BGMod, ventana);
-//			printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
-//			verMatrizIm(Idif, ventana);
-//			printf("\n\n Matriz Idesvf(p) ");
-//			verMatrizIm(Idesvf, ventana);
-//	}
-//
-//	// Se estima la mediana. Se actualiza el fondo usando la máscara.
-//	// median(p)
-//	gettimeofday(&ti, NULL);
-//	updateMedian( ImGray, BGMod, Imaskt, ROI);
-//	tiempoParcial = obtenerTiempo( ti , NULL);
-//	printf("\t\tActualizando Mediana: %5.4g ms\n", tiempoParcial);
-//
-//	//Estimamos la desviación típica
-//
-//	 //Idesvf(p) = K*median(I(p)-median(p))
-//	gettimeofday(&ti, NULL);
-//	updateDesv( ImGray, BGMod, Idesvf, Imaskt, ROI );
-//	tiempoParcial = obtenerTiempo( ti , NULL);
-//	printf("\t\tActualizando Desviación típica: %5.4g ms\n", tiempoParcial);
-//
-//
-//	if( SHOW_BGMODEL_DATA ){
-//			printf("\n\n Imagenes tras actualizar fondo" );
-//			CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-//			printf("\n\n Matriz Brillo ");
-//			verMatrizIm(ImGray, ventana);
-//			printf("\n\n Matriz BGModel ");
-//			verMatrizIm(BGMod, ventana);
-//			printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
-//			verMatrizIm(Idif, ventana);
-//			printf("\n\n Matriz Idesvf(p) ");
-//			verMatrizIm(Idesvf, ventana);
-//	}
-//}
-//
-//void iniciarIdesv( IplImage* Idesv,float Valor, IplImage* mask ){
-//
-//	int step0		= Idesv->widthStep/sizeof(float);
-//	int step1       = Idesf->widthStep/sizeof(float);
-//	int step2		 = mask->widthStep/sizeof(uchar);
-//
-//	float * ptr0   = (float *)Idesv->imageData;
-//	float * ptr1   = (float *)Idesf->imageData;
-//	uchar* ptr2 = (uchar*) mask->imageData;
-//	// ojo, la mascara está invertida. El plato es 0
-//	for (int i = 0; i< Idesv->height; i++){
-//		for (int j = 0; j < Idesv->width; j++){
-//			if( ptr2[i*step2+j*Idesv->nChannels ] == 0){
-//				ptr1[i*step1+j*Idesv->nChannels ] = Valor/K; // columnas
-//				ptr0[i*step0+j*Idesv->nChannels ] = Valor;
-//			}
-//			else{
-//				ptr1[i*step1+j*Idesv->nChannels ] = 0; // columnas
-//				ptr0[i*step1+j*Idesv->nChannels ] = 0;
-//			}
-//		}
-//	}
-//}
-//
-//void updateMedian(IplImage* ImGray,IplImage* BGMod,IplImage* mask,CvRect ROI ){
-//
-//	for (int y = ROI.y; y< ROI.y + ROI.height; y++){
-//		uchar* ptr = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
-//		uchar* ptr1 = (uchar*) ( mask->imageData + y*mask->widthStep + 1*ROI.x);
-//		uchar* ptr2 = (uchar*) ( BGMod->imageData + y*BGMod->widthStep + 1*ROI.x);
-//		for (int x = 0; x < ROI.width; x++){
-//			// Incrementar o decrementar fondo en una unidad
-//			if ( ptr1[x] == 0 ){ // si el pixel de la mascara es 0 actualizamos
-//				if ( ptr[x] < ptr2[x] ) ptr2[x] = ptr2[x]-1;
-//				if ( ptr[x] > ptr2[x] ) ptr2[x] = ptr2[x]+1;
-//			}
-//		}
-//	}
-//
-//}
-//
-//void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Imaskt, CvRect ROI ){
-//
-//	int step1       = Idesf->widthStep/sizeof(float);
-//	int step4       = Idesf->widthStep/sizeof(float);
-//	int step2		= Idif->widthStep/sizeof(uchar);
-//	int step3		= Imaskt->widthStep/sizeof(uchar);
-//	int step5		= ImGray->widthStep/sizeof(uchar);
-//	int step6		= BGMod->widthStep/sizeof(uchar);
-//
-//	float * des   = (float *)Idesf->imageData;
-//	float * desvf   = (float *)Idesvf->imageData;
-//	uchar* dif = (uchar*) Idif->imageData;
-//	uchar* mask = (uchar*) Imaskt->imageData;
-//	uchar* Gray = (uchar*) ImGray->imageData;
-//	uchar* BG = (uchar*) BGMod->imageData;
-//
-//	// ojo, la mascara está invertida. El plato es 0
-//	// Corregimos la estimación de la desviación mediante la función de error
-//		// Así se asegura que la fracción correcta de datos esté dentro de una desviación estándar
-//		// ( escalado horizontal de la normal).
-//		// Idesf(p) = k*MAD = k*median(I(p)-median(p)) si mask == 0
-//	for (int i = ROI.y; i< ROI.y + ROI.height; i++){
-//		for (int j = ROI.x; j < ROI.x + ROI.width; j++){
-//			if ( mask[i*step3+j] == 0 ){
-//				dif[ i*step2+j ] = abs( Gray[i*step5+j] - BG[i*step6+j]);
-//				if ( dif[ i*step2+j ] < des[ i*step1+j ] ){
-//					des[ i*step1+j ] -=1;
-//					desvf[i*step4+j] = K*des[ i*step1+j ];
-//				}
-//				if ( dif[ i*step2+j ] > des[ i*step1+j ] ){
-//					des[ i*step1+j ] +=1;
-//					desvf[i*step4+j] = K*des[ i*step1+j ];
-//				}
-//			}
-//		}
-//	}
-//
-//}
-//
-//void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* DESVI, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
-//
-//	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,DESVI, DataROI , 0);
-//	else accumulateBackground( tmp_frame, BGModel,DESVI, DataROI ,Mask);
-//
-//}
-//
-//void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf,IplImage* fg,BGModelParams* Param, CvRect ROI){
-//
-//	struct timeval ti, tf; // iniciamos la estructura
-//	double tiempoParcial;
-//
-//	// Calcular (I(p)-u(p))/0(p)
-//	if( SHOW_BGMODEL_DATA ){
-//		printf("\n\nANTES de resta y limpieza de fondo");
-//		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-//		printf("\n\n Matriz Brillo ");verMatrizIm(ImGray, ventana);
-//		printf("\n\n Matriz BGModel ");verMatrizIm(bg_model, ventana);
-//		printf("\n\n Matriz Idesvf(p) ");verMatrizIm(Idesvf, ventana);
-//		printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
-//		verMatrizIm(Idif, ventana);
-//		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
-////			cvShowImage( "Foreground", fg);
-////			cvShowImage( "Background",bg_model);
-////			cvWaitKey(0);
-//	}
-//	gettimeofday(&ti, NULL);
-//	int step1		= ImGray->widthStep/sizeof(uchar);
-//	int step2		= bg_model->widthStep/sizeof(uchar);
-//	int step3		= Idif->widthStep/sizeof(uchar);
-//	int step4       = Idesvf->widthStep/sizeof(float);
-//	int step5		= fg->widthStep/sizeof(uchar);
-//
-//	uchar* ptr1    = (uchar*) ImGray->imageData;
-//	uchar* ptr2    = (uchar*) bg_model->imageData ;
-//	uchar* ptr3    = (uchar*) Idif->imageData ;
-//    float* ptr4    = (float*) Idesvf->imageData;
-//    uchar* ptr5    = (uchar*) fg->imageData;
-//
-//	for (int i = ROI.y; i< ROI.y + ROI.height; i++){
-//		for (int j = ROI.x; j < ROI.x + ROI.width; j++){
-//			// si (I(p) - Me(p)) >= 0 Idif(p) = -1 => pixel de bg mas oscuro que fg ( fantasma ). lo eliminamos
-//			if ( (ptr1[i*step1+j]-ptr2[i*step2+j]) > 0 ) ptr3[i*step3+j] = 0;
-//			// sino Idif = |I(p) - Me(p)|
-//			else ptr3[i*step3+j] = abs( ptr1[i*step1+j]-ptr2[i*step2+j]);
-//			// Si Idif(p) > LowT*Idesv(p) => Al FG sino al BG
-//			if ( ptr3[i*step3+j] > (Param->LOW_THRESHOLD)*ptr4[i*step4+j] ) ptr5[i*step5+j] = 255; //Normal:
-//			else ptr5[i*step5+j] = 0;
-//		}
-//	}
-//	tiempoParcial = obtenerTiempo( ti , NULL);
-//	printf("\t\tUmbralizacion low trhreshol: %5.4g ms\n", tiempoParcial);
-//
-//	if( SHOW_BGMODEL_DATA ){
-//			printf("\n\nTRAS resta de fondo");
-//			CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-//			printf("\n\n Matriz Brillo ");verMatrizIm(ImGray, ventana);
-//			printf("\n\n Matriz BGModel ");verMatrizIm(bg_model, ventana);
-//			printf("\n\n Matriz Idesvf(p) ");verMatrizIm(Idesvf, ventana);
-//			printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
-//			verMatrizIm(Idif, ventana);
-//			printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
-//	//			cvShowImage( "Foreground", fg);
-//	//			cvShowImage( "Background",bg_model);
-//	//			cvWaitKey(0);
-//		}
-//	// limpieza de FG
-//	gettimeofday(&ti, NULL);
-//	FGCleanup( fg, Idesvf,Param, ROI );
-//	tiempoParcial = obtenerTiempo( ti , NULL);
-//	printf("\t\tLimpieza de FG: %5.4g ms\n", tiempoParcial);
-//
-//	if( SHOW_BGMODEL_DATA ){
-//		printf("\n\nTRAS limpieza de fondo");
-//		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
-//		printf("\n\n Matriz Brillo ");verMatrizIm(ImGray, ventana);
-//		printf("\n\n Matriz BGModel ");verMatrizIm(bg_model, ventana);
-//		printf("\n\n Matriz Idesf(p) ");verMatrizIm(Idesf, ventana);
-//		printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
-//		verMatrizIm(Idif, ventana);
-//		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
-////		cvShowImage( "Foreground", fg);
-////		cvShowImage( "Background",bg_model);
-////		cvWaitKey(0);
-//	}
-//}
-///// Limpia y redibuja el FG
-//void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi){
-//
-//	static CvMemStorage* mem_storage = NULL;
-//	static CvSeq* contours = NULL;
-//	// Aplicamos morfologia: Erosión y dilatación
-//	if( Param->MORFOLOGIA == true){
-//		cvSetImageROI( FG, dataroi);
-//		IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
-//		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, Param->CVCLOSE_ITR );
-//		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , Param->CVCLOSE_ITR );
-//		cvReleaseStructuringElement( &KernelMorph );
-//		cvResetImageROI( FG );
-//	}
-//	cvCopy(FG, fgTemp);
-//	cvZero ( FG );
-//
-//	if( mem_storage == NULL ){
-//		mem_storage = cvCreateMemStorage(0);
-//	} else {
-//		cvClearMemStorage( mem_storage);
-//	}
-//
-//	cvSetImageROI( fgTemp, dataroi);
-//	CvContourScanner scanner = cvStartFindContours(
-//								fgTemp,
-//								mem_storage,
-//								sizeof(CvContour),
-//								CV_RETR_EXTERNAL,
-//								CV_CHAIN_APPROX_SIMPLE,
-//								cvPoint(dataroi.x,dataroi.y) );
-//	CvSeq* c;
-//
-//	int numCont = 0;
-//	while( (c = cvFindNextContour( scanner )) != NULL ) {
-//		CvSeq* c_new;
-//		bool flag = false;
-//
-//		// los contornos que no estén dentro de un rango de areas no se tienen en cuenta
-//		if ( Param->MIN_CONTOUR_AREA > 0 || Param->MAX_CONTOUR_AREA > 0 ){
-//			double area = cvContourArea( c );
-//			area = fabs( area );
-//			if ( ( (area < Param->MIN_CONTOUR_AREA)&& Param->MIN_CONTOUR_AREA > 0) ||
-//					( (area > Param->MAX_CONTOUR_AREA)&& Param->MAX_CONTOUR_AREA > 0) ) {
-//				continue;
-//			}
-//		}
-//		// No se dibujan los contornos que no sobrevivan al HIGHT_THRESHOLD
-//		// Primero obtenermos ROI del contorno del LOW_THRESHOLD
-//		CvRect ContROI = cvBoundingRect( c );
-//
-//		int step1		= Idif->widthStep/sizeof(uchar);
-//		int step2       = DES->widthStep/sizeof(float);
-//
-//
-//		uchar* ptr1    = (uchar*) Idif->imageData ;
-//		float* ptr2    = (float*) DES->imageData;
-//
-//		flag = false;
-//		for (int i = ContROI.y; i< ContROI.y + ContROI.height; i++){
-//			for (int j = ContROI.x; j < ContROI.x + ContROI.width; j++){
-//				// Si alguno de los pixeles del blob supera en HiF veces la
-//				// desviación típica del modelo,activamos el flag para
-//				// dibujar el contorno
-//				//if( ptr0[i*step0 + j] == 255){
-//					if ( ptr1[ i*step1 + j]*ptr2[i*step2 + j] > Param->HIGHT_THRESHOLD ){//
-//						flag = true;
-//						break;
-//					}
-//				//}
-//			}
-//			if (flag == true) break;
-//		}
-//		if ( flag == true){ // Se dibuja el contorno
-//			c_new = cvConvexHull2( c, mem_storage, CV_CLOCKWISE, 1);
-//			cvDrawContours( FG, c_new, CVX_WHITE,CVX_WHITE,-1,CV_FILLED,8 );
-//			numCont++;
-//		}
-//		else continue; // Se pasa al siguiente
-//
-//	}// Fin contornos
-//	contours = cvEndFindContours( & scanner );
-//	cvResetImageROI( fgTemp);
-//
-//}
-//
-//void MascaraPlato(CvCapture* t_capture,
-//				StaticBGModel* Flat,int frTrain){
-//
-//	//int* centro_x, int* centro_y, int* radio
-//	CvMemStorage* storage = cvCreateMemStorage(0);
-//	CvSeq* circles = NULL;
-//	IplImage* Im;
-//
-//// LOCALIZACION
-//
-//	int num_frames = 0;
-//
-////	t_capture = cvCaptureFromAVI( "Drosophila.avi" );
-//	if ( !t_capture ) {
-//		fprintf( stderr, "ERROR: capture is NULL \n" );
-//		getchar();
-//		return ;
-//	}
-//
-//	// Obtención del centro de máximo radio del plato en 50 frames
-//
-////	GlobalTime = (double)cvGetTickCount() - GlobalTime;
-////	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-//
-//	while (num_frames < frTrain) {
-//
-//		IplImage* frame = cvQueryFrame( t_capture );
-//		if ( !frame ) {
-//			fprintf( stderr, "ERROR: frame is null...\n" );
-//			getchar();
-//			break;
-//		}
-//		if ( (cvWaitKey(10) & 255) == 27 ) break;
-//
-////		VerEstadoBGModel( frame );
-//		Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-////
-//		// Imagen a un canal de niveles de gris
-//		cvCvtColor( frame , Im, CV_BGR2GRAY);
-//
-//		// Filtrado gaussiano 5x
-//		cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
-//
-//		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,300, 150,
-//				cvRound( Im->height/2 ));
-//		int i;
-//		for (i = 0; i < circles->total; i++)
-//		{
-//
-//			// Excluimos los radios que se salgan de la imagen
-//			 float* p = (float*)cvGetSeqElem( circles, i );
-//			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
-//				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
-//				  (  cvRound( p[1] )  < cvRound( p[2] ) ) ||
-//				  ( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) )
-//				) continue;
-//
-//			 // Buscamos el de mayor radio de entre todos los frames;
-//			 if (  Flat->PRadio < cvRound( p[2] ) ){
-//				 Flat->PRadio = cvRound( p[2] );
-//				 Flat->PCentroX = cvRound( p[0] );
-//				 Flat->PCentroY = cvRound( p[1] );
-//			 }
-//		}
-//		num_frames +=1;
-//		cvClearMemStorage( storage);
-//	}
-//	cvReleaseMemStorage( &storage );
-//
-//	printf("\nPlato localizado : ");
-//	printf("Centro x : %d , Centro y %d : , Radio: %d \n"
-//			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
-//	Flat->DataFROI = cvRect(Flat->PCentroX-Flat->PRadio,
-//					Flat->PCentroY-Flat->PRadio,
-//					2*Flat->PRadio,
-//					2*Flat->PRadio ); // Datos para establecer ROI del plato
-//	// Creacion de mascara
-//
-//	printf("Creando máscara del plato... ");
-////	GlobalTime = (double)cvGetTickCount() - GlobalTime;
-////	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-//	for (int y = 0; y< Im->height; y++){
-//		//puntero para acceder a los datos de la imagen
-//		uchar* ptr = (uchar*) ( Flat->ImFMask->imageData + y*Flat->ImFMask->widthStep);
-//		// Los pixeles fuera del plato se ponen a 255;
-//		for (int x= 0; x<Flat->ImFMask->width; x++){
-//			if ( sqrt( pow( abs( x - Flat->PCentroX ) ,2 )
-//					+ pow( abs( y - Flat->PCentroY  ), 2 ) )
-//					> Flat->PRadio) ptr[x] = 255;
-//			else	ptr[x] = 0;
-//		}
-//	}
-//	cvReleaseImage(&Im);
-//	return;
-//}
-//
-//
-////void onTrackbarSlide(pos, BGModelParams* Param) {
-////   Param->ALPHA = pos / 100;
-////}
-//void DefaultBGMParams( BGModelParams *Parameters){
-//    //init parameters
-//	 BGModelParams *Params;
-//	 Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
-//    if( Parameters == NULL )
-//      {
-//    	Params->FLAT_FRAMES_TRAINING = 0;
-//    	Params->FRAMES_TRAINING = 20;
-//    	Params->ALPHA = 0.5 ;
-//    	Params->MORFOLOGIA = 0;
-//    	Params->CVCLOSE_ITR = 0;
-//    	Params->MAX_CONTOUR_AREA = 0 ;
-//    	Params->MIN_CONTOUR_AREA = 0;
-//    	Params->HIGHT_THRESHOLD = 20;
-//    	Params->LOW_THRESHOLD = 10;
-//    	Params->INITIAL_DESV = 0.5;
-//    }
-//    else
-//    {
-//        Params = Parameters;
-//    }
-//
-//}
-///// localiza en memoria las imágenes necesarias para la ejecución
-//
-//void AllocateBGMImages( IplImage* I , StaticBGModel* bgmodel){
-//
-//	// Crear imagenes y redimensionarlas en caso de que cambien su tamaño
-//	AllocateTempImages( I );
-//	CvSize size = cvGetSize( I );
-//
-////	if( !FrameData->BGModel ||
-////		 FrameData->BGModel->width != size.width ||
-////		 FrameData->BGModel->height != size.height ) {
-//
-//		bgmodel->Imed = cvCreateImage(size,8,1);
-//		bgmodel->ImFMask = cvCreateImage(size,8,1);
-//		bgmodel->IDesvf = cvCreateImage(size,IPL_DEPTH_32F,1);
-//
-//		cvZero( bgmodel->Imed);
-//		//cvZero( bgmodel->IDesvf);
-//		cvZero( bgmodel->ImFMask);
-//
-//}
-//
-///// Limpia de la memoria las imagenes usadas durante la ejecución
-//void DeallocateBGM( StaticBGModel* BGModel ){
-//
-//	if(BGModel){
-//		DeallocateTempImages();
-//		cvReleaseImage(&BGModel->IDesvf);
-//		cvReleaseImage(&BGModel->ImFMask);
-//		cvReleaseImage(&BGModel->Imed);
-//		free(BGModel);
-//	}
-//}
-//
-//void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation purposes
-//
-//        CvSize sz = cvGetSize( I );
-//        if( !Idif ||
-//            Idif->width != sz.width ||
-//        	Idif->height != sz.height ) {
-//
-//        	cvReleaseImage( &Idesf);
-//			cvReleaseImage( &Idif);
-//			cvReleaseImage( &IdifF);
-//			cvReleaseImage( &IlowF );
-//			cvReleaseImage( &IHiF );
-//			cvReleaseImage( &ImGray );
-//			cvReleaseImage( &ImGrayF );
-//			cvReleaseImage( &Imaskt );
-//
-//			cvReleaseImage(&fgTemp);
-//
-//			Idesf = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-//			IdifF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-//			Idif = cvCreateImage( sz, 8, 1 );
-//			IlowF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-//			IHiF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-//			ImGray = cvCreateImage( sz, 8, 1 );
-//			ImGrayF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-//			Imaskt = cvCreateImage( sz, 8, 1 );
-//			fgTemp = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-//
-//			cvZero( Idesf);
-//			cvZero( IdifF );
-//			cvZero( Idif );
-//			cvZero( IlowF );
-//			cvZero(ImGray);
-//			cvZero(ImGrayF);
-//			cvZero(Imaskt);
-//
-//			cvZero(fgTemp);
-//        	}
-//}
-//
-//void DeallocateTempImages() {
-//
-//	    cvReleaseImage( &Idesf);
-//        cvReleaseImage( &IdifF );
-//        cvReleaseImage( &Idif );
-//        cvReleaseImage( &IlowF );
-//        cvReleaseImage( &IHiF );
-//        cvReleaseImage( &Imaskt );
-//        cvReleaseImage( &ImGray );
-//        cvReleaseImage( &ImGrayF );
-//        cvReleaseImage( &fgTemp );
-//
-//        Idesf = NULL;
-//		IdifF =NULL;
-//		Idif = NULL;
-//		IlowF = NULL;
-//		ImGray = NULL;
-//		ImGrayF = NULL;
-//		Imaskt = NULL;
-//		fgTemp = NULL;
-//}
 
 
 

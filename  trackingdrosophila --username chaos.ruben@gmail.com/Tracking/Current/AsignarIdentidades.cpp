@@ -47,8 +47,6 @@ IplImage *segmask = 0; // motion segmentation map
 
 void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 
-
-
 	float div = 100;
 	int i;
 
@@ -136,22 +134,7 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 	cvMerge( mask, 0, 0, 0, frameIdx1->ImMotion );
    // calculate motion gradient orientation and valid orientation mask
 	cvCalcMotionGradient( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, 3 ); //0.01, 0.5
-//	cvShowImage( "Foreground", orient);
-//	cvWaitKey(0);
 
-	// añade a la lista del frame actual los blobs que previamente estaban en el oldfg y
-	// establecemos el estado de los blobs que pasan al oldFG
-
-//	establecerEstado(frameIdx1,frameIdx2,frameIdx3, orient);
-
-//	if( SHOW_MT_DATA){
-//		if( framesBuf->numeroDeElementos > 1) {
-//			printf(" \nFlies FRAME t tras establecer estado\n");
-//			mostrarListaFlies(Idx1,framesBuf);
-//			printf(" \nFlies FRAME t-1 tras establecer estado\n");
-//			mostrarListaFlies(Idx2,framesBuf);
-//		}
-//	}
 
 	if( !storage )
 		storage = cvCreateMemStorage(0);
@@ -203,7 +186,7 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 			if( count < comp_rect.width*comp_rect.height * 0.05 )	continue;
 
 			fly = matchingIdentity(frameIdx1, frameIdx2, Etiquetas, comp_rect, angle );
-
+			//if(!fly) exit(1);
 			if(SHOW_VISUALIZATION&&SHOW_MOTION_TEMPLATE){
 				// draw a clock with arrow indicating the direction
 				center = cvPoint( (comp_rect.x + comp_rect.width/2),
@@ -269,8 +252,8 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 	if( numAnterior == 1 && numActual == 1){
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
-		enlazarFlies( flyAnterior, flyActual, NULL);
-		SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
+		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
+		//SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
 	else if( numAnterior == 0 && numActual == 1){
@@ -306,6 +289,8 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 	return flyActual;
 
 }
+
+
 ///! establecemos el estado del blob. Si la máscara del gradiente del blob no tiene
 /// pixels distintos de 0 en el area correspondiente a la roi del blob del frame t-1
 /// establecemos su estado a 0 (al oldFG ) y el de los 2 frames anteriores pare evitar su asignacion
@@ -436,7 +421,77 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 
 }
 
+int asignarIdentidades( CvMat* Matrix_Hungarian, STFrame* frameActual , STFrame*frameAnterior, tlcde* ids  ){
 
+
+
+
+
+}
+// si el ultimo parámetro no es null indica
+int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
+	// si la actual ya habia sido etiquetada dejamos su etiqueta
+	float phi;
+	float distancia;
+
+	if( flyActual->etiqueta && ids ) {
+		if(!dejarId(flyActual,ids)) return 0;
+	}
+	flyAnterior->siguiente = (STFly*)flyActual;
+	flyActual->etiqueta = flyAnterior->etiqueta;
+	flyActual->Color = flyAnterior->Color;
+	flyActual->FrameCount = flyAnterior->FrameCount +1;
+	flyActual->flag_gir = flyAnterior->flag_gir;
+
+	flyActual->Ax = flyActual->posicion.x - flyAnterior->posicion.x;
+	flyActual->Ay = -(flyActual->posicion.y - flyAnterior->posicion.y);
+
+	flyActual->Vx = flyActual->Ax / 1;
+	flyActual->Vy = flyActual->Ay / 1;
+
+	//Establecemos la dirección phi y el modulo del vector de desplazamiento
+	EUDistance( flyAnterior->Vx,flyActual->Vy, &phi, &distancia );
+	// si no hay movimiento la dirección es la orientación.( o la dirección anterior???
+
+	if( distancia == 0 ) flyActual->direccion = flyAnterior->dir_filtered;
+	else flyActual->direccion = phi;
+	flyActual->dstTotal = flyAnterior->dstTotal + distancia;
+	return 1;
+
+}
+
+/// Haya la distancia euclidea entre dos puntos. Establece el modulo del desplazamiento y la dirección en grados.
+///
+void EUDistance( int a, int b, float* direccion, float* distancia){
+
+	// se desplaza hacia la izquierda y hacia abajo => ambiguedad en signo de tangente tras corregir el origen. En ved de estar en
+	// el cuarto cuadrante está en el tercero.
+	if( ( b > 0)&&(a < 0) )
+	{   // el signo menos de b es debido a la corrección para el origen arriba a la izquierda
+		*direccion = atan( - b / a );
+		//resolvemos ambiguedad debida a los signos en la atan
+		*direccion = *direccion + CV_PI;
+		*direccion = ( (*direccion) *180)/CV_PI; // a grados
+	}
+
+	else if( a == 0){
+		if( b == 0 ) *direccion = -1; // No hay movimiento.
+		if( b > 0 ) *direccion = 270; // Hacia abajo.
+		if( b < 0 ) *direccion = 90; // Hacia arriba.
+	}
+	else if ( b == 0) {
+		if (a < 0) *direccion = 180; // hacia la izquierda
+		else *direccion = 0;			// hacia la derecha
+	}
+	else { // desplazamiento en primer, segundo y cuarto cuadrante
+		*direccion = atan( - b / a );
+		*direccion = ( (*direccion) *180)/CV_PI; // a grados
+	}
+
+	// calcular distancia
+	*distancia = sqrt( pow( a ,2 )  + pow( b ,2 ) ); // sqrt( a² + b² )
+
+}
 void allocateMotionTemplate( IplImage* im){
 
 	CvSize size = cvSize(im->width,im->height); // get current frame size

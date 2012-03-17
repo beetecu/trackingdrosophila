@@ -15,7 +15,7 @@ using namespace std;
 extern float TiempoGlobal ;
 extern float TiempoFrame;
 extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
-extern double TotalFrames ;
+
 
 
 IplImage* ImVisual = NULL;
@@ -441,7 +441,7 @@ void ShowStatDataFr( STStatFrame* Stats,IplImage* Window,VisParams* visParams ){
 	sprintf(NFrame,"Frame %d ",Stats->numFrame);
 	sprintf(TProcesF,"Tiempo de procesado del Frame: %5.4g ms",Stats->TiempoFrame);
 	sprintf(TProces,"Segundos de video procesados: %0.f seg ", Stats->TiempoGlobal);
-	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(Stats->numFrame/TotalFrames)*100 );
+	sprintf(PComplet,"Porcentaje completado: %.2f %% ",(Stats->numFrame/Stats->totalFrames)*100 );
 	sprintf(FPS,"FPS: %.2f ",(1000/Stats->TiempoFrame));
 
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);

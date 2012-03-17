@@ -9,65 +9,33 @@
 #define KALMAN_HPP_
 
 #include "VideoTracker.hpp"
-
+#include "Tracking.hpp"
 
 #define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
 #define V_ANGULAR 2.6//5.2 // velocidad angular del blob en pixeles por frame
 #define NUMBER_OF_MATRIX 6
 
-CvMat* Kalman(tlcde* framesBuf,int  workPos );
+typedef struct{
+	int id;
+	CvKalman* kalman ; // Estructura de kalman para la linealizada
 
-//!\brief Inicializa los parametros del filtro de Kalman para las coordenadas.
-/*!
- * \param IndexMat Matrices que forman parte del filtro de Kalman.
- * \param coord Coordenadas de la posicion del blob.
- * \param orientacion ángulo que corresponde con la orientación del blob.
- *
- * \return La estructura del filtro de Kalman, inicializada con sus correspondientes valores.
- *
- * \note La función tambien establece los valores iniciales para los paramétros del vector de estado,
- * \note en este caso coordenadas X e Y de la posición y componentes Vx y Vy de la velocidad (cte).
- */
+    CvMat* x_k_Pre_; // Predicción de k hecha en k-1
+    CvMat* P_k_Pre_; // incertidumbre en la predicción en k-1
 
-CvKalman* initKalman ( );
+    const CvMat* x_k_Pre; // Predicción de k+1 hecha en k
+    const CvMat* P_k_Pre; // incertidumbre en la predicción
 
-//!\brief Inicializa los parametros del filtro de Kalman para la orientación - direccion.
-/*!
- * \param angulo Dirección del blob.
- * \param orientacion Orientación del blob.
- *
- * \return La estructura del filtro de Kalman, inicializada con sus correspondientes valores.
- *
- * \note La función tambien establece los valores iniciales para los paramétros del vector de estado,
- * \note en este caso la posición angular y la velocidad angular(cte).
- */
+	const CvMat* x_k_Pos; // Posición tras corrección
+	const CvMat* P_k_Pos; // Incertidumbre en la posición tras corrección
 
-CvKalman* initKalman2 ( );
+	CvMat* Measurement_noise; // V->N(0,R) : Incertidumbre en la medida. Lo suponemos de media 0.
+	CvMat* Measurement_noise_cov; // R
+	CvMat* Medida;	// Valor real ( medido )
+	CvMat* z_k; // Zk = H Medida + V. Valor observado
 
-void initKpos(CvKalman* kalman, CvPoint coord,float direccion);
+}STTrack;
 
-void initkdir(CvKalman* kalman,float direccion,float orientacion);
-
-//!\brief Copia una matriz fuente e otra matriz destino.
-/*!
- * \param source Matriz fuente.
- * \param dest Matriz destino.
- */
-void copyMat (CvMat* source , CvMat* dest );
-
-//!\brief Calcula el sentido dela velocidad angular, que sirve como parámetro de inicialización
-//!para el vector measurement del filtro de Kalman aplicado a la orientación.
-/*!
- * \param Direction dirección del blob.
- * \param Orientation orientacion del blob.
- * \param Angulo valor de la velocidad angular, es constante.
- *
- * \return El sentido de la velocidad angular del blob.
- *
- * \note Para determinar el sentido de la velocidad angular se utilizan métodos trigonométricos.
- */
-
-float CalcDirection(float direction,float orientation,float angulo);
+CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks);
 
 //!\brief Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
 //! de Kalman.
@@ -80,14 +48,31 @@ float CalcDirection(float direction,float orientation,float angulo);
 
 CvRect ROIKalman(CvMat* Matrix,CvMat* Predict);
 
-double PesosKalman(CvMat* Matrix,CvMat* Predict,CvMat* Correct);
+double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct);
 
+void initNewsTracks( STFrame* frameData, tlcde* lsTracks );
 
+STTrack* initTrack( STFly* Fly ,float fps );
 
+CvKalman* initKalman( STFly* fly, float dt );
+
+int deadTrack( tlcde* Tracks, int id );
+
+void generarMedida(  STTrack* Track, STFly* Fly );
+
+void generarMedida2(  STTrack* Track, STFly* Fly  );
+
+void kalmanControl( STTrack* Track );
+
+void showKalmanData( STTrack *Track);
 //float* updateKalmanCorrect(CvKalman* kalman,CvPoint coordenadas );
 //
 //float* updateKalmanPredict(CvKalman* kalman);
 
-void DeallocateKalman(  );
+void DeallocateKalman( tlcde* lista );
+
+void liberarTracks( tlcde* lista);
+
+void copyMat (CvMat* source, CvMat* dest);
 
 #endif /* KALMAN_HPP_ */
