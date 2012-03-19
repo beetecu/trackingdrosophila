@@ -458,12 +458,12 @@ void ShowStatDataFr( STStatFrame* Stats,IplImage* Window,VisParams* visParams ){
 	// Barra de progreso
 	float contadorX = 0;
 	float x;
-	if( Stats->totalFrames > 0){
-		contadorX = contadorX + (visParams->BPrWidth*Stats->numFrame/ Stats->totalFrames);
-		x =  contadorX ;
-		cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2,( Window->height - 30 - Window->height/64) ),
-							cvPoint( (Window->width-visParams->BPrWidth )/2 + cvRound(x), (Window->height - 30 + Window->height/64) ), CVX_BLUE, -1 );
-	}
+//	if( Stats->totalFrames > 0){
+//		contadorX = contadorX + (visParams->BPrWidth*Stats->numFrame/ Stats->totalFrames);
+//		x =  contadorX ;
+//		cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2,( Window->height - 30 - Window->height/64) ),
+//							cvPoint( (Window->width-visParams->BPrWidth )/2 + cvRound(x), (Window->height - 30 + Window->height/64) ), CVX_BLUE, -1 );
+//	}
 }
 // Genera una imagen que representa el llenado del buffer
 void VerEstadoBuffer( IplImage* Imagen,int num, VisParams* params,int max ){

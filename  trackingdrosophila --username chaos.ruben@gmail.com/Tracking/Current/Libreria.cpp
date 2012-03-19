@@ -118,7 +118,7 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 //cvNamedWindow( "Im", CV_WINDOW_AUTOSIZE);
 	// Imagen a un canal de niveles de gris
 	// if(( src->depth > 8)&&(src->nChannels>1))
-		cvCvtColor( src, dst, CV_BGR2GRAY);
+	cvCvtColor( src, dst, CV_BGR2GRAY);
 	cvSetImageROI( dst, ROI );
 	if (bin == true){
 		cvAdaptiveThreshold( dst, dst,
@@ -988,17 +988,20 @@ void* liberarPrimero(tlcde *FramesBuf ){
 void liberarSTFrame( STFrame* frameData ){
 
 	if( !frameData) return;
-	liberarListaFlies( frameData->Flies);
-	if (frameData->Flies ) free( frameData->Flies);
-	if( frameData->Stats) free(frameData->Stats);
+
 	cvReleaseImage(&frameData->Frame);
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
 	cvReleaseImage(&frameData->IDesvf);
-	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->OldFG);
 	cvReleaseImage(&frameData->ImAdd);
+	cvReleaseImage(&frameData->ImMotion);
 	cvReleaseImage(&frameData->ImKalman);
+
+	liberarListaFlies( frameData->Flies);
+	if (frameData->Flies ) free( frameData->Flies);
+	if( frameData->Stats) free(frameData->Stats);
+
     free(frameData); // borrar el área de datos del elemento eliminado
 }
 

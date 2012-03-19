@@ -81,15 +81,6 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 				verMatrizIm(pesos, ventana);
 			}
 
-#ifdef MEDIR_TIEMPOS
-	gettimeofday(&tf, NULL);
-		tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-									(tf.tv_usec - ti.tv_usec)/1000.0;
-		printf("\t\t0)Calculo de |I(p)-u(p)|/0(p) : %5.4g ms\n", tiempoParcial);
-#endif
-		printf("\t\t1)Ajuste de blobs a elipses\n");
-
-
 	//Buscamos los contornos de las moscas en movimiento en el foreground
 
 	int Nc = cvFindContours(FGTemp,
@@ -116,17 +107,11 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 		//verMatrizIm(pesos, rect);
 		if( areaFG <= 5 ) continue;
 		//reserva de espacio para los datos del blob
-#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
-#endif
+
 		flyData = parametrizarFly( rect, pesos, FG, NumFrame);
 		// si no se consigue parametrizar pasamos al siguiente contorno
 		if( !flyData ) continue;
-#ifdef MEDIR_TIEMPOS gettimeofday(&tf, NULL);
-			tiempoParcial= (tf.tv_sec - ti.tv_sec)*1000 + \
-										(tf.tv_usec - ti.tv_usec)/1000.0;
 
-			printf("\t\t  -Ajuste a elipse de blob %d: %5.4g ms\n",id,tiempoParcial);
-#endif
 		// error de ajuste
 
 		err = abs(flyData->areaElipse - areaFG);
