@@ -98,7 +98,7 @@ void Validacion2(IplImage *Imagen,
 				ValBGParams->LOW_THRESHOLD += 1;
 
 				// Restar fondo
-				BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,ValBGParams, FlyDataRoi);
+				BackgroundDifference( Imagen, FrameData->BGModel, NULL ,FrameData->FG,ValBGParams, FlyDataRoi);
 				//verMatrizIm(FrameData->FG, FlyDataRoi);
 				// Segmentar
 				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, FlyDataRoi, NULL);

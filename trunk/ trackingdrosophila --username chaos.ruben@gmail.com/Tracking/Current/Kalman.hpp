@@ -55,7 +55,7 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct);
 
 void initNewsTracks( STFrame* frameData, tlcde* lsTracks );
 
-STTrack* initTrack( STFly* Fly ,float fps );
+STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps );
 
 CvKalman* initKalman( STFly* fly, float dt );
 

@@ -46,15 +46,21 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 	////////////////////// CORRECCION ////////////////////////
 
 	// obtener Track
-	// si fly Null kalman control
-	// si  fly no null
-		// obtener fly
-		// si fly->track es uno
-			//generarmedida
-		// si fly->track es mayor de uno
-			// generarmedida2
-	// Recorrer lista flies.
-		// si fly id0 iniciarTrack
+//	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+//		Track = (STTrack*)obtener(i, lsTracks);
+//		generarZ_k( Track ); // genera la nueva medida
+//		// actualizamos kalman
+//		cvKalmanCorrect( Track->kalman, Track->z_k);
+//		// actualizamos parámetros
+//		Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+//	}
+//
+//	// Recorrer lista flies.
+//	// si hay mosca/s sin asignar a un track/s (id = 0), se crea un nuevo track para esa mosca
+//	for(int i = 0; i< Flies_sig->numeroDeElementos ;i++ ){
+//		Fly = (STFly*)obtener(i, frameData->Flies);
+//		if( Fly->etiqueta == 0) anyadirAlFinal(initTrack( Fly, lsIds , frameData->Stats->fps), lsTracks );
+//	}
 
 	if(lsTracks->numeroDeElementos>0){
 		for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
@@ -100,7 +106,6 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 
 		}
 	}
-	////////////////////// AÑADIR NUEVoS TRACKS //////////////
 
 	////// Comprobar si es necesario crear nuevos tracks ( nuevas ids ). En caso afirmativo
 	// crearlos e inicializar filtro de kalman para cada nuevo track ( blob )
@@ -172,7 +177,7 @@ void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 		// INICIAR TRACK
 		for(int i = 0; i < frameData->Flies->numeroDeElementos;i++){
 			Fly = (STFly*)obtener(i, frameData->Flies);
-			Track = initTrack( Fly ,frameData->Stats->fps );
+			Track = initTrack( Fly ,NULL,frameData->Stats->fps );
 			anyadirAlFinal(Track, lsTracks );
 		}
 	}
@@ -188,21 +193,23 @@ void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 			}// si la j llega al final quiere decir que no se ha encontrado coincidencia
 			if (j == lsTracks->numeroDeElementos){
 				// INICIAR TRACK
-				Track = initTrack( Fly ,frameData->Stats->fps );
+				Track = initTrack( Fly ,NULL,frameData->Stats->fps );
 				anyadirAlFinal(Track, lsTracks );
 			}
 		}
 	}
 }
 
-STTrack* initTrack( STFly* Fly ,float fps ){
+// etiquetar fly e iniciar nuevo track
 
-	// etiquetar fly e iniciar nuevo track
+STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 
 	STTrack* Track = NULL;
 
 	Track = (STTrack*)malloc(sizeof(STTrack));
 	if(!Track) {error(4); exit(1);}
+
+	//asignarNuevaId( Fly , ids );
 
 	Track->id = Fly->etiqueta;
 	// iniciar kalman
@@ -272,6 +279,39 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 
 	return Kalman;
 }
+
+// Generamos la medida a partir de los datos obtenidos de la camara añadiendo incertidumbre.
+void generarZ_k( STTrack* Track){
+
+	//Caso 0: la medida se genera a partir de las predicciones de kalman
+	// La incertidumbre en la medida de posición será muy elevada ( no se ha obtenido medida se los sensores).
+	if( !Track->Flysig ){
+		kalmanControl( Track );
+	}
+	else if( Track->Flysig->Tracks->numeroDeElementos == 1 ){
+		generarMedida( Track, Track->Flysig );
+	}
+	//Caso2: hay varios tracks que apuntan al mismo blob.Este estará formado por dos o más moscas. Caso general de
+	// cruce aparente de trayectorias
+
+	else  generarMedida2( Track, Track->Flysig );
+}
+// generar medida para el frame t
+// en este caso la medida se genera a partir de las predicciones de kalman añadiendo una incertidumbre elevada
+void kalmanControl( STTrack* Track ){
+
+	// Matriz de entrada
+	CvMat* H = Track->kalman->measurement_matrix;
+
+	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,180};// Covarianza
+	float V[] =  {0,0,0,0,0};// media
+	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // R;
+	// y en la matriz para aplicarselo a la medida
+	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
+	cvGEMM(H,  Track->x_k_Pre ,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
+
+}
+
 // Generamos la medida a partir de los datos obtenidos de la cámara añadiendo una incertidumbre baja. En la orientación
 // será elevada pues es kalman quien corrige dicho parámetro
 void generarMedida( STTrack* Track, STFly* Fly ){
@@ -296,7 +336,7 @@ void generarMedida( STTrack* Track, STFly* Fly ){
 
 }
 
-// Generamos la medida a partir de los datos obtenidos de la camara añadiendo incertidumbre. En este caso la incertidumbre será mayor, pues
+// En este caso la incertidumbre será mayor, pues
 // hay varios tracks que apuntan al mismo blob.
 void generarMedida2( STTrack* Track, STFly* Fly  ){
 
@@ -321,23 +361,8 @@ void generarMedida2( STTrack* Track, STFly* Fly  ){
 
 	cvGEMM(H, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
 }
-// generar medida para el frame t
-// en este caso la medida se genera a partir de las predicciones de kalman añadiendo una incertidumbre elevada
-void kalmanControl( STTrack* Track ){
 
-	// Matriz de entrada
-	CvMat* H = Track->kalman->measurement_matrix;
 
-	//la medida se genera a partir de las predicciones de kalman
-	// La incertidumbre en la medida de posición será muy elevada ( no se ha obtenido medida se los sensores).
-	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,180};// Covarianza
-	float V[] =  {0,0,0,0,0};// media
-	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // R;
-	// y en la matriz para aplicarselo a la medida
-	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
-	cvGEMM(H,  Track->x_k_Pre ,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
-
-}
 
 double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct){
 

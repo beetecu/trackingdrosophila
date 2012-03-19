@@ -80,6 +80,7 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 
 	// Iniciar estructura para datos del nuevo frame
 	frameData = InitNewFrameData( frame );
+
 	// Cargamos datos
 	if( first ) { //en la primera iteración iniciamos el modelo dinamico al estático
 		cvCopy(  BGModel->Imed,frameData->BGModel);
@@ -104,20 +105,19 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 	}
 	// Actualización de fondo modelo dinámico
 #ifdef	MEDIR_TIEMPOS
-	gettimeofday(&ti, NULL); printf("\t1)Actualización del modelo de fondo:\n");
+	gettimeofday(&ti, NULL);
+	printf("\t1)Actualización del modelo de fondo:\n");
 #endif
 	if(BGPrParams->MODEL_TYPE == MEDIAN || BGPrParams->MODEL_TYPE == MEDIAN_S_UP)
 		UpdateBGModel( Imagen,frameData->BGModel,NULL, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
 	else
 		UpdateBGModel( Imagen,frameData->BGModel,frameData->IDesvf, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
-//	cvShowImage("Background",frameData->BGModel);
-//	cvWaitKey(0);
+
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
-
-
-	gettimeofday(&ti, NULL);printf("\t2)Resta de Fondo \n");
+	gettimeofday(&ti, NULL);
+	printf("\t2)Resta de Fondo \n");
 #endif
 	/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 	if(BGPrParams->MODEL_TYPE == MEDIAN || BGPrParams->MODEL_TYPE == MEDIAN_S_UP)
@@ -137,8 +137,6 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 #endif
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
-//	cvShowImage( "Foreground",frameData->FG);
-//	cvWaitKey(0);
 
 #ifdef	MEDIR_TIEMPOS
 	gettimeofday(&ti, NULL);
@@ -170,8 +168,6 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t5)Actualización selectiva del Modelo de fondo: %5.4g ms\n", tiempoParcial);
-	tiempoParcial = obtenerTiempo( ti, 0);
-	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
 	tiempoParcial = obtenerTiempo( tif , NULL);
 	printf("Procesado correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 #endif
@@ -185,6 +181,7 @@ STFrame* InitNewFrameData(IplImage* I ){
 
 	extern double NumFrame;
 	CvSize size = cvGetSize( I );
+
 	FrameData->Frame = cvCreateImage(size,8,3);
 	FrameData->BGModel = cvCreateImage(size,8,1);
 	FrameData->FG = cvCreateImage(size,8,1);

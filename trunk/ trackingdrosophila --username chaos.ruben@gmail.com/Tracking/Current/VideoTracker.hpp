@@ -41,11 +41,9 @@ using namespace std;
 // OPCIONES GENERALES DE PROGRAMA
 #define MODO_DEPURACION
 #define DETECTAR_PLATO 1
-//#define MEDIR_TIEMPOS 0
+#define MEDIR_TIEMPOS 1
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
-
-
 
 #define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
@@ -56,7 +54,7 @@ using namespace std;
 #define SHOW_BGMODEL_TIMES 0
 
 #define SHOW_SEGMENTATION_TIMES 0 //!< Switch de 0 a 1 para visualizar los tiempos.
-#define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulatdos de la segmentación.
+#define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulados de la segmentación.
 #define SHOW_SEGMENTATION_MATRIX 0
 
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
@@ -74,8 +72,8 @@ using namespace std;
 #define SHOW_INIT_BACKGROUND 1
 #define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 #define ACTIVAR_OPCIONES_VISUALIZACION 1
-#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
-#define SHOW_OPTICAL_FLOW 1 //!< Switch de 0 a 1 para visualizar el flujo optico.
+#define SHOW_BG_REMOVAL 0 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
 #define GRABAR_VISUALIZACION 1
@@ -147,13 +145,14 @@ using namespace std;
 		int Ax; //!< incremento de la posición en x entre frame t-1 y el actual
 		int Ay; //!< incremento de la posición en x entre frame t-1 y el actual
 		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
+
 		float Estim; //!< Predicción de kalman para el siguiente frame
 		float Des;
 		bool salto;	//!< Indica que la mosca ha saltado
 		int Blobs; //!< Indica el número de moscas que contiene el blob. Dato para validar blob (con EM)
 		int Zona; //!< Si se seleccionan zonas de interes en el plato,
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
-
+		tlcde* Tracks; //!< Indica los tracks que han sido asignados a este blob
 	}STFly;
 
 /// Estructura para almacenar el modelo de fondo estático.
