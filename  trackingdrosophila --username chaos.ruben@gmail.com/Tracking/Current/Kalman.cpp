@@ -154,13 +154,15 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 			}
 			if(SHOW_VISUALIZATION && SHOW_KALMAN){
 				// EN IMAGEN
+
 				cvCircle(ImReal,cvPoint(cvRound(Track->z_k->data.fl[0]),cvRound(Track->z_k->data.fl[1] )),1,CVX_BLUE,-1,8); // observado ( con el error de medida)
-				cvCircle(frameData->ImKalman,cvPoint(cvRound(Track->x_k_Pos->data.fl[0]),cvRound(Track->x_k_Pos->data.fl[1])),3,CVX_WHITE,1,8); // Corregida
-				cvCircle(ImPredict,cvPoint(cvRound(Track->x_k_Pre->data.fl[0]),cvRound(Track->x_k_Pre->data.fl[1])),1,CVX_RED,-1,8); // predicción t+1
+				cvCircle(ImReal,cvPoint(cvRound(Track->x_k_Pre_->data.fl[0]),cvRound(Track->x_k_Pre_->data.fl[1] )),1,CVX_RED,-1,8); // predicción en t
+				cvCircle(ImReal,cvPoint(cvRound(Track->x_k_Pos->data.fl[0]),cvRound(Track->x_k_Pos->data.fl[1])),1,CVX_WHITE,-1,8); // Corrección en t
+				cvCircle(ImReal,cvPoint(cvRound(Track->x_k_Pre->data.fl[0]),cvRound(Track->x_k_Pre->data.fl[1])),1,CVX_GREEN,-1,8); // predicción t+1
 
 			}
 		}
-		cvAdd(ImReal,ImPredict,frameData->ImKalman );
+		cvAdd(ImReal,frameData->ImKalman,frameData->ImKalman );
 	}
 	return Matrix_Hungarian;
 
@@ -257,7 +259,7 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 
 	const float F[] = {1,0,dt,0,0, 0,1,0,dt,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1}; // Matriz de transición F
 	// Matriz R inicial. Errores en medidas. ( x, y, Vx, Vy, phi ). Al inicio el error en el angulo es de +-180º
-	const float R_inicial[] = {50,0,0,0,0, 0,50,0,0,0, 0,0,50,0,0, 0,0,0,50,0, 0,0,0,0,180};//{50,50,50,50,180};
+	const float R_inicial[] = {50,0,0,0,0, 0,50,0,0,0, 0,0,50,0,0, 0,0,0,50,0, 0,0,0,0,360};//{50,50,50,50,180};
 	const float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
 	float initialState[] = {Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion};
 //
@@ -318,13 +320,23 @@ void generarMedida( STTrack* Track, STFly* Fly ){
 
 	const CvMat* H = Track->kalman->measurement_matrix;
 
-	// Medida
-	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy, Fly->direccion};
+
+	int a = 0;
+	int b = 0;
+	float phi = 0;
+	float distancia = 0;
+	// generar direcion a partir de la medida anterior y la predicción de la posicion de kalman
+	a = Track->x_k_Pre->data.fl[0] - Track->z_k->data.fl[0];
+	b = Track->x_k_Pre->data.fl[1] - Track->z_k->data.fl[1];
+	//EUDistance( a,  b, &phi, &distancia);
+
+	//Nueva Medida
+	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy,Fly->direccion};
 	memcpy( Track->Medida->data.fl, Medida, sizeof(Medida)); // Medida;
 
 	// incertidumbre en la medida
 	// para el ángulo: Si la dirección del blob difiere en más de 90º de la dirección anterior, aumentar la incertidumbre.
-	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,360};//covarianza del ruido
+	float R[] =  {3,0,0,0,0, 0,3,0,0,0, 0,0,3,0,0, 0,0,0,3,0, 0,0,0,0,180};//covarianza del ruido
 	float V[] = {0,0,0,0,0}; // media del ruido
 	// cargamos el error en la medida en el filtro para calcular la ganancia de kalman
 	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // V->N(0,R);

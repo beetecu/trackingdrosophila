@@ -419,6 +419,12 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
 					CVX_RED,
 					1, CV_AA, 0 );
+			cvLine( Imagen,
+								fly->posicion,
+								cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
+										 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
+								CVX_GREEN,
+								1, CV_AA, 0 );
 			visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
 		}
 	}

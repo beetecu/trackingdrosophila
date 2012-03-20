@@ -33,7 +33,7 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
-#define IMAGE_BUFFER_LENGTH 51 // valor impar
+#define IMAGE_BUFFER_LENGTH 50
 #define ULTIMO IMAGE_BUFFER_LENGTH-1
 #define PRIMERO 0
 
@@ -41,7 +41,7 @@ using namespace std;
 // OPCIONES GENERALES DE PROGRAMA
 #define MODO_DEPURACION
 #define DETECTAR_PLATO 1
-#define MEDIR_TIEMPOS 1
+//#define MEDIR_TIEMPOS 0
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
 
@@ -60,7 +60,7 @@ using namespace std;
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
 #define SHOW_VALIDATION_TIMES 0
 
-#define SHOW_MT_DATA 1
+#define SHOW_MT_DATA 0
 
 #define SHOW_KALMAN_DATA 0
 
@@ -76,7 +76,7 @@ using namespace std;
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
-#define GRABAR_VISUALIZACION 1
+#define GRABAR_VISUALIZACION 0
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
 
@@ -116,7 +116,9 @@ using namespace std;
 		int etiqueta;  //!< Identificación del blob
 		CvScalar Color; //!< Color para dibujar el blob
 		CvPoint posicion; //!< Posición del blob
+		float posDesv; //!< Error en la posición
 		float direccion; //!<almacena la dirección del desplazamiento
+		float dirDesv; //! Error en la dirección
 		unsigned int num_frame; //!< Almacena el numero de frame (tiempo)
 		void* siguiente; //! puntero al siguiente blob con la misma id.
 

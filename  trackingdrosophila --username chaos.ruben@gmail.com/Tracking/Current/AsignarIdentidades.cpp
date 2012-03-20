@@ -253,12 +253,13 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
 		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
-		//SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
+	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
 	else if( numAnterior == 0 && numActual == 1){
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		asignarNuevaId( flyActual, ids);
+		flyActual->direccion = flyActual->orientacion;
 		flyActual->FrameCount = flyActual->FrameCount +1;
 	}
 	// caso de fisión de blobs. un blob se separa en 2 o mas mientras su mhi permanece
@@ -451,7 +452,7 @@ int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
 	flyActual->flag_gir = flyAnterior->flag_gir;
 
 	flyActual->Ax = flyActual->posicion.x - flyAnterior->posicion.x;
-	flyActual->Ay = -(flyActual->posicion.y - flyAnterior->posicion.y);
+	flyActual->Ay = flyActual->posicion.y - flyAnterior->posicion.y;
 
 	flyActual->Vx = flyActual->Ax / 1;
 	flyActual->Vy = flyActual->Ay / 1;
@@ -471,8 +472,8 @@ int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
 ///
 void EUDistance( int a, int b, float* direccion, float* distancia){
 
-	// se desplaza hacia la izquierda y hacia abajo => ambiguedad en signo de tangente tras corregir el origen. En ved de estar en
-	// el cuarto cuadrante está en el tercero.
+	// se desplaza hacia la izquierda y hacia arriba => ambiguedad en signo de tangente
+
 	if( ( b > 0)&&(a < 0) )
 	{   // el signo menos de b es debido a la corrección para el origen arriba a la izquierda
 		*direccion = atan( - b / a );

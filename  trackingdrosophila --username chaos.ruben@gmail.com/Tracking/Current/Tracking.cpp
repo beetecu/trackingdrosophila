@@ -63,7 +63,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
 	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
-	MotionTemplate( framesBuf,Identities );
+//	MotionTemplate( framesBuf,Identities );
 	if( framesBuf->numeroDeElementos < 2  )	return 0;
 
 #ifdef MEDIR_TIEMPOS
@@ -105,7 +105,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
 	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
 	// Aplicar kalman
-	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
+//	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
 
 
 #ifdef MEDIR_TIEMPOS

@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 		help();
 		return -1;
 	}
-	VWriter = iniciarAvi( g_capture, nombreVideo);
+//	VWriter = iniciarAvi( g_capture, nombreVideo);
 	// Creación de ventanas de visualizacion
 	AllocDefaultVisParams(&visParams, BGModel->Imed);
 
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 		//////////  PROCESAR  ////////////
 		FrameDataIn = Procesado2(frame, BGModel, Shape, valParams, BGPrParams );
 
-		//////////  RASTREAR  ////////////
+//		//////////  RASTREAR  ////////////
 		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn );
 
 		// SI BUFFER LLENO
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 			//////////  ALMACENAR ////////////
 			if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
 
-			////////// LIBERAR MEMORIA  ////////////
+//			////////// LIBERAR MEMORIA  ////////////
 			liberarSTFrame( FrameDataStats );
 		}
 		else VerEstadoBuffer( frame, FramesBuf->numeroDeElementos, visParams, IMAGE_BUFFER_LENGTH);
@@ -153,12 +153,15 @@ int main(int argc, char* argv[]) {
 		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
 
 		if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel, g_capture, VWriter, visParams );
+
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->Stats->TiempoFrame);
 		printf("Segundos de video procesados: %0.f seg \n", FrameDataIn->Stats->TiempoGlobal);
 		printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/TotalFrames)*100 );
 		printf("\n//////////////////////////////////////////////////\n");
-	}
+//		if(!SHOW_WINDOW)	VisualizarFr( FrameDataIn, BGModel, VWriter, visParams );
+//		liberarSTFrame( FrameDataIn );
+    }
 	///////// LIBERAR MEMORIA Y TERMINAR////////
     Finalizar(&g_capture, &VWriter);
 
