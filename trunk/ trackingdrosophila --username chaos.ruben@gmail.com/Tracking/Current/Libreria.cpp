@@ -895,63 +895,63 @@ void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max ){
 	//resolvemos los casos en los que orientación y dirección se encuentran
 	//en primer y cuarto cuadrante respectivamente y viceversa.
 	// si orientación en el primer cuadrante y dirección en el cuarto
-	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
-		(flyActual->direccion > 270 && flyActual->direccion < 360) )
-	{
-		diferencia = flyActual->direccion - flyActual->orientacion;
-		// si difieren en mas de 90º direccion y orientación
-		if( diferencia < 270){
-			// si no se alcanza el maximo y estamos en la subida
-			// del ciclo de histéresis incrementamos
-			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-			// si no se alcanza el mínimo y estamos en el descenso
-		    // del ciclo de histéresis decrementamos
-			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
-		}
-		else{
-			//reiniciamos contador
-			if(flyActual->flag_gir) flyActual->OrientCount = Max;
-			else flyActual->OrientCount = 0;
-		}
-
-	}
-	// si direccion en primer cuadrante y orientacion en cuarto
-	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
-			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
-	{
-		diferencia = flyActual->orientacion - flyActual->direccion;
-		if( diferencia< 270){
-			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
-		}
-		else{
-			//reiniciamos contador
-			if(flyActual->flag_gir) flyActual->OrientCount = Max;
-			else flyActual->OrientCount = 0;
-		}
-	}
-	// Caso general
-	else{
-		diferencia = abs( flyActual->direccion - flyActual->orientacion);
-		if( diferencia > 90 )
-		{
-			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-		    if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
-		}
-		else{
-			//reiniciamos contador
-			if(flyActual->flag_gir) flyActual->OrientCount = Max;
-			else flyActual->OrientCount = 0;
-		}
-	}
-	// establecer el sentido de la histéresis
-	if( flyActual->OrientCount == Max ) flyActual->flag_gir = true; // hacia la izquierda
-	else if ( flyActual->OrientCount == 0 ) flyActual->flag_gir = false; // hacia la derecha
-	if( flyActual->flag_gir){
-		// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
-		if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-		else								 flyActual->orientacion =flyActual->orientacion+ 180;
-	}
+//	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
+//		(flyActual->direccion > 270 && flyActual->direccion < 360) )
+//	{
+//		diferencia = flyActual->direccion - flyActual->orientacion;
+//		// si difieren en mas de 90º direccion y orientación
+//		if( diferencia < 270){
+//			// si no se alcanza el maximo y estamos en la subida
+//			// del ciclo de histéresis incrementamos
+//			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+//			// si no se alcanza el mínimo y estamos en el descenso
+//		    // del ciclo de histéresis decrementamos
+//			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
+//		}
+//		else{
+//			//reiniciamos contador
+//			if(flyActual->flag_gir) flyActual->OrientCount = Max;
+//			else flyActual->OrientCount = 0;
+//		}
+//
+//	}
+//	// si direccion en primer cuadrante y orientacion en cuarto
+//	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
+//			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
+//	{
+//		diferencia = flyActual->orientacion - flyActual->direccion;
+//		if( diferencia< 270){
+//			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+//			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
+//		}
+//		else{
+//			//reiniciamos contador
+//			if(flyActual->flag_gir) flyActual->OrientCount = Max;
+//			else flyActual->OrientCount = 0;
+//		}
+//	}
+//	// Caso general
+//	else{
+//		diferencia = abs( flyActual->direccion - flyActual->orientacion);
+//		if( diferencia > 90 )
+//		{
+//			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
+//		    if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
+//		}
+//		else{
+//			//reiniciamos contador
+//			if(flyActual->flag_gir) flyActual->OrientCount = Max;
+//			else flyActual->OrientCount = 0;
+//		}
+//	}
+//	// establecer el sentido de la histéresis
+//	if( flyActual->OrientCount == Max ) flyActual->flag_gir = true; // hacia la izquierda
+//	else if ( flyActual->OrientCount == 0 ) flyActual->flag_gir = false; // hacia la derecha
+//	if( flyActual->flag_gir){
+//		// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
+//		if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
+//		else								 flyActual->orientacion =flyActual->orientacion+ 180;
+//	}
 
 }
 
