@@ -94,6 +94,7 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat, CvCapture* Cap
 				cvShowImage( "Filtro de Kalman", frameData->ImKalman );
 				printf("Hecho\n");
 			}
+			//cvWaitKey(0);
 
 			// OPCIONES
 			if(ACTIVAR_OPCIONES_VISUALIZACION){

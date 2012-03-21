@@ -72,9 +72,9 @@ using namespace std;
 #define SHOW_INIT_BACKGROUND 1
 #define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 #define ACTIVAR_OPCIONES_VISUALIZACION 1
-#define SHOW_BG_REMOVAL 0 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
-#define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
+#define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
 #define SHOW_KALMAN 1
 #define GRABAR_VISUALIZACION 0
 #ifndef _ESTRUCTURAS_

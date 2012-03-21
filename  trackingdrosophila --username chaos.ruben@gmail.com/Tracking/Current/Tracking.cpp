@@ -63,7 +63,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
 	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
-//	MotionTemplate( framesBuf,Identities );
+	MotionTemplate( framesBuf,Identities );
 	if( framesBuf->numeroDeElementos < 2  )	return 0;
 
 #ifdef MEDIR_TIEMPOS
@@ -76,7 +76,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Asignar identidades y orientación.
 	// resolver las asociaciones usando las predicciones de kalman mediante el algoritmo Hungaro
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
-	// Se trabaja en las posiciones frame MAX_BUFFER -3 y MAX_BUFFER -2.
+	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
 	if( Matrix_Hungarian ){
 //		Hungaro(Matrix_Hungarian);
@@ -99,13 +99,14 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 #endif
 
 	/////////////// FILTRO DE KALMAN //////////////
-	// El filtro de kalman trabaja en las posiciones MAX_BUFFER -2 y MAX_BUFFER -1.
+	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 
 	// cargar datos del frame
 	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
 	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
 	// Aplicar kalman
-//	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
+//	Kalman2( frameDataIn, Identities, lsTracks);
+	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
 
 
 #ifdef MEDIR_TIEMPOS
@@ -113,7 +114,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
 #endif
 
-	///////   FASE DE CORRECCIÓN  /////////
+	///////   FASE DE CORRECCIÓN. HEURISTICAS  /////////
 	// esta etapa se encarga de hacer la asignación de identidad definitiva
 	// recibe información temporal de los últimos 51 frames ( Longitud_buffer)
 	// La posición de trabajo será la 0. Este frame será el de salida.

@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 		//////////  PROCESAR  ////////////
 		FrameDataIn = Procesado2(frame, BGModel, Shape, valParams, BGPrParams );
 
-//		//////////  RASTREAR  ////////////
+		//////////  RASTREAR  ////////////
 		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn );
 
 		// SI BUFFER LLENO

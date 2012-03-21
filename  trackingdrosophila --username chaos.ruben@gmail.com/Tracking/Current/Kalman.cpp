@@ -19,8 +19,7 @@
 CvMat* CoordReal;
 
 //Imagenes
-IplImage* ImReal = NULL;
-IplImage* ImPredict = NULL;
+IplImage* ImKalman = NULL;
 
 CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks) {
 
@@ -34,33 +33,17 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 	Flies_sig = frameData_sig->Flies;
 
 	// Inicializar imagenes y parámetros
-	if( !ImReal ){
-		ImReal = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
-		ImPredict = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
-		cvZero(ImReal);
-		cvZero(ImPredict);
+	if( !ImKalman ){
+		ImKalman = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
+
+		cvZero(ImKalman);
+
 
 		CoordReal = cvCreateMat(2,1,CV_32FC1);
 	}
 	cvZero(frameData->ImKalman);
 	////////////////////// CORRECCION ////////////////////////
 
-	// obtener Track
-//	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
-//		Track = (STTrack*)obtener(i, lsTracks);
-//		generarZ_k( Track ); // genera la nueva medida
-//		// actualizamos kalman
-//		cvKalmanCorrect( Track->kalman, Track->z_k);
-//		// actualizamos parámetros
-//		Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
-//	}
-//
-//	// Recorrer lista flies.
-//	// si hay mosca/s sin asignar a un track/s (id = 0), se crea un nuevo track para esa mosca
-//	for(int i = 0; i< Flies_sig->numeroDeElementos ;i++ ){
-//		Fly = (STFly*)obtener(i, frameData->Flies);
-//		if( Fly->etiqueta == 0) anyadirAlFinal(initTrack( Fly, lsIds , frameData->Stats->fps), lsTracks );
-//	}
 
 	if(lsTracks->numeroDeElementos>0){
 		for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
@@ -103,7 +86,6 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 				cvKalmanCorrect( Track->kalman, Track->z_k);
 				Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
 			}
-
 		}
 	}
 
@@ -126,9 +108,13 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 	}
 
 	// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION Para T+1 Y EL VALOR OBSERVADO EN T + 1
+	 CvMat* Matrix_Hungarian = NULL;
 
+	if(lsTracks->numeroDeElementos>0 && Flies_sig->numeroDeElementos >0){
 	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
 	cvZero(Matrix_Hungarian);
+	}
+
 	//	int p = 0;
 //	for(int f=0;f < Flies->numeroDeElementos;f++){
 //
@@ -144,31 +130,68 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 //	}
 
 	///////////////////// VISUALIZAR RESULTADOS ////////////////
-	if( SHOW_KALMAN_DATA || (SHOW_VISUALIZATION && SHOW_KALMAN) ){
-		for(int i = 0; i < lsTracks->numeroDeElementos ; i++){
-			Track = (STTrack*)obtener(i, lsTracks);
-			// EN CONSOLA
-			if(SHOW_KALMAN_DATA ){
-				printf("\n*********************** FRAME %d; BLOB NUMERO %d ************************",frameData->num_frame,Track->id);
-				showKalmanData( Track );
-			}
-			if(SHOW_VISUALIZATION && SHOW_KALMAN){
-				// EN IMAGEN
+	visualizarKalman( frameData, lsTracks );
 
-				cvCircle(ImReal,cvPoint(cvRound(Track->z_k->data.fl[0]),cvRound(Track->z_k->data.fl[1] )),1,CVX_BLUE,-1,8); // observado ( con el error de medida)
-				cvCircle(ImReal,cvPoint(cvRound(Track->x_k_Pre_->data.fl[0]),cvRound(Track->x_k_Pre_->data.fl[1] )),1,CVX_RED,-1,8); // predicción en t
-				cvCircle(ImReal,cvPoint(cvRound(Track->x_k_Pos->data.fl[0]),cvRound(Track->x_k_Pos->data.fl[1])),1,CVX_WHITE,-1,8); // Corrección en t
-				cvCircle(ImReal,cvPoint(cvRound(Track->x_k_Pre->data.fl[0]),cvRound(Track->x_k_Pre->data.fl[1])),1,CVX_GREEN,-1,8); // predicción t+1
-
-			}
-		}
-		cvAdd(ImReal,frameData->ImKalman,frameData->ImKalman );
-	}
 	return Matrix_Hungarian;
 
 }// Fin de Kalman
 
-// Compara la lista trcks y la lista flies. Si se ha asignado una nueva id, se inicia un nuevo track,
+void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks) {
+
+	tlcde* Flies;
+	STTrack* Track;
+	STFly* Fly = NULL;
+
+	// cargar datos del frame
+	Flies=frameData->Flies;
+
+	// Inicializar imagenes y parámetros
+	if( !ImKalman ){
+		ImKalman = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
+		cvZero(ImKalman);
+		CoordReal = cvCreateMat(2,1,CV_32FC1);
+	}
+	cvZero(frameData->ImKalman);
+
+	////////////////////// CORRECCION ////////////////////////
+	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+		// obtener Track
+		Track = (STTrack*)obtener(i, lsTracks);
+		// genera la nueva medida
+		generarZ_k( Track );
+		// corregir kalman
+		cvKalmanCorrect( Track->kalman, Track->z_k);
+		// actualizamos parámetros
+		Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+	}
+
+	// ANYADIR NUEVOS TRACKS, si es necesario.
+	// si hay mosca/s sin asignar a un track/s (id = 0), se crea un nuevo track para esa mosca
+	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
+		Fly = (STFly*)obtener(i, Flies );
+		if( Fly->etiqueta == 0) anyadirAlFinal(initTrack( Fly, lsIds , frameData->Stats->fps), lsTracks );
+	}
+
+	////////////////////// PREDICCION ////////////////////////
+	//Recorremos cada track y hacemos la predicción para el siguiente frame
+	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+		Track = (STTrack*)obtener(i, lsTracks);
+		if( Track->x_k_Pre != NULL ){
+			// guardamos los datos de la predicción anterior
+			cvCopy(Track->x_k_Pre,Track->x_k_Pre_);
+			cvCopy(Track->P_k_Pre,Track->P_k_Pre_);
+		}
+		// nueva predicción
+		Track->x_k_Pre = cvKalmanPredict( Track->kalman, 0);
+	}
+
+	///////////////////// VISUALIZAR RESULTADOS ////////////////
+	visualizarKalman( frameData, lsTracks );
+
+	return;
+}// Fin de Kalman
+
+// OBSOLETA Compara la lista tracks y la lista flies. Si se ha asignado una nueva id, se inicia un nuevo track,
 void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 
 	STTrack* Track = NULL;
@@ -286,16 +309,17 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 void generarZ_k( STTrack* Track){
 
 	//Caso 0: la medida se genera a partir de las predicciones de kalman
-	// La incertidumbre en la medida de posición será muy elevada ( no se ha obtenido medida se los sensores).
+	// La incertidumbre en la medida de posición será muy elevada ( no se ha obtenido nueva medida se los sensores).
 	if( !Track->Flysig ){
 		kalmanControl( Track );
 	}
+	//Caso 1: caso normal. Se ha encontrado una asignación para un track
+	// La incertidumbre en la medida será baja.
 	else if( Track->Flysig->Tracks->numeroDeElementos == 1 ){
 		generarMedida( Track, Track->Flysig );
 	}
-	//Caso2: hay varios tracks que apuntan al mismo blob.Este estará formado por dos o más moscas. Caso general de
-	// cruce aparente de trayectorias
-
+	//Caso2 : hay varios tracks que apuntan al mismo blob.Este estará formado por dos o más moscas. Caso general de
+	// cruce de trayectorias
 	else  generarMedida2( Track, Track->Flysig );
 }
 // generar medida para el frame t
@@ -426,6 +450,30 @@ CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
 
 }
 
+void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
+
+	STTrack* Track;
+
+	if( SHOW_KALMAN_DATA || (SHOW_VISUALIZATION && SHOW_KALMAN) ){
+		for(int i = 0; i < lsTracks->numeroDeElementos ; i++){
+			Track = (STTrack*)obtener(i, lsTracks);
+			// EN CONSOLA
+			if(SHOW_KALMAN_DATA ){
+				printf("\n*********************** FRAME %d; BLOB NUMERO %d ************************",frameData->num_frame,Track->id);
+				showKalmanData( Track );
+			}
+			if(SHOW_VISUALIZATION && SHOW_KALMAN){
+				// EN IMAGEN
+				cvCircle(ImKalman,cvPoint(cvRound(Track->z_k->data.fl[0]),cvRound(Track->z_k->data.fl[1] )),1,CVX_BLUE,-1,8); // observado ( con el error de medida)
+				cvCircle(ImKalman,cvPoint(cvRound(Track->x_k_Pre_->data.fl[0]),cvRound(Track->x_k_Pre_->data.fl[1] )),1,CVX_RED,-1,8); // predicción en t
+				cvCircle(ImKalman,cvPoint(cvRound(Track->x_k_Pos->data.fl[0]),cvRound(Track->x_k_Pos->data.fl[1])),1,CVX_WHITE,-1,8); // Corrección en t
+				cvCircle(ImKalman,cvPoint(cvRound(Track->x_k_Pre->data.fl[0]),cvRound(Track->x_k_Pre->data.fl[1])),1,CVX_GREEN,-1,8); // predicción t+1
+
+			}
+		}
+		cvAdd(ImKalman,frameData->ImKalman,frameData->ImKalman );
+	}
+}
 void showKalmanData( STTrack *Track){
 
 	printf("\n\nReal State: ");
@@ -547,8 +595,8 @@ void liberarTracks( tlcde* lista){
 /// Limpia de la memoria las imagenes usadas durante la ejecución
 void DeallocateKalman( tlcde* lista ){
 
-	cvReleaseImage( &ImReal);
-	cvReleaseImage( &ImPredict);
+	cvReleaseImage( &ImKalman);
+
 	cvReleaseMat( &CoordReal);
 
 	liberarTracks( lista);

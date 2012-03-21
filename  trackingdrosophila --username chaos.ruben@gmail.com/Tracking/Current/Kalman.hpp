@@ -40,6 +40,8 @@ typedef struct{
 
 CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks);
 
+void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks);
+
 //!\brief Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
 //! de Kalman.
 /*!
@@ -61,16 +63,17 @@ CvKalman* initKalman( STFly* fly, float dt );
 
 int deadTrack( tlcde* Tracks, int id );
 
+void generarZ_k( STTrack* Track);
+
 void generarMedida(  STTrack* Track, STFly* Fly );
 
 void generarMedida2(  STTrack* Track, STFly* Fly  );
 
 void kalmanControl( STTrack* Track );
 
+void visualizarKalman( STFrame* frameData, tlcde* lsTracks);
+
 void showKalmanData( STTrack *Track);
-//float* updateKalmanCorrect(CvKalman* kalman,CvPoint coordenadas );
-//
-//float* updateKalmanPredict(CvKalman* kalman);
 
 void DeallocateKalman( tlcde* lista );
 
