@@ -252,7 +252,10 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 	if( numAnterior == 1 && numActual == 1){
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
-		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
+//		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
+		enlazarFlies( flyAnterior, flyActual,NULL) ;
+	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
+		enlazarFlies( flyAnterior, flyActual,NULL) ;
 		SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
@@ -422,9 +425,47 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 
 }
 
-int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids  ){
+int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids,CvMat* Matrix_Asignation  ){
 
-// hungarian
+	double Asignaciones [Matrix_Asignation->rows][Matrix_Asignation->cols];
+	int v=0;
+	int indCandidato;
+	STFly* TrackActual=NULL;
+	STFly* TrackSiguiente=NULL;
+	STTrack* Tracker=NULL;
+
+	for(int i=0; i < Matrix_Asignation->rows;i++){
+		for(int j=0;j < Matrix_Asignation->cols;j++){
+			if(Matrix_Asignation->data.fl[v]==1){
+				indCandidato=j;
+
+				TrackActual=(STFly*)obtener(i,lsTraks);
+				TrackSiguiente=(STFly*)obtener(indCandidato,Flies);
+//				Tracker->FlyActual=TrackActual;
+//				Tracker->Flysig=TrackSiguiente;
+//				enlazarFlies( TrackActual,TrackSiguiente,ids );
+			}
+
+			v++;
+		}
+	}
+
+//	for(int i=0; i < Matrix_Asignation->rows;i++){
+//		for(int j=0;j < Matrix_Asignation->cols;j++){
+//			Asignaciones[i][j]=Matrix_Asignation->data.fl[v];
+//			v++;
+//		}
+//	}
+//
+//	for(int l=0;l < Matrix_Asignation->rows;l++){
+//		for(int k=0; k < Matrix_Asignation->cols;k++){
+//			if(Asignaciones[i][j] == 1) indCandidato=k;
+//
+//		}
+//	}
+
+
+	return 0;
 
 	// enlazar flies
 
@@ -437,7 +478,8 @@ int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids  ){
 
 }
 // si el ultimo parámetro no es null indica
-int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
+//int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
+int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids ){
 	// si la actual ya habia sido etiquetada dejamos su etiqueta
 	float phi;
 	float distancia;
@@ -545,6 +587,7 @@ void releaseMotionTemplate(){
 	cvReleaseImage( &silh);
 
 }
+
 
 //void TrackbarSliderMHI(  int pos ){
 //	float div = 100;

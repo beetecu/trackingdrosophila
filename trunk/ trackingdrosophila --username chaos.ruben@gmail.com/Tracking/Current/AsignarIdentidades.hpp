@@ -9,6 +9,8 @@
 #define ASIGNARIDENTIDADES_HPP_
 
 #include "VideoTracker.hpp"
+#include "Tracking.hpp"
+#include "Kalman.hpp"
 #include "Libreria.h"
 #include "opencv2/video/tracking.hpp"
 
@@ -24,9 +26,10 @@ void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 
 STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* ids , CvRect MotionRoi, double angle );
 
-int asignarIdentidades( CvMat* Matrix_Hungarian, STFrame* frameActual , STFrame*frameAnterior, tlcde* ids  );
+int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids,CvMat* Matrix_Asignation  );
 
-int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids);
+//int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids);
+int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids);
 
 void EUDistance( int a, int b, float* direccion, float* distancia);
 

@@ -16,6 +16,7 @@
 tlcde* Identities = NULL;
 tlcde* lsTracks = NULL;
 CvMat* Matrix_Hungarian = NULL;
+CvMat* Matrix_Asignation= NULL;
 
 STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
@@ -79,8 +80,9 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
 	if( Matrix_Hungarian ){
-//		Hungaro(Matrix_Hungarian);
-//		asignarIdentidades( lsTracks, frameData->Fliesanterior,frameDataSig->Flies , Identities);
+		Matrix_Asignation=Hungaro(Matrix_Hungarian);
+		frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
+		asignarIdentidades( lsTracks,frameDataSig->Flies , Identities,Matrix_Asignation);
 
 		cvReleaseMat(&Matrix_Hungarian);
 	}
@@ -105,7 +107,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
 	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
 	// Aplicar kalman
-//	Kalman2( frameDataIn, Identities, lsTracks);
+//	Matrix_Hungarian =Kalman2( frameDataIn,frameDataSig, Identities, lsTracks);
 	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
 
 

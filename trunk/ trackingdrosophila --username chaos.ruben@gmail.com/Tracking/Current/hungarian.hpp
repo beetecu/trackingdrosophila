@@ -74,6 +74,6 @@ void hungarian_print_status(hungarian_problem_t* p);
 
 void hungarian_print_matrix(float** C, int rows, int cols);
 
-void Hungaro(CvMat* Matrix);
+CvMat* Hungaro(CvMat* Matrix);
 
 #endif
