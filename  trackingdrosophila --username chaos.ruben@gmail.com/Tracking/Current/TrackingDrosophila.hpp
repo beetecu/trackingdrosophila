@@ -8,8 +8,8 @@
 #ifndef TRACKING_H_
 #define TRACKING_H_
 
-//#include "VideoTracker.hpp"
-//#include "Libreria.h"
+#include "VideoTracker.hpp"
+#include "Libreria.h"
 
 #include "Inicializacion.hpp"
 #include "Preprocesado.hpp"

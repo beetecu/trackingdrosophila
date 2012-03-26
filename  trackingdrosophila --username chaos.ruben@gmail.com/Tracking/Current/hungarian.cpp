@@ -34,7 +34,7 @@
 
 
 
-void Hungaro(CvMat* Matrix){
+CvMat* Hungaro(CvMat* Matrix){
 
 	int p=0;
 	float Cost_Matrix[Matrix->rows][Matrix->cols]; // Matriz de Pesos
@@ -81,6 +81,8 @@ void Hungaro(CvMat* Matrix){
 	}
 
 	hungarian_free(&q);
+
+	return Matrix_Asignation;
 
 
 }

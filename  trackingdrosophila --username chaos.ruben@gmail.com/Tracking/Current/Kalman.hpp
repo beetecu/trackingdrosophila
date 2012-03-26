@@ -40,7 +40,7 @@ typedef struct{
 
 CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks);
 
-void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks);
+CvMat* Kalman2(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks);
 
 //!\brief Diseñar la ROI en función de la estimación y la covarianza del error proporcionadas por el Filtro
 //! de Kalman.
@@ -53,7 +53,7 @@ void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks);
 
 CvRect ROIKalman(CvMat* Matrix,CvMat* Predict);
 
-double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct);
+double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal);
 
 void initNewsTracks( STFrame* frameData, tlcde* lsTracks );
 

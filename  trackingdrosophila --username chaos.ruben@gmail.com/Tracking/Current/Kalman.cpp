@@ -26,11 +26,16 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 	tlcde* Flies;
 	tlcde* Flies_sig;
 	STTrack* Track;
+	STTrack* Track_caca;
 	STFly* Fly = NULL;
+	STFly* FlyNext = NULL;
+
+
 
 	// cargar datos del frame
 	Flies=frameData->Flies;
 	Flies_sig = frameData_sig->Flies;
+
 
 	// Inicializar imagenes y parámetros
 	if( !ImKalman ){
@@ -42,6 +47,9 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 		CoordReal = cvCreateMat(2,1,CV_32FC1);
 	}
 	cvZero(frameData->ImKalman);
+
+
+
 	////////////////////// CORRECCION ////////////////////////
 
 
@@ -108,42 +116,70 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 	}
 
 	// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION Para T+1 Y EL VALOR OBSERVADO EN T + 1
-	 CvMat* Matrix_Hungarian = NULL;
+
+	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
 
 	if(lsTracks->numeroDeElementos>0 && Flies_sig->numeroDeElementos >0){
-	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
+//	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
 	cvZero(Matrix_Hungarian);
+
+	double Hungarian_Matrix [lsTracks->numeroDeElementos][Flies_sig->numeroDeElementos];
+
+		int p=0;
+
+		for(int d=0;d < lsTracks->numeroDeElementos;d++){
+
+			Track=(STTrack*)obtener(d,lsTracks);
+
+
+				for(int f=0;f < Flies_sig->numeroDeElementos;f++){
+
+
+				FlyNext=(STFly*)obtener(f,Flies_sig);
+
+					CoordReal->data.fl[0]=FlyNext->posicion.x;
+					CoordReal->data.fl[1]=FlyNext->posicion.y;
+
+					double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoordReal);
+					Matrix_Hungarian->data.fl[p] = Peso;
+					Hungarian_Matrix[d][f]=Peso;
+					p++;
+				}
+		}
+
+				printf("\n***************************************************************");
+				for(int m=0;m<lsTracks->numeroDeElementos;m++){
+					printf("\n");
+					for(int n=0;n<Flies_sig->numeroDeElementos;n++){
+						printf("\t %f",Hungarian_Matrix[m][n]);
+					}
+				}
+
 	}
 
-	//	int p = 0;
-//	for(int f=0;f < Flies->numeroDeElementos;f++){
-//
-//		Fly =(STFly*)obtener(f,Flies_sig);
-//		CoordReal->data.fl[0] = Fly->posicion.x;
-//		CoordReal->data.fl[1] = Fly->posicion.y;
-//
-//		double Peso = PesosKalman(Track->kalman->error_cov_pre,Track->kalman->state_pre,CoordReal);
-//
-//		Matrix_Hungarian->data.fl[p] = Peso;
-//		p++;
-//
-//	}
 
 	///////////////////// VISUALIZAR RESULTADOS ////////////////
+
 	visualizarKalman( frameData, lsTracks );
 
 	return Matrix_Hungarian;
 
 }// Fin de Kalman
 
-void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks) {
+CvMat* Kalman2(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks) {
+
 
 	tlcde* Flies;
+	tlcde* Flies_sig;
 	STTrack* Track;
+	STTrack* Track_caca;
 	STFly* Fly = NULL;
+	STFly* FlyNext = NULL;
+
 
 	// cargar datos del frame
 	Flies=frameData->Flies;
+	Flies_sig = frameData_sig->Flies;
 
 	// Inicializar imagenes y parámetros
 	if( !ImKalman ){
@@ -185,10 +221,51 @@ void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks) {
 		Track->x_k_Pre = cvKalmanPredict( Track->kalman, 0);
 	}
 
+	// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION Para T+1 Y EL VALOR OBSERVADO EN T + 1
+
+	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
+	if(lsTracks->numeroDeElementos>0 && Flies_sig->numeroDeElementos >0){
+	cvZero(Matrix_Hungarian);
+
+	double Hungarian_Matrix [lsTracks->numeroDeElementos][Flies_sig->numeroDeElementos];
+
+		int p=0;
+
+		for(int d=0;d < lsTracks->numeroDeElementos;d++){
+
+			Track=(STTrack*)obtener(d,lsTracks);
+
+
+				for(int f=0;f < Flies_sig->numeroDeElementos;f++){
+
+
+				FlyNext=(STFly*)obtener(f,Flies_sig);
+
+					CoordReal->data.fl[0]=FlyNext->posicion.x;
+					CoordReal->data.fl[1]=FlyNext->posicion.y;
+
+					double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoordReal);
+					Matrix_Hungarian->data.fl[p] = Peso;
+					Hungarian_Matrix[d][f]=Peso;
+					p++;
+				}
+		}
+
+				printf("\n***************************************************************");
+				for(int m=0;m<lsTracks->numeroDeElementos;m++){
+					printf("\n");
+					for(int n=0;n<Flies_sig->numeroDeElementos;n++){
+						printf("\t %f",Hungarian_Matrix[m][n]);
+					}
+				}
+
+	}
+
+
 	///////////////////// VISUALIZAR RESULTADOS ////////////////
 	visualizarKalman( frameData, lsTracks );
 
-	return;
+	return Matrix_Hungarian;
 }// Fin de Kalman
 
 // OBSOLETA Compara la lista tracks y la lista flies. Si se ha asignado una nueva id, se inicia un nuevo track,
@@ -234,7 +311,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track = (STTrack*)malloc(sizeof(STTrack));
 	if(!Track) {error(4); exit(1);}
 
-	//asignarNuevaId( Fly , ids );
+//	asignarNuevaId( Fly , ids );
 
 	Track->id = Fly->etiqueta;
 	// iniciar kalman
@@ -263,7 +340,6 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	// Calcular e iniciar estado
 
 }
-
 CvKalman* initKalman( STFly* Fly, float dt ){
 
 	float Vx=0;// componente X de la velocidad.
@@ -400,16 +476,20 @@ void generarMedida2( STTrack* Track, STFly* Fly  ){
 
 
 
-double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct){
 
-	float Matrix_error_cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
+double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
 
-	float X = Correct->data.fl[0];
-	float Y = Correct->data.fl[1];
+	float Matrix_error_cov[] = {Matrix->data.fl[0], Matrix->data.fl[6]};
+
+	float X = CordReal->data.fl[0];
+	float Y = CordReal->data.fl[1];
 	float EX = Predict->data.fl[0];
 	float EY = Predict->data.fl[1];
-	float VarX = sqrt(Matrix_error_cov[0]);
-	float VarY = sqrt(Matrix_error_cov[3]);
+//	float VarX = sqrt(Matrix_error_cov[0]);
+//	float VarY = sqrt(Matrix_error_cov[1]);
+
+	float VarX = sqrt(50);
+	float VarY = sqrt(50);
 
 	double ValorX,ValorY;
 	double DIVX,DIVY;
@@ -429,7 +509,6 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* Correct){
 	return ProbKalman;
 
 }
-
 CvRect ROIKalman(CvMat* Matrix,CvMat* predict){
 
 	float Matrix_Kalman_Cov[] = {Matrix->data.fl[0], Matrix->data.fl[1], Matrix->data.fl[4], Matrix->data.fl[5]};
