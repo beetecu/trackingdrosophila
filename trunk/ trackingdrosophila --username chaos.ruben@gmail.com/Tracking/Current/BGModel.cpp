@@ -30,26 +30,34 @@ IplImage *ImGray; /// Imagen preprocesada
 IplImage *ImGrayF; /// Imagen preprocesada float
 
 IplImage *Imaskt; // mascara para actualización no selectiva de fondo
-IplImage* fgTemp; // copia del fg para buscar los contornos
+IplImage *fgTemp; // copia del fg para buscar los contornos
 IplImage *IlowF; /// La mediana menos x veces la desviación típica
 IplImage *IHiF;
 
-
+IplImage *bgTemp = NULL; // imagen temporal para almacenar el fondo antes de actualización no selectiva
+IplImage *desTemp = NULL;
 
 /********************************************************************
  *			 			MODELO MEDIANA      						*
  * 																	*
  ********************************************************************/
-StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
+StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 	struct timeval ti; // iniciamos la estructura
 	float TiempoParcial;
 	int num_frames = 0;
+	static int count_update;
+	static int Delay = 0;
 	IplImage* frame = cvQueryFrame( t_capture );
-			if ( !frame ) {
-				error(2);
-				exit(-1);
-			}
-			if ( (cvWaitKey(10) & 255) == 27 ) exit(-1);
+	if ( !frame ) {
+		error(2);
+		exit(-1);
+	}
+	// aplicamos el retardo
+	while( Delay < Param->initDelay){
+		frame = cvQueryFrame( t_capture );
+		Delay ++;
+	}
+	if ( (cvWaitKey(10) & 255) == 27 ) exit(-1);
 
 	 if( Param == NULL ) DefaultBGMParams( &Param );
 
@@ -116,36 +124,84 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 
 	///// APRENDER FONDO /////
 	VisParams* visParams=NULL;
-	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en 20 frames  ////
+	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en FRAMES_TRAINING frames  ////
+	Delay = 0; // retardo para iniciar la captura. Para descartar los primeros frames
+	count_update = Param->BG_Update-1;
+
+	int totalFrames = 0;
+	totalFrames = cvGetCaptureProperty( t_capture, CV_CAP_PROP_FRAME_COUNT);
+	if(!totalFrames) totalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
+	int intervalJump = totalFrames/ Param->Jumps; // numero de frames entre cada posición de salto
+
+	int jumpFrCount = 0; // contador del numero de frames para el salto.
+	int frForJump = cvRound(Param->FRAMES_TRAINING / Param->Jumps); // numero de frames por salto
+	double Seek = 0 + Param->initDelay ; // puntero a las partes del video donde se saltará
+
 	while( num_frames < Param->FRAMES_TRAINING ){
+
+		if( jumpFrCount == frForJump && Param->Jumps ){ // si se alcanza el numero de frames por salto
+			Seek = Seek + intervalJump; // incrementamos el puntero al siguiente intervalo
+			cvSetCaptureProperty( t_capture,1,Seek ); // establecemos la posición
+			Param->Jumps --;
+			jumpFrCount = 0;
+		}
 		frame = cvQueryFrame( t_capture );
 		if ( !frame ) {
 			error(2);
 			break;
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
+		while( Delay < Param->initDelay){
+			frame = cvQueryFrame( t_capture );
+			Delay ++;
+		}
+		if( count_update == Param->BG_Update-1) {
+			ImPreProcess( frame, ImGray, bgmodel->ImFMask, false, bgmodel->DataFROI);
+			//Inicialización
+			if ( num_frames == 0){
+				// iniciar mediana a la primera imagen
+				cvCopy( ImGray, bgmodel->Imed );
+				cvCopy( ImGray, bgTemp );
+				// Iniciamos la desviación a un valor muy pequeño
+				//apropiado para fondos con poco movimiento (unimodales).
+				iniciarIdesv( desTemp,Param->INITIAL_DESV, bgmodel->ImFMask );
+				cvCopy( desTemp, bgmodel->IDesvf );
+			}
+			// Aprendizaje del fondo
+			if( Param->MODEL_TYPE == MEDIAN_S_UP)
+				UpdateBGModel(ImGray, bgTemp, NULL, Param,  bgmodel->DataFROI, bgmodel->ImFMask );
+			else
+				UpdateBGModel( ImGray, bgTemp, desTemp, Param,  bgmodel->DataFROI, bgmodel->ImFMask );
+			// Actualización selectiva
+			if( num_frames > 20 ){
+				/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
+				if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP)
+					BackgroundDifference( ImGray, bgmodel->Imed,NULL, Imaskt ,Param, bgmodel->DataFROI);
+				else
+					BackgroundDifference( ImGray, bgmodel->Imed,bgmodel->IDesvf, Imaskt ,Param, bgmodel->DataFROI);
+				if( Param->MODEL_TYPE == MEDIAN_S_UP)
+					UpdateBGModel(ImGray, bgmodel->Imed, NULL, Param,  bgmodel->DataFROI, Imaskt );
+				else
+					UpdateBGModel( ImGray, bgmodel->Imed, bgmodel->IDesvf, Param,  bgmodel->DataFROI, Imaskt );
+				cvCopy(bgmodel->Imed, bgTemp);
+				cvCopy(bgmodel->IDesvf, desTemp);
+			}
 
-		ImPreProcess( frame, ImGray, bgmodel->ImFMask, false, bgmodel->DataFROI);
-		//Inicialización
-		if ( num_frames == 0){
-			// iniciar mediana
-			cvCopy( ImGray, bgmodel->Imed );
-			// Iniciamos la desviación a un valor muy pequeño
-			//apropiado para fondos con poco movimiento (unimodales).
-			iniciarIdesv( bgmodel->IDesvf,Param->INITIAL_DESV, bgmodel->ImFMask );
-		}
-		// Aprendizaje del fondo
-		accumulateBackground( ImGray, bgmodel->Imed ,bgmodel->IDesvf, bgmodel->DataFROI, bgmodel->ImFMask);
-		if(SHOW_VISUALIZATION && SHOW_INIT_BACKGROUND){
+			if(SHOW_VISUALIZATION && SHOW_INIT_BACKGROUND){
 
-			cvShowImage("Aprendiendo fondo...", bgmodel->Imed);
-			cvMoveWindow("Aprendiendo fondo...", 0, 0 );
+				cvShowImage("Aprendiendo fondo...", bgmodel->Imed);
+				cvMoveWindow("Aprendiendo fondo...", 0, 0 );
+			}
+			if(SHOW_WINDOW){
+				if(!visParams) AllocDefaultVisParams(&visParams, bgmodel->Imed );
+				DraWWindow( bgmodel->Imed, bgmodel,  NULL , visParams, NULL, NULL, BG_MODEL );
+			}
+			count_update = 0;
+
 		}
-		if(SHOW_WINDOW){
-			if(!visParams) AllocDefaultVisParams(&visParams, bgmodel->Imed );
-			DraWWindow( bgmodel->Imed, bgmodel,  NULL , visParams, NULL, NULL, BG_MODEL );
-		}
+		count_update +=1;
 		num_frames += 1;
+		jumpFrCount +=1;
 	}
 	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...",visParams, 50);
 #ifdef	MEDIR_TIEMPOS
@@ -156,6 +212,131 @@ StaticBGModel* initBGModel( CvCapture* t_capture, BGModelParams* Param){
 	return bgmodel;
 }
 
+void MascaraPlato(CvCapture* t_capture,
+				StaticBGModel* Flat,int frTrain){
+
+	//int* centro_x, int* centro_y, int* radio
+	CvMemStorage* storage = cvCreateMemStorage(0);
+	CvSeq* circles = NULL;
+	IplImage* Im = NULL;
+	IplImage* Visual;
+	VisParams* visParams = NULL;
+
+
+// LOCALIZACION
+	int num_frames = 0;
+
+//	t_capture = cvCaptureFromAVI( "Drosophila.avi" );
+	if ( !t_capture ) {
+		fprintf( stderr, "ERROR: capture is NULL \n" );
+		getchar();
+		return ;
+	}
+
+	// Obtención del centro de máximo radio del plato en 50 frames
+
+//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
+//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
+
+	while (num_frames < frTrain) {
+
+		IplImage* frame = cvQueryFrame( t_capture );
+		if ( !frame ) {
+			fprintf( stderr, "ERROR: frame is null...\n" );
+			getchar();
+			break;
+		}
+		if ( (cvWaitKey(10) & 255) == 27 ) break;
+
+//		VerEstadoBGModel( frame );
+		if(!Im){
+			Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
+			Visual =  cvCreateImage(cvSize(frame->width,frame->height),8,3);
+		}
+		cvCopy( frame, Visual );
+		// Imagen a un canal de niveles de gris
+		cvCvtColor( frame , Im, CV_BGR2GRAY);
+
+		// Filtrado gaussiano 5x
+		//cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
+
+//		cvShowImage( "Foreground",Im);
+//		cvWaitKey(0);
+
+		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,400, 50,
+				cvRound( Im->height/2 ));
+		int i;
+		for (i = 0; i < circles->total; i++)
+		{
+
+			// Excluimos los radios que se salgan de la imagen
+			 float* p = (float*)cvGetSeqElem( circles, i );
+
+			 if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
+				 if (Flat->PRadio>0)
+				 //cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+				 cvCircle( Visual, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
+				 if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
+					 cvShowImage("Buscando Plato...",Visual);
+		 //cvWaitKey(0);
+			 }
+			 if(SHOW_WINDOW){
+					 if(!visParams){
+						 AllocDefaultVisParams(&visParams, frame );
+						 Transicion("Iniciando preprocesado...", 1,1000, 50 );
+						 Transicion2( "Buscando plato... ",visParams, 20 );
+					 }
+					 DraWWindow( Visual, Flat,  NULL , visParams, NULL, NULL, FLAT);
+				 }
+
+			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
+				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
+				  (  cvRound( p[1] )  < cvRound( p[2] ) ) ||
+				  ( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) )
+				) continue;
+
+			 // Buscamos el de mayor radio de entre todos los frames;
+			 if (  Flat->PRadio < cvRound( p[2] ) ){
+				 Flat->PRadio = cvRound( p[2] );
+				 Flat->PCentroX = cvRound( p[0] );
+				 Flat->PCentroY = cvRound( p[1] );
+			 }
+		}
+		num_frames +=1;
+		cvClearMemStorage( storage);
+	}
+	cvReleaseMemStorage( &storage );
+
+	printf("\t\t-Plato localizado. Estableciendo parámetros :\n ");
+	printf("\t\t\t-Centro x : %d \n\t\t\t-Centro y %d \n\t\t\t-Radio: %d \n"
+			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
+	Flat->DataFROI = cvRect(Flat->PCentroX-Flat->PRadio,
+					Flat->PCentroY-Flat->PRadio,
+					2*Flat->PRadio,
+					2*Flat->PRadio ); // Datos para establecer ROI del plato
+	// Creacion de mascara
+
+
+//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
+//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
+	for (int y = 0; y< Im->height; y++){
+		//puntero para acceder a los datos de la imagen
+		uchar* ptr = (uchar*) ( Flat->ImFMask->imageData + y*Flat->ImFMask->widthStep);
+		// Los pixeles fuera del plato se ponen a 255;
+		for (int x= 0; x<Flat->ImFMask->width; x++){
+			if ( sqrt( pow( abs( x - Flat->PCentroX ) ,2 )
+					+ pow( abs( y - Flat->PCentroY  ), 2 ) )
+					> Flat->PRadio) ptr[x] = 255;
+			else	ptr[x] = 0;
+		}
+	}
+	if(SHOW_WINDOW) Transicion4("Buscando plato...",visParams, 50);
+	printf("\t\t-Creación de máscara de plato finalizada.");
+	cvReleaseImage(&Im);
+	cvReleaseImage(&Visual);
+	if( visParams) free( visParams);
+	return;
+}
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , IplImage* mask = NULL ) {
 	// si la máscara es null, se crea una inicializada a 0, lo que implicará
 	// la actualización de todos los pixeles del background
@@ -529,135 +710,7 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 
 }
 
-void MascaraPlato(CvCapture* t_capture,
-				StaticBGModel* Flat,int frTrain){
 
-	//int* centro_x, int* centro_y, int* radio
-	CvMemStorage* storage = cvCreateMemStorage(0);
-	CvSeq* circles = NULL;
-	IplImage* Im = NULL;
-	IplImage* Visual;
-	VisParams* visParams = NULL;
-
-
-// LOCALIZACION
-
-
-
-
-	int num_frames = 0;
-
-//	t_capture = cvCaptureFromAVI( "Drosophila.avi" );
-	if ( !t_capture ) {
-		fprintf( stderr, "ERROR: capture is NULL \n" );
-		getchar();
-		return ;
-	}
-
-	// Obtención del centro de máximo radio del plato en 50 frames
-
-//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
-//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-
-	while (num_frames < frTrain) {
-
-		IplImage* frame = cvQueryFrame( t_capture );
-		if ( !frame ) {
-			fprintf( stderr, "ERROR: frame is null...\n" );
-			getchar();
-			break;
-		}
-		if ( (cvWaitKey(10) & 255) == 27 ) break;
-
-//		VerEstadoBGModel( frame );
-		if(!Im){
-			Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-			Visual =  cvCreateImage(cvSize(frame->width,frame->height),8,3);
-		}
-		cvCopy( frame, Visual );
-		// Imagen a un canal de niveles de gris
-		cvCvtColor( frame , Im, CV_BGR2GRAY);
-
-		// Filtrado gaussiano 5x
-		//cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
-
-//		cvShowImage( "Foreground",Im);
-//		cvWaitKey(0);
-
-		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,400, 50,
-				cvRound( Im->height/2 ));
-		int i;
-		for (i = 0; i < circles->total; i++)
-		{
-
-			// Excluimos los radios que se salgan de la imagen
-			 float* p = (float*)cvGetSeqElem( circles, i );
-
-			 if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
-				 if (Flat->PRadio>0)
-				 //cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
-				 cvCircle( Visual, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
-				 if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
-					 cvShowImage("Buscando Plato...",Visual);
-		 //cvWaitKey(0);
-			 }
-			 if(SHOW_WINDOW){
-					 if(!visParams){
-						 AllocDefaultVisParams(&visParams, frame );
-						 Transicion("Iniciando preprocesado...", 1,1000, 50 );
-						 Transicion2( "Buscando plato... ",visParams, 20 );
-					 }
-					 DraWWindow( Visual, Flat,  NULL , visParams, NULL, NULL, FLAT);
-				 }
-
-			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
-				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
-				  (  cvRound( p[1] )  < cvRound( p[2] ) ) ||
-				  ( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) )
-				) continue;
-
-			 // Buscamos el de mayor radio de entre todos los frames;
-			 if (  Flat->PRadio < cvRound( p[2] ) ){
-				 Flat->PRadio = cvRound( p[2] );
-				 Flat->PCentroX = cvRound( p[0] );
-				 Flat->PCentroY = cvRound( p[1] );
-			 }
-		}
-		num_frames +=1;
-		cvClearMemStorage( storage);
-	}
-	cvReleaseMemStorage( &storage );
-
-	printf("\t\t-Plato localizado. Estableciendo parámetros :\n ");
-	printf("\t\t\t-Centro x : %d \n\t\t\t-Centro y %d \n\t\t\t-Radio: %d \n"
-			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
-	Flat->DataFROI = cvRect(Flat->PCentroX-Flat->PRadio,
-					Flat->PCentroY-Flat->PRadio,
-					2*Flat->PRadio,
-					2*Flat->PRadio ); // Datos para establecer ROI del plato
-	// Creacion de mascara
-
-
-//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
-//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
-	for (int y = 0; y< Im->height; y++){
-		//puntero para acceder a los datos de la imagen
-		uchar* ptr = (uchar*) ( Flat->ImFMask->imageData + y*Flat->ImFMask->widthStep);
-		// Los pixeles fuera del plato se ponen a 255;
-		for (int x= 0; x<Flat->ImFMask->width; x++){
-			if ( sqrt( pow( abs( x - Flat->PCentroX ) ,2 )
-					+ pow( abs( y - Flat->PCentroY  ), 2 ) )
-					> Flat->PRadio) ptr[x] = 255;
-			else	ptr[x] = 0;
-		}
-	}
-	if(SHOW_WINDOW) Transicion4("Buscando plato...",visParams, 50);
-	printf("\t\t-Creación de máscara de plato finalizada.");
-	cvReleaseImage(&Im);
-	cvReleaseImage(&Visual);
-	if( visParams) free( visParams);
-	return;
-}
 
 
 //void onTrackbarSlide(pos, BGModelParams* Param) {
@@ -749,6 +802,8 @@ void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation p
 			cvReleaseImage( &Imaskt );
 
 			cvReleaseImage(&fgTemp);
+			cvReleaseImage(&bgTemp);
+			cvReleaseImage(&desTemp);
 
 			Idesf = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 			IdifF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
@@ -759,6 +814,8 @@ void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation p
 			ImGrayF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 			Imaskt = cvCreateImage( sz, 8, 1 );
 			fgTemp = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+			bgTemp = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+			desTemp = cvCreateImage(sz, IPL_DEPTH_32F, 1);
 
 			cvZero( Idesf);
 			cvZero( IdifF );
@@ -766,9 +823,12 @@ void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation p
 			cvZero( IlowF );
 			cvZero(ImGray);
 			cvZero(ImGrayF);
-			cvZero(Imaskt);
 
+			cvZero(Imaskt);
 			cvZero(fgTemp);
+			cvZero(bgTemp);
+			cvZero(desTemp);
+
         	}
 }
 
@@ -783,6 +843,8 @@ void DeallocateTempImages() {
         cvReleaseImage( &ImGray );
         cvReleaseImage( &ImGrayF );
         cvReleaseImage( &fgTemp );
+        cvReleaseImage( &bgTemp );
+        cvReleaseImage( &desTemp );
 
         Idesf = NULL;
 		IdifF =NULL;
@@ -792,6 +854,8 @@ void DeallocateTempImages() {
 		ImGrayF = NULL;
 		Imaskt = NULL;
 		fgTemp = NULL;
+		bgTemp = NULL;
+		desTemp = NULL;
 }
 
 

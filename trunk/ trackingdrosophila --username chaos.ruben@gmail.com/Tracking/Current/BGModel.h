@@ -21,6 +21,9 @@
 					/// con el que se estima la desviación típica.
 typedef struct{
 	//Parametros del modelo
+	int Jumps; // frames de salto a distintas partes del video
+	int BG_Update; // Intervalo de actualización del fondo
+	int initDelay; // El aprendizaje comenzará initDelay frames despues del comienzo
 	int MODEL_TYPE; // tipo de modelo de fondo. Afecta a la resta y a la actualización.
 					//Cuando se inicia se hace automaticamente el gaussiano
 	int FLAT_FRAMES_TRAINING;//!< Nº de frames para aprendizaje del plato.

@@ -94,7 +94,7 @@ void VerEstadoBuffer( IplImage* Imagen,int num, VisParams* params, int max );
 
 void VerEstadoBGModel( IplImage* Imagen );
 
-void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
+
 //!\brief //Representamos los blobs mediante triangulos isosceles
 //! dibujamos triangulo isosceles de altura el eje mayor de la elipse, formando el segmento
 //! (A,mcb), y de anchura el eje menor dando lugar al segmento (B,C), perpendicular

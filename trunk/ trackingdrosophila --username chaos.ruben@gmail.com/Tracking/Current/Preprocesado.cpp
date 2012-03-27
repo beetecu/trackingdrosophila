@@ -75,9 +75,21 @@ void InitialBGModelParams( BGModelParams* Params){
 
 	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 100;
 	 else Params->FLAT_FRAMES_TRAINING = 0;
-	 Params->FRAMES_TRAINING = 200;
+	 Params->BG_Update = 5;
+	 Params->Jumps = 4;
+	 Params->initDelay = 50;
+	 Params->FRAMES_TRAINING = 1500;
 	 Params->ALPHA = 0 ;
 	 Params->INITIAL_DESV = 0.05;
+
+	 Params->MODEL_TYPE = MEDIAN_S_UP;
+
+	 Params->MORFOLOGIA = 0;
+	 Params->CVCLOSE_ITR = 1;
+	 Params->MAX_CONTOUR_AREA = 0 ; //200
+	 Params->MIN_CONTOUR_AREA = 0; //5
+	 Params->HIGHT_THRESHOLD = 20;
+	 Params->LOW_THRESHOLD = 15;
 
 }
 

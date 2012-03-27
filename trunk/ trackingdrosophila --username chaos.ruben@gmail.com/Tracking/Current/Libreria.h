@@ -316,6 +316,8 @@ int dejarId( STFly* fly, tlcde* identities );
 
 void mostrarIds( tlcde* Ids);
 
+void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
+
 #endif //_IDENTIDADES_
 
 /////////////////////////// GESTION FICHEROS //////////////////////////////
