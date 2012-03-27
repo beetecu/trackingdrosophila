@@ -256,7 +256,7 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 		enlazarFlies( flyAnterior, flyActual,NULL) ;
 	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 		enlazarFlies( flyAnterior, flyActual,NULL) ;
-		SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
+	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
 	else if( numAnterior == 0 && numActual == 1){
@@ -500,7 +500,9 @@ int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids ){
 	flyActual->Vy = flyActual->Ay / 1;
 
 	//Establecemos la dirección phi y el modulo del vector de desplazamiento
-	EUDistance( flyAnterior->Vx,flyActual->Vy, &phi, &distancia );
+	EUDistance( flyActual->Vx,flyActual->Vy, &phi, &distancia );
+	//Error en la dirección. Éste es inverso a la distancia.
+	//fl errorPhi( phi, distancia );
 	// si no hay movimiento la dirección es la orientación.( o la dirección anterior???
 
 	if( distancia == 0 ) flyActual->direccion = flyAnterior->dir_filtered;
@@ -510,35 +512,21 @@ int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids ){
 
 }
 
-/// Haya la distancia euclidea entre dos puntos. Establece el modulo del desplazamiento y la dirección en grados.
-///
+/// Haya la distancia euclidea entre dos puntos. Establece el modulo y la dirección del desplazamiento ( en grados ).
+/// Resuelve embiguedades en los signos de la atan.
 void EUDistance( int a, int b, float* direccion, float* distancia){
 
-	// se desplaza hacia la izquierda y hacia arriba => ambiguedad en signo de tangente
-
-	if( ( b > 0)&&(a < 0) )
-	{   // el signo menos de b es debido a la corrección para el origen arriba a la izquierda
-		*direccion = atan( - b / a );
-		//resolvemos ambiguedad debida a los signos en la atan
-		*direccion = *direccion + CV_PI;
-		*direccion = ( (*direccion) *180)/CV_PI; // a grados
-	}
-
-	else if( a == 0){
+	if( a == 0){
 		if( b == 0 ) *direccion = -1; // No hay movimiento.
 		if( b > 0 ) *direccion = 270; // Hacia abajo.
 		if( b < 0 ) *direccion = 90; // Hacia arriba.
 	}
 	else if ( b == 0) {
-		if (a < 0) *direccion = 180; // hacia la izquierda
-		else *direccion = 0;			// hacia la derecha
+		if (a < 0) *direccion = 180; // hacia la izquierda.
+		else *direccion = 0;			// hacia la derecha.
 	}
-	else { // desplazamiento en primer, segundo y cuarto cuadrante
-		*direccion = atan( - b / a );
-		*direccion = ( (*direccion) *180)/CV_PI; // a grados
-	}
-
-	// calcular distancia
+	else	*direccion = atan2( (float)-b , (float)a )* 180 / CV_PI;
+	// calcular modulo del desplazamiento.
 	*distancia = sqrt( pow( a ,2 )  + pow( b ,2 ) ); // sqrt( a² + b² )
 
 }

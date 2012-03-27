@@ -37,7 +37,10 @@ void VisualizarEl( int pos, tlcde* frameBuf, StaticBGModel* Flat, CvCapture* Cap
 
 
 	// Establecer la posición en del bufer para visualizar
-	if(visParams->VisualPos == -1) irAl( pos, frameBuf );
+	if(visParams->VisualPos == -1){
+		if(pos>-1)irAl( pos, frameBuf );
+		else irAl( 0 , frameBuf );
+	}
 	else irAl(visParams->VisualPos, frameBuf );
 
 	// OBTENER FRAME
@@ -402,7 +405,7 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
 				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
 			}
-			muestrearPosicion( flies, 1 );
+			muestrearPosicion( flies, 4 );
 //			Mat img(Imagen);
 //			rectangle(img,
 //					Point(fly->Roi.x,fly->Roi.y),
@@ -420,6 +423,7 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
 					CVX_RED,
 					1, CV_AA, 0 );
+			// dirección de kalman
 			cvLine( Imagen,
 								fly->posicion,
 								cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
@@ -535,18 +539,6 @@ void VerEstadoBuffer( IplImage* Imagen,int num, VisParams* params,int max ){
 //	cvWaitKey(0);
 }
 
-void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
-
-	char etiqueta[10];
-	CvFont fuente1;
-	CvPoint origen;
-
-	origen = cvPoint( pos.x-5 , pos.y - 15);
-
-	sprintf(etiqueta,"%d",id );
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
-	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
-}
 
 
 //Representamos los blobs mediante triangulos isosceles

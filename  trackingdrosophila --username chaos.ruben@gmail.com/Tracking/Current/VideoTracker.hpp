@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <cmath>
 #include <time.h>
 #include <sys/time.h>
 #include <cvaux.h>
@@ -66,7 +67,7 @@ using namespace std;
 
 // VISUALIZACIÓN DE IMAGENES
 #define SHOW_WINDOW 0
-#define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
+#define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
 #define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar resultados.
 #define SHOW_LEARNING_FLAT 1
 #define SHOW_INIT_BACKGROUND 1

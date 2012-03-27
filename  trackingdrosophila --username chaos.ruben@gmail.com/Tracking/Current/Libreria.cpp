@@ -229,7 +229,7 @@ void muestrearPosicion( tlcde* flies, int id ){
 	while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (flydata->etiqueta == id){
-				fprintf(fptr,"%d;%d",flydata->posicion.x,flydata->posicion.y);
+				fprintf(fptr,"%d;%d;%0.f;%0.f",flydata->posicion.x,flydata->posicion.y,flydata->direccion,flydata->dir_filtered);
 				fprintf(fptr,"\n");
 			}
 			i++;
@@ -1095,6 +1095,19 @@ void mostrarIds( tlcde* Ids){
 		id = (Identity*)obtener(i, Ids);
 		printf("Id = %d\n", id->etiqueta);
 	}
+}
+
+void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
+
+	char etiqueta[10];
+	CvFont fuente1;
+	CvPoint origen;
+
+	origen = cvPoint( pos.x-5 , pos.y - 15);
+
+	sprintf(etiqueta,"%d",id );
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
 }
 
 void reasignarIds(){

@@ -207,6 +207,8 @@ STFrame* InitNewFrameData(IplImage* I ){
 
 void putBGModelParams( BGModelParams* Params){
 	 static int first = 1;
+	 Params->BG_Update = 1;
+	 Params->initDelay = 0;
 	 Params->MODEL_TYPE = MEDIAN_S_UP;
 	 Params->FRAMES_TRAINING = 20;
 	 Params->ALPHA = 0 ;

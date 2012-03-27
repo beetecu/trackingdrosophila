@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 	AllocDefaultVisParams(&visParams, BGModel->Imed);
 
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
-	if(!TotalFrames) TotalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
+	if(!TotalFrames) TotalFrames = getAVIFrames(argv[1]); // en algun linux no funciona lo anterior
 	FPS = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FPS);
 
 	printf("\n\nIniciando procesado...\n");
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
 		FrameDataStats = FrameDataOut;
 		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
 
-		if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-1, FramesBuf , BGModel, g_capture, VWriter, visParams );
+		if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-2, FramesBuf , BGModel, g_capture, VWriter, visParams );
 
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->Stats->TiempoFrame);
