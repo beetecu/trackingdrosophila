@@ -64,8 +64,8 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
 	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
-	MotionTemplate( framesBuf,Identities );
-	if( framesBuf->numeroDeElementos < 2  )	return 0;
+//	MotionTemplate( framesBuf,Identities );
+//	if( framesBuf->numeroDeElementos < 2  )	return 0;
 
 #ifdef MEDIR_TIEMPOS
 	gettimeofday(&ti, NULL);
@@ -79,14 +79,16 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
-	if( Matrix_Hungarian ){
-		Matrix_Asignation=Hungaro(Matrix_Hungarian);
-		frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
-		asignarIdentidades( lsTracks,frameDataSig->Flies , Identities,Matrix_Asignation);
+//	asignarIdentidades( lsTracks,frameDataIn->Flies );
 
-		cvReleaseMat(&Matrix_Hungarian);
-	}
-	cvZero(frameDataIn->ImMotion);
+//	if( Matrix_Hungarian ){
+//		Matrix_Asignation=Hungaro(Matrix_Hungarian);
+//		frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
+//
+//
+//		cvReleaseMat(&Matrix_Hungarian);
+//	}
+//	cvZero(frameDataIn->ImMotion);
 
 
 #ifdef MEDIR_TIEMPOS
@@ -102,13 +104,13 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
+	// Aplicar kalman
+	Kalman2( frameDataIn, Identities, lsTracks);
 
 	// cargar datos del frame
-	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
-	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
-	// Aplicar kalman
-//	Matrix_Hungarian =Kalman2( frameDataIn,frameDataSig, Identities, lsTracks);
-	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
+//	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
+//	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
+//	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
 
 
 #ifdef MEDIR_TIEMPOS

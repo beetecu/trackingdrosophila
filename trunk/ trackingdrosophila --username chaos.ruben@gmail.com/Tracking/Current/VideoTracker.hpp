@@ -36,6 +36,7 @@ using namespace std;
 
 #define IMAGE_BUFFER_LENGTH 50
 #define ULTIMO IMAGE_BUFFER_LENGTH-1
+#define INIT_DELAY 50
 #define PRIMERO 0
 
 
