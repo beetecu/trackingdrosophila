@@ -79,7 +79,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
-//	asignarIdentidades( lsTracks,frameDataIn->Flies );
+	asignarIdentidades( lsTracks,frameDataIn->Flies );
 
 //	if( Matrix_Hungarian ){
 //		Matrix_Asignation=Hungaro(Matrix_Hungarian);
