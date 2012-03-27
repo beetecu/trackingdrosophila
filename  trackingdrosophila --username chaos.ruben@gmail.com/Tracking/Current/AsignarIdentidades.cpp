@@ -434,21 +434,22 @@ int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids,CvMat* Matrix
 	STFly* TrackSiguiente=NULL;
 	STTrack* Tracker=NULL;
 
-	for(int i=0; i < Matrix_Asignation->rows;i++){
-		for(int j=0;j < Matrix_Asignation->cols;j++){
-			if(Matrix_Asignation->data.fl[v]==1){
-				indCandidato=j;
-
-				TrackActual=(STFly*)obtener(i,lsTraks);
-				TrackSiguiente=(STFly*)obtener(indCandidato,Flies);
-//				Tracker->FlyActual=TrackActual;
-//				Tracker->Flysig=TrackSiguiente;
-//				enlazarFlies( TrackActual,TrackSiguiente,ids );
-			}
-
-			v++;
-		}
-	}
+	if(lsTraks->numeroDeElementos<1) return 0;
+//	for(int i=0; i < Matrix_Asignation->rows;i++){
+//		for(int j=0;j < Matrix_Asignation->cols;j++){
+//			if(Matrix_Asignation->data.fl[v]==1){
+//				indCandidato=j;
+//
+//				TrackActual=(STFly*)obtener(i,lsTraks);
+//				TrackSiguiente=(STFly*)obtener(indCandidato,Flies);
+////				Tracker->FlyActual=TrackActual;
+////				Tracker->Flysig=TrackSiguiente;
+////				enlazarFlies( TrackActual,TrackSiguiente,ids );
+//			}
+//
+//			v++;
+//		}
+//	}
 
 //	for(int i=0; i < Matrix_Asignation->rows;i++){
 //		for(int j=0;j < Matrix_Asignation->cols;j++){

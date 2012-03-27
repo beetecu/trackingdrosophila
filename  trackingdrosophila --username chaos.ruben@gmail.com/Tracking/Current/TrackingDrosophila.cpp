@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 //	VWriter = iniciarAvi( g_capture, nombreVideo);
-	// Creación de ventanas de visualizacion
+// Creación de ventanas de visualizacion
 	AllocDefaultVisParams(&visParams, BGModel->Imed);
 
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
@@ -109,7 +109,10 @@ int main(int argc, char* argv[]) {
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
 
     for( NumFrame = 1;; NumFrame++ ){
-
+		for( int i = 0; i < INIT_DELAY; i++ ){ // retardo al inicio
+			frame = cvQueryFrame( g_capture );
+			NumFrame ++;
+		}
     	frame = cvQueryFrame(g_capture);
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
@@ -135,7 +138,7 @@ int main(int argc, char* argv[]) {
 
 			////////// ESTADISTICAS //////////
 			// para su cálculo usamos el frameDataOut anterior.
-			CalcStatsFrame( FrameDataStats,FrameDataOut );
+			CalcStatsFrame( FrameDataStats, FrameDataOut );
 
 			//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );

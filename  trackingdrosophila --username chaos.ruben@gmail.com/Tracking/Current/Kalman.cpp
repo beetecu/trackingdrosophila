@@ -161,7 +161,10 @@ void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks) {
 	// si hay mosca/s sin asignar a un track/s (id = 0), se crea un nuevo track para esa mosca
 	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
 		Fly = (STFly*)obtener(i, Flies );
-		if( Fly->etiqueta == 0) anyadirAlFinal(initTrack( Fly, lsIds , frameData->Stats->fps), lsTracks );
+		if( Fly->etiqueta == 0){
+		Track = initTrack( Fly, lsIds , 1 );
+		anyadirAlFinal( Track , lsTracks );
+		}
 	}
 
 	////////////////////// PREDICCION ////////////////////////
@@ -194,7 +197,7 @@ void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 		// INICIAR TRACK
 		for(int i = 0; i < frameData->Flies->numeroDeElementos;i++){
 			Fly = (STFly*)obtener(i, frameData->Flies);
-			Track = initTrack( Fly ,NULL,frameData->Stats->fps );
+			Track = initTrack( Fly ,NULL, 1 );
 			anyadirAlFinal(Track, lsTracks );
 		}
 	}
@@ -210,7 +213,7 @@ void initNewsTracks( STFrame* frameData, tlcde* lsTracks ){
 			}// si la j llega al final quiere decir que no se ha encontrado coincidencia
 			if (j == lsTracks->numeroDeElementos){
 				// INICIAR TRACK
-				Track = initTrack( Fly ,NULL,frameData->Stats->fps );
+				Track = initTrack( Fly ,NULL, 1 );
 				anyadirAlFinal(Track, lsTracks );
 			}
 		}
@@ -226,7 +229,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track = (STTrack*)malloc(sizeof(STTrack));
 	if(!Track) {error(4); exit(1);}
 
-	//asignarNuevaId( Fly , ids );
+	asignarNuevaId( Fly , ids );
 
 	Track->id = Fly->etiqueta;
 	// iniciar kalman
@@ -264,7 +267,7 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 	// Crear el flitro de Kalman
 
 	CvKalman* Kalman = cvCreateKalman(5,5,0);
-	dt = 1 / 1 ;
+
 
 	// Inicializar las matrices parámetros para el filtro de Kalman
 	// en la primera iteración iniciamos la dirección con la orientación
