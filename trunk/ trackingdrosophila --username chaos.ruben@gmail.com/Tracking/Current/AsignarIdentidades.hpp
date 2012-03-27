@@ -26,7 +26,7 @@ void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 
 STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* ids , CvRect MotionRoi, double angle );
 
-int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids,CvMat* Matrix_Asignation  );
+int asignarIdentidades( tlcde* lsTraks , tlcde *Flies  );
 
 //int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids);
 int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids);

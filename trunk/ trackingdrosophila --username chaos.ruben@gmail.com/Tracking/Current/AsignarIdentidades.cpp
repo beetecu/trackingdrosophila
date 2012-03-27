@@ -425,9 +425,9 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 
 }
 
-int asignarIdentidades( tlcde* lsTraks , tlcde *Flies , tlcde* ids,CvMat* Matrix_Asignation  ){
+int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies  ){
 
-	double Asignaciones [Matrix_Asignation->rows][Matrix_Asignation->cols];
+//	double Asignaciones [Matrix_Asignation->rows][Matrix_Asignation->cols];
 	int v=0;
 	int indCandidato;
 	STFly* TrackActual=NULL;
