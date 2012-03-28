@@ -107,12 +107,12 @@ int main(int argc, char* argv[]) {
 	if(SHOW_WINDOW) Transicion("Iniciando Tracking...", 1,1000, 50 );
 
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
+	for( int i = 0; i < INIT_DELAY; i++ ){ // retardo al inicio
+		frame = cvQueryFrame( g_capture );
+		NumFrame ++;
+	}
+    for( NumFrame = NumFrame; ; NumFrame++ ){
 
-    for( NumFrame = 1;; NumFrame++ ){
-		for( int i = 0; i < INIT_DELAY; i++ ){ // retardo al inicio
-			frame = cvQueryFrame( g_capture );
-			NumFrame ++;
-		}
     	frame = cvQueryFrame(g_capture);
     	/*Posteriormente  Escribir en un fichero log el error. Actualizar el contador
     	  de frames absolutos. */
