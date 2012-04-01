@@ -253,9 +253,9 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
 //		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
-		enlazarFlies( flyAnterior, flyActual,NULL) ;
+//		enlazarFlies( flyAnterior, flyActual,NULL) ;
 	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
-		enlazarFlies( flyAnterior, flyActual,NULL) ;
+//		enlazarFlies( flyAnterior, flyActual,NULL) ;
 	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
@@ -425,46 +425,70 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 
 }
 
-int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies  ){
+int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
-//	double Asignaciones [Matrix_Asignation->rows][Matrix_Asignation->cols];
+	CvMat* CoorReal;
+	STFly* FlyNext=NULL;
+	STTrack* Track=NULL;
+	CvMat* Matrix_Asignation= NULL;
+	STTrack* TrackActual=NULL;
+	STFly* FlySiguiente=NULL;
+	double Hungarian_Matrix [lsTraks->numeroDeElementos][Flies->numeroDeElementos];
 	int v=0;
-	int indCandidato;
-	STFly* TrackActual=NULL;
-	STFly* TrackSiguiente=NULL;
-	STTrack* Tracker=NULL;
+	int indCandidato; // posicion de la Fly con mayor porbabilidad.
 
-	if(lsTraks->numeroDeElementos<1) return 0;
-//	for(int i=0; i < Matrix_Asignation->rows;i++){
-//		for(int j=0;j < Matrix_Asignation->cols;j++){
-//			if(Matrix_Asignation->data.fl[v]==1){
-//				indCandidato=j;
-//
-//				TrackActual=(STFly*)obtener(i,lsTraks);
-//				TrackSiguiente=(STFly*)obtener(indCandidato,Flies);
-////				Tracker->FlyActual=TrackActual;
-////				Tracker->Flysig=TrackSiguiente;
-////				enlazarFlies( TrackActual,TrackSiguiente,ids );
-//			}
-//
-//			v++;
-//		}
-//	}
 
-//	for(int i=0; i < Matrix_Asignation->rows;i++){
-//		for(int j=0;j < Matrix_Asignation->cols;j++){
-//			Asignaciones[i][j]=Matrix_Asignation->data.fl[v];
-//			v++;
-//		}
-//	}
-//
-//	for(int l=0;l < Matrix_Asignation->rows;l++){
-//		for(int k=0; k < Matrix_Asignation->cols;k++){
-//			if(Asignaciones[i][j] == 1) indCandidato=k;
-//
-//		}
-//	}
+if(lsTraks->numeroDeElementos>0 && Flies->numeroDeElementos >0){
 
+		CvMat* Matrix_Hungarian = cvCreateMat(lsTraks->numeroDeElementos,Flies->numeroDeElementos,CV_32FC1); // Matriz de Pesos
+		cvZero(Matrix_Hungarian);
+
+				int p=0;
+
+				for(int d=0;d < lsTraks->numeroDeElementos;d++){
+
+					Track=(STTrack*)obtener(d,lsTraks);
+
+					for(int f=0;f < Flies->numeroDeElementos;f++){
+
+						FlyNext=(STFly*)obtener(f,Flies);
+
+							CoorReal->data.fl[0]=FlyNext->posicion.x;
+							CoorReal->data.fl[1]=FlyNext->posicion.y;
+
+							double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoorReal);
+							Matrix_Hungarian->data.fl[p] = Peso;
+							Hungarian_Matrix[d][f]=Peso;
+							p++;
+						}
+				}
+
+	Matrix_Asignation=Hungaro(Matrix_Hungarian);
+
+	for(int i=0; i < Matrix_Asignation->rows;i++){
+			for(int j=0;j < Matrix_Asignation->cols;j++){
+				if(Matrix_Asignation->data.fl[v]==1){
+					indCandidato=j;
+
+					TrackActual=(STTrack*)obtener(i,lsTraks);
+					FlySiguiente=(STFly*)obtener(indCandidato,Flies);
+//					TrackActual->Flysig=(STFly*)obtener(indCandidato,Flies);
+//					if(TrackSiguiente && TrackActual) enlazarFlies( TrackActual->FlyActual,FlySiguiente);
+					if(FlySiguiente && TrackActual){
+
+						TrackActual->Flysig=FlySiguiente;
+//						anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
+//						enlazarFlies(TrackActual->FlyActual,FlySiguiente);
+						FlySiguiente->etiqueta=TrackActual->id;
+					}
+
+					}
+
+				v++;
+			}
+		}
+
+	}
 
 	return 0;
 
@@ -480,14 +504,14 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies  ){
 }
 // si el ultimo parámetro no es null indica
 //int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
-int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids ){
+int enlazarFlies( STFly* flyAnterior, STFly* flyActual){
 	// si la actual ya habia sido etiquetada dejamos su etiqueta
 	float phi;
 	float distancia;
 
-	if( flyActual->etiqueta && ids ) {
-		if(!dejarId(flyActual,ids)) return 0;
-	}
+//	if( flyActual->etiqueta && ids ) {
+//		if(!dejarId(flyActual,ids)) return 0;
+//	}
 	flyAnterior->siguiente = (STFly*)flyActual;
 	flyActual->etiqueta = flyAnterior->etiqueta;
 	flyActual->Color = flyAnterior->Color;
@@ -564,6 +588,112 @@ void allocateMotionTemplate( IplImage* im){
 		        mask = cvCreateImage( size, IPL_DEPTH_8U, 1 );
 		    }
 }
+
+double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
+
+	float Matrix_error_cov[] = {Matrix->data.fl[0], Matrix->data.fl[6]};
+
+	float X = CordReal->data.fl[0];
+	float Y = CordReal->data.fl[1];
+	float EX = Predict->data.fl[0];
+	float EY = Predict->data.fl[1];
+	float VarX = sqrt(Matrix_error_cov[0]);
+	float VarY = sqrt(Matrix_error_cov[1]);
+
+//	float VarX = sqrt(50);
+//	float VarY = sqrt(50);
+
+	double ValorX,ValorY;
+	double DIVX,DIVY;
+	double ProbKalman;
+
+	ValorX=X-EX;
+	ValorY=Y-EY;
+	DIVX=-((ValorX/VarX)*(ValorX/VarX))/2;
+	DIVY=-((ValorY/VarY)*(ValorY/VarY))/2;
+
+	ProbKalman =exp (-abs(DIVX + DIVY));
+
+	ProbKalman = 100*ProbKalman;
+
+	if (ProbKalman < 1) ProbKalman = 1;
+
+	return ProbKalman;
+
+}
+
+int asignarIdentidades2(  tlcde* lsTraks , tlcde *Flies){
+
+	CvMat* CoorReal;
+	STFly* FlyNext=NULL;
+	STTrack* Track=NULL;
+	CvMat* Matrix_Asignation= NULL;
+	STTrack* TrackActual=NULL;
+	STFly* FlySiguiente=NULL;
+	double Hungarian_Matrix [lsTraks->numeroDeElementos][Flies->numeroDeElementos];
+	int v=0;
+	int indCandidato; // posicion de la Fly con mayor porbabilidad.
+
+
+if(lsTraks->numeroDeElementos>0 && Flies->numeroDeElementos >0){
+
+		CvMat* Matrix_Hungarian = cvCreateMat(lsTraks->numeroDeElementos,Flies->numeroDeElementos,CV_32FC1); // Matriz de Pesos
+		cvZero(Matrix_Hungarian);
+
+				int p=0;
+
+				for(int d=0;d < lsTraks->numeroDeElementos;d++){
+
+					Track=(STTrack*)obtener(d,lsTraks);
+
+					for(int f=0;f < Flies->numeroDeElementos;f++){
+
+						FlyNext=(STFly*)obtener(f,Flies);
+
+							CoorReal->data.fl[0]=FlyNext->posicion.x;
+							CoorReal->data.fl[1]=FlyNext->posicion.y;
+
+							double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoorReal);
+							Matrix_Hungarian->data.fl[p] = Peso;
+							Hungarian_Matrix[d][f]=Peso;
+							p++;
+						}
+				}
+
+	Matrix_Asignation=Hungaro(Matrix_Hungarian);
+
+	for(int i=0; i < Matrix_Hungarian->rows;i++){
+			for(int j=0;j < Matrix_Hungarian->cols;j++){
+				if(Matrix_Hungarian->data.fl[v]>70){
+					indCandidato=j;
+
+					TrackActual=(STTrack*)obtener(i,lsTraks);
+					FlySiguiente=(STFly*)obtener(indCandidato,Flies);
+					if(FlySiguiente && TrackActual)	anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
+//					if(TrackSiguiente && TrackActual) enlazarFlies( TrackActual->FlyActual,FlySiguiente);
+//					if(FlySiguiente && TrackActual) FlySiguiente->etiqueta=TrackActual->id;
+
+					}
+
+				v++;
+			}
+		}
+
+	}
+
+	return 0;
+
+	// enlazar flies
+
+	//	enlazarFlies( Track->FlyActual, STFly* flyActual,float dt, tlcde* ids )
+
+	// rellenar para cada track puntero a fly con la que enlaza Trak->Fliesig ; NULL si no hay
+
+	// rellenar para cada blob vector fly->tracks; Tracks que apuntan a ese blob.
+
+
+}
+
 void releaseMotionTemplate(){
 
 	cvReleaseImage( &img );

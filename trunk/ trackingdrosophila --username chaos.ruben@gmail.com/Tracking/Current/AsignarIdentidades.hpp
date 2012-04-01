@@ -26,10 +26,12 @@ void MotionTemplate( tlcde* framesBuf,tlcde* Etiquetas );
 
 STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* ids , CvRect MotionRoi, double angle );
 
-int asignarIdentidades( tlcde* lsTraks , tlcde *Flies  );
+int asignarIdentidades( tlcde* lsTraks , tlcde *Flies);
+
+int asignarIdentidades2( tlcde* lsTraks , tlcde *Flies);
 
 //int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids);
-int enlazarFlies( STFly* flyAnterior, STFly* flyActual,tlcde* ids);
+int enlazarFlies( STFly* flyAnterior, STFly* flyActual);
 
 void EUDistance( int a, int b, float* direccion, float* distancia);
 
@@ -48,5 +50,7 @@ void TrackbarSliderMHI(  int pos );
 void TrackbarSliderDMin(  int pos );
 
 void TrackbarSliderDMax(  int pos );
+
+double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal);
 
 #endif /* ASIGNARIDENTIDADES_HPP_ */

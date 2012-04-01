@@ -79,7 +79,10 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
-	asignarIdentidades( lsTracks,frameDataIn->Flies );
+	if( framesBuf->numeroDeElementos > 1  ){
+		asignarIdentidades( lsTracks,frameDataIn->Flies);
+//		asignarIdentidades2( lsTracks,frameDataIn->Flies);
+	}
 
 //	if( Matrix_Hungarian ){
 //		Matrix_Asignation=Hungaro(Matrix_Hungarian);
@@ -105,7 +108,10 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 	// Aplicar kalman
-	Kalman2( frameDataIn, Identities, lsTracks);
+	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
+	Kalman2( frameDataIn,frameDataSig, Identities, lsTracks);
+//	asignarIdentidades( lsTracks,frameDataIn->Flies );
+
 
 	// cargar datos del frame
 //	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);

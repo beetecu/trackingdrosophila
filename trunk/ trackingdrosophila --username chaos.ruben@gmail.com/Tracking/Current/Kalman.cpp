@@ -128,7 +128,7 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 
 }// Fin de Kalman
 
-void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks) {
+void Kalman2(STFrame* frameData,STFrame* frameData_sig, tlcde* lsIds,tlcde* lsTracks) {
 
 	tlcde* Flies;
 	STTrack* Track;
@@ -154,7 +154,7 @@ void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks) {
 		// corregir kalman
 		cvKalmanCorrect( Track->kalman, Track->z_k);
 		// actualizamos parámetros
-		Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+//		Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
 	}
 
 	// ANYADIR NUEVOS TRACKS, si es necesario.
@@ -232,6 +232,8 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	asignarNuevaId( Fly , ids );
 
 	Track->id = Fly->etiqueta;
+	Track->FlyActual=Fly;
+
 	// iniciar kalman
 	Track->kalman = initKalman( Fly , fps);
 
@@ -310,7 +312,8 @@ void generarZ_k( STTrack* Track){
 	}
 	//Caso 1: caso normal. Se ha encontrado una asignación para un track
 	// La incertidumbre en la medida será baja.
-	else if( Track->Flysig->Tracks->numeroDeElementos == 1 ){
+//	else if( Track->Flysig->Tracks->numeroDeElementos == 1 ){
+	else if( Track->Flysig){
 		generarMedida( Track, Track->Flysig );
 	}
 	//Caso2 : hay varios tracks que apuntan al mismo blob.Este estará formado por dos o más moscas. Caso general de
