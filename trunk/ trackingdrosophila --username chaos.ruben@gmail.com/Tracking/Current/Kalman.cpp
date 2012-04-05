@@ -61,7 +61,7 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 					if(Fly->etiqueta == Track->id){
 						// Añadimos la nueva medida
 						generarMedida( Track, Fly );
-					// actualizamos kalman
+					    // actualizamos kalman
 						cvKalmanCorrect( Track->kalman, Track->z_k);
 						// actualizamos parámetros
 						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
@@ -78,9 +78,9 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 
 						// si no se encuentra su id el frame y no hay ninguna asignación válida corregimos con la predicción anterior de kalman.
 						//podría tratarse de un trackdead. Kalman toma el control ( Se genera la nueva medida a partir de las predicciones).
-						kalmanControl( Track );
-						cvKalmanCorrect( Track->kalman, Track->z_k);
-						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+//						kalmanControl( Track );
+//						cvKalmanCorrect( Track->kalman, Track->z_k);
+//						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
 					}
 				}
 			}
@@ -128,7 +128,7 @@ CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTr
 
 }// Fin de Kalman
 
-void Kalman2(STFrame* frameData,STFrame* frameData_sig, tlcde* lsIds,tlcde* lsTracks) {
+void Kalman2(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 
 	tlcde* Flies;
 	STTrack* Track;
@@ -154,7 +154,7 @@ void Kalman2(STFrame* frameData,STFrame* frameData_sig, tlcde* lsIds,tlcde* lsTr
 		// corregir kalman
 		cvKalmanCorrect( Track->kalman, Track->z_k);
 		// actualizamos parámetros
-//		Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+		Track->FlyActual->dir_filtered =Track->x_k_Pos->data.fl[4] ;
 	}
 
 	// ANYADIR NUEVOS TRACKS, si es necesario.
@@ -162,8 +162,8 @@ void Kalman2(STFrame* frameData,STFrame* frameData_sig, tlcde* lsIds,tlcde* lsTr
 	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
 		Fly = (STFly*)obtener(i, Flies );
 		if( Fly->etiqueta == 0){
-		Track = initTrack( Fly, lsIds , 1 );
-		anyadirAlFinal( Track , lsTracks );
+			Track = initTrack( Fly, lsIds , 1 );
+			anyadirAlFinal( Track , lsTracks );
 		}
 	}
 
@@ -231,6 +231,8 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 
 	asignarNuevaId( Fly , ids );
 
+	Track->FlyActual = Fly;
+	Track->Flysig = NULL;
 	Track->id = Fly->etiqueta;
 	Track->FlyActual=Fly;
 
@@ -324,10 +326,11 @@ void generarZ_k( STTrack* Track){
 // en este caso la medida se genera a partir de las predicciones de kalman añadiendo una incertidumbre elevada
 void kalmanControl( STTrack* Track ){
 
+	Track->Flysig = NULL;
 	// Matriz de entrada
 	CvMat* H = Track->kalman->measurement_matrix;
 
-	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,180};// Covarianza
+	float R[] =  {100,0,0,0,0, 0,100,0,0,0, 0,0,100,0,0, 0,0,0,100,0, 0,0,0,0,180};// Covarianza
 	float V[] =  {0,0,0,0,0};// media
 	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // R;
 	// y en la matriz para aplicarselo a la medida
@@ -342,16 +345,16 @@ void generarMedida( STTrack* Track, STFly* Fly ){
 
 	H = Track->kalman->measurement_matrix;
 	phiXk = Track->x_k_Pre->data.fl[4];
-
-	generarPhiZk( phiXk , Fly->Vx, Fly->Vy , &Fly->direccion, &R_phiZk);
-	//Nueva Medida
-	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy,Fly->direccion};
-	memcpy( Track->Medida->data.fl, Medida, sizeof(Medida)); // Medida;
 	// Incertidumbre
 	R_x = 1;
 	R_y = R_x;
 	R_Vx = 2*R_x;
 	R_Vy = 2*R_y;
+	generarPhiZk( phiXk , Fly->Vx, Fly->Vy , &Fly->direccion, &R_phiZk);
+	//Nueva Medida
+	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy,Fly->direccion};
+	memcpy( Track->Medida->data.fl, Medida, sizeof(Medida)); // Medida;
+
 	// incertidumbre en la medida
 	// para el ángulo: Si la dirección del blob difiere en más de 90º de la dirección anterior, aumentar la incertidumbre.
 	float R[] =  { R_x,0,0,0,0, 0,R_y,0,0,0, 0,0,R_Vx,0,0, 0,0,0,R_Vy,0, 0,0,0,0,R_phiZk};//covarianza del ruido
@@ -370,6 +373,10 @@ void generarMedida( STTrack* Track, STFly* Fly ){
 	// y en la matriz para aplicarselo a la medida
 	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
 	cvGEMM(H, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
+
+	//la fly siguiente pasa a ser fly actual
+	Track->FlyActual = Track->Flysig;
+	Track->Flysig = NULL;
 
 }
 

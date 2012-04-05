@@ -253,10 +253,10 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
 //		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
+
+		enlazarFlies( flyAnterior, flyActual ) ;
 //		enlazarFlies( flyAnterior, flyActual,NULL) ;
-	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
-//		enlazarFlies( flyAnterior, flyActual,NULL) ;
-	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
+
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
 	else if( numAnterior == 0 && numActual == 1){

@@ -168,17 +168,17 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 				cvCopy( desTemp, bgmodel->IDesvf );
 			}
 			// Aprendizaje del fondo
-			if( Param->MODEL_TYPE == MEDIAN_S_UP)
-				UpdateBGModel(ImGray, bgTemp, NULL, Param,  bgmodel->DataFROI, bgmodel->ImFMask );
-			else
-				UpdateBGModel( ImGray, bgTemp, desTemp, Param,  bgmodel->DataFROI, bgmodel->ImFMask );
+				UpdateBGModel(ImGray, bgTemp, desTemp, Param,  bgmodel->DataFROI, bgmodel->ImFMask );
 			// Actualización selectiva
 			if( num_frames > 20 ){
 				/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-				if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP)
-					BackgroundDifference( ImGray, bgmodel->Imed,NULL, Imaskt ,Param, bgmodel->DataFROI);
-				else
-					BackgroundDifference( ImGray, bgmodel->Imed,bgmodel->IDesvf, Imaskt ,Param, bgmodel->DataFROI);
+
+				BackgroundDifference( ImGray, bgmodel->Imed,bgmodel->IDesvf, Imaskt ,Param, bgmodel->DataFROI);
+				// dilatamos
+				cvSetImageROI( Imaskt, bgmodel->DataFROI);
+				cvDilate( Imaskt, Imaskt, 0, 2 );
+				cvResetImageROI( Imaskt );
+
 				if( Param->MODEL_TYPE == MEDIAN_S_UP)
 					UpdateBGModel(ImGray, bgmodel->Imed, NULL, Param,  bgmodel->DataFROI, Imaskt );
 				else
@@ -190,6 +190,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 			if(SHOW_VISUALIZATION && SHOW_INIT_BACKGROUND){
 
 				cvShowImage("Aprendiendo fondo...", bgmodel->Imed);
+
 				cvMoveWindow("Aprendiendo fondo...", 0, 0 );
 			}
 			if(SHOW_WINDOW){
@@ -222,6 +223,10 @@ void MascaraPlato(CvCapture* t_capture,
 	IplImage* Visual;
 	VisParams* visParams = NULL;
 
+	int minRadio;
+	int medX;
+	int medY;
+	int medR;
 
 // LOCALIZACION
 	int num_frames = 0;
@@ -252,6 +257,10 @@ void MascaraPlato(CvCapture* t_capture,
 		if(!Im){
 			Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
 			Visual =  cvCreateImage(cvSize(frame->width,frame->height),8,3);
+			minRadio = cvRound(frame->height / 3);
+			medX = frame->width /2;
+			medY = frame->height/2;
+			medR = minRadio;
 		}
 		cvCopy( frame, Visual );
 		// Imagen a un canal de niveles de gris
@@ -262,9 +271,11 @@ void MascaraPlato(CvCapture* t_capture,
 
 //		cvShowImage( "Foreground",Im);
 //		cvWaitKey(0);
+		// establecemos el radio mínimo según la resolución de la imagen
 
-		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,400, 50,
-				cvRound( Im->height/2 ));
+		cvCanny(Im,Im, 50, 100, 3);
+		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,5,100,400, minRadio,
+										cvRound( Im->height/2 ));
 		int i;
 		for (i = 0; i < circles->total; i++)
 		{
@@ -273,9 +284,10 @@ void MascaraPlato(CvCapture* t_capture,
 			 float* p = (float*)cvGetSeqElem( circles, i );
 
 			 if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
-				 if (Flat->PRadio>0)
-				 //cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+				 if (Flat->PRadio>0){
+				 cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
 				 cvCircle( Visual, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
+				 }
 				 if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
 					 cvShowImage("Buscando Plato...",Visual);
 		 //cvWaitKey(0);
@@ -289,24 +301,41 @@ void MascaraPlato(CvCapture* t_capture,
 					 DraWWindow( Visual, Flat,  NULL , visParams, NULL, NULL, FLAT);
 				 }
 
-			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) ||
-				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) ||
-				  (  cvRound( p[1] )  < cvRound( p[2] ) ) ||
-				  ( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) )
+			 if(  (  cvRound( p[0]) < cvRound( p[2] )  ) || // si x es menor que r ( circ se sale por la izda
+				  ( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) || //o si el ancho menos x es menor que r ( se sale por la dercha)
+				  (  cvRound( p[1] )  < cvRound( p[2] ) ) || // o si y es menor que r (se sale por arriba )
+				  ( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) ) // se sale por abajo
 				) continue;
 
+
+			 if ( cvRound( p[0] )  > medX ) medX++;
+			 else if ( cvRound( p[0] )  < medX ) medX--;
+			 if ( cvRound( p[1] )  > medY ) medY++;
+			 else if ( cvRound( p[1] )  < medY ) medY--;
+			 if ( cvRound( p[2] )  > medR ) medR++;
+			 else if ( cvRound( p[2] )  < medR ) medR--;
 			 // Buscamos el de mayor radio de entre todos los frames;
 			 if (  Flat->PRadio < cvRound( p[2] ) ){
 				 Flat->PRadio = cvRound( p[2] );
 				 Flat->PCentroX = cvRound( p[0] );
 				 Flat->PCentroY = cvRound( p[1] );
+				 if (minRadio < (Flat->PRadio ) ) minRadio = minRadio + (Flat->PRadio - minRadio)/1.5 ;
 			 }
+			 if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
+			 			 if (Flat->PRadio>0)
+			 			 cvCircle( Visual, cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);
+
+			 		}
 		}
 		num_frames +=1;
 		cvClearMemStorage( storage);
 	}
 	cvReleaseMemStorage( &storage );
-
+	if (Flat->PRadio>0){
+		 Flat->PRadio = medR;
+		 Flat->PCentroX = medX;
+		Flat->PCentroY = medY;
+	}
 	printf("\t\t-Plato localizado. Estableciendo parámetros :\n ");
 	printf("\t\t\t-Centro x : %d \n\t\t\t-Centro y %d \n\t\t\t-Radio: %d \n"
 			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
@@ -468,9 +497,22 @@ void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Ima
 
 void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
 
-	if ( Mask == NULL ) accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI , 0);
-	else accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Mask);
-
+	// mediana
+	if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP){
+		//no selectiva
+		if ( Param->MODEL_TYPE == MEDIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,NULL, DataROI , 0);
+		else{
+		//selectiva
+			accumulateBackground( tmp_frame, BGModel,NULL, DataROI ,Mask);
+		}
+	}
+	// gausiana simple
+	else if(Param->MODEL_TYPE == GAUSSIAN || Param->MODEL_TYPE == GAUSSIAN_S_UP){
+		if ( Param->MODEL_TYPE == GAUSSIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI , 0);
+		else{
+			accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Mask);
+		}
+	}
 }
 void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesf, double ALPHA,CvRect dataroi ){
 
@@ -524,7 +566,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 	}
 #ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
-	if(!Idesvf){
+	if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP){
+
 		// umbralizamos la diferencia
 		for (int y = ROI.y; y < ROI.y + ROI.height; y++){
 			uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
@@ -590,7 +633,9 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 #ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) gettimeofday(&ti, NULL);
 #endif
-	FGCleanup( fg, Idesvf,Param, ROI );
+	if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP)
+		FGCleanup( fg, NULL,Param, ROI );
+	else FGCleanup( fg, Idesvf,Param, ROI );
 #ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES){tiempoParcial = obtenerTiempo( ti , NULL);
 	printf("\t\tLimpieza de FG: %5.4g ms\n", tiempoParcial);}
@@ -724,6 +769,11 @@ void DefaultBGMParams( BGModelParams **Parameters){
       {
     	Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
     	Params->FLAT_FRAMES_TRAINING = 50;
+    	Params->MODEL_TYPE = MEDIAN_S_UP;
+		Params->Jumps = 0;
+		Params->initDelay = 0;
+
+
     	Params->FRAMES_TRAINING = 20;
     	Params->ALPHA = 0.5 ;
     	Params->MORFOLOGIA = 0;
@@ -740,6 +790,10 @@ void DefaultBGMParams( BGModelParams **Parameters){
         Params = *Parameters;
         Params->FLAT_FRAMES_TRAINING = 50;
 		Params->FRAMES_TRAINING = 20;
+		Params->MODEL_TYPE = MEDIAN_S_UP;
+		 Params->Jumps = 0;
+		 Params->initDelay = 0;
+
 		Params->ALPHA = 0.5 ;
 		Params->MORFOLOGIA = 0;
 		Params->CVCLOSE_ITR = 0;

@@ -108,10 +108,8 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 	gettimeofday(&ti, NULL);
 	printf("\t1)Actualización del modelo de fondo:\n");
 #endif
-	if(BGPrParams->MODEL_TYPE == MEDIAN || BGPrParams->MODEL_TYPE == MEDIAN_S_UP)
-		UpdateBGModel( Imagen,frameData->BGModel,NULL, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
-	else
-		UpdateBGModel( Imagen,frameData->BGModel,frameData->IDesvf, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
+
+	UpdateBGModel( Imagen,frameData->BGModel,frameData->IDesvf, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
 
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
@@ -120,10 +118,8 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 	printf("\t2)Resta de Fondo \n");
 #endif
 	/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-	if(BGPrParams->MODEL_TYPE == MEDIAN || BGPrParams->MODEL_TYPE == MEDIAN_S_UP)
-		BackgroundDifference( Imagen, frameData->BGModel,NULL, frameData->FG ,BGPrParams, BGModel->DataFROI);
-	else
-		BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGPrParams, BGModel->DataFROI);
+	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGPrParams, BGModel->DataFROI);
+
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo total : %5.4g ms\n", tiempoParcial);
@@ -152,16 +148,12 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 #endif
 	/////// ACTUALIZACIÓN SELECTIVA. Modelo de fondo estático.
 	//	Obtención de máscara de foreground
-	if(BGPrParams->MODEL_TYPE == GAUSSIAN_S_UP || BGPrParams->MODEL_TYPE == MEDIAN_S_UP)
-	{
-		dibujarBGFG( frameData->Flies,frameData->FG,1);
-		cvZero( FGMask);
-		cvAdd( BGModel->ImFMask, frameData->FG, FGMask);
-		if( BGPrParams->MODEL_TYPE == MEDIAN_S_UP)
-			UpdateBGModel( Imagen, lastBG, NULL, BGPrParams, BGModel->DataFROI, FGMask );
-		else
-			UpdateBGModel( Imagen, lastBG, lastIdes, BGPrParams, BGModel->DataFROI, FGMask );
-	}
+	dibujarBGFG( frameData->Flies,frameData->FG,1);
+	cvZero( FGMask);
+	cvDilate( frameData->FG, FGMask, 0, 2 );
+	cvAdd( BGModel->ImFMask, FGMask, FGMask);
+	UpdateBGModel( Imagen, lastBG, lastIdes, BGPrParams, BGModel->DataFROI, FGMask );
+
 	/////// GUARDAMOS las imagenes definitivas para la siguiente iteración
 	cvCopy( lastBG, frameData->BGModel);
 	cvCopy(  lastIdes, frameData->IDesvf);

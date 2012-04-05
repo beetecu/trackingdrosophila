@@ -22,8 +22,6 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
 	tlcde* framesBuf;
 	STFrame* frameDataOut = NULL; // frame de salida
-	STFrame* frameData = NULL; // frame t. penultimo frame del buffer.
-	STFrame* frameDataSig = NULL; // frame t + 1 (ultimo frame del buffer.
 
 #ifdef MEDIR_TIEMPOS
 	struct timeval ti,tif; // iniciamos la estructura
@@ -65,7 +63,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
 //	MotionTemplate( framesBuf,Identities );
-//	if( framesBuf->numeroDeElementos < 2  )	return 0;
+	if( framesBuf->numeroDeElementos < 2  )	return 0;
 
 #ifdef MEDIR_TIEMPOS
 	gettimeofday(&ti, NULL);
@@ -79,16 +77,16 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
 	printf("\t1)Asignación de identidades\n");
-	if( framesBuf->numeroDeElementos > 1  ){
+
 		asignarIdentidades( lsTracks,frameDataIn->Flies);
 //		asignarIdentidades2( lsTracks,frameDataIn->Flies);
-	}
+
 
 //	if( Matrix_Hungarian ){
 //		Matrix_Asignation=Hungaro(Matrix_Hungarian);
 //		frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
-//
-//
+
+
 //		cvReleaseMat(&Matrix_Hungarian);
 //	}
 //	cvZero(frameDataIn->ImMotion);
@@ -109,7 +107,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 	// Aplicar kalman
 	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
-	Kalman2( frameDataIn,frameDataSig, Identities, lsTracks);
+	Kalman2( frameDataIn , Identities, lsTracks);
 //	asignarIdentidades( lsTracks,frameDataIn->Flies );
 
 
@@ -124,12 +122,14 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
 #endif
 
-	///////   FASE DE CORRECCIÓN. HEURISTICAS  /////////
+	///////   FASE DE CORRECCIÓN. APLICACION DE HEURISTICAS  /////////
 	// esta etapa se encarga de hacer la asignación de identidad definitiva
-	// recibe información temporal de los últimos 51 frames ( Longitud_buffer)
+	// Se mantienen en memoria los últimos MAX_BUFFER_LENGHT/fps segundos de video
+	// recibe información temporal de los últimos MAX_BUFFER_LENGHT frames ( Longitud_buffer)
+	// y corrige y elimina tracks
 	// La posición de trabajo será la 0. Este frame será el de salida.
-	//
-	//Reasignamos idendidades.
+	// una vez procesado.
+	// Reasignamos idendidades.
 	// enlazamos objetos etiquetados como nuevos con los que estaban parados
 
 	// SI BUFFER LLENO
