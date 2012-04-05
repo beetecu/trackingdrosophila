@@ -253,10 +253,10 @@ STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* id
 		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
 		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
 //		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
-
-		enlazarFlies( flyAnterior, flyActual ) ;
 //		enlazarFlies( flyAnterior, flyActual,NULL) ;
-
+	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
+//		enlazarFlies( flyAnterior, flyActual,NULL) ;
+	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
 	}
 	// Caso de nueva etiqueta ( nuevo blob )
 	else if( numAnterior == 0 && numActual == 1){
@@ -427,6 +427,7 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 
 int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
+
 	CvMat* CoorReal;
 	STFly* FlyNext=NULL;
 	STTrack* Track=NULL;
@@ -438,7 +439,9 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 	int indCandidato; // posicion de la Fly con mayor porbabilidad.
 
 
-if(lsTraks->numeroDeElementos>0 && Flies->numeroDeElementos >0){
+	if( lsTraks->numeroDeElementos == 0  ) return 0;
+
+	else if(Flies->numeroDeElementos >0){
 
 		CvMat* Matrix_Hungarian = cvCreateMat(lsTraks->numeroDeElementos,Flies->numeroDeElementos,CV_32FC1); // Matriz de Pesos
 		cvZero(Matrix_Hungarian);
@@ -477,9 +480,9 @@ if(lsTraks->numeroDeElementos>0 && Flies->numeroDeElementos >0){
 					if(FlySiguiente && TrackActual){
 
 						TrackActual->Flysig=FlySiguiente;
-//						anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
-//						enlazarFlies(TrackActual->FlyActual,FlySiguiente);
-						FlySiguiente->etiqueta=TrackActual->id;
+						anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
+						enlazarFlies(TrackActual->FlyActual,FlySiguiente);
+//						FlySiguiente->etiqueta=TrackActual->FlyActual->etiqueta;
 					}
 
 					}
@@ -509,9 +512,7 @@ int enlazarFlies( STFly* flyAnterior, STFly* flyActual){
 	float phi;
 	float distancia;
 
-//	if( flyActual->etiqueta && ids ) {
-//		if(!dejarId(flyActual,ids)) return 0;
-//	}
+
 	flyAnterior->siguiente = (STFly*)flyActual;
 	flyActual->etiqueta = flyAnterior->etiqueta;
 	flyActual->Color = flyAnterior->Color;
@@ -534,6 +535,8 @@ int enlazarFlies( STFly* flyAnterior, STFly* flyActual){
 	else flyActual->direccion = phi;
 	flyActual->dstTotal = flyAnterior->dstTotal + distancia;
 	return 1;
+
+
 
 }
 

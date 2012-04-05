@@ -175,6 +175,10 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 					&fly->posicion, // centro elipse
 					&fly->orientacion ) ) // orientación en grados 0-360
 	{
+
+		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
+		iniciarLcde( fly->Tracks );
+
 		fly->etiqueta = 0; // Identificación del blob
 		fly->Color = cvScalar( 0,0,0,0); // Color para dibujar el blob
 		fly->FrameCount = 0;
