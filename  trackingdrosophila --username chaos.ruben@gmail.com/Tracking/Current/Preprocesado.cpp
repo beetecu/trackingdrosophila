@@ -73,7 +73,7 @@ int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 
 void InitialBGModelParams( BGModelParams* Params){
 
-	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 100;
+	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 500;
 	 else Params->FLAT_FRAMES_TRAINING = 0;
 	 Params->BG_Update = 5;
 	 Params->Jumps = 4;

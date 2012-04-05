@@ -105,7 +105,7 @@ void Validacion2(IplImage *Imagen,
 
 				if( SHOW_VALIDATION_DATA){
 						cvShowImage( "Foreground",FrameData->FG);
-						cvWaitKey(0);
+						//cvWaitKey(0);
 				}
 				// Comprobar si se ha conseguido dividir el blob y verificar si el resultado es optimo
 
@@ -114,7 +114,7 @@ void Validacion2(IplImage *Imagen,
 					RestaurarElMejor( FrameData->Flies,  FrameData->FG, MejorFly,  FlyDataRoi, i );
 					if( SHOW_VALIDATION_DATA){
 							cvShowImage( "Foreground",FrameData->FG);
-							cvWaitKey(0);
+							//cvWaitKey(0);
 					}
 					// liberar lista
 					liberarListaFlies( TempSeg );
@@ -253,21 +253,19 @@ void Validacion2(IplImage *Imagen,
 
 }//Fin de Validación
 
-tlcde* ValidarBLOB(IplImage *Imagen,
+tlcde* ValidarBLOB( tlcde* Flies,
+		int pos,
+		int numFlies,
 		STFrame* FrameData,
 		SHModel* SH,
-		CvRect Segroi,
-		IplImage* Mask){
+		ValParams* Params
+		){
 
 	//Inicializar estructura para almacenar los datos cada mosca
-
 	STFly *FlyData = NULL;
-	//Inicializar estructura para almacenar los datos cada mosca
-	BGModelParams* ValBGParams;
-	ValParams* Params;
+	BGModelParams* ValBGParams = NULL;
 
-	double Pxi; // La probabilidad del blob actual
-	bool Exceso;//Flag que indica si la Pxi minima no se alcanza por exceso o por defecto.
+	int Exceso;//Flag que indica si la Pxi minima no se alcanza por exceso o por defecto.
 	double Circul; // Para almacenar la circularidad del blob actual
 
 	double Besthres=0;// el mejor de los umbrales perteneciente a la mejor probabilidad
@@ -283,190 +281,132 @@ tlcde* ValidarBLOB(IplImage *Imagen,
 		iniciarBGModParams( &ValBGParams);
 	}
 
-	// almacenar una copia del BLOB para restaurar el blob en caso de que falle la validación
-	cvSetImageROI(Mask, Segroi);
-	cvSetImageROI(FrameData->FG, Segroi);
-	cvCopy( Mask, FrameData->FG);
-	cvResetImageROI(Mask);
-	cvResetImageROI(FrameData->FG);
-	cvCopy( FrameData->FG, Mask );
+	FlyData = (STFly*)obtener( pos, Flies );
+	CvRect FlyDataRoi= FlyData->Roi;
+	// Inicializar LOW_THRESHOLD y demas valores
+	setBGModParams( ValBGParams);
+	FlyData->bestTresh = ValBGParams->LOW_THRESHOLD;
 
-		// Inicializar LOW_THRESHOLD y demas valores
+	// calcular su circularidad
+	Circul = CalcCircul( FlyData );
 
-		Besthres=ValBGParams->LOW_THRESHOLD;
+	// Comprobar si existe Exceso o Defecto de area, en caso de Exceso la probabilidad del blob es muy pequeña
+	// y el blob puede corresponder a varios blobs que forman parte de una misma moscas o puede corresponder a
+	// un espurio.
+	Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
+	BestPxi  =	FlyData->Px;
+	STFly* MejorFly = FlyData;// = NULL;
 
-		CvRect FlyDataRoi= Segroi;
+	/* Incrementar paulatinamente el umbral de resta de fondo hasta
+	 * que haya fisión o bien desaparzca el blob sin fisionarse o bien
+	 * no se supere la pximin.
+	 * - Si hay fisión:
+	 * 		-si los blobs tienen una probabilidad mayor que la pximin fin segmentacion
+	 * 		-si alguno de ellos tiene una probabilidad menor a la pximin, restaurar original y aplicar EM
+	 * - Si no hay fisión: Si el blob desaparece antes de alcanzar la pximin o
+	 *  bien alcanza la pximin, restablecer el tamaño original del blob para aplicar EM
+	 *
+	 */
+	//Inicializar estructura para almacenar la lista de los blobs divididos.
+	tlcde* TempSeg=NULL;
 
-		// calcular su probabilidad
-		FlyData->Px = CalcProbFly( SH ,FlyData, Params);
-		BestPxi  =	FlyData->Px;
+	setBGModParams( ValBGParams);
+	// sustituir por un for con el número máximo de iteraciones.
+//	while( !FlyData->flag_seg && !FlyData->failSeg ){
+//		// primero probar con el umbral anterior. si el blob desaparece o no da un resutado satisfactorio
+//		// proceder desde el umbral predetermindado
+//
+//		// Incrementar umbral
+//		ValBGParams->LOW_THRESHOLD += 1;
+//
+//		// Restar fondo
+//		BackgroundDifference( FrameData->Frame, FrameData->BGModel, NULL ,FrameData->FG,ValBGParams, FlyDataRoi);
+//		//verMatrizIm(FrameData->FG, FlyDataRoi);
+//		// Segmentar
+//		TempSeg = segmentacion2(FrameData->Frame, FrameData->BGModel,FrameData->FG, FlyDataRoi, NULL);
+//
+//		if( SHOW_VALIDATION_DATA){
+//				cvShowImage( "Foreground",FrameData->FG);
+//				cvWaitKey(0);
+//		}
+//		// Comprobar si se ha conseguido dividir el blob y verificar si el resultado es optimo
+//
+//		// 1) No hay fisión. El blob desaparece antes de alcanzar la pximin. Restaurar blob y liberar lista.
+//		if(TempSeg->numeroDeElementos < 1 || TempSeg == NULL){
+//			dibujarBlob( FlyData, FrameData->FG );
+//
+//			if( SHOW_VALIDATION_DATA){
+//					cvShowImage( "Foreground",FrameData->FG);
+//					//cvWaitKey(0);
+//			}
+//			// liberar lista
+//			liberarListaFlies( TempSeg );
+//			if (TempSeg) free(TempSeg);
+//			TempSeg = NULL;
+//			// finalizamos.
+//			FlyData->failSeg = true;
+//		}
+//
+//		// 2) No hay fisión: Almacenar la probabilidad mas alta, así como el umbral correspondiente a esa probabilidad
+//		// y continuar incrementando el umbral en caso de no rebasar la pximin.
+//		else if(  TempSeg->numeroDeElementos == 1 ) {
+//
+//			FlyData=(STFly *)obtener(0, TempSeg);
+//			Exceso = CalcProbFly( SH , FlyData, Params);
+//			// no se rebasa la pximin continuar
+//			if (Exceso > -1 ){
+//				if(FlyData->Px > BestPxi ){
+//					MejorFly = (STFly*)borrarEl(0);
+//					BestPxi=MejorFly->Px;
+//					Besthres = ValBGParams->LOW_THRESHOLD;
+//				}
+//				free(TempSeg);
+//				TempSeg = NULL;
+//
+//			}
+//			// se ha rebasado la pxmin. Restaurar
+//			else {
+//				RestaurarElMejor( FrameData->Flies,  FrameData->FG, MejorFly,  FlyDataRoi, i );
+//				//Restaurar(FrameData->Flies, FrameData->FG, Mask, FlyDataRoi, i);
+//				liberarListaFlies( TempSeg );
+//				if( SHOW_VALIDATION_DATA){
+//						cvShowImage( "Foreground",FrameData->FG);
+//						cvWaitKey(0);
+//				}
+//
+//			}
+//		}
+//		// 3) Hay fisión
+//		else if ( TempSeg->numeroDeElementos > 1 ){
+//			// comprobar si las pxi son válidas. En caso de que todas lo sean eliminar de la lista el blob segmentado
+//			// y añadirlas a la lista al final.
+//			int exito = comprobarPxi( TempSeg, SH, Params);
+//			if (exito){
+//				borrarEl(i,FrameData->Flies); // se borra el elemento dividido
+//				for(int j = 0; j < TempSeg->numeroDeElementos; j++){ // se añaden los nuevos al final
+//					FlyData=(STFly *)obtener(j, TempSeg);
+//					anyadirAlFinal(FlyData, FrameData->Flies );
+//				}
+//				printf("\n Lista Flies tras FISION\n");
+//				if(SHOW_VALIDATION_DATA) mostrarFliesFrame( FrameData );
+//				i--; // decrementar i para no saltarnos un elemento de la lista
+//			}
+//			// Se ha rebasado la pximin en alguno de los blobs resultantes. Restauramos
+//			else{
+//				liberarListaFlies( TempSeg );
+//				Restaurar(FrameData->Flies, FrameData->FG, Mask, FlyDataRoi, i);
+//			}
+//		}
+//		free( TempSeg );
+//		TempSeg = NULL;
+//	}// Fin del While
 
-		// calcular su circularidad
-		Circul = CalcCircul( FlyData );
-
-		// Comprobar si existe Exceso o Defecto de area, en caso de Exceso la probabilidad del blob es muy pequeña
-		// y el blob puede corresponder a varios blobs que forman parte de una misma moscas o puede corresponder a
-		// un espurio.
-		Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
-		// comprobar si está dentro de los límites:
-		if( Exceso && FlyData->Px > Params->PxiMax) Exceso = 1; // exceso
-		else if( !Exceso && FlyData->Px < Params->PxiMin ) Exceso = -1; // defecto
-		else Exceso = 0; // dentro de los límites
-		//	Params->MaxLowTH = *ObtenerMaximo(Imagen, FrameData ,FlyData->Roi);
-
-		// En caso de EXCESO de Area
-		/* Incrementar paulatinamente el umbral de resta de fondo hasta
-		 * que haya fisión o bien desaparzca el blob sin fisionarse o bien
-		 * no se supere la pximin.
-		 * - Si hay fisión:
-		 * 		-si los blobs tienen una probabilidad mayor que la pximin fin segmentacion
-		 * 		-si alguno de ellos tiene una probabilidad menor a la pximin, restaurar original y aplicar EM
-		 * - Si no hay fisión: Si el blob desaparece antes de alcanzar la pximin o
-		 *  bien alcanza la pximin, restablecer el tamaño original del blob para aplicar EM
-		 *
-		 */
-		if( Exceso){
-			//Inicializar estructura para almacenar la lista de los blobs divididos.
-			tlcde* TempSeg=NULL;
-
-			setBGModParams( ValBGParams);
-			// sustituir por un for con el número máximo de iteraciones.
-			while( !FlyData->flag_seg && !FlyData->failSeg ){
+	if(TempSeg) free( TempSeg );
+	TempSeg = NULL;
 
 
-				// Incrementar umbral
-				ValBGParams->LOW_THRESHOLD += 1;
 
-				// Restar fondo
-				BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,ValBGParams, Segroi);
-
-				// Segmentar
-				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, Segroi, NULL);
-
-				// Comprobar si se ha conseguido dividir el blob y verificar si el resultado es optimo
-
-				// 1) No hay fisión. El blob desaparece antes de alcanzar la pximin. Restauramos el blob y pasamos al siguiente elemento.
-				if(TempSeg->numeroDeElementos < 1){
-					FlyData=(STFly *)obtener(0,TempSeg);
-					FlyData->failSeg = true;
-					// restaurar
-					cvSetImageROI(Mask, FlyDataRoi);
-					cvSetImageROI(FrameData->FG, FlyDataRoi);
-					cvCopy( Mask, FrameData->FG);
-					cvResetImageROI(Mask);
-					cvResetImageROI(FrameData->FG);
-					if( ValBGParams) free(ValBGParams);
-					return TempSeg;
-				}
-				// 2) No hay fisión: Almacenar la probabilidad mas alta, así como el umbral correspondiente a esa probabilidad
-				// y continuar incrementando el umbral en caso de no rebasar la pximin.
-				else if(  TempSeg->numeroDeElementos == 1 ) {
-					FlyData=(STFly *)obtener(0, TempSeg);
-					Exceso = CalcProbFly( SH , FlyData, Params );
-					if (!Exceso ){
-						if(FlyData->Px > Params->PxiMin) continue;
-
-						else { // no hay fisión y se ha rebasado la pxmin. Restaurar
-							FlyData=(STFly *)obtener(0,TempSeg);
-							FlyData->failSeg = true;
-							// restaurar
-							cvSetImageROI(Mask, FlyDataRoi);
-							cvSetImageROI(FrameData->FG, FlyDataRoi);
-							cvCopy( Mask, FrameData->FG);
-							cvResetImageROI(Mask);
-							cvResetImageROI(FrameData->FG);
-							if( ValBGParams) free(ValBGParams);
-							return TempSeg;
-
-						}
-					}
-					if(FlyData->Px > BestPxi ){
-						BestPxi=FlyData->Px;
-						Besthres=ValBGParams->LOW_THRESHOLD;
-					}
-				}
-				// 3) Hay fisión
-				else if ( TempSeg->numeroDeElementos > 1 ){
-					// comprobar si las pxi son válidas.
-					for(int j = 0; j < TempSeg->numeroDeElementos; j++){
-						// Calcular Pxi del/los blob/s resultante/s
-						FlyData=(STFly *)obtener(j, TempSeg);
-						Pxi = CalcProbFly( SH , FlyData, Params );
-						if (FlyData->Px < Params->PxiMin )
-							FlyData->flag_seg = true;
-						else break;
-					}
-					// si el último elemento es correcto, todos son correctos.
-					FlyData=(STFly *)obtener(TempSeg->numeroDeElementos-1, TempSeg);
-					if (FlyData->flag_seg){
-						if( ValBGParams) free(ValBGParams);
-						return TempSeg;
-					}
-					// Se ha rebasado la pximin en alguno de los blobs resultantes. Restauramos
-					else{
-						FlyData->failSeg = true;
-						cvSetImageROI(Mask, FlyDataRoi);
-						cvSetImageROI(FrameData->FG, FlyDataRoi);
-						cvCopy( Mask, FrameData->FG);
-						cvResetImageROI(Mask);
-						cvResetImageROI(FrameData->FG);
-						if( ValBGParams) free(ValBGParams);
-						return TempSeg;
-					}
-
-				}
-
-			}// Fin del While
-
-			if(ValBGParams) free( ValBGParams);
-
-		} //Fin Exceso
-
-		/* En el caso de DEFECTO disminuir el umbral, hasta que la probabilidad del blob Pxi sea inferior
-		 * al Umbral maximo y si este no ha desaparecido al disminuir el umbral, validar el blob como
-		 * mosca y mantener su posición dentro de la cola, en el caso de que el blob desaparezca durante
-		 * la disminución del umbral o antes de que el umbral alcance el valor de cero validar como NO
-		 * mosca y poner el failSeg a true para eliminar el blob de la cola.
-		 */
-
-		else if ( Exceso < 0 ){
-
-			tlcde* TempSeg=NULL;
-			setBGModParams( ValBGParams);
-
-			for( int j = 0;
-					ValBGParams->LOW_THRESHOLD == Params->MinLowTH, j< Params->MaxDecLTHIters;
-					j++, ValBGParams->LOW_THRESHOLD -=1 ){
-			//while(Exceso < 0 && ValBGParams->LOW_THRESHOLD > Params->MinLowTH && Params->MaxDecLTHIters){
-
-				// Restar fondo
-				BackgroundDifference( Imagen, FrameData->BGModel,FrameData->IDesvf,FrameData->FG,ValBGParams, Segroi);
-
-				// Segmentar
-				TempSeg = segmentacion2(Imagen, FrameData->BGModel,FrameData->FG, Segroi, NULL);
-				// Calcular la pxi
-				Exceso = CalcProbFly( SH ,FlyData, Params); // Calcular la px de la mosca.
-				// comprobar si está dentro de los límites:
-				if( Exceso && FlyData->Px > Params->PxiMax) Exceso = 1; // exceso
-				else if( !Exceso && FlyData->Px < Params->PxiMin ) Exceso = -1; // defecto
-				else Exceso = 0; // dentro de los límites
-				// si la probabilidad mejora actualizamos la lista con el blob
-				if(Pxi > BestPxi ){
-					FlyData = (STFly *)obtener(0, TempSeg);
-					BestPxi=Pxi;
-					Besthres=ValBGParams->LOW_THRESHOLD;
-				}
-				// nos quedamos con el blob que dio la mejor probabilidad. Lo insertamos en la lista en la misma posición.
-				else {
-					if( ValBGParams) free(ValBGParams);
-					return TempSeg;
-				}
-
-			}
-			if( ValBGParams) free(ValBGParams);
-		}// FIN DEFECTO
 }//Fin de Validación
-
 
 // Inicializar los Parametros para la validación
 
@@ -512,6 +452,9 @@ void iniciarBGModParams( BGModelParams** Parameters){
 	Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
 	if( *Parameters == NULL )
 	{
+		Params->MODEL_TYPE = MEDIAN_S_UP;
+		 Params->Jumps = 0;
+		 Params->initDelay = 0;
 		Params->FRAMES_TRAINING = 0;
 		Params->ALPHA = 0 ;
 		Params->MORFOLOGIA = 0;
@@ -528,6 +471,9 @@ void iniciarBGModParams( BGModelParams** Parameters){
 
 void setBGModParams( BGModelParams* Params){
 
+		Params->MODEL_TYPE = MEDIAN_S_UP;
+		Params->Jumps = 0;
+		Params->initDelay = 0;
 		Params->FRAMES_TRAINING = 0;
 		Params->ALPHA = 0 ;
 		Params->MORFOLOGIA = 0;

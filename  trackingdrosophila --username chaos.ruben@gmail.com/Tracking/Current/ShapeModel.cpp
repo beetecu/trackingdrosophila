@@ -13,8 +13,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 	int total_blobs=0;
 	int k=0;
 	float Dif=0;
-	struct timeval ti,tif;
-	float tiempoParcial;
+
 	float areas[SM_FRAMES_TRAINING*15]; // almacena las areas de todos los blobs encontrados
 
 	IplImage* frame = NULL;
@@ -73,12 +72,9 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		// Actualización del fondo
 		// establecer parametros
 		if( BGParams == NULL ) DefaultBGMParams( &BGParams);
-		UpdateBGModel( ImGray,frameData->BGModel,NULL, BGParams, BGModel->DataFROI, BGModel->ImFMask );
-//		UpdateBGModel( ImGray,frameData->BGModel,frameData->IDesvf, BGParams, BGModel->DataFROI, BGModel->ImFMask );
-
+		UpdateBGModel( ImGray,frameData->BGModel,frameData->IDesvf, BGParams, BGModel->DataFROI, BGModel->ImFMask );
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-		BackgroundDifference( ImGray, frameData->BGModel,NULL, frameData->FG ,BGParams, BGModel->DataFROI);
-//		BackgroundDifference( ImGray, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGParams, BGModel->DataFROI);
+		BackgroundDifference( ImGray, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGParams, BGModel->DataFROI);
 
 		// guardamos las imagenes para iniciar el siguiente frame
 		cvCopy( frameData->BGModel, lastBG);
