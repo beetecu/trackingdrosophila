@@ -161,7 +161,7 @@ void Kalman2(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 	// si hay mosca/s sin asignar a un track/s (id = 0), se crea un nuevo track para esa mosca
 	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
 		Fly = (STFly*)obtener(i, Flies );
-		if( Fly->etiqueta == 0){
+		if( Fly->etiqueta == 0 && Fly->Tracks->numeroDeElementos == 0){
 			Track = initTrack( Fly, lsIds , 1 );
 			anyadirAlFinal( Track , lsTracks );
 		}

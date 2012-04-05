@@ -485,7 +485,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 //						FlySiguiente->etiqueta=TrackActual->FlyActual->etiqueta;
 					}
 
-					}
+			}
 
 				v++;
 			}
