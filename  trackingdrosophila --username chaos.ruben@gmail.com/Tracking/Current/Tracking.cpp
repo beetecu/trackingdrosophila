@@ -106,7 +106,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 	// Aplicar kalman
-	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
+//	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
 	Kalman2( frameDataIn , Identities, lsTracks);
 //	asignarIdentidades( lsTracks,frameDataIn->Flies );
 
