@@ -314,7 +314,7 @@ tlcde* ValidarBLOB( tlcde* Flies,
 	// sustituir por un for con el número máximo de iteraciones.
 //	while( !FlyData->flag_seg && !FlyData->failSeg ){
 //		// primero probar con el umbral anterior. si el blob desaparece o no da un resutado satisfactorio
-//		// proceder desde el umbral predetermindado
+//		// proceder desde el umbral predeterminadado
 //
 //		// Incrementar umbral
 //		ValBGParams->LOW_THRESHOLD += 1;
@@ -417,11 +417,11 @@ void iniciarValParams( ValParams** Parameters, SHModel* SH){
 	if( *Parameters == NULL )
 	{
 		Params->UmbralCirc = 0;
-		Params->Umbral_H = 5;		// Establece el tamaño máximo del blob válido en 3 desviaciones típicas de la media
+		Params->Umbral_H = 5;		// Establece el tamaño máximo del blob válido en 5 desviaciones típicas de la media
 		Params->PxiMax= CalcPxMax( SH, Params->Umbral_H );			 // establece la máxima probabilidad permitida para defecto.
-		Params->Umbral_L = 1.5;			 // Establece el tamaño mínimo del blob válido en 3 desviaciones típicas de la media
+		Params->Umbral_L = 1.5;			 // Establece el tamaño mínimo del blob válido en 1.5 desviaciones típicas de la media
 		Params->PxiMin = CalcPxMin( SH, Params->Umbral_L );			 // establece la mínima probabilidad permitida para exceso.
-		Params->MaxDecLTHIters = 15; // número máximo de veces que se podrá decrementar el umbral bajo. Ojo:el valor
+		Params->MaxDecLTHIters = 15; // número máximo de veces que se podrá decrementar el umbral bajo.
 		Params->MaxIncLTHIters= 20;  // número máximo de veces que se podrá incrementar el umbral bajo
 		Params->MaxLowTH = 20; 		 // límite superior para el umbral bajo ( exceso )
 		Params->MinLowTH = 1;		 // límite inferior para el umbral bajo ( defecto )

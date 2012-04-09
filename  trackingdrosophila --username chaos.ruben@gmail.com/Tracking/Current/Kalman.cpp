@@ -28,107 +28,7 @@ CvMat* H ;
 //Imagenes
 IplImage* ImKalman = NULL;
 
-CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks) {
-
-	tlcde* Flies;
-	tlcde* Flies_sig;
-	STTrack* Track;
-	STFly* Fly = NULL;
-
-	// cargar datos del frame
-	Flies=frameData->Flies;
-	Flies_sig = frameData_sig->Flies;
-
-	// Inicializar imagenes y parámetros
-	if( !ImKalman ){
-		ImKalman = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
-		cvZero(ImKalman);
-		CoordReal = cvCreateMat(2,1,CV_32FC1);
-	}
-	cvZero(frameData->ImKalman);
-	////////////////////// CORRECCION ////////////////////////
-
-
-	if(lsTracks->numeroDeElementos>0){
-		for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
-			// para cada track, buscar su id en el frame de trabajo //
-			Track = (STTrack*)obtener(i, lsTracks);
-			int j ;
-			if( Flies->numeroDeElementos>0){
-				for(j = 0; j< Flies->numeroDeElementos ;j++ ){
-					Fly = (STFly*)obtener(j, frameData->Flies);
-					// si se encuentra la id (caso general)
-					if(Fly->etiqueta == Track->id){
-						// Añadimos la nueva medida
-						generarMedida( Track, Fly );
-					    // actualizamos kalman
-						cvKalmanCorrect( Track->kalman, Track->z_k);
-						// actualizamos parámetros
-						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
-						break;
-					}
-					// llegamos al último elemento y no se encuentra la id.
-					if( (j == Flies->numeroDeElementos)){
-
-						//si se asigna a una id0 junto con otros tracks ( caso normal de solapamiento de trayectorias):
-						//generarMedida2( Track, Fly );
-						//cvKalmanCorrect( Track->kalman, Track->z_k);
-						//Track->x_k_Pos = Track->kalman->state_post;
-						//Track->P_k_Pos = Track->kalman->error_cov_post;
-
-						// si no se encuentra su id el frame y no hay ninguna asignación válida corregimos con la predicción anterior de kalman.
-						//podría tratarse de un trackdead. Kalman toma el control ( Se genera la nueva medida a partir de las predicciones).
-//						kalmanControl( Track );
-//						cvKalmanCorrect( Track->kalman, Track->z_k);
-//						Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
-					}
-				}
-			}
-			// si no hay elementos en el frame ( frame erróneo o perdido) , corregimos con la predicción anterior de kalman.
-			else{
-				kalmanControl( Track );
-				cvKalmanCorrect( Track->kalman, Track->z_k);
-				Fly->dir_filtered =Track->x_k_Pos->data.fl[4] ;
-			}
-		}
-	}
-
-	////// Comprobar si es necesario crear nuevos tracks ( nuevas ids ). En caso afirmativo
-	// crearlos e inicializar filtro de kalman para cada nuevo track ( blob )
-	initNewsTracks( frameData, lsTracks );
-
-	////////////////////// PREDICCION ////////////////////////
-	//Recorremos cada track y hacemos la predicción para el siguiente frame
-	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
-		Track = (STTrack*)obtener(i, lsTracks);
-		if( Track->x_k_Pre != NULL ){
-			cvCopy(Track->x_k_Pre,Track->x_k_Pre_);
-			cvCopy(Track->P_k_Pre,Track->P_k_Pre_);
-//			memcpy( Track->x_k_Pre_->data.fl, Track->x_k_Pre->data.fl, sizeof(Track->x_k_Pre));
-//			memcpy( Track->P_k_Pre_->data.fl, Track->P_k_Pre->data.fl, sizeof(Track->P_k_Pre));
-		}
-
-		Track->x_k_Pre = cvKalmanPredict( Track->kalman, 0);
-
-	}
-
-	// ESTABLECER LA MATRIZ DE PESOS CON LA PROBABILIDAD ENTRE LA PREDICCION Para T+1 Y EL VALOR OBSERVADO EN T + 1
-	 CvMat* Matrix_Hungarian = NULL;
-
-	if(lsTracks->numeroDeElementos>0 && Flies_sig->numeroDeElementos >0){
-	CvMat* Matrix_Hungarian = cvCreateMat(lsTracks->numeroDeElementos,Flies_sig->numeroDeElementos,CV_32FC1);
-	cvZero(Matrix_Hungarian);
-	}
-
-
-	///////////////////// VISUALIZAR RESULTADOS ////////////////
-	visualizarKalman( frameData, lsTracks );
-
-	return Matrix_Hungarian;
-
-}// Fin de Kalman
-
-void Kalman2(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
+void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 
 	tlcde* Flies;
 	STTrack* Track;
@@ -155,6 +55,7 @@ void Kalman2(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 		cvKalmanCorrect( Track->kalman, Track->z_k);
 		// actualizamos parámetros
 		Track->FlyActual->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+
 	}
 
 	// ANYADIR NUEVOS TRACKS, si es necesario.
@@ -314,8 +215,7 @@ void generarZ_k( STTrack* Track){
 	}
 	//Caso 1: caso normal. Se ha encontrado una asignación para un track
 	// La incertidumbre en la medida será baja.
-//	else if( Track->Flysig->Tracks->numeroDeElementos == 1 ){
-	else if( Track->Flysig){
+	else if( Track->Flysig->Tracks->numeroDeElementos == 1 ){
 		generarMedida( Track, Track->Flysig );
 	}
 	//Caso2 : hay varios tracks que apuntan al mismo blob.Este estará formado por dos o más moscas. Caso general de
@@ -388,12 +288,16 @@ void generarMedida2( STTrack* Track, STFly* Fly  ){
 	phiXk = Track->x_k_Pre->data.fl[4];
 	R_phiZk = 0;
 
+	R_x = Fly->Roi.width/2;
+	R_y = Fly->Roi.height/2;
+	R_Vx = 2*R_x;
+	R_Vy = 2*R_y;
 	generarPhiZk( phiXk , Fly->Vx, Fly->Vy , &Fly->direccion, &R_phiZk);
 	// Medida
 	const float Medida[] = { Fly->posicion.x, Fly->posicion.y, Fly->Vx, Fly->Vy, Fly->direccion};
 	memcpy( Track->Medida->data.fl, Medida, sizeof(Medida)); // Medida;
 	// incertidumbre en la medida
-	float R[] =  {5,0,0,0,0, 0,5,0,0,0, 0,0,5,0,0, 0,0,0,5,0, 0,0,0,0,180};// covarianza
+	float R[] =  { R_x,0,0,0,0, 0,R_y,0,0,0, 0,0,R_Vx,0,0, 0,0,0,R_Vy,0, 0,0,0,0,10000};//covarianza del ruido
 	float V[] =  {0,0,0,0,0};//media
 	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // V->N(0,R);
 	// y en la matriz para aplicarselo a la medida

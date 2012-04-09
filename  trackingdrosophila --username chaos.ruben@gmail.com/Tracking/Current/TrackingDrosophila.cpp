@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
 		printf("\t\t\tFRAME %0.f ",NumFrame);
 
 		//////////  PROCESAR  ////////////
-		FrameDataIn = Procesado2(frame, BGModel, Shape, valParams, BGPrParams );
+		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR  ////////////
 		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn );
