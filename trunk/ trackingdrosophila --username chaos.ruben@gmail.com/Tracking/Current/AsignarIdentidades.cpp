@@ -428,7 +428,7 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 
-	CvMat* CoorReal;
+	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);;
 	STFly* FlyNext=NULL;
 	STTrack* Track=NULL;
 	CvMat* Matrix_Asignation= NULL;
@@ -436,6 +436,8 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 	STFly* FlySiguiente=NULL;
 	double Hungarian_Matrix [lsTraks->numeroDeElementos][Flies->numeroDeElementos];
 	int v=0;
+	int g=0;
+	int track_row=0;
 	int indCandidato; // posicion de la Fly con mayor porbabilidad.
 
 
@@ -450,6 +452,8 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 				for(int d=0;d < lsTraks->numeroDeElementos;d++){
 
+					int id=0;
+
 					Track=(STTrack*)obtener(d,lsTraks);
 
 					for(int f=0;f < Flies->numeroDeElementos;f++){
@@ -462,15 +466,32 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 							double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoorReal);
 							Matrix_Hungarian->data.fl[p] = Peso;
 							Hungarian_Matrix[d][f]=Peso;
+							if(Matrix_Hungarian->data.fl[p]!=0) id=1;
 							p++;
-						}
+
+					}
+
+					if(id==0) track_row=d;
+					printf("\n TRACK ROW %d",track_row);
 				}
+
 
 	Matrix_Asignation=Hungaro(Matrix_Hungarian);
 
+	printf("\n");
+	for(int l=0;l < Matrix_Asignation->rows;l++){
+		printf("\n");
+		for(int m=0; m< Matrix_Asignation->cols;m++){
+		if(l==track_row) Matrix_Asignation->data.fl[g]=0;
+		printf("\t %f",Matrix_Asignation->data.fl[g]);
+		g++;
+		}
+	}
+
 	for(int i=0; i < Matrix_Asignation->rows;i++){
 			for(int j=0;j < Matrix_Asignation->cols;j++){
-				if(Matrix_Asignation->data.fl[v]==1){
+
+					if(Matrix_Asignation->data.fl[v]==1){
 					indCandidato=j;
 
 					TrackActual=(STTrack*)obtener(i,lsTraks);
@@ -485,13 +506,15 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 //						FlySiguiente->etiqueta=TrackActual->FlyActual->etiqueta;
 					}
 
-			}
+
+					}
 
 				v++;
 			}
-		}
 
-	}
+			}
+
+		}
 
 	return 0;
 
@@ -619,7 +642,7 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
 
 	ProbKalman = 100*ProbKalman;
 
-	if (ProbKalman < 1) ProbKalman = 1;
+	if (ProbKalman < 70) ProbKalman = 0;
 
 	return ProbKalman;
 
