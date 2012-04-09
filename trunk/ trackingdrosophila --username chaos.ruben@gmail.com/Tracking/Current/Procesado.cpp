@@ -49,71 +49,66 @@ IplImage *lastIdes = NULL;
  ********************************************************************/
 
 
-STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValParams* valParams, BGModelParams *BGPrParams ){
+STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValParams* valParams, BGModelParams *BGPrParams ){
 
 	extern double NumFrame;
 	struct timeval ti, tif; // iniciamos la estructura
 	float tiempoParcial;
+	static int update_count = 0;
 	// otros parámetros
 	int fr = 0;
-	int BGUpdate = 1;
-	int UpdateCount = 0;
+
 
 	STFrame* frameData = NULL;
 	tlcde* OldFGFlies = NULL;
 	tlcde* FGFlies = NULL;
 
-	printf("\n1)Procesado:\n");
-	printf("\nIniciando Procesado:\n");
+
+
 #ifdef	MEDIR_TIEMPOS
 	gettimeofday(&tif, NULL);
+	printf("\n1)Procesado:\n");
 	gettimeofday(&ti, NULL);
+	printf("\t0)Preprocesado \n");
 #endif
 	AllocateDataProcess( frame );
-
 	ImPreProcess( frame, Imagen, BGModel->ImFMask, 0, BGModel->DataFROI);
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
-	printf("\t0)Preprocesado : %5.4g ms\n", tiempoParcial);
+	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 #endif
-	static bool first = true;
-
-	// Iniciar estructura para datos del nuevo frame
-	frameData = InitNewFrameData( frame );
-
+	// Cargar datos iniciales y establecer parametros
 	// Cargamos datos
-	if( first ) { //en la primera iteración iniciamos el modelo dinamico al estático
-		cvCopy(  BGModel->Imed,frameData->BGModel);
-		cvCopy(BGModel->IDesvf,frameData->IDesvf);
-		cvCopy(  BGModel->Imed,lastBG);
-		cvCopy(BGModel->IDesvf,lastIdes);
-		first = false;
+	if( !frameData ) { //en la primera iteración iniciamos el modelo dinámico al estático
+		cvCopy( BGModel->Imed,lastBG);
+		cvCopy( BGModel->IDesvf,lastIdes);
 	}
-	else{	// cargamos los últimos parámetros del fondo.
-		cvCopy( lastBG, frameData->BGModel);
-		cvCopy( lastIdes, frameData->IDesvf);
-	}
-	// copiamos el frame en la estructura
-	cvCopy( frame,frameData->Frame);
-//	obtener la mascara del FG y la lista con los datos de sus blobs.
-
-	//// BACKGROUND UPDATE
-	// establecer parametros
 	if( !BGPrParams) {
 		DefaultBGMParams( &BGPrParams );
 		putBGModelParams( BGPrParams );
 	}
+	if(!valParams) iniciarValParams( &valParams, Shape);
+
+	// Iniciar estructura para datos del nuevo frame
+	frameData = InitNewFrameData( frame );
+	// cargamos las últimas imágenes del frame y del fondo.
+	cvCopy( lastBG, frameData->BGModel);
+	cvCopy( lastIdes, frameData->IDesvf);
+	cvCopy( frame,frameData->Frame);
+
+	//// BACKGROUND UPDATE
+	//	obtener la mascara del FG y la lista con los datos de sus blobs.
 	// Actualización de fondo modelo dinámico
 #ifdef	MEDIR_TIEMPOS
 	gettimeofday(&ti, NULL);
 	printf("\t1)Actualización del modelo de fondo:\n");
 #endif
-
-	UpdateBGModel( Imagen,frameData->BGModel,frameData->IDesvf, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
+	if( update_count == INTERVAL_BG_UPDATE - 1 )
+		UpdateBGModel( Imagen,frameData->BGModel,frameData->IDesvf, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
 
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
-	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
+	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 	gettimeofday(&ti, NULL);
 	printf("\t2)Resta de Fondo \n");
 #endif
@@ -122,47 +117,55 @@ STFrame* Procesado2( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, Val
 
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
-	printf("\t\t-Tiempo total : %5.4g ms\n", tiempoParcial);
+	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 	gettimeofday(&ti, NULL);
+	printf("\t3)Segmentación:\n");
 #endif
 	//// SEGMENTACIÓN
-	printf("\t3)Segmentación:\n");
+
 	frameData->Flies = segmentacion2(Imagen, frameData->BGModel,frameData->FG, BGModel->DataFROI, NULL);
+	dibujarBGFG( frameData->Flies,frameData->FG,1);
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
-	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
-#endif
-	dibujarBGFG( frameData->Flies,frameData->FG,1);
-
-#ifdef	MEDIR_TIEMPOS
+	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 	gettimeofday(&ti, NULL);
+	printf("\t4)Validación de blobs\n", tiempoParcial);
+
 #endif
+
 	/////// VALIDACIÓN
-	//establecer parámetros
-	if(!valParams) iniciarValParams( &valParams, Shape);
 	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
-	printf("\t4)Validación de blobs %5.4g ms\n", tiempoParcial);
+	printf("\t\t-Tiempo %5.4g ms\n", tiempoParcial);
 	gettimeofday(&ti, NULL);
 #endif
 	/////// ACTUALIZACIÓN SELECTIVA. Modelo de fondo estático.
 	//	Obtención de máscara de foreground
-	dibujarBGFG( frameData->Flies,frameData->FG,1);
-	cvZero( FGMask);
-	cvDilate( frameData->FG, FGMask, 0, 2 );
-	cvAdd( BGModel->ImFMask, FGMask, FGMask);
-	UpdateBGModel( Imagen, lastBG, lastIdes, BGPrParams, BGModel->DataFROI, FGMask );
-
+	if( update_count == INTERVAL_BG_UPDATE - 1 ){
+		cvZero( FGMask);
+		cvDilate( frameData->FG, FGMask, 0, 2 );
+		cvAdd( BGModel->ImFMask, FGMask, FGMask);
+		UpdateBGModel( Imagen, lastBG, lastIdes, BGPrParams, BGModel->DataFROI, FGMask );
+		cvCopy( lastBG, frameData->BGModel);
+		cvCopy(  lastIdes, frameData->IDesvf);
+		update_count = -1;
+	}
+	else{
+		cvCopy( frameData->BGModel, lastBG );
+		cvCopy( frameData->IDesvf, lastIdes);
+	}
 	/////// GUARDAMOS las imagenes definitivas para la siguiente iteración
-	cvCopy( lastBG, frameData->BGModel);
-	cvCopy(  lastIdes, frameData->IDesvf);
+
+
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t5)Actualización selectiva del Modelo de fondo: %5.4g ms\n", tiempoParcial);
 	tiempoParcial = obtenerTiempo( tif , NULL);
 	printf("Procesado correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 #endif
+	update_count++;
+
 	return frameData;
 }
 

@@ -39,9 +39,7 @@ typedef struct{
 
 }STTrack;
 
-CvMat* Kalman(STFrame* frameData,STFrame* frameData_sig,tlcde* lsIds,tlcde* lsTracks);
-
-void Kalman2(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks);
+void Kalman(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks);
 
 void initNewsTracks( STFrame* frameData, tlcde* lsTracks );
 

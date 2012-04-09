@@ -62,11 +62,13 @@ CvMat* Hungaro(CvMat* Matrix){
 
 	int columnas = hungarian_init(&q, Matrix, Matrix->rows, Matrix->cols,HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
+	if( SHOW_MT_DATA ){
 	hungarian_print_matrix(q.cost,q.num_rows ,q.num_cols );
-
+	}
 //	hungarian_print_matrix(q.assignment,q.num_rows ,q.num_cols );
 
 	hungarian_solve(&q);
+
 
 	hungarian_print_status(&q);
 

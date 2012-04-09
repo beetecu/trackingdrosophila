@@ -765,7 +765,9 @@ void liberarListaFlies(tlcde *lista)
   flydata = (STFly *)borrar(lista);
   while (flydata)
   {
+	if (flydata->Tracks ) free(flydata->Tracks);
     free(flydata); // borrar el área de datos del elemento eliminado
+
     flydata = NULL;
     flydata = (STFly *)borrar(lista);
   }

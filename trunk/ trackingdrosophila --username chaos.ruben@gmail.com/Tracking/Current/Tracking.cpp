@@ -15,8 +15,6 @@
 
 tlcde* Identities = NULL;
 tlcde* lsTracks = NULL;
-CvMat* Matrix_Hungarian = NULL;
-CvMat* Matrix_Asignation= NULL;
 
 STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 
@@ -27,8 +25,11 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	struct timeval ti,tif; // iniciamos la estructura
 	float tiempoParcial;
 	gettimeofday(&tif, NULL);
-#endif
 	printf("\n2)Tracking:\n");
+	gettimeofday(&ti, NULL);
+	printf("\t1)Asignación de identidades\n");
+#endif
+
 
 	/////////////// Inicializar /////////////////
 	framesBuf = *framesBuff;
@@ -57,17 +58,9 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 		iniciarLcde( lsTracks );
 	}
 
-	//Imagenes
-//	AllocateTrackImages( frameDataIn->FG );
-
 	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
 //	MotionTemplate( framesBuf,Identities );
-	if( framesBuf->numeroDeElementos < 2  )	return 0;
-
-#ifdef MEDIR_TIEMPOS
-	gettimeofday(&ti, NULL);
-#endif
 
 	////////////// ASIGNACIÓN DE IDENTIDADES ///////////
 
@@ -76,50 +69,24 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	// resolver las asociaciones usando las predicciones de kalman mediante el algoritmo Hungaro
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
-	printf("\t1)Asignación de identidades\n");
 
-		asignarIdentidades( lsTracks,frameDataIn->Flies);
-//		asignarIdentidades2( lsTracks,frameDataIn->Flies);
-
-
-//	if( Matrix_Hungarian ){
-//		Matrix_Asignation=Hungaro(Matrix_Hungarian);
-//		frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
-
-
-//		cvReleaseMat(&Matrix_Hungarian);
-//	}
-//	cvZero(frameDataIn->ImMotion);
-
+	asignarIdentidades( lsTracks,frameDataIn->Flies);
 
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
-	printf("\t\t-Tiempo total: %5.4g ms\n", tiempoParcial);
-#endif
-
-
-
-#ifdef MEDIR_TIEMPOS
+	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 	gettimeofday(&ti, NULL);
+	printf("\t2)Filtro de Kalman\n");
 #endif
 
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
-	// Aplicar kalman
-//	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
-	Kalman2( frameDataIn , Identities, lsTracks);
-//	asignarIdentidades( lsTracks,frameDataIn->Flies );
 
-
-	// cargar datos del frame
-//	frameData = ( STFrame* ) obtener(framesBuf->numeroDeElementos-2, framesBuf);
-//	frameDataSig = ( STFrame* ) obtener(framesBuf->numeroDeElementos-1, framesBuf);
-//	Matrix_Hungarian = Kalman(frameData,frameDataSig,Identities, lsTracks ); // Nos devuelve la matriz de pesos
-
+	Kalman( frameDataIn , Identities, lsTracks);
 
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
-	printf("\t\t- Filtrado correcto.Tiempo total: %5.4g ms\n", tiempoParcial);
+	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 #endif
 
 	///////   FASE DE CORRECCIÓN. APLICACION DE HEURISTICAS  /////////
@@ -145,7 +112,6 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 		tiempoParcial = obtenerTiempo( tif , NULL);
 		printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 #endif
-
 		return frameDataOut;
 	}
 	else {
@@ -158,6 +124,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 }
 
 void ReleaseDataTrack( tlcde* FramesBuf ){
+
 	if(Identities){
 		liberarIdentidades( Identities );
 		free( Identities) ;
@@ -166,14 +133,8 @@ void ReleaseDataTrack( tlcde* FramesBuf ){
 		liberarBuffer( FramesBuf );
 		free( FramesBuf);
 	}
-//	cvReleaseImage( &ImOpFlowX);
-//	cvReleaseImage( &ImOpFlowY);
-//	cvReleaseImage( &ImagenA);
-//	cvReleaseImage( &ImagenB);
-//	releaseMotionTemplate();
 	DeallocateKalman( lsTracks );
 	free(lsTracks);
-	if(Matrix_Hungarian) cvReleaseMat(&Matrix_Hungarian);
 
 }
 
