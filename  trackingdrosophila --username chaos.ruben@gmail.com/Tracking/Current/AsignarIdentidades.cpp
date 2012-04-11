@@ -428,16 +428,18 @@ void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
 int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 
-	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);;
-	STFly* FlyNext=NULL;
-	STTrack* Track=NULL;
+	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);
 	CvMat* Matrix_Asignation= NULL;
+
+	STTrack* Track=NULL;
 	STTrack* TrackActual=NULL;
+
+	STFly* FlyNext=NULL;
 	STFly* FlySiguiente=NULL;
+
 	double Hungarian_Matrix [lsTraks->numeroDeElementos][Flies->numeroDeElementos];
 	int v=0;
 	int g=0;
-	int track_row=0;
 	int indCandidato; // posicion de la Fly con mayor porbabilidad.
 
 
@@ -471,22 +473,11 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 					}
 
-					if(id==0) track_row=d;
-					printf("\n TRACK ROW %d",track_row);
 				}
 
 
 	Matrix_Asignation=Hungaro(Matrix_Hungarian);
 
-	printf("\n");
-	for(int l=0;l < Matrix_Asignation->rows;l++){
-		printf("\n");
-		for(int m=0; m< Matrix_Asignation->cols;m++){
-		if(l==track_row) Matrix_Asignation->data.fl[g]=0;
-		printf("\t %f",Matrix_Asignation->data.fl[g]);
-		g++;
-		}
-	}
 
 	for(int i=0; i < Matrix_Asignation->rows;i++){
 			for(int j=0;j < Matrix_Asignation->cols;j++){
@@ -503,7 +494,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 						TrackActual->Flysig=FlySiguiente;
 						anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
 						enlazarFlies(TrackActual->FlyActual,FlySiguiente);
-//						FlySiguiente->etiqueta=TrackActual->FlyActual->etiqueta;
+
 					}
 
 
@@ -511,6 +502,8 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 				v++;
 			}
+
+
 
 			}
 
@@ -642,7 +635,7 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
 
 	ProbKalman = 100*ProbKalman;
 
-	if (ProbKalman < 70) ProbKalman = 0;
+	if (ProbKalman < 1) ProbKalman = 0;
 
 	return ProbKalman;
 
