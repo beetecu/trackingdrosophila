@@ -117,7 +117,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	else {
 #ifdef MEDIR_TIEMPOS
 		tiempoParcial = obtenerTiempo( tif , NULL);
-		printf("Llenando buffer.Tiempo total %5.4g ms\n", tiempoParcial);
+		printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
 #endif
 		return 0;
 	}

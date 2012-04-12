@@ -608,7 +608,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 13; j++){
+	for(int j = 0; j < 12; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -647,23 +647,19 @@ void mostrarListaFlies(int pos,tlcde *lista)
 				if (i == 0) printf( "\nArea\t");
 				printf( "\t%0.1f",flydata->areaElipse);
 			}
-			if( j == 8 ){
-				if (i == 0) printf( "\nEstado\t");
-				printf( "\t%d",flydata->Estado);
-			}
-			if( j == 9 ){
-				if (i == 0) printf( "\nFrameCount");
-				printf( "\t%d",flydata->FrameCount);
-			}
-			if( j == 10 ){
-				if (i == 0) printf( "\nOrientCount");
-				printf( "\t%d",flydata->OrientCount);
-			}
+//			if( j == 8 ){
+//				if (i == 0) printf( "\nEstado\t");
+//				printf( "\t%d",flydata->Estado);
+//			}
+//			if( j == 9 ){
+//				if (i == 0) printf( "\nFrameCount");
+//				printf( "\t%d",flydata->FrameCount);
+//			}
+//			if( j == 10 ){
+//				if (i == 0) printf( "\nStaticFrames");
+//				printf( "\t%d",flydata->StaticFrames);
+//			}
 			if( j == 11 ){
-				if (i == 0) printf( "\nStaticFrames");
-				printf( "\t%d",flydata->StaticFrames);
-			}
-			if( j == 12 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -686,7 +682,7 @@ void mostrarFliesFrame(STFrame *frameData)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 13; j++){
+	for(int j = 0; j < 12; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -725,23 +721,20 @@ void mostrarFliesFrame(STFrame *frameData)
 				if (i == 0) printf( "\nArea\t");
 				printf( "\t%0.1f",flydata->areaElipse);
 			}
-			if( j == 8 ){
-				if (i == 0) printf( "\nEstado\t");
-				printf( "\t%d",flydata->Estado);
-			}
-			if( j == 9 ){
-				if (i == 0) printf( "\nFrameCount");
-				printf( "\t%d",flydata->FrameCount);
-			}
-			if( j == 10 ){
-				if (i == 0) printf( "\nOrientCount");
-				printf( "\t%d",flydata->OrientCount);
-			}
+//			if( j == 8 ){
+//				if (i == 0) printf( "\nEstado\t");
+//				printf( "\t%d",flydata->Estado);
+//			}
+//			if( j == 9 ){
+//				if (i == 0) printf( "\nFrameCount");
+//				printf( "\t%d",flydata->FrameCount);
+//			}
+//
+//			if( j == 10 ){
+//				if (i == 0) printf( "\nStaticFrames");
+//				printf( "\t%d",flydata->StaticFrames);
+//			}
 			if( j == 11 ){
-				if (i == 0) printf( "\nStaticFrames");
-				printf( "\t%d",flydata->StaticFrames);
-			}
-			if( j == 12 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -798,162 +791,6 @@ tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies ){
 			}
 	}
 	return flies;
-
-}
-
-
-/// -resuelve la ambiguedad en la orientación para cada cuadrante
-///estableciendo ésta en función de la dirección del desplazamiento
-/// - La orientación no se modifica hasta que el contador alcance el valor Max.
-/// La dirección y la orientación han de diferir mas de 90º durante Max frames
-/// para que la orientación sea modificada
-/// -En la decisión de si no se modifica el ángulo o bien se suma o resta pi
-/// se consideran mayores y menores estrictos, de forma que si la dif absoluta
-///entre la direccion y la orientación es exactamnte 90, no se modifica el contador
-//.Siempre devuelve un ángulo entre [0 , 360º)
-
-//void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max ){
-//
-//	// el ángulo entre [0,360)
-//	float diferencia;
-//	if(angle == 360) flyActual->direccion = 0;
-//	else flyActual->direccion = angle;
-//
-//	//resolvemos los casos en los que orientación y dirección se encuentran
-//	//en primer y cuarto cuadrante respectivamente y viceversa.
-//	// si orientación en el primer cuadrante y dirección en el cuarto
-//	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
-//		(flyActual->direccion > 270 && flyActual->direccion < 360) )
-//	{
-//		diferencia = flyActual->direccion - flyActual->orientacion;
-//		// si difieren en mas de 90º direccion y orientación
-//		if( diferencia < 270){
-//			// mientras no se alcance el maximo Incrementamos el contador. no modificamos la orientación
-//			// hasta que no se alcance Max
-//			if( flyAnterior->OrientCount< Max ) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-//			else { // si se alcanza Max, sumamos pi a la orientación y reiniciamos el contador
-//
-//				// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
-//				if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-//				else								 flyActual->orientacion =flyActual->orientacion+ 180;
-//			}
-//		}
-//		// si no difieren más de 90º
-//		else{
-//			// decrementamos el contador mientras sea mayor de 0.
-//			if(flyActual->OrientCount > 0) flyActual->OrientCount =  flyActual->OrientCount -1;
-//		}
-//	}
-//	// si direccion en primer cuadrante y orientacion en cuarto
-//	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
-//			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
-//	{
-//		diferencia = flyActual->orientacion - flyActual->direccion;
-//		if( diferencia< 270){
-//			if( flyAnterior->OrientCount < Max ) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-//			else{
-//
-//				if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-//				else								 flyActual->orientacion =flyActual->orientacion+ 180;
-//			}
-//		}
-//		else{
-//			if(flyActual->OrientCount > 0) flyActual->OrientCount =  flyActual->OrientCount -1;
-//		}
-//	}
-//	// Caso general
-//	else{
-//		diferencia = abs( flyActual->direccion - flyActual->orientacion);
-//		if( diferencia > 90 )
-//		{
-//			if( flyAnterior->OrientCount< Max ) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-//			else{
-//				if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-//				else								 flyActual->orientacion =flyActual->orientacion+ 180;
-//			}
-//		}
-//		else{
-//			if(flyActual->OrientCount > 0) flyActual->OrientCount =  flyActual->OrientCount -1;
-//		}
-//	}
-//}
-
-/// -resuelve la ambiguedad en la orientación para cada cuadrante
-///estableciendo ésta en función de la dirección del desplazamiento
-/// - La orientación no se modifica hasta que el contador alcance el valor Max.
-/// La dirección y la orientación han de diferir mas de 90º durante Max frames
-/// para que la orientación sea modificada ( histéresis ).
-/// -En la decisión de si no se modifica el ángulo o bien se suma o resta pi
-/// se consideran mayores y menores estrictos, de forma que si la dif absoluta
-///entre la direccion y la orientación es exactamnte 90, no se modifica el contador
-//.Siempre devuelve un ángulo entre [0 , 360º)
-void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max ){
-
-	// el ángulo entre [0,360)
-	float diferencia;
-	if(angle == 360) flyActual->direccion = 0;
-	else flyActual->direccion = angle;
-
-	//resolvemos los casos en los que orientación y dirección se encuentran
-	//en primer y cuarto cuadrante respectivamente y viceversa.
-	// si orientación en el primer cuadrante y dirección en el cuarto
-//	if((  flyActual->orientacion >= 0 && flyActual->orientacion < 90 )&&
-//		(flyActual->direccion > 270 && flyActual->direccion < 360) )
-//	{
-//		diferencia = flyActual->direccion - flyActual->orientacion;
-//		// si difieren en mas de 90º direccion y orientación
-//		if( diferencia < 270){
-//			// si no se alcanza el maximo y estamos en la subida
-//			// del ciclo de histéresis incrementamos
-//			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-//			// si no se alcanza el mínimo y estamos en el descenso
-//		    // del ciclo de histéresis decrementamos
-//			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
-//		}
-//		else{
-//			//reiniciamos contador
-//			if(flyActual->flag_gir) flyActual->OrientCount = Max;
-//			else flyActual->OrientCount = 0;
-//		}
-//
-//	}
-//	// si direccion en primer cuadrante y orientacion en cuarto
-//	else if((  flyActual->direccion >= 0 && flyActual->direccion < 90 )&&
-//			(flyActual->orientacion > 270 && flyActual->orientacion < 360) )
-//	{
-//		diferencia = flyActual->orientacion - flyActual->direccion;
-//		if( diferencia< 270){
-//			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-//			if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
-//		}
-//		else{
-//			//reiniciamos contador
-//			if(flyActual->flag_gir) flyActual->OrientCount = Max;
-//			else flyActual->OrientCount = 0;
-//		}
-//	}
-//	// Caso general
-//	else{
-//		diferencia = abs( flyActual->direccion - flyActual->orientacion);
-//		if( diferencia > 90 )
-//		{
-//			if( flyAnterior->OrientCount< Max && !flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount + 1;
-//		    if( flyAnterior->OrientCount> 0 && flyActual->flag_seg) flyActual->OrientCount = flyAnterior->OrientCount - 1;
-//		}
-//		else{
-//			//reiniciamos contador
-//			if(flyActual->flag_gir) flyActual->OrientCount = Max;
-//			else flyActual->OrientCount = 0;
-//		}
-//	}
-//	// establecer el sentido de la histéresis
-//	if( flyActual->OrientCount == Max ) flyActual->flag_gir = true; // hacia la izquierda
-//	else if ( flyActual->OrientCount == 0 ) flyActual->flag_gir = false; // hacia la derecha
-//	if( flyActual->flag_gir){
-//		// girar 180 de forma q no devolvemos un ángulo negativo ni mayor o igual a 360
-//		if( flyActual->orientacion >= 180 )  flyActual->orientacion =flyActual->orientacion- 180;
-//		else								 flyActual->orientacion =flyActual->orientacion+ 180;
-//	}
 
 }
 

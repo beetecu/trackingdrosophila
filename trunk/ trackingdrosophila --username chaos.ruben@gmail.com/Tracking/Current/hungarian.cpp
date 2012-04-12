@@ -69,9 +69,9 @@ CvMat* Hungaro(CvMat* Matrix){
 
 	hungarian_solve(&q);
 
-
-	hungarian_print_status(&q);
-
+	if( SHOW_MT_DATA ){
+		hungarian_print_status(&q);
+	}
 	Matrix_Asignation=cvCreateMat(q.num_rows,q.num_cols,CV_32FC1);
 
 	int v=0;

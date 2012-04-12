@@ -179,20 +179,18 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
 		iniciarLcde( fly->Tracks );
 
-		fly->etiqueta = 0; // Identificación del blob
+		fly->etiqueta = -1; // Identificación del blob
 		fly->Color = cvScalar( 0,0,0,0); // Color para dibujar el blob
-		fly->FrameCount = 0;
-		fly->StaticFrames = 0;
+//		fly->FrameCount = 0;
+//		fly->StaticFrames = 0;
 		fly->direccion = 0;
 		fly->dstTotal = 0;
-		fly->OrientCount = 3;
-		fly->flag_gir = false;
 	//		fly->perimetro = cv::arcLength(contorno,0);
 		fly->Roi = rect;
 		fly->Estado = 1;  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
 		fly->num_frame = num_frame;
 		fly->salto = false;	//!< Indica que la mosca ha saltado
-		fly->Blobs = 0; //!< Indica que la mosca permanece estática en un grupo de n moscas.
+
 		fly->Zona = 0; //!< Si se seleccionan zonas de interes en el plato,
 		fly->failSeg = false;
 		fly->flag_seg = false;
@@ -203,7 +201,7 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 		fly->Ax = 0;
 		fly->Ay = 0;
 		fly->dir_filtered = 0;
-		fly->siguiente = NULL;
+
 		return fly;
 	}
 	else{

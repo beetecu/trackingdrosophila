@@ -30,10 +30,7 @@ int asignarIdentidades( tlcde* lsTraks , tlcde *Flies);
 
 int asignarIdentidades2( tlcde* lsTraks , tlcde *Flies);
 
-//int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids);
 int enlazarFlies( STFly* flyAnterior, STFly* flyActual);
-
-void EUDistance( int a, int b, float* direccion, float* distancia);
 
 void corregirEstado( STFrame* frame0, STFrame* frame1, STFrame* frame2, int pos );
 
