@@ -13,7 +13,7 @@ int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 	struct timeval ti,tif; // iniciamos la estructura
 	float TiempoParcial;
 	float TiempoTotal;
-	int hecho = 0;
+
 
 	CvCapture* capture;
 
@@ -78,7 +78,7 @@ void InitialBGModelParams( BGModelParams* Params){
 	 Params->BG_Update = 5;
 	 Params->Jumps = 4;
 	 Params->initDelay = 50;
-	 Params->FRAMES_TRAINING = 1500;
+	 Params->FRAMES_TRAINING = 700;//1500
 	 Params->ALPHA = 0 ;
 	 Params->INITIAL_DESV = 0.05;
 

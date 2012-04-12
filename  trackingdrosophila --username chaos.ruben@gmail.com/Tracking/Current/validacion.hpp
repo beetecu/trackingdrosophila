@@ -57,7 +57,7 @@ tlcde* Validacion(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segro
 
 void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH ,IplImage* Mask, ValParams* Params);
 
-tlcde* ValidarBLOB(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,IplImage* Mask, int numFlies);
+tlcde* ValidarBLOB( tlcde* Flies,int posBlob,int numFlies,STFrame* FrameData,SHModel* SH,ValParams* Params	);
 //!\brief Inicializada los Parametros del modelado de fondo.
 /*!
  * \param Params Parametros para el modelado de fondo.

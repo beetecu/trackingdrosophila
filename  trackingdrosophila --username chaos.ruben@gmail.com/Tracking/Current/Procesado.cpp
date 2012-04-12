@@ -195,6 +195,7 @@ STFrame* InitNewFrameData(IplImage* I ){
 	cvZero( FrameData->ImAdd);
 	FrameData->Flies = NULL;
 	FrameData->Stats = NULL;
+	FrameData->Tracks = NULL;
 	FrameData->num_frame = (int)NumFrame;
 
 	return FrameData;

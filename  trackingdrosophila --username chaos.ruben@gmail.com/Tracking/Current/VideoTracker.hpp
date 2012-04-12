@@ -115,47 +115,44 @@ using namespace std;
 
 	typedef struct {
 
+		// Identificación
 		int etiqueta;  //!< Identificación del blob
 		CvScalar Color; //!< Color para dibujar el blob
+
+		// Situación
 		CvPoint posicion; //!< Posición del blob
-		float posDesv; //!< Error en la posición
-		float direccion; //!<almacena la dirección del desplazamiento
-		float dirDesv; //! Error en la dirección
-		unsigned int num_frame; //!< Almacena el numero de frame (tiempo)
-		void* siguiente; //! puntero al siguiente blob con la misma id.
-
-		float a,b; //!< semiejes de la elipse
-		float Px; // almacena la probabilidad del blob que dependerá de su area y del modelo de forma:
-				  // Px = e^(⁻|areaElipse - area_media|/desviacion )
-		float areaElipse;
 		float orientacion; //!< Almacena la orientación
-		int OrientCount; //!< Si es 0 no se suma PI a la orientacion. Si es 1 se suma PI
 
-		float dstTotal; //!< almacena la distancia total recorrida hasta el momento
+		// Forma
+		float a,b; //!< semiejes de la elipse
+		float areaElipse;
 		double perimetro;
+		unsigned int num_frame; //!< Almacena el numero de frame (tiempo)
+
 		CvRect Roi; //!< region de interes para el blob
-		int Estado;  //!< Indica si el blob se encuentra en el foreground (0) en el oldforeground (1) o en estado de predicción (2).
-		unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
-		unsigned int StaticFrames; //!< Contador del número de frames que el blob permanece estático;
 
 		// Validacion
-		bool flag_seg; //!< Indica si e blog a sido segmentado
+		bool flag_seg; //!< Indica si el blog ha sido segmentado
 		bool failSeg; //!< indica si el blob ha  desaparecido durante el analisis del defecto
 		int bestTresh;//!< Mejor umbral de binarización obtenido tras validar.
-		// Tracking
-		bool flag_gir; //!< Indica si se le suman o no pi rad a la orientación del blob
+		float Px; // almacena la probabilidad del blob que dependerá de su area y del modelo de forma:
+				  // Px = e^(⁻|areaElipse - area_media|/desviacion )
+
+		// Tracking. Dinámica
+		float dstTotal; //!< almacena la distancia total recorrida hasta el momento
+		float direccion; //!<almacena la dirección del desplazamiento
+		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
 		float Vx;
 		float Vy;
 		int Ax; //!< incremento de la posición en x entre frame t-1 y el actual
 		int Ay; //!< incremento de la posición en x entre frame t-1 y el actual
-		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
 
-		float Estim; //!< Predicción de kalman para el siguiente frame
-		float Des;
+		unsigned int Estado;
 		bool salto;	//!< Indica que la mosca ha saltado
-		int Blobs; //!< Indica el número de moscas que contiene el blob. Dato para validar blob (con EM)
 		int Zona; //!< Si se seleccionan zonas de interes en el plato,
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
+
+		void* siguiente;
 		tlcde* Tracks; //!< Indica los tracks que han sido asignados a este blob
 	}STFly;
 
@@ -164,7 +161,7 @@ using namespace std;
 	typedef struct {
 		IplImage* Imed; //!< Imagen que contiene el modelo de fondo estático (Background Model).
 		IplImage* IDesvf; //!< Imagen que contiene la desviación tipica del modelo de fondo estático.
-		IplImage* ImFMask; //!<Imagen que contiene la  Mascara del plato
+		IplImage* ImFMask; //!<Imagen que contiene la  Mascara del plato.
 		int PCentroX ;//!< Coordenada x del centro del plato.
 		int PCentroY ;//!< Coordenada y del centro del plato.
 		int PRadio ;//!< Radio del plato.
@@ -215,6 +212,7 @@ using namespace std;
 		IplImage* ImKalman;
 		STStatFrame * Stats;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
+		tlcde* Tracks; //!< Puntero a lista circular doblemente enlazada (tlcde) con cada Track.
 	}STFrame;
 
 /// Estructura para el modelo de forma de los blobs

@@ -260,8 +260,6 @@ void liberarListaFlies(tlcde *lista);
 
 tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies );
 
-void SetTita( STFly* flyAnterior,STFly* flyActual,double angle,int Max );
-
 #endif //_FLIES_
 
 ///////////////////// INTERFACE PARA GESTIONAR BUFFER //////////////////////////////

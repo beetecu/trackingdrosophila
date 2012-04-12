@@ -254,7 +254,7 @@ void Validacion2(IplImage *Imagen,
 }//Fin de Validación
 
 tlcde* ValidarBLOB( tlcde* Flies,
-		int pos,
+		int posBlob,
 		int numFlies,
 		STFrame* FrameData,
 		SHModel* SH,
@@ -281,7 +281,7 @@ tlcde* ValidarBLOB( tlcde* Flies,
 		iniciarBGModParams( &ValBGParams);
 	}
 
-	FlyData = (STFly*)obtener( pos, Flies );
+	FlyData = (STFly*)obtener( posBlob, Flies );
 	CvRect FlyDataRoi= FlyData->Roi;
 	// Inicializar LOW_THRESHOLD y demas valores
 	setBGModParams( ValBGParams);
@@ -404,6 +404,7 @@ tlcde* ValidarBLOB( tlcde* Flies,
 	if(TempSeg) free( TempSeg );
 	TempSeg = NULL;
 
+	return Flies;
 
 
 }//Fin de Validación

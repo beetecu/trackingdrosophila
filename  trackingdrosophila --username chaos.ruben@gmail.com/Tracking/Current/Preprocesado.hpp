@@ -28,6 +28,5 @@ void releaseDataPreProcess();
  *
  * \return Los parátros para un correcto modelado de fondo.
  */
-
-	void InitialBGModelParams( BGModelParams* Params);
+void InitialBGModelParams( BGModelParams* Params);
 #endif /* PREPROCESADO_HPP_ */
