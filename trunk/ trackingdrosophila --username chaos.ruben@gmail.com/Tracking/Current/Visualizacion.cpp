@@ -395,16 +395,16 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion+90)*CV_PI/180)));
 			CvPoint C =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion-90)*CV_PI/180) ),
 								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion-90)*CV_PI/180)));
-			if( fly->Estado == 1){
+//			if( fly->Estado == 1){
 				cvLine( Imagen,A,B,fly->Color,1,CV_AA, 0 );
 				cvLine( Imagen,B,C,fly->Color,1,CV_AA, 0 );
 				cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
-			}
-			else{
-				cvLine( Imagen,A,B,CVX_WHITE,1,CV_AA, 0 );
-				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
-				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
-			}
+//			}
+//			else{
+//				cvLine( Imagen,A,B,CVX_WHITE,1,CV_AA, 0 );
+//				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
+//				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
+//			}
 			muestrearPosicion( flies, 4 );
 //			Mat img(Imagen);
 //			rectangle(img,
