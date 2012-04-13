@@ -222,9 +222,12 @@ int establecerEstado( STTrack* Track, STFly* flySig ){
 	else if( flySig->Tracks->numeroDeElementos == 1 ){
 		return CAM_CONTROL;
 	}
+
 	else if(flySig->Tracks->numeroDeElementos > 1){
 		return KALMAN_CONTROL;
 	}
+	else return -1;
+
 }
 
 
@@ -239,8 +242,11 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 	x_Zk = flySig->posicion.x;
 	y_Zk = flySig->posicion.y;
 
-	Ax = x_Zk - flyActual->posicion.x;
-	Ay = y_Zk - flyActual->posicion.y;
+
+	Ax = x_Zk - Track->z_k->data.fl[0];
+	Ay = y_Zk - Track->z_k->data.fl[1];
+
+
 
 	vx_Zk = Ax / 1;
 	vy_Zk = Ay / 1;
@@ -292,10 +298,6 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 	//0) No hay nueva medida
 	if (EstadoTrack == SLEEPING ) return ;
 
-	phiZk = Track->Flysig->direccion; // nuevo valor de la dirección
-	phiXk = Track->x_k_Pre->data.fl[4]; // valor filtrado de dirección.Se usará para decidir si se suma n vueltas a phiZk
-	Vx = Track->Flysig->Vx;
-	Vy = Track->Flysig->Vy;
 
 	// GENERAR RUIDO.
 	// 1) Caso normal. Un blob corresponde a un fly
@@ -304,15 +306,18 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 		R_x = 1;
 		R_y = R_x;
 
+
 		//2) Velocidad
 		R_Vx = 2*R_x;
 		R_Vy = 2*R_y;
 
 		// 3) Dirección
 		R_phiZk = generarR_PhiZk( );
+
 	}
 	//1) Varias flies en un mismo blob
 	else if( EstadoTrack == KALMAN_CONTROL ){
+
 
 		R_x = Track->Flysig->Roi.width/2;
 		R_y = Track->Flysig->Roi.height/2;
@@ -354,8 +359,9 @@ float generarR_PhiZk( ){
 	float errIz; // error debido a la velocidad por la izqd del ángulo
 	float errDr; // error debido a la velocidad por la drcha del ángulo
 
-	errIz = atan2( abs(Vy), abs(Vx) - 0.5 )  - atan2( abs(Vy) , abs(Vx) );
-	errDr = atan2( abs(Vy) , abs(Vx) ) - atan2((abs(Vy) - 0.5) , abs(Vx) );
+
+	errIz = atan2( abs(vy_Zk), abs( vx_Zk) - 0.5 )  - atan2( abs(vy_Zk) , abs( vx_Zk) );
+	errDr = atan2( abs(vy_Zk) , abs( vx_Zk) ) - atan2((abs(vy_Zk) - 0.5) , abs( vx_Zk) );
 
 	if (errIz >= errDr ) errorV = errIz*180/CV_PI;
 	else errorV = errDr*180/CV_PI;
@@ -364,13 +370,15 @@ float generarR_PhiZk( ){
 	phiDif = abs( phiXk - phiZk );
 
 	if( phiDif > 90 ) {
-		if (Vx >= 2 || Vy >= 2) phiDif = phiDif/4; // si la velocidad es elevada, penalizamos poco
+
+		if ( vx_Zk >= 2 || vy_Zk >= 2) phiDif = phiDif/4; // si la velocidad es elevada, penalizamos poco
 												//a pesar de ser mayor de 90
 		return phiDif + errorV; // el error es la suma del error devido a la velocidad y a la diferencia
 	}
 	else {
-		if (Vx <=1 && Vy <= 1) errorV = 90; // si la velocidad es de 1 pixel penalizamos al máximo
-		else if (Vx <=2 && Vy <= 2) errorV = 45; // si es de dos pixels penalizamos con 45º
+
+		if ( vx_Zk <=1 && vy_Zk <= 1) errorV = 90; // si la velocidad es de 1 pixel penalizamos al máximo
+		else if ( vx_Zk <=2 && vy_Zk <= 2) errorV = 45; // si es de dos pixels penalizamos con 45º
 
 		return errorV; // si la dif es menor a 90 el error es el debido a la velocidad
 	}
@@ -378,7 +386,7 @@ float generarR_PhiZk( ){
 
 void updateTrack( STTrack* Track, int EstadoTrack ){
 
-	STFly* flyActual = Track->FlyActual;
+	STFly* flyActual;
 
 	// ACTUALIZAR TRACK
 	if ( EstadoTrack == SLEEPING){
@@ -396,9 +404,9 @@ void updateTrack( STTrack* Track, int EstadoTrack ){
 
 	//	updateCounts( Track );
 	//	SetStateBlob( Track );
-
+	flyActual = Track->FlyActual;
 	// ETIQUETAR Y ACTUALIZAR FLY ACTUAL
-	if( EstadoTrack == CAM_CONTROL){
+	if( EstadoTrack == CAM_CONTROL ){
 
 		flyActual->etiqueta = Track->id;
 		flyActual->Color = Track->Color;
@@ -426,6 +434,7 @@ void updateTrack( STTrack* Track, int EstadoTrack ){
 		flyActual->dstTotal = 0;
 
 	}
+
 
 }
 
