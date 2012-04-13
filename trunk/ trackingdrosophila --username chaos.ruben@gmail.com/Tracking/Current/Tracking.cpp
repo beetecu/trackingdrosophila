@@ -79,6 +79,26 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	printf("\t2)Filtro de Kalman\n");
 #endif
 
+	/// ELIMIRAR FALSOS TRACKS ///
+	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
+	// y unicas. Si no es así se considera un trackDead:
+
+	// 1)si se ha creado un track en t y en t+1 :
+	//		a) no tiene asignación, es decir, flySig == NULL ( porque no tiene nueva medida
+	//			o porque sus posibles asignaciones están más alejadas de la maxima distancia permitida) o bien
+	//		b) la fly que se ha asignado al nuevo track está a su vez asignada a otro u otros tracks.
+	//   - se elimina el track ( Se considera un espurio o de un reflejo momentáneo en el borde del plato ).
+	//   El error en caso de eliminar un track correcto quedaría subsanado posteriormente ya que si en la siguiente iteración se vuelve
+	//	 a detectar, kalman crearía un nuevo track. Únicamente si durante 2  iteraciones consecutivas el track
+	//	 tiene una nueva asignación y única se considera un posible track válido, asi si:
+
+	// 2)En caso de tener asignaciones válidas y únicas durante los primeros instantes:
+	//		a) Se puede tratar de un reflejo en el borde del plato de una mosca ( móvil ó inmovil )
+	//
+	//		b) Puede ser una mosca que no se ha movido durante la detección del plato y se mueve mínimamente
+	//			en un instante dado. En este caso el track sería válido.
+	//		¿como distinguir el caso a) del b) ?
+	//
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 
@@ -103,7 +123,20 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn ){
 	if( framesBuf->numeroDeElementos == IMAGE_BUFFER_LENGTH ){
 
 		irAlPrincipio( framesBuf );
+		// Comprobar si se reinicia un track  o se elimina
+		// si existen tracks durmiendo durante un tiempo x ( mirar contador)
+		// y durante el tiempo del buffer no ha aparecido ninguna asignación con una probabilidad aceptable
+		// pero se ha creado un nuevo track en algún punto,
+		// eliminar el nuevo ( trackdead) y asignar la fly que rastreaba
+		// el track eliminado al track durmiendo con prioridad al al más cercano.
+		// Reasignar etiquetas.
 
+		// Para los tracks que están durmiendo, si llevan durmiendo durante x frames eliminarlos
+		// y reasignar las etiquetas de los que quedan durmiendo
+//		for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+//						if ( Track->FlyActual == NULL )
+//							ReInitTrack( Track, Fly, 1);
+//		}
 		////////// LIBERAR MEMORIA  ////////////
 		frameDataOut = (STFrame*)liberarPrimero( framesBuf ) ;
 		if(!frameDataOut){error(7); exit(1);}

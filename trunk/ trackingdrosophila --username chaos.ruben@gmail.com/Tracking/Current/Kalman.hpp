@@ -47,7 +47,7 @@ typedef struct{
 	CvMat* z_k; // Zk = H Medida + V. Valor observado
 
 	unsigned int Estado;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
-	unsigned int EstadoTrackCount;
+	unsigned int EstadoCount;
 	unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
 	unsigned int EstadoBlob; //!< Indica el estado en que se encuentra el blob: FG(0) BG (1) o MISSED (2).
 	unsigned int EstadoBlobCount;
@@ -105,6 +105,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps );
 
 CvKalman* initKalman( STFly* fly, float dt );
 
+void ReInitTrack( STTrack* Track, STFly* Fly , float fps );
 //! \brief // Establece el estado en función de si hay o no nueva medida y en caso de que la haya, del tipo que sea.
 //! - 0) Si no hay datos => Estado track = SLEEPING
 //! - 1) Un track apunta a un blob. CAM_CONTROL
@@ -206,6 +207,26 @@ float generarR_PhiZk( );
 //!		- Se establece la distancia total en 0;
 
 void updateTrack( STTrack* Track, int EstadoTrack );
+
+//!\brief Corrige la diferencia de vueltas
+//! si la dif en valor absoluto es mayor de 180 sumamos o restamos tantas vueltas
+//! como sea necesario para que la diferencia sea < ó = a 180
+//! Corrige la incertidumbre en la orientación sumando PI para que la diferencia
+//! entre phi y tita sea siempre menor de 90º
+//!\n
+/*!Mediana :
+	\f[
+		si |phiX_k-tita| > 180  y phiX_k > tita => tita = tita + n*360
+		si |phiX_k-tita| > 180  y phiX_k < tita => tita = tita - n*360
+		si |phiX_k-tita| > 90º tita = tita + 180
+	\f]
+
+/*!
+	  \param phiXk : dirección filtrada
+	  \param tita: Orientación
+	  \return : Orientación corregida
+	*/
+float corregirTita( float phiXk, float tita );
 
 int deadTrack( tlcde* Tracks, int id );
 
