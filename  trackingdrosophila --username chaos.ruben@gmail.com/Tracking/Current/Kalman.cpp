@@ -2,7 +2,7 @@
  * Kalman.cpp
  *
  *  Created on: 18/11/2011
- *      Authores: Rubén Chao Chao, Germán Garcia Vázques
+ *      Authores: Rubén Chao Chao, Germán Garcia Vázquez
  *
  */
 
@@ -19,7 +19,14 @@
 //!< 	Suposiciones:
 //!<	Tras aplicar asignaridentidades:
 //!<	- Tenemos en cada track un puntero al blob del frame t+1 con mayor probabilidad de asignación.
+//!<   	En caso de que la máxima probabilidad de la asignación en base a la predicción de kalman haya sido menor que un umbral; esto es la mínima probabilidad de asignación
+//!<	será la probabilidad correspondiente a la máxima distancia permitida o máximo salto ( medido en cuerpos y con algo de exceso ) que pueda dar una mosca, dicho
+//!< 	track quedará sin posible asignación => FlySig = NULL. Pasará a estado SLEEPING; se ha perdido el objetivo a rastrear.
+
 //!<	- Asimismo en cada fly disponemos una lista con el o los tracks candidatos a ser asignados a dicha fly.
+
+//!< Suposiciones tras aplicar asignación de identidades: 3 casos
+
 
 CvMat* CoordReal;
 CvMat* H ;
@@ -72,37 +79,44 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 	}
 	cvZero(frameData->ImKalman);
 
-	////////////////////// CORRECCION ////////////////////////
+
 	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 		// obtener Track
 		Track = (STTrack*)obtener(i, lsTracks);
 		// Esablece estado del track según haya no nueva/s medida/s
 		Track->Estado = establecerEstado( Track, Track->Flysig );
+
+		////////////////////// GENERAR MEDIDA ////////////////////
 		// Generar la nueva medida en función del estado
 		generarMedida( Track, Track->Estado );
 		// Generar ruido asociado a la nueva medida
 		generarRuido( Track, Track->Estado );
 		// Actualizar datos con la nueva medida
 		updateTrack( Track, Track->Estado );
+
+		////////////////////// FASE DE CORRECCIÓN ////////////////////////
 		// corregir kalman
 		if( Track->Estado != SLEEPING ){
 			cvKalmanCorrect( Track->kalman, Track->z_k);
 			// actualizamos parámetros
-			Track->FlyActual->dir_filtered =Track->x_k_Pos->data.fl[4] ;
+			if(Track->Estado == CAM_CONTROL){
+				Track->FlyActual->dir_filtered =Track->x_k_Pos->data.fl[4];
+				Track->FlyActual->orientacion = corregirTita( Track->FlyActual->dir_filtered, Track->FlyActual->orientacion );
+			}
 		}
 	}
 
-	// ANYADIR NUEVOS TRACKS, si es necesario.
+	// CREAR NUEVOS TRACKS, si es necesario.
 	// si hay mosca/s sin asignar a un track/s (id = -1), se crea un nuevo track para esa mosca
 	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
 		Fly = (STFly*)obtener(i, Flies );
-		if( Fly->etiqueta == -1 && Fly->Tracks->numeroDeElementos == 0){
+		if( Fly->etiqueta == -1 ){
 			Track = initTrack( Fly, lsIds , 1 );
 			anyadirAlFinal( Track , lsTracks );
 		}
 	}
 
-	////////////////////// PREDICCION ////////////////////////
+	////////////////////// FASE DE PREDICCION ////////////////////////
 	//Recorremos cada track y hacemos la predicción para el siguiente frame
 	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 		Track = (STTrack*)obtener(i, lsTracks);
@@ -124,6 +138,7 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 }// Fin de Kalman
 
 
+
 // etiquetar fly e iniciar nuevo track
 
 STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
@@ -141,6 +156,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track->Color = Fly->Color;
 
 	Track->Estado = CAM_CONTROL;
+	Track->EstadoCount = 1;
 	Track->FrameCount = 1;
 	Track->EstadoBlob = 0;
 
@@ -189,7 +205,7 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 
 	const float F[] = {1,0,dt,0,0, 0,1,0,dt,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1}; // Matriz de transición F
 	// Matriz R inicial. Errores en medidas. ( Rx, Ry,RVx, RVy, Rphi ). Al inicio el error en el angulo es de +-180º
-	const float R_inicial[] = {50,0,0,0,0, 0,50,0,0,0, 0,0,50,0,0, 0,0,0,50,0, 0,0,0,0,360};//{50,50,50,50,180};
+	const float R_inicial[] = {1,0,0,0,0, 0,1,0,0,0, 0,0,2,0,0, 0,0,0,2,0, 0,0,0,0,360};//{50,50,50,50,180};
 	const float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
 	float initialState[] = {Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion};
 //
@@ -212,18 +228,27 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 }
 
 
+//Establecer el estado del Track según haya o no medida/s. en caso de cambio de estado inicia los contadores de estado.
 int establecerEstado( STTrack* Track, STFly* flySig ){
 
-	//Establecer el estado del Track sugún haya o no medida/s.
-	if ( !flySig ){
-		//dormir track. Si mas adelante hay que generar un nuevo track para una fly sin asignar, usar los que estan en suspensión;
+
+	if ( !flySig || !Track->FlyActual ){ // si no hay flysig o fly actual SLEEPING
+		if(!flySig && Track->FlyActual){ // Si cambio de estado: iniciar contador de estado
+			Track->EstadoCount = 0;
+		}
 		return SLEEPING;
 	}
 	else if( flySig->Tracks->numeroDeElementos == 1 ){
+		if( Track->Estado != CAM_CONTROL){
+			Track->EstadoCount = 0; // Cambio de estado
+		}
 		return CAM_CONTROL;
 	}
 
 	else if(flySig->Tracks->numeroDeElementos > 1){
+		if( Track->Estado != KALMAN_CONTROL){
+			Track->EstadoCount = 0;
+		}
 		return KALMAN_CONTROL;
 	}
 	else return -1;
@@ -242,21 +267,24 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 	x_Zk = flySig->posicion.x;
 	y_Zk = flySig->posicion.y;
 
-
-	Ax = x_Zk - Track->z_k->data.fl[0];
-	Ay = y_Zk - Track->z_k->data.fl[1];
-
-
+	Ax = x_Zk - flyActual->posicion.x;
+	Ay = y_Zk - flyActual->posicion.y;
 
 	vx_Zk = Ax / 1;
 	vy_Zk = Ay / 1;
+
 
 	//Establecemos la dirección phi y el modulo del vector de desplazamiento
 	EUDistance( vx_Zk, vy_Zk, &phiZk, &distancia );
 	//Caso 1: Se ha encontrado la siguiente posición. la medida se genera a partir de los datos obtenidos de los sensores
 	if( EstadoTrack == CAM_CONTROL ) {
 		// si no hay movimiento la dirección es la orientación.( o la dirección anterior? o la filtrada??? )
-		if( distancia == 0 ) phiZk = flyActual->dir_filtered;
+		if( distancia == 0 ){
+			// si no se ha el minimo error medio
+			//phiZk = flyActual->dir_filtered;
+			//else
+			phiZk = flyActual->orientacion;
+		}
 		else{
 			// CORREGIR DIRECCIÓN.
 			//Sumar ó restar n vueltas para que la dif sea siempre <=180
@@ -293,11 +321,8 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 
 void generarRuido( STTrack* Track, int EstadoTrack ){
 
-	STFly* flySig = Track->Flysig;
-
 	//0) No hay nueva medida
 	if (EstadoTrack == SLEEPING ) return ;
-
 
 	// GENERAR RUIDO.
 	// 1) Caso normal. Un blob corresponde a un fly
@@ -306,18 +331,15 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 		R_x = 1;
 		R_y = R_x;
 
-
 		//2) Velocidad
 		R_Vx = 2*R_x;
 		R_Vy = 2*R_y;
 
 		// 3) Dirección
 		R_phiZk = generarR_PhiZk( );
-
 	}
 	//1) Varias flies en un mismo blob
 	else if( EstadoTrack == KALMAN_CONTROL ){
-
 
 		R_x = Track->Flysig->Roi.width/2;
 		R_y = Track->Flysig->Roi.height/2;
@@ -327,10 +349,10 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 	}
 	// INSERTAR RUIDO en kalman
 	// cargamos el error en la medida en el filtro para calcular la ganancia de kalman
-	float R[] =  { R_x,0,0,0,0, 0,R_y,0,0,0, 0,0,R_Vx,0,0, 0,0,0,R_Vy,0, 0,0,0,0,R_phiZk};//covarianza del ruido
+	float R[] = { R_x,0,0,0,0, 0,R_y,0,0,0, 0,0,R_Vx,0,0, 0,0,0,R_Vy,0, 0,0,0,0,R_phiZk};//covarianza del ruido
 	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // V->N(0,R);
 
-	 return ;
+	return ;
 }
 
 void EUDistance( int a, int b, float* direccion, float* distancia){
@@ -350,6 +372,12 @@ void EUDistance( int a, int b, float* direccion, float* distancia){
 
 }
 
+// Al inicio queremos una convergencia rápida de la dirección. En las primeras iteraciones
+// penalizaremos en función del error medio entre phiZK y phiXK ( si fuese el error instantáneo se vería
+// muy afectado por el ruido). Inicialmente cuanto mayor sea el error absoluto medio menor será la penalización. A medida que se reduzca
+// dicho error las penalizaciónes se irán incrementando hasta tomar los valores normales.
+// menor penalización. Una vez que la diferencia media entre phiZK y phiXK se ha reducido
+// lo suficiente,
 
 float generarR_PhiZk( ){
 	// Error debido a la velocidad. Esta directamente relaccionada con la resolución
@@ -390,6 +418,8 @@ void updateTrack( STTrack* Track, int EstadoTrack ){
 
 	// ACTUALIZAR TRACK
 	if ( EstadoTrack == SLEEPING){
+		// Si acaba de entrar en este estado iniciamos contador, si ya estaba, actualizamos
+		Track->EstadoCount += 1;
 		Track->FlyActual = NULL;
 		Track->Flysig = NULL;
 		return;
@@ -398,6 +428,7 @@ void updateTrack( STTrack* Track, int EstadoTrack ){
 	Track->Flysig = NULL;
 	Track->dstTotal = Track->dstTotal + distancia;
 
+	Track->EstadoCount += 1;
 	Track->FrameCount ++;
 	if( distancia >0 ) Track->EstadoBlob = IN_FG;
 	else  Track->EstadoBlob = IN_BG;
@@ -434,8 +465,22 @@ void updateTrack( STTrack* Track, int EstadoTrack ){
 		flyActual->dstTotal = 0;
 
 	}
+}
 
+float corregirTita( float phiXk, float tita ){
 
+	if( abs(phiXk - tita ) > 180 ){
+		int n = (int)phiXk/360;
+		if( n == 0) n = 1;
+		if( phiXk > tita ) tita = tita + n*360;
+		else tita = tita - n*360;
+	}
+
+	if( abs(phiXk - tita ) > 90 ){
+		if( phiXk > tita ) tita = tita + 180;
+		else tita = tita - 180;
+	}
+	return tita;
 }
 
 void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
@@ -550,7 +595,59 @@ void showKalmanData( STTrack *Track){
 			Track->P_k_Pre->data.fl[24]);
 	printf("\n\n");
 }
+void ReInitTrack( STTrack* Track, STFly* Fly , float dt ){
 
+	float Vx=0;// componente X de la velocidad.
+	float Vy=0;// componente Y de la velociad.
+	float dist;
+	float phi;
+
+	EUDistance( Fly->posicion.x-Track->z_k->data.fl[0] ,Fly->posicion.x-Track->z_k->data.fl[1], &phi, &dist );
+
+	Track->FlyActual = Fly;
+	Track->Flysig = NULL;
+	Track->dstTotal = Track->dstTotal + dist;
+
+	Fly->etiqueta = Track->id;
+	Fly->Color = Track->Color;
+	Fly->dstTotal = Track->dstTotal ;
+
+	Track->Estado = CAM_CONTROL;
+	Track->EstadoCount = 1;
+	Track->FrameCount = Track->FrameCount + 1;
+
+	Track->EstadoBlob = 0;
+
+	Vx= VELOCIDAD*cos(Fly->orientacion*CV_PI/180);
+	Vy=-VELOCIDAD*sin(Fly->orientacion*CV_PI/180);
+
+	const float F[] = {1,0,dt,0,0, 0,1,0,dt,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1}; // Matriz de transición F
+	// Matriz R inicial. Errores en medidas. ( Rx, Ry,RVx, RVy, Rphi ). Al inicio el error en el angulo es de +-180º
+	const float R_inicial[] = {1,0,0,0,0, 0,1,0,0,0, 0,0,2,0,0, 0,0,0,2,0, 0,0,0,0,360};//{50,50,50,50,180};
+	const float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
+	float initialState[] = {Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion};
+
+	CvMat x_k =cvMat(1, 5, CV_32FC1, initialState);
+
+	// establecer parámetros
+	memcpy( Track->kalman->transition_matrix->data.fl, F, sizeof(F)); // F
+
+	cvSetIdentity( Track->kalman->measurement_matrix,cvRealScalar(1) ); // H Matriz de medida
+	cvSetIdentity( Track->kalman->process_noise_cov,cvRealScalar(1 ) ); // error asociado al modelo del sistema Q = f(F,B y H).
+	cvSetIdentity(Track->kalman->error_cov_pre, cvScalar(1) ); // Incertidumbre en predicción. (P_k' = F P_k-1 Ft) + Q
+	cvSetIdentity( Track->kalman->error_cov_post,cvRealScalar(1)); // Incertidumbre tras añadir medida. P_k = ( I - K_k H) P_k'
+
+	memcpy( Track->kalman->measurement_noise_cov->data.fl, R_inicial, sizeof(R_inicial)); // Incertidumbre en la medida Vk; Vk->N(0,R)
+//	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1)); // Incertidumbre tras añadir medida. P_k = ( I - K_k H) P_k'
+	//copyMat(&x_k, Kalman->state_post);
+	memcpy( Track->kalman->state_post->data.fl, X_k, sizeof(X_k)); // Estado inicial
+
+	Track->x_k_Pre = NULL; // es creada por kalman
+	cvZero(Track->Medida);
+	cvZero(Track->z_k );
+	cvZero(Track->x_k_Pre_);
+	cvZero(Track->P_k_Pre_);
+}
 int deadTrack( tlcde* Tracks, int id ){
 
 	STTrack* Track = NULL;
