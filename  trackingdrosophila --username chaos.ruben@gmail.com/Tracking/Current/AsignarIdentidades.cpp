@@ -103,11 +103,7 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 		Idx3 = framesBuf->numeroDeElementos-3;
 		frameIdx3 = ( STFrame* )obtener(Idx3, framesBuf );
 	}
-
 	allocateMotionTemplate(frameIdx1->FG);
-//	if(frameIdx1->num_frame == 140){
-//		printf("hola");
-//	}
 
 	flies = frameIdx1->Flies;
 
@@ -184,8 +180,6 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 
 			// check for the case of little motion
 			if( count < comp_rect.width*comp_rect.height * 0.05 )	continue;
-
-			fly = matchingIdentity(frameIdx1, frameIdx2, Etiquetas, comp_rect, angle );
 			//if(!fly) exit(1);
 			if(SHOW_VISUALIZATION&&SHOW_MOTION_TEMPLATE){
 				// draw a clock with arrow indicating the direction
@@ -218,91 +212,29 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 	}
 }
 
+int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 
-STFly* matchingIdentity( STFrame* frameActual , STFrame*frameAnterior, tlcde* ids , CvRect MotionRoi, double angle ){
+	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);
+	CvMat* Matrix_Asignation= NULL;
 
-	// buscamos  el blob que se corresponde con la roi de la plantilla
-	//de movimiento y su silueta en la lista en el frame t y en el t-1
+	STTrack* Track=NULL;
+	STTrack* TrackActual=NULL;
 
-	STFrame* frameData;
-	STFly* fly;
-	STFly* flyActual = NULL;
-	STFly* flyAnterior = NULL;
-	tlcde* flies;
-	int numActual = 0; // numero de coincidencias en el frame actual
-	int numAnterior = 0; // numero de coincidencias en el frame anterior
-	int posActual[10]; // vectores para almacenar las posiciones de las coincidencias
-	int posAnterior[10];
-
-
-	// buscamos posibles asignaciones en el fg(t)  con el oldFG (t-1).
-
-
-	// buscamos posibles asignaciones en el fg(t) con el fg (t-1).
-
-	numActual = buscarFlies( frameActual , MotionRoi, posActual );
-	if( numActual == 0 ){
-		printf("/nNo se han encontrado coincidencias en el frame t");
-		return 0;
-	}
-	numAnterior = buscarFlies( frameAnterior, MotionRoi, posAnterior);
-
-	// Caso de asignación normal
-	if( numAnterior == 1 && numActual == 1){
-		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
-		flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies);
-//		enlazarFlies( flyAnterior, flyActual, frameAnterior->Stats->fps,NULL) ;
-//		enlazarFlies( flyAnterior, flyActual,NULL) ;
-	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
-//		enlazarFlies( flyAnterior, flyActual,NULL) ;
-	//	SetTita( flyAnterior, flyActual, angle, FIJAR_ORIENTACION);
-	}
-	// Caso de nueva etiqueta ( nuevo blob )
-	else if( numAnterior == 0 && numActual == 1){
-		flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
-		asignarNuevaId( flyActual, ids);
-		flyActual->direccion = flyActual->orientacion;
-		flyActual->FrameCount = flyActual->FrameCount +1;
-	}
-	// caso de fisión de blobs. un blob se separa en 2 o mas mientras su mhi permanece
-	// unido resultando en varias coincidencias en actual y una en anterior
-	else if( numActual >= numAnterior){
-		// etiquetamos todos los nuevos blobs como el anterior
-//		for ( int i = 0; i < numActual; i++ ){
-//					flyAnterior = (STFly*)obtener( posAnterior[0], frameAnterior->Flies );
-//					flyActual = (STFly*)obtener( posActual[i], frameActual->Flies );
-//					enlazarFlies( flyAnterior, flyActual, ids);
-//		}
-	}
-	// Caso de fusión de blobs. 2 o mas blobs que se unen en uno y su mhi se funde en uno
-	// resultando una coincidencia en actual y varias en anterior
-	//etiquetamos el nuevo como el primero de los anteriores
-	else if( numActual <= numAnterior){
-//		for( int i = 0; i = numActual; i++){
-//			for ( int j = 0; i < numAnterior; i++ ){
-//				flyActual = (STFly*)obtener( posActual[0], frameActual->Flies );
-//
-//				flyAnterior = (STFly*)obtener( posAnterior[j], frameAnterior->Flies );
-//				enlazarFlies( flyAnterior, flyActual, ids);
-//			}
-//		}
-	}
-
-	//else if( !numActual && numAnterior)
-	return flyActual;
+	STFly* FlyNext=NULL;
 
 }
 
-
-///! establecemos el estado del blob. Si la máscara del gradiente del blob no tiene
-/// pixels distintos de 0 en el area correspondiente a la roi del blob del frame t-1
-/// establecemos su estado a 0 (al oldFG ) y el de los 2 frames anteriores pare evitar su asignacion
-/// en matching
-
-void establecerEstado( STFrame* frame0, STFrame* frame1, STFrame* frame2,IplImage* orient){
+int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 
+	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);
+	CvMat* Matrix_Asignation= NULL;
+
+	STTrack* Track=NULL;
+	STTrack* TrackActual=NULL;
+
+	STFly* FlyNext=NULL;
 	tlcde* flies0 = NULL;
 	tlcde* flies1 = NULL;
 	STFly* fly = NULL;
@@ -493,6 +425,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 						TrackActual->Flysig=FlySiguiente;
 						anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
+
 						enlazarFlies(TrackActual->FlyActual,FlySiguiente);
 
 					}
@@ -525,55 +458,15 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 //int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
 int enlazarFlies( STFly* flyAnterior, STFly* flyActual){
 	// si la actual ya habia sido etiquetada dejamos su etiqueta
-	float phi;
-	float distancia;
-
 
 	flyAnterior->siguiente = (STFly*)flyActual;
 	flyActual->etiqueta = flyAnterior->etiqueta;
 	flyActual->Color = flyAnterior->Color;
-	flyActual->FrameCount = flyAnterior->FrameCount +1;
-	flyActual->flag_gir = flyAnterior->flag_gir;
 
-	flyActual->Ax = flyActual->posicion.x - flyAnterior->posicion.x;
-	flyActual->Ay = flyActual->posicion.y - flyAnterior->posicion.y;
-
-	flyActual->Vx = flyActual->Ax / 1;
-	flyActual->Vy = flyActual->Ay / 1;
-
-	//Establecemos la dirección phi y el modulo del vector de desplazamiento
-	EUDistance( flyActual->Vx,flyActual->Vy, &phi, &distancia );
-	//Error en la dirección. Éste es inverso a la distancia.
-	//fl errorPhi( phi, distancia );
-	// si no hay movimiento la dirección es la orientación.( o la dirección anterior???
-
-	if( distancia == 0 ) flyActual->direccion = flyAnterior->dir_filtered;
-	else flyActual->direccion = phi;
-	flyActual->dstTotal = flyAnterior->dstTotal + distancia;
 	return 1;
-
-
-
 }
 
-/// Haya la distancia euclidea entre dos puntos. Establece el modulo y la dirección del desplazamiento ( en grados ).
-/// Resuelve embiguedades en los signos de la atan.
-void EUDistance( int a, int b, float* direccion, float* distancia){
 
-	if( a == 0){
-		if( b == 0 ) *direccion = -1; // No hay movimiento.
-		if( b > 0 ) *direccion = 270; // Hacia abajo.
-		if( b < 0 ) *direccion = 90; // Hacia arriba.
-	}
-	else if ( b == 0) {
-		if (a < 0) *direccion = 180; // hacia la izquierda.
-		else *direccion = 0;			// hacia la derecha.
-	}
-	else	*direccion = atan2( (float)-b , (float)a )* 180 / CV_PI;
-	// calcular modulo del desplazamiento.
-	*distancia = sqrt( pow( a ,2 )  + pow( b ,2 ) ); // sqrt( a² + b² )
-
-}
 void allocateMotionTemplate( IplImage* im){
 
 	CvSize size = cvSize(im->width,im->height); // get current frame size
