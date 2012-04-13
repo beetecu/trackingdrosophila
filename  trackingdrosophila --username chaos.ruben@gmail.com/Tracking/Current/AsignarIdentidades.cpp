@@ -212,54 +212,7 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 	}
 }
 
-int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
-
-	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);
-	CvMat* Matrix_Asignation= NULL;
-
-	STTrack* Track=NULL;
-	STTrack* TrackActual=NULL;
-
-	STFly* FlyNext=NULL;
-
-}
-
-int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
-
-
-	CvMat* CoorReal=cvCreateMat(1,2,CV_32FC1);
-	CvMat* Matrix_Asignation= NULL;
-
-	STTrack* Track=NULL;
-	STTrack* TrackActual=NULL;
-
-	STFly* FlyNext=NULL;
-	tlcde* flies0 = NULL;
-	tlcde* flies1 = NULL;
-	STFly* fly = NULL;
-
-	if( !frame1 ) return;
-	flies0 = frame0->Flies;
-	flies1 = frame1->Flies;
-
-	irAlPrincipio( flies1 );
-	for( int i = 0; i < flies1->numeroDeElementos; i++){
-		fly = (STFly*)obtener( i, flies1 );
-		if( fly->Estado == 1){
-			cvSetImageROI( orient, fly->Roi );
-			// si todos los pixel de la mascara de orientacion son 0 al bg
-			if( !cvCountNonZero( orient) ){
-				fly->Estado = 0;
-				corregirEstado(  frame0, frame1, frame2, flies1->posicion );
-			}
-			cvResetImageROI( orient);
-		}else{ // si el estado es 0, los añadimos a la lista como blobs del oldfg
-			anyadirAlFinal( fly, flies0 );
-			fly->num_frame = frame0->num_frame;
-		}
-	}
-}
 
 void corregirEstado( STFrame* frame0, STFrame* frame1, STFrame* frame2, int pos ){
 
@@ -352,10 +305,6 @@ int buscarFlies( STFrame* frameData ,CvRect MotionRoi, int *p ){
 	return j;
 }
 
-void anyadirEstadoO( STFrame* frameAnterior, STFrame* frameActual){
-
-
-}
 
 int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
@@ -410,33 +359,46 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 	Matrix_Asignation=Hungaro(Matrix_Hungarian);
 
+	if(Matrix_Hungarian->cols < Matrix_Asignation->cols){
+
+	Matrix_Hungarian->rows=Matrix_Asignation->rows;
+	Matrix_Hungarian->cols=Matrix_Asignation->cols;
+	int dif= Matrix_Asignation->cols-Matrix_Hungarian->cols;
+
+	for(int l=0;l<Matrix_Hungarian->rows;l++){
+		for(int m=0;m<Matrix_Hungarian->cols;m++){
+			if(m >=Matrix_Hungarian->cols-dif) Matrix_Hungarian->data.fl[g]=0;
+			g++;
+		}
+	}
+
+	}
 
 	for(int i=0; i < Matrix_Asignation->rows;i++){
-			for(int j=0;j < Matrix_Asignation->cols;j++){
+		printf("\n");
+		for(int j=0;j < Matrix_Asignation->cols;j++){
+
+					if(Matrix_Hungarian->data.fl[v] > 80 && Matrix_Asignation->data.fl[v]==0) Matrix_Asignation->data.fl[v]=1;
+					printf("\t %f", Matrix_Asignation->data.fl[v]);
+
 
 					if(Matrix_Asignation->data.fl[v]==1){
 					indCandidato=j;
 
 					TrackActual=(STTrack*)obtener(i,lsTraks);
 					FlySiguiente=(STFly*)obtener(indCandidato,Flies);
-//					TrackActual->Flysig=(STFly*)obtener(indCandidato,Flies);
-//					if(TrackSiguiente && TrackActual) enlazarFlies( TrackActual->FlyActual,FlySiguiente);
+
 					if(FlySiguiente && TrackActual){
 
 						TrackActual->Flysig=FlySiguiente;
-						anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
-
-						enlazarFlies(TrackActual->FlyActual,FlySiguiente);
+						if(TrackActual->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 
 					}
-
 
 					}
 
 				v++;
 			}
-
-
 
 			}
 
@@ -444,16 +406,8 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 	return 0;
 
-	// enlazar flies
-
-	//	enlazarFlies( Track->FlyActual, STFly* flyActual,float dt, tlcde* ids )
-
-	// rellenar para cada track puntero a fly con la que enlaza Trak->Fliesig ; NULL si no hay
-
-	// rellenar para cada blob vector fly->tracks; Tracks que apuntan a ese blob.
-
-
 }
+
 // si el ultimo parámetro no es null indica
 //int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
 int enlazarFlies( STFly* flyAnterior, STFly* flyActual){
@@ -534,77 +488,6 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
 
 }
 
-int asignarIdentidades2(  tlcde* lsTraks , tlcde *Flies){
-
-	CvMat* CoorReal;
-	STFly* FlyNext=NULL;
-	STTrack* Track=NULL;
-	CvMat* Matrix_Asignation= NULL;
-	STTrack* TrackActual=NULL;
-	STFly* FlySiguiente=NULL;
-	double Hungarian_Matrix [lsTraks->numeroDeElementos][Flies->numeroDeElementos];
-	int v=0;
-	int indCandidato; // posicion de la Fly con mayor porbabilidad.
-
-
-if(lsTraks->numeroDeElementos>0 && Flies->numeroDeElementos >0){
-
-		CvMat* Matrix_Hungarian = cvCreateMat(lsTraks->numeroDeElementos,Flies->numeroDeElementos,CV_32FC1); // Matriz de Pesos
-		cvZero(Matrix_Hungarian);
-
-				int p=0;
-
-				for(int d=0;d < lsTraks->numeroDeElementos;d++){
-
-					Track=(STTrack*)obtener(d,lsTraks);
-
-					for(int f=0;f < Flies->numeroDeElementos;f++){
-
-						FlyNext=(STFly*)obtener(f,Flies);
-
-							CoorReal->data.fl[0]=FlyNext->posicion.x;
-							CoorReal->data.fl[1]=FlyNext->posicion.y;
-
-							double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoorReal);
-							Matrix_Hungarian->data.fl[p] = Peso;
-							Hungarian_Matrix[d][f]=Peso;
-							p++;
-						}
-				}
-
-	Matrix_Asignation=Hungaro(Matrix_Hungarian);
-
-	for(int i=0; i < Matrix_Hungarian->rows;i++){
-			for(int j=0;j < Matrix_Hungarian->cols;j++){
-				if(Matrix_Hungarian->data.fl[v]>70){
-					indCandidato=j;
-
-					TrackActual=(STTrack*)obtener(i,lsTraks);
-					FlySiguiente=(STFly*)obtener(indCandidato,Flies);
-					if(FlySiguiente && TrackActual)	anyadirAlFinal(FlySiguiente,TrackActual->Flysig->Tracks);
-//					if(TrackSiguiente && TrackActual) enlazarFlies( TrackActual->FlyActual,FlySiguiente);
-//					if(FlySiguiente && TrackActual) FlySiguiente->etiqueta=TrackActual->id;
-
-					}
-
-				v++;
-			}
-		}
-
-	}
-
-	return 0;
-
-	// enlazar flies
-
-	//	enlazarFlies( Track->FlyActual, STFly* flyActual,float dt, tlcde* ids )
-
-	// rellenar para cada track puntero a fly con la que enlaza Trak->Fliesig ; NULL si no hay
-
-	// rellenar para cada blob vector fly->tracks; Tracks que apuntan a ese blob.
-
-
-}
 
 void releaseMotionTemplate(){
 
