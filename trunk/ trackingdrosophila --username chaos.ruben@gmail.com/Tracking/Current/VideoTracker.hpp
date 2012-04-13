@@ -34,7 +34,7 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
-#define IMAGE_BUFFER_LENGTH 200
+#define IMAGE_BUFFER_LENGTH 50
 #define ULTIMO IMAGE_BUFFER_LENGTH-1
 #define INIT_DELAY 50
 #define PRIMERO 0
