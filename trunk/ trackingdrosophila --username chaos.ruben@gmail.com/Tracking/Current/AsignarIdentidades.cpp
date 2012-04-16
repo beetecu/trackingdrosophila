@@ -321,7 +321,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 	double Hungarian_Matrix [lsTraks->numeroDeElementos][Flies->numeroDeElementos];
 	int v=0;
 	int g=0;
-	int indCandidato; // posicion de la Fly con mayor porbabilidad.
+	int indCandidato,indFlie; // posicion de la Fly con mayor porbabilidad.
 
 
 	if( lsTraks->numeroDeElementos == 0  ) return 0;
@@ -349,7 +349,6 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 							double Peso = PesosKalman(Track->Measurement_noise_cov,Track->x_k_Pre,CoorReal);
 							Matrix_Hungarian->data.fl[p] = Peso;
 							Hungarian_Matrix[d][f]=Peso;
-							if(Matrix_Hungarian->data.fl[p]!=0) id=1;
 							p++;
 
 					}
@@ -357,29 +356,44 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 				}
 
 
+//	Matrix_Asignation=Hungaro(Matrix_Hungarian);
+
+//	if(Matrix_Hungarian->cols < Matrix_Asignation->cols){
+//
+//	Matrix_Hungarian->rows=Matrix_Asignation->rows;
+//	Matrix_Hungarian->cols=Matrix_Asignation->cols;
+//	int dif= Matrix_Asignation->cols-Matrix_Hungarian->cols;
+//
+//	printf("\n");
+//	for(int l=0;l<Matrix_Hungarian->rows;l++){
+//		printf("\n");
+//		for(int m=0;m<Matrix_Hungarian->cols;m++){
+//			if(m >=Matrix_Hungarian->cols-dif) Matrix_Hungarian->data.fl[g]=0;
+//			printf("\t %f",Matrix_Hungarian->data.fl[g]);
+//			g++;
+//		}
+//	}
+//
+//	}
+
 	Matrix_Asignation=Hungaro(Matrix_Hungarian);
 
-	if(Matrix_Hungarian->cols < Matrix_Asignation->cols){
+	double Asignation_Matrix[Matrix_Asignation->rows][Matrix_Asignation->cols];
 
-	Matrix_Hungarian->rows=Matrix_Asignation->rows;
-	Matrix_Hungarian->cols=Matrix_Asignation->cols;
-	int dif= Matrix_Asignation->cols-Matrix_Hungarian->cols;
-
-	for(int l=0;l<Matrix_Hungarian->rows;l++){
-		for(int m=0;m<Matrix_Hungarian->cols;m++){
-			if(m >=Matrix_Hungarian->cols-dif) Matrix_Hungarian->data.fl[g]=0;
+	for(int l=0;l<Matrix_Asignation->rows;l++){
+		for(int m=0;m<Matrix_Asignation->cols;m++){
+			Asignation_Matrix[l][m] = Matrix_Asignation->data.fl[g];
 			g++;
 		}
 	}
 
-	}
+	// Si la matriz de pesos es cuadrada, asignacion normal 1 es a 1
+
+	if(Matrix_Hungarian->rows == Matrix_Hungarian->cols || Matrix_Hungarian->rows<Matrix_Hungarian->cols ){
 
 	for(int i=0; i < Matrix_Asignation->rows;i++){
-		printf("\n");
-		for(int j=0;j < Matrix_Asignation->cols;j++){
 
-					if(Matrix_Hungarian->data.fl[v] > 80 && Matrix_Asignation->data.fl[v]==0) Matrix_Asignation->data.fl[v]=1;
-					printf("\t %f", Matrix_Asignation->data.fl[v]);
+		for(int j=0;j < Matrix_Asignation->cols;j++){
 
 
 					if(Matrix_Asignation->data.fl[v]==1){
@@ -401,8 +415,92 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 			}
 
 			}
+	}
 
-		}
+	else if(Matrix_Hungarian->rows > Matrix_Hungarian->cols){
+
+		int flag=0;
+		int Dif_cols = Matrix_Asignation->cols-Matrix_Hungarian->cols;
+		int Add_cols = Matrix_Hungarian->cols + Dif_cols;
+		float valor_max=0;
+
+
+				for(int n_col=Matrix_Asignation->cols-Dif_cols;n_col<Add_cols;n_col++){
+					for(int n_row=0;n_row<Matrix_Asignation->rows;n_row++){
+						if(Asignation_Matrix[n_row][n_col]==1){
+
+
+							for(int y=0;y < Matrix_Hungarian->cols;y++){
+								printf("\n VALOR PESO : %f",Hungarian_Matrix[n_row][y]);
+								if(Hungarian_Matrix[n_row][y] > 80 && Hungarian_Matrix[n_row][y] > valor_max ){
+
+									flag=1;
+									valor_max=Hungarian_Matrix[n_row][y];
+									indCandidato=n_row;
+									indFlie=y;
+
+									}// if
+
+							}// for
+
+							if( flag==1) Asignation_Matrix[indCandidato][indFlie]=1;
+							else Asignation_Matrix[n_row][n_col]=0;
+
+
+						}// if
+
+					}// for
+				}// for
+
+				// Asignacion Normal
+
+				g=0;
+				indCandidato=0;
+
+				printf("\n");
+				for(int l=0;l<Matrix_Asignation->rows;l++){
+					printf("\n");
+					for(int m=0;m<Matrix_Asignation->cols;m++){
+						Matrix_Asignation->data.fl[g] = Asignation_Matrix[l][m];
+						printf("\t %f",Matrix_Asignation->data.fl[g]);
+						g++;
+					}
+				}
+
+				for(int i=0; i < Matrix_Asignation->rows;i++){
+
+					for(int j=0;j < Matrix_Asignation->cols;j++){
+
+
+								if(Matrix_Asignation->data.fl[v]==1){
+								indCandidato=j;
+
+								TrackActual=(STTrack*)obtener(i,lsTraks);
+								FlySiguiente=(STFly*)obtener(indCandidato,Flies);
+
+								if(FlySiguiente && TrackActual){
+
+									TrackActual->Flysig=FlySiguiente;
+									if(TrackActual->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+
+								}
+
+								}
+
+							v++;
+						}
+
+						}
+
+
+
+		} // else if
+
+
+
+
+
+	}
 
 	return 0;
 
@@ -482,7 +580,7 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
 
 	ProbKalman = 100*ProbKalman;
 
-	if (ProbKalman < 1) ProbKalman = 0;
+	if (ProbKalman < 1 || ProbKalman < 0) ProbKalman = 0;
 
 	return ProbKalman;
 
