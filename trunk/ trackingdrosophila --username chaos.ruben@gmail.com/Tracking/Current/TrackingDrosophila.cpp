@@ -131,11 +131,10 @@ int main(int argc, char* argv[]) {
 		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR  ////////////
-		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn );
+		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn, 14 );
 
 		// SI BUFFER LLENO
 		if( FrameDataOut ){
-
 			////////// ESTADISTICAS //////////
 			// para su cálculo usamos el frameDataOut anterior.
 			CalcStatsFrame( FrameDataStats, FrameDataOut );

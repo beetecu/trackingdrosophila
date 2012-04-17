@@ -10,24 +10,6 @@
 #include "Kalman.hpp"
 
 
-
-//!< En la literatura en general primero se hace la predicción para frame t ( posible estado del blob en el frame t) en base
-//!< al modelo y luego se incorpora la medida de t con la cual se hace la corrección. En nuestro caso el proceso es:
-//!< Se incorpora la medida del frame t. Se hace la corrección y se predice para el frame t+1, de modo que en cada track y para cada
-//!< frame disponemos por un lado de la predicción para el frame t hecha en el t-1, con la cual se hace la corrección, y por otro lado de
-//!< la predicción para el frame t+1.
-//!< 	Suposiciones:
-//!<	Tras aplicar asignaridentidades:
-//!<	- Tenemos en cada track un puntero al blob del frame t+1 con mayor probabilidad de asignación.
-//!<   	En caso de que la máxima probabilidad de la asignación en base a la predicción de kalman haya sido menor que un umbral; esto es la mínima probabilidad de asignación
-//!<	será la probabilidad correspondiente a la máxima distancia permitida o máximo salto ( medido en cuerpos y con algo de exceso ) que pueda dar una mosca, dicho
-//!< 	track quedará sin posible asignación => FlySig = NULL. Pasará a estado SLEEPING; se ha perdido el objetivo a rastrear.
-
-//!<	- Asimismo en cada fly disponemos una lista con el o los tracks candidatos a ser asignados a dicha fly.
-
-//!< Suposiciones tras aplicar asignación de identidades: 3 casos
-
-
 CvMat* CoordReal;
 CvMat* H ;
 
@@ -148,12 +130,12 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track = (STTrack*)malloc(sizeof(STTrack));
 	if(!Track) {error(4); exit(1);}
 
-	asignarNuevaId( Fly , ids );
-
 	Track->FlyActual = Fly;
 	Track->Flysig = NULL;
-	Track->id = Fly->etiqueta;
-	Track->Color = Fly->Color;
+
+	asignarNuevaId( Track , ids );
+	Fly->etiqueta = Track->id;
+	Fly->Color = Track->Color;
 
 	Track->Estado = CAM_CONTROL;
 	Track->EstadoCount = 1;
@@ -181,6 +163,8 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 
 	cvZero(Track->Medida);
 	cvZero(Track->z_k );
+
+
 
 	return Track;
 	//		direccionR = (flyData->direccion*CV_PI)/180;
@@ -662,6 +646,7 @@ int deadTrack( tlcde* Tracks, int id ){
 		cvReleaseMat( &Track->Medida );
 		cvReleaseMat(&Track->z_k );
 		cvReleaseMat(&Track->Measurement_noise );
+
 		free(Track);
 		Track = NULL;
 		return 1;
@@ -697,6 +682,24 @@ void liberarTracks( tlcde* lista){
 	}
 }
 
+int dejarId( STTrack* Track, tlcde* identities ){
+	Identity *Id = NULL;
+	Id = ( Identity* )malloc( sizeof(Identity ));
+	if( !Id){error(4);return 0 ;}
+	Id->etiqueta = Track->id;
+	Id->color = Track->Color;
+	anyadirAlFinal( Id , identities );
+	return 1;
+}
+
+void asignarNuevaId( STTrack* Track, tlcde* identities){
+	Identity *id;
+	id = (Identity* )borrarEl( identities->numeroDeElementos - 1, identities);
+	Track->id = id->etiqueta;
+	Track->Color = id->color;
+	free(id);
+	id = NULL;
+}
 /// Limpia de la memoria las imagenes usadas durante la ejecución
 void DeallocateKalman( tlcde* lista ){
 

@@ -558,7 +558,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 	struct timeval ti; // iniciamos la estructura
 	double tiempoParcial;
 
-	// Calcular (I(p)-u(p))/0(p)
+
 	if( SHOW_BGMODEL_DATA ){
 		printf("\n\nANTES de resta y limpieza de fondo");
 		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
@@ -575,8 +575,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 #ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
 	if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP){
-
-		// umbralizamos la diferencia
+		// Calcular (I(p)-u(p))/0(p) y umbralizar la diferencia
 		for (int y = ROI.y; y < ROI.y + ROI.height; y++){
 			uchar* ptr1 = (uchar*) ( ImGray->imageData + y*ImGray->widthStep + 1*ROI.x);
 			uchar* ptr2 = (uchar*) ( bg_model->imageData + y*bg_model->widthStep + 1*ROI.x);
@@ -633,10 +632,13 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
 		verMatrizIm(Idif, ventana);
 		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
-		//			cvShowImage( "Foreground", fg);
-		//			cvShowImage( "Background",bg_model);
-		//			cvWaitKey(0);
+
 	}
+	if( SHOW_BG_DIF_IMAGES ){
+						cvShowImage( "Foreground", fg);
+						cvShowImage( "Background",bg_model);
+						cvWaitKey(0);
+		}
 	// limpieza de FG
 #ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) gettimeofday(&ti, NULL);
@@ -657,10 +659,13 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		printf("\n\n Matriz Idif(p) = Brillo(p)-BGModel(p) ");
 		verMatrizIm(Idif, ventana);
 		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
-		//		cvShowImage( "Foreground", fg);
-		//		cvShowImage( "Background",bg_model);
-		//		cvWaitKey(0);
+
 	}
+	if( SHOW_BG_DIF_IMAGES ){
+						cvShowImage( "Foreground", fg);
+						cvShowImage( "Background",bg_model);
+						cvWaitKey(0);
+		}
 }
 /// Limpia y redibuja el FG
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi){
@@ -670,10 +675,8 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 	// Aplicamos morfologia: Erosión y dilatación
 	if( Param->MORFOLOGIA == true){
 		cvSetImageROI( FG, dataroi);
-		IplConvKernel* KernelMorph = cvCreateStructuringElementEx(3, 3, 0, 0, CV_SHAPE_ELLIPSE, NULL);
-		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_CLOSE, Param->CVCLOSE_ITR );
-		cvMorphologyEx( FG, FG, 0, KernelMorph, CV_MOP_OPEN , Param->CVCLOSE_ITR );
-		cvReleaseStructuringElement( &KernelMorph );
+		cvErode( FG, FG, 0, 1);
+		cvDilate( FG, FG, 0, 1 );
 		cvResetImageROI( FG );
 	}
 	cvCopy(FG, fgTemp);
@@ -784,7 +787,7 @@ void DefaultBGMParams( BGModelParams **Parameters){
 
 		Params->FRAMES_TRAINING = 20;
 		Params->ALPHA = 0.5 ;
-		Params->MORFOLOGIA = 0;
+		Params->MORFOLOGIA = true;
 		Params->CVCLOSE_ITR = 0;
 		Params->MAX_CONTOUR_AREA = 0 ;
 		Params->MIN_CONTOUR_AREA = 0;
@@ -803,7 +806,7 @@ void DefaultBGMParams( BGModelParams **Parameters){
 		Params->initDelay = 0;
 
 		Params->ALPHA = 0.5 ;
-		Params->MORFOLOGIA = 0;
+		Params->MORFOLOGIA = true;
 		Params->CVCLOSE_ITR = 0;
 		Params->MAX_CONTOUR_AREA = 0 ;
 		Params->MIN_CONTOUR_AREA = 0;

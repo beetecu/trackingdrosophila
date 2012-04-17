@@ -59,7 +59,7 @@ using namespace std;
 #define SHOW_SEGMENTATION_DATA 0 //!< Switch de 0 a 1 para visualizar los resulados de la segmentación.
 #define SHOW_SEGMENTATION_MATRIX 0
 
-#define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los resulatdos de la validación.
+#define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los datos de la validación.
 #define SHOW_VALIDATION_TIMES 0
 
 #define SHOW_MT_DATA 0
@@ -67,13 +67,23 @@ using namespace std;
 #define SHOW_KALMAN_DATA 0
 
 // VISUALIZACIÓN DE IMAGENES
-#define SHOW_WINDOW 0
+#define SHOW_WINDOW 0 //!< Switch de 0 a 1 para visualizar presentación.
 #define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
-#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 para visualizar resultados.
+
+#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 GENERAL para visualizar resultados.
+#define ACTIVAR_OPCIONES_VISUALIZACION 1
+
+// Depuración preprocesado
 #define SHOW_LEARNING_FLAT 1
 #define SHOW_INIT_BACKGROUND 1
 #define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
-#define ACTIVAR_OPCIONES_VISUALIZACION 1
+
+// Depuración procesado
+#define SHOW_PROCESS_IMAGES 0 //!< Switch de 0 a 1 para visualizar los resultados del procesado etapa a etapa.
+#define SHOW_BG_DIF_IMAGES 0 //!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
+#define SHOW_VALIDATION_IMAGES 0//!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
+
+
 #define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.

@@ -135,6 +135,8 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 }
 
 void verMatrizIm( IplImage* Im, CvRect roi){
+
+	if( !Im ) return;
 	if( Im->depth == IPL_DEPTH_32F) {
 		int step1       = Im->widthStep/sizeof(float);
 		float *ptr1   = (float *)Im->imageData;
@@ -869,95 +871,72 @@ void liberarBuffer(tlcde *FramesBuf)
     frameData = (STFrame *)borrar( FramesBuf );
   }
 }
-
-///////////////////////// INTERFACE PARA GESTIONAR IDENTIDADES /////////////////////
-
-
-
 void CrearIdentidades(tlcde* Identities){
 
-	Identity* Id;
-	RNG rng(0xFFFFFFFF); // para generar un color aleatorio
-//	char nombre[10];
-//	nombre = "Vidal";
-//	nombre = "Pepe";
-//	nombre = "Tomas";
-//	nombre = "Pablo";
-	int i = NUMBER_OF_IDENTITIES-1;
-	for(i=NUMBER_OF_IDENTITIES-1; i >= 0 ; i--){
-		Id = ( Identity* )malloc( sizeof(Identity ));
-		Id->etiqueta = i + 1;
-		Id->color = randomColor(rng);
-		anyadirAlFinal( Id, Identities);
-	}
-}
+ 	Identity* Id;
+ 	RNG rng(0xFFFFFFFF); // para generar un color aleatorio
+ //	char nombre[10];
+ //	nombre = "Jonh";
+ //	nombre = "Pepe";
+ //	nombre = "Tomas";
+ //	nombre = "Manuel";
+ 	int i = NUMBER_OF_IDENTITIES-1;
+ 	for(i=NUMBER_OF_IDENTITIES-1; i >= 0 ; i--){
+ 		Id = ( Identity* )malloc( sizeof(Identity ));
+ 		Id->etiqueta = i + 1;
+ 		Id->color = randomColor(rng);
+ 		anyadirAlFinal( Id, Identities);
+ 	}
+ }
 
-void liberarIdentidades(tlcde* lista){
-	  // Borrar todos los elementos de la lista
-	Identity* id;
-	  // Comprobar si hay elementos
-	  if (lista->numeroDeElementos == 0 ) return;
-	  // borrar: borra siempre el elemento actual
-	  irAlPrincipio( lista );
-	  id = (Identity *)borrar(lista);
-	  while( id ){
-		  free (id);
-		  id = NULL;
-		  id = (Identity *)borrar(lista);
-	  }
-}
+ void liberarIdentidades(tlcde* lista){
+ 	  // Borrar todos los elementos de la lista
+ 	Identity* id;
+ 	  // Comprobar si hay elementos
+ 	  if (lista->numeroDeElementos == 0 ) return;
+ 	  // borrar: borra siempre el elemento actual
+ 	  irAlPrincipio( lista );
+ 	  id = (Identity *)borrar(lista);
+ 	  while( id ){
+ 		  free (id);
+ 		  id = NULL;
+ 		  id = (Identity *)borrar(lista);
+ 	  }
+ }
 
-void asignarNuevaId( STFly* fly, tlcde* identities){
-	Identity *id;
-	id = (Identity* )borrarEl( identities->numeroDeElementos - 1, identities);
-	fly->etiqueta = id->etiqueta;
-	fly->Color = id->color;
-	free(id);
-	id = NULL;
-}
+ void mostrarIds( tlcde* Ids){
 
-int dejarId( STFly* fly, tlcde* identities ){
-	Identity *Id = NULL;
-	Id = ( Identity* )malloc( sizeof(Identity ));
-	if( !Id){error(4);return 0 ;}
-	Id->etiqueta = fly->etiqueta;
-	Id->color = fly->Color;
-	anyadirAlFinal( Id , identities );
-}
+ 	Identity* id;
+ 	irAlFinal(Ids);
 
-void mostrarIds( tlcde* Ids){
+ 	for(int i = 0; i <Ids->numeroDeElementos ; i++ ){
+ 		id = (Identity*)obtener(i, Ids);
+ 		printf("Id = %d\n", id->etiqueta);
+ 	}
+ }
 
-	Identity* id;
-	irAlFinal(Ids);
+ void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
 
-	for(int i = 0; i <Ids->numeroDeElementos ; i++ ){
-		id = (Identity*)obtener(i, Ids);
-		printf("Id = %d\n", id->etiqueta);
-	}
-}
+ 	char etiqueta[10];
+ 	CvFont fuente1;
+ 	CvPoint origen;
 
-void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
+ 	origen = cvPoint( pos.x-5 , pos.y - 15);
 
-	char etiqueta[10];
-	CvFont fuente1;
-	CvPoint origen;
+ 	sprintf(etiqueta,"%d",id );
+ 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+ 	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
+ }
 
-	origen = cvPoint( pos.x-5 , pos.y - 15);
+ void reasignarIds(){
 
-	sprintf(etiqueta,"%d",id );
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
-	cvPutText( Imagen, etiqueta,  origen, &fuente1, color );
-}
+ }
 
-void reasignarIds(){
-
-}
-
-static Scalar randomColor(RNG& rng)
-{
-    int icolor = (unsigned)rng;
-    return Scalar(icolor&255, (icolor>>8)&255, (icolor>>16)&255);
-}
+ static Scalar randomColor(RNG& rng)
+ {
+     int icolor = (unsigned)rng;
+     return Scalar(icolor&255, (icolor>>8)&255, (icolor>>16)&255);
+ }
 
 /////////////////////////// GESTION FICHEROS //////////////////////////////
 
