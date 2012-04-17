@@ -68,9 +68,9 @@ void iniciarBGModParams( BGModelParams** Params);
 void setBGModParams(BGModelParams* Params);
 
 
-float CalcPxMin( SHModel* SH,float Umbral_L );
+float CalcPxMin( SHModel* SH,float Umbral_L, int areaMin );
 
-float CalcPxMax( SHModel* SH,float Umbral_H );
+float CalcPxMax( SHModel* SH,float Umbral_H, int areaMax );
 
 //!\brief Inicializa los Parametros para la validación.
 /*!

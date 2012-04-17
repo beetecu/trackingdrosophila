@@ -7,6 +7,7 @@
 
 #include "VideoTracker.hpp"
 #include "Errores.hpp"
+#include "Kalman.hpp"
 
 #ifndef LIBRERIA_H_
 #define LIBRERIA_H_
@@ -289,17 +290,6 @@ void liberarSTFrame( STFrame* frameData );
 
 #endif //_BUFFER_
 
-#ifndef _IDENTIDADES_
-#define _IDENTIDADES_
-
-#define NUMBER_OF_IDENTITIES 3000
-
-typedef struct{
-	int etiqueta;
-	CvScalar color;
-
-}Identity;
-
 ///////////////////////// INTERFACE PARA GESTIONAR IDENTIDADES /////////////////////
 
 void CrearIdentidades(tlcde* Etiquetas);
@@ -308,15 +298,10 @@ static Scalar randomColor(RNG& rng);
 
 void liberarIdentidades(tlcde* lista);
 
-void asignarNuevaId( STFly* fly, tlcde* identities);
-
-int dejarId( STFly* fly, tlcde* identities );
-
 void mostrarIds( tlcde* Ids);
 
 void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color );
 
-#endif //_IDENTIDADES_
 
 /////////////////////////// GESTION FICHEROS //////////////////////////////
 

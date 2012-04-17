@@ -84,7 +84,7 @@ void InitialBGModelParams( BGModelParams* Params){
 
 	 Params->MODEL_TYPE = MEDIAN_S_UP;
 
-	 Params->MORFOLOGIA = 0;
+	 Params->MORFOLOGIA = true;
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 0 ; //200
 	 Params->MIN_CONTOUR_AREA = 0; //5
