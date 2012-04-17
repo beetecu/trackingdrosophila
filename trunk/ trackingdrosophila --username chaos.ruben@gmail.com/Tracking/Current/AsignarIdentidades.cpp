@@ -412,7 +412,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 		}
 	}
 
-	printf("\n Hecho");
+
 
 	// Si la matriz de pesos es cuadrada, asignacion normal 1 es a 1
 
@@ -458,8 +458,8 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 
 							for(int y=0;y < Matrix_Hungarian->cols;y++){
-								printf("\n VALOR PESO : %f",Hungarian_Matrix[n_row][y]);
-								if( Hungarian_Matrix[n_row][y] >10 && Hungarian_Matrix[n_row][y] > valor_max ){
+
+								if( Hungarian_Matrix[n_row][y] >80 && Hungarian_Matrix[n_row][y] > valor_max ){
 
 									flag=1;
 									valor_max=Hungarian_Matrix[n_row][y];
