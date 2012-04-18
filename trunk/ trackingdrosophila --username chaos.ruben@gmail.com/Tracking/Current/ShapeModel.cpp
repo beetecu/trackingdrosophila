@@ -124,8 +124,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		num_frames += 1;
 		cvResetImageROI(frameData->FG);
 		if(SHOW_WINDOW){
-			if(!visParams) AllocDefaultVisParams(&visParams, frame );
-			DraWWindow(frameData->FG, BGModel,  NULL , visParams, NULL, NULL , SHAPE);
+			DraWWindow(frameData, BGModel,  NULL, SHAPE);
 		}
 		if (SHOW_VISUALIZATION && SHOW_SHAPE_MODELING ){
 				cvShowImage("Modelando forma...",Imblob);

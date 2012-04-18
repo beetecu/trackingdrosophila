@@ -636,6 +636,7 @@ int deadTrack( tlcde* Tracks, int id ){
 
 	STTrack* Track = NULL;
 	Track = (STTrack*)borrarEl( id , Tracks);
+
 	if(Track) {
 		cvReleaseKalman(&Track->kalman);
 
@@ -694,7 +695,9 @@ int dejarId( STTrack* Track, tlcde* identities ){
 
 void asignarNuevaId( STTrack* Track, tlcde* identities){
 	Identity *id;
+	mostrarIds( identities);
 	id = (Identity* )borrarEl( identities->numeroDeElementos - 1, identities);
+	 mostrarIds( identities);
 	Track->id = id->etiqueta;
 	Track->Color = id->color;
 	free(id);

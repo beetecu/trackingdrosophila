@@ -123,7 +123,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 #endif
 
 	///// APRENDER FONDO /////
-	VisParams* visParams=NULL;
+
 	// Acumulamos el fondo para obtener la mediana y la varianza de cada pixel en FRAMES_TRAINING frames  ////
 	Delay = 0; // retardo para iniciar la captura. Para descartar los primeros frames
 	count_update = Param->BG_Update-1;
@@ -194,8 +194,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 				cvMoveWindow("Aprendiendo fondo...", 0, 0 );
 			}
 			if(SHOW_WINDOW){
-				if(!visParams) AllocDefaultVisParams(&visParams, bgmodel->Imed );
-				DraWWindow( bgmodel->Imed, bgmodel,  NULL , visParams, NULL, NULL, BG_MODEL );
+				DraWWindow( NULL , bgmodel, NULL, BG_MODEL );
 			}
 			count_update = 0;
 
@@ -204,12 +203,12 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 		num_frames += 1;
 		jumpFrCount +=1;
 	}
-	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...",visParams, 50);
+	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...", 50);
 #ifdef	MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\t\t-Tiempo total %0.2f s\n", TiempoParcial);
 #endif
-	if( visParams) free( visParams);
+
 	return bgmodel;
 }
 
@@ -220,8 +219,8 @@ void MascaraPlato(CvCapture* t_capture,
 	CvMemStorage* storage = cvCreateMemStorage(0);
 	CvSeq* circles = NULL;
 	IplImage* Im = NULL;
-	IplImage* Visual;
-	VisParams* visParams = NULL;
+
+
 
 	int minRadio;
 	int medX;
@@ -256,16 +255,20 @@ void MascaraPlato(CvCapture* t_capture,
 		//		VerEstadoBGModel( frame );
 		if(!Im){
 			Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-			Visual =  cvCreateImage(cvSize(frame->width,frame->height),8,3);
 			minRadio = cvRound(frame->height / 3);
 			medX = frame->width /2;
 			medY = frame->height/2;
 			medR = minRadio;
+			if(SHOW_WINDOW){
+				Transicion("Iniciando preprocesado...", 1,1000, 50 );
+				Transicion2( "Buscando plato... ", 20 );
+			}
 		}
-		cvCopy( frame, Visual );
 		// Imagen a un canal de niveles de gris
 		cvCvtColor( frame , Im, CV_BGR2GRAY);
 		cvSmooth(Im,Im,CV_GAUSSIAN,5,5);
+		cvCopy( Im, Flat->Imed ); // usaremos esta imagen de forma temporal para visualizar resultados
+
 		// Filtrado gaussiano 5x
 		//cvSmooth(Im,Im,CV_GAUSSIAN,5,0,0,0);
 
@@ -310,27 +313,22 @@ void MascaraPlato(CvCapture* t_capture,
 
 			if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
 				if (Flat->PRadio>0){
-					 cvCircle( Visual, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
-					 cvCircle( Visual, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
+					 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+					 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
 				}
 //				if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
 				//	cvShowImage("Buscando Plato...",Visual);
 			//cvWaitKey(0);
 			}
 			if(SHOW_WINDOW){
-				if(!visParams){
-					AllocDefaultVisParams(&visParams, frame );
-					Transicion("Iniciando preprocesado...", 1,1000, 50 );
-					Transicion2( "Buscando plato... ",visParams, 20 );
-				}
-				DraWWindow( Visual, Flat,  NULL , visParams, NULL, NULL, FLAT);
+				DraWWindow( NULL, Flat,  NULL, FLAT);
 			}
 		} // FIN FOR
 		if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
 			if (Flat->PRadio>0)
-			cvCircle( Visual, cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);
+			cvCircle(Flat->Imed , cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);
 			if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT ){
-				cvShowImage("Buscando Plato...",Visual);
+				cvShowImage("Buscando Plato...",Flat->Imed);
 				//cvWaitKey(0);
 			}
 		}
@@ -367,11 +365,10 @@ void MascaraPlato(CvCapture* t_capture,
 			else	ptr[x] = 0;
 		}
 	}
-	if(SHOW_WINDOW) Transicion4("Buscando plato...",visParams, 50);
+	if(SHOW_WINDOW) Transicion4("Buscando plato...", 50);
 	printf("\t\t-Creación de máscara de plato finalizada.");
 	cvReleaseImage(&Im);
-	cvReleaseImage(&Visual);
-	if( visParams) free( visParams);
+
 	return;
 }
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , IplImage* mask = NULL ) {

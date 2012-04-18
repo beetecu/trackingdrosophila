@@ -1,23 +1,22 @@
 /*
  * Kalman.hpp
  *
- *
- *  En la literatura en general primero se hace la predicción para frame t ( posible estado del blob en el frame t) en base
-* al modelo y luego se incorpora la medida de t con la cual se hace la corrección. En nuestro caso el proceso es:
-* Se incorpora la medida del frame t. Se hace la corrección y se predice para el frame t+1, de modo que en cada track y para cada
-* frame disponemos por un lado de la predicción para el frame t hecha en el t-1, con la cual se hace la corrección, y por otro lado de
-* la predicción para el frame t+1.
-* 	Suposiciones:
+ *	Suposiciones:
 *	Tras aplicar asignaridentidades:
 *	- Tenemos en cada track un puntero al blob del frame t+1 con mayor probabilidad de asignación.*
 *	  	En caso de que la máxima probabilidad de la asignación en base a la predicción de kalman haya sido menor que un umbral; esto es la mínima probabilidad de asignación
 *		será la probabilidad correspondiente a la máxima distancia permitida o máximo salto ( medido en cuerpos y con algo de exceso ) que pueda dar una mosca, dicho
 * 		track quedará sin posible asignación => FlySig = NULL. Pasará a estado SLEEPING; se ha perdido el objetivo a rastrear.
 *	- Asimismo en cada fly disponemos una lista con el o los tracks candidatos a ser asignados a dicha fly.
-
+*  En general primero se suele hacer la predicción para frame t ( posible estado del blob en el frame t) en base
+* al modelo y luego se incorpora la medida de t con la cual se hace la corrección. En nuestro caso el proceso es:
+* Se incorpora la medida del frame t. Se hace la corrección y se predice para el frame t+1, de modo que en cada track y para cada
+* frame disponemos por un lado de la predicción para el frame t hecha en el t-1, con la cual se hace la corrección, y por otro lado de
+* la predicción para el frame t+1. Así usamos el dato de la predicción para realizar la asignación de identidades.
  *
  *  Created on: 18/11/2011
- *      Author: german
+ *      Authors: Rubén Chao Chao
+ *      		German Macía Vázquez
  */
 
 #ifndef KALMAN_HPP_
@@ -80,10 +79,10 @@ typedef struct{
  *-# Inicia un filtro de kalman para cada track.
  *-# Realiza la primera predicción ( que posteriormente será usada por asignarIdentidades para establecer la nueva medida.
  * En cada iteración:
- *-#Crea un track para cada blob.
+ *-#Crea un track para cada blob si es necesario.
  *-#Inicia un filtro de kalman por cada track.
  *-#Genera nueva medida en base a los datos obtenidos de la camara y de asignar identidades.
- *-#Filtra de la dirección y resuelve ambiguedad en la orientación.
+ *-#Filtra de la dirección y resuelve ambigüedad en la orientación.
  *-#Actualiza de los parámetros de rastreo: Track y fly (en base a los nuevos datos).
  *-#Realiza la predicción para t+1.
  *

@@ -33,6 +33,7 @@
 
 #include "VideoTracker.hpp"
 #include "Libreria.h"
+#include "Visualizacion.hpp"
 
 #include "hungarian.hpp"
 #include "Kalman.hpp"
@@ -41,7 +42,11 @@
 #include "FlujoOptico.hpp"
 
 #define MAX_TRACKS 14
-
+#define NUMBER_OF_IDENTITIES 100
+#define IMAGE_BUFFER_LENGTH 50
+#define ULTIMO IMAGE_BUFFER_LENGTH-1
+#define PENULTIMO IMAGE_BUFFER_LENGTH-2
+#define PRIMERO 0
 //!\brief
 //!
 //!	- Añade nuevo elemento al buffer de datos.
@@ -64,21 +69,20 @@
 	   \return  STFrame FrameDataOut. Devuelve estructura tipo STFrame que contiene las imagenes y datos del frame de salida
 				0 Mientras el buffer no esté lleno;
 		*/
-STFrame* Tracking(  tlcde** framesBuff, STFrame* FrameDataIn, int MaxTracks);
+STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer );
 
-void validarTracks( tlcde* lsTracks , int MaxTracks);
+void validarTracks( tlcde* lsTracks, tlcde* identities, int MaxTracks );
+
 
 void AllocateTrackImages( IplImage *I );
 
-void ReleaseDataTrack( tlcde* FramesBuf);
+void ReleaseDataTrack( );
 
-#define NUMBER_OF_IDENTITIES 3000
+
 
 typedef struct{
 	int etiqueta;
 	CvScalar color;
 }Identity;
-
-
 
 #endif /* TRACKING_HPP_ */
