@@ -12,10 +12,11 @@
 
 tlcde* Identities = NULL;
 tlcde* lsTracks = NULL;
+tlcde* framesBuf = NULL;
 
-STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
+STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer ){
 
-	tlcde* framesBuf;
+
 	STFrame* frameDataOut = NULL; // frame de salida
 
 #ifdef MEDIR_TIEMPOS
@@ -29,7 +30,6 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 
 
 	/////////////// Inicializar /////////////////
-	framesBuf = *framesBuff;
 
 	// cola Lifo de identidades
 	if(!Identities) {
@@ -39,15 +39,12 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 		CrearIdentidades(Identities);
 		//mostrarIds( Identities );
 	}
-
 	//buffer de Imagenes y datos.
-	if(!*framesBuff){
+	if(!framesBuf){
 		framesBuf = ( tlcde * )malloc( sizeof(tlcde));
 		if( !framesBuf ) {error(4);exit(1);}
 		iniciarLcde( framesBuf );
-		*framesBuff = framesBuf;
 	}
-
 	//Tracks
 	if(!lsTracks){
 		lsTracks = ( tlcde * )malloc( sizeof(tlcde ));
@@ -66,7 +63,15 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 	// resolver las asociaciones usando las predicciones de kalman mediante el algoritmo Hungaro
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
-
+	if( frameDataIn->num_frame == 185 ){
+						printf("hola");
+					}
+	if( frameDataIn->num_frame == 210 ){
+						printf("hola");
+					}
+	if( frameDataIn->num_frame == 219 ){
+							printf("hola");
+						}
 	asignarIdentidades( lsTracks,frameDataIn->Flies);
 
 #ifdef MEDIR_TIEMPOS
@@ -80,7 +85,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
 	// y unicas. Si no es así se considera un trackDead:
 
-//	validarTracks( lsTracks, MAX_TRACKS );
+	validarTracks( lsTracks,Identities, MAX_TRACKS );
 
 	// 2)En caso de tener asignaciones válidas y únicas durante los primeros instantes:
 	//		a) Se puede tratar de un reflejo en el borde del plato de una mosca ( móvil ó inmovil )
@@ -93,6 +98,8 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 
 	Kalman( frameDataIn , Identities, lsTracks);
+
+	frameDataIn->Tracks = lsTracks;
 
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
@@ -114,7 +121,7 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 		// Establecer en base a diversos parámetros la validez del track.
 		//
 		// Comprobar si se reinicia un track  o se elimina
-		// si existen tracks durmiendo durante un tiempo x ( mirar contador)
+		// Si existen tracks durmiendo durante un tiempo x ( mirar contador)
 		// y durante el tiempo del buffer no ha aparecido ninguna asignación con una probabilidad aceptable
 		// pero se ha creado un nuevo track en algún punto, y este es válido ( OJO con esto. Si no verificamos
 		// que es válido se puede asignar un track durmiendo a un track iniciado por un espurio)
@@ -138,6 +145,8 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 		frameDataOut = (STFrame*)liberarPrimero( framesBuf ) ;
 		if(!frameDataOut){error(7); exit(1);}
 
+		if(!SHOW_WINDOW) VisualizarEl( framesBuf, PENULTIMO, BGModel, Writer );
+
 #ifdef MEDIR_TIEMPOS
 		tiempoParcial = obtenerTiempo( tif , NULL);
 		printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
@@ -145,6 +154,8 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 		return frameDataOut;
 	}
 	else {
+		VerEstadoBuffer( frameDataIn->Frame, framesBuf->numeroDeElementos, IMAGE_BUFFER_LENGTH);
+		if(!SHOW_WINDOW) VisualizarEl( framesBuf, PENULTIMO, BGModel, Writer );
 #ifdef MEDIR_TIEMPOS
 		tiempoParcial = obtenerTiempo( tif , NULL);
 		printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);
@@ -184,19 +195,21 @@ STFrame* Tracking( tlcde** framesBuff,STFrame* frameDataIn, int MaxTracks ){
 //  espurio que permanece varios frames o bien de un reflejo (movil o inmovil). Este caso se trata en la parte de Heurísticas usando
 // la información temporal del buffer.
 
-void validarTracks( tlcde* lsTracks, int MaxTracks ){
+void validarTracks( tlcde* lsTracks, tlcde* identities, int MaxTracks ){
 
 	STTrack* Track = NULL;
 	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 			// obtener Track
 			Track = (STTrack*)obtener(i, lsTracks);
-			if( falsoTrack( Track ) ) deadTrack( lsTracks, i );
+			if( falsoTrack( Track ) ){
+				dejarId( Track, identities );
+				deadTrack( lsTracks, i );
+			}
 	}
 	return;
 }
 
 int falsoTrack( STTrack* Track ){
-
 
 	if( Track->Estado == CAM_CONTROL && Track->EstadoCount == 1 ){
 		if(!Track->Flysig || Track->Flysig->Tracks->numeroDeElementos > 1 ){
@@ -207,15 +220,15 @@ int falsoTrack( STTrack* Track ){
 	else return 0;
 
 }
-void ReleaseDataTrack( tlcde* FramesBuf ){
+void ReleaseDataTrack(  ){
 
 	if(Identities){
 		liberarIdentidades( Identities );
 		free( Identities) ;
 	}
-	if(FramesBuf) {
-		liberarBuffer( FramesBuf );
-		free( FramesBuf);
+	if(framesBuf) {
+		liberarBuffer( framesBuf );
+		free( framesBuf);
 	}
 	DeallocateKalman( lsTracks );
 	free(lsTracks);

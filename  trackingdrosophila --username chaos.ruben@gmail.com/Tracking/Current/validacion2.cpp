@@ -47,9 +47,7 @@ void Validacion2(IplImage *Imagen,
 	// almacenar una copia del FG para restaurar el blob en caso de que falle la validación
 	cvCopy( FrameData->FG, Mask );
 
-	if( FrameData->num_frame == 1475 ){
-						printf("hola");
-					}
+
 	// Recorremos los blobs uno por uno y los validamos.
 	// Bucle for desde el primero hasta el ultimo individuo de la Lista FrameData->Flie del frame actual.
 	// Los blobs resultantes de la fisión se añaden al final para ser validados de nuevo

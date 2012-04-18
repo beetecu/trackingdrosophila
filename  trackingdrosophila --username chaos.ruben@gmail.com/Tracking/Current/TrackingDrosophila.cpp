@@ -48,8 +48,7 @@ STStatFrame* Stats;
 
 ///HightGui
 int g_slider_pos = 0;
-// parametros de visualización
-VisParams* visParams = NULL;
+
 
 int main(int argc, char* argv[]) {
 
@@ -68,6 +67,7 @@ int main(int argc, char* argv[]) {
 
 	///////////  INICIALIZACIÓN ////////////
 	printf("\nInicializando parámetros...");
+	AllocDefaultVisParams( NULL );
 	if(SHOW_WINDOW) DraWPresent(  );
 
 	TiempoGlobal = 0;
@@ -96,8 +96,8 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 //	VWriter = iniciarAvi( g_capture, nombreVideo);
-// Creación de ventanas de visualizacion
-	AllocDefaultVisParams(&visParams, BGModel->Imed);
+//  Iniciar parámetros de visualización y creación de ventanas
+	AllocDefaultVisParams( BGModel->Imed);
 
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
 	if(!TotalFrames) TotalFrames = getAVIFrames(argv[1]); // en algun linux no funciona lo anterior
@@ -131,30 +131,26 @@ int main(int argc, char* argv[]) {
 		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR  ////////////
-		FrameDataOut = Tracking(  &FramesBuf, FrameDataIn, 14 );
+		FrameDataOut = Tracking( FrameDataIn, 14, BGModel, VWriter );
 
 		// SI BUFFER LLENO
-		if( FrameDataOut ){
-			////////// ESTADISTICAS //////////
-			// para su cálculo usamos el frameDataOut anterior.
-			CalcStatsFrame( FrameDataStats, FrameDataOut );
+		////////// ESTADISTICAS //////////
+		// para su cálculo usamos el frameDataOut anterior.
+		CalcStatsFrame( FrameDataStats, FrameDataOut );
 
-			//////////  VISUALIZAR     ////////////
+		//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-			if(SHOW_WINDOW) DraWWindow( FrameDataOut->Frame, BGModel,VWriter,visParams, FrameDataOut->Flies,FrameDataOut->Stats, TRAKING );
+		if(SHOW_WINDOW) DraWWindow( FrameDataOut, BGModel,VWriter, TRAKING );
 
-			//////////  ALMACENAR ////////////
-			if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
+		//////////  ALMACENAR ////////////
+		if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
 
 //			////////// LIBERAR MEMORIA  ////////////
-			liberarSTFrame( FrameDataStats );
-		}
-		else VerEstadoBuffer( frame, FramesBuf->numeroDeElementos, visParams, IMAGE_BUFFER_LENGTH);
+		liberarSTFrame( FrameDataStats );
 
 		FrameDataStats = FrameDataOut;
 		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
 
-		if(!SHOW_WINDOW)	VisualizarEl(FramesBuf->numeroDeElementos-2, FramesBuf , BGModel, g_capture, VWriter, visParams );
 
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->Stats->TiempoFrame);
@@ -190,12 +186,12 @@ void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
 	if(Flies) free( Flies );
 
 	// liberar imagenes y datos de tracking
-	ReleaseDataTrack( FramesBuf );
+	ReleaseDataTrack( );
 
 	// liberar estructura estadísticas
 	if( Stats ) free(Stats);
 	// liberar imagenes y datos de visualización
-	releaseVisParams( visParams);
+	releaseVisParams( );
 	DestroyWindows( );
 
 	//liberar resto de estructuras

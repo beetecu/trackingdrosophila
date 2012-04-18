@@ -1015,7 +1015,7 @@ int GuardarSTFrame( STFrame* frameData , char *nombreFichero){
 	STFly* fly = NULL;
 
 	//obtenemos la lista
-
+	if(!frameData) return 1;
 	Flies = frameData->Flies;
 	if (Flies->numeroDeElementos == 0||!Flies) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
 	int i = 0, tam = Flies->numeroDeElementos;
