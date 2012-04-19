@@ -42,6 +42,8 @@
 #include "FlujoOptico.hpp"
 
 #define MAX_TRACKS 14
+#define MAX_TIME_SLEPT 200
+
 #define NUMBER_OF_IDENTITIES 100
 #define IMAGE_BUFFER_LENGTH 50
 #define ULTIMO IMAGE_BUFFER_LENGTH-1
@@ -71,8 +73,14 @@
 		*/
 STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer );
 
-void validarTracks( tlcde* lsTracks, tlcde* identities, int MaxTracks );
+int validarTracks( tlcde* lsTracks, tlcde* identities, int MaxTracks );
 
+void despertarTrack( tlcde* framesBuf, tlcde* lsTracks );
+
+
+void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds);
+
+void reasignarTracks( tlcde* lsTracks, int nuevo, int viejo,tlcde* framesBuf);
 
 void AllocateTrackImages( IplImage *I );
 

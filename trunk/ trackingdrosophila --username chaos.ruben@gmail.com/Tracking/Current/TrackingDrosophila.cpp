@@ -32,8 +32,8 @@ STFly* Fly = NULL;
 tlcde *Flies = NULL;
 /// Estructura frame
 STFrame* FrameDataIn = NULL;
-STFrame* FrameDataOut = NULL;
-STFrame* FrameDataStats = NULL;
+STFrame* FrameDataOut1 = NULL;
+STFrame* FrameDataOut2 = NULL;
 ///Parámetros fondo para procesado
 BGModelParams *BGPrParams = NULL;
 ///Parámetros Validación para procesado
@@ -131,24 +131,24 @@ int main(int argc, char* argv[]) {
 		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR  ////////////
-		FrameDataOut = Tracking( FrameDataIn, 14, BGModel, VWriter );
+		FrameDataOut1 = Tracking( FrameDataIn, 14, BGModel, VWriter );
 
 		// SI BUFFER LLENO
 		////////// ESTADISTICAS //////////
 		// para su cálculo usamos el frameDataOut anterior.
-		CalcStatsFrame( FrameDataStats, FrameDataOut );
+		CalcStatsFrame( FrameDataOut2, FrameDataOut1 );
 
 		//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-		if(SHOW_WINDOW) DraWWindow( FrameDataOut, BGModel,VWriter, TRAKING );
+		if(SHOW_WINDOW) DraWWindow( FrameDataOut1, BGModel,VWriter, TRAKING );
 
 		//////////  ALMACENAR ////////////
-		if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
+		if(!GuardarSTFrame( FrameDataOut2, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
 
 //			////////// LIBERAR MEMORIA  ////////////
-		liberarSTFrame( FrameDataStats );
+		liberarSTFrame( FrameDataOut2 );
 
-		FrameDataStats = FrameDataOut;
+		FrameDataOut2 = FrameDataOut1;
 		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
 
 
@@ -180,7 +180,8 @@ void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
 	// liberar imagenes y datos de procesado
 	releaseDataProcess(valParams, BGPrParams);
 	if( FrameDataIn ) liberarSTFrame( FrameDataIn);
-	if( FrameDataOut ) liberarSTFrame( FrameDataOut);
+	if( FrameDataOut1 ) liberarSTFrame( FrameDataOut1);
+	if( FrameDataOut2 ) liberarSTFrame( FrameDataOut2);
 	if(Fly) free(Fly);
 	//liberar listas
 	if(Flies) free( Flies );
