@@ -74,7 +74,7 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 		// Generar ruido asociado a la nueva medida
 		generarRuido( Track, Track->Estado );
 		// Actualizar datos con la nueva medida
-		updateTrack( Track, Track->Estado );
+		updateTrack( Track, Track->Estado, lsIds );
 
 		////////////////////// FASE DE CORRECCIÓN ////////////////////////
 		// corregir kalman
@@ -86,6 +86,8 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 				Track->FlyActual->orientacion = corregirTita( Track->FlyActual->dir_filtered, Track->FlyActual->orientacion );
 			}
 		}
+
+
 	}
 
 	// CREAR NUEVOS TRACKS, si es necesario.
@@ -94,6 +96,8 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks) {
 		Fly = (STFly*)obtener(i, Flies );
 		if( Fly->etiqueta == -1 ){
 			Track = initTrack( Fly, lsIds , 1 );
+			Track->InitTime = frameData->num_frame;
+			Track->InitPos =  Fly->posicion;
 			anyadirAlFinal( Track , lsTracks );
 		}
 	}
@@ -396,13 +400,18 @@ float generarR_PhiZk( ){
 	}
 }
 
-void updateTrack( STTrack* Track, int EstadoTrack ){
+void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsids ){
 
 	STFly* flyActual;
 
 	// ACTUALIZAR TRACK
 	if ( EstadoTrack == SLEEPING){
-		// Si acaba de entrar en este estado iniciamos contador, si ya estaba, actualizamos
+//		if( Track->EstadoCount == 0){
+//			dejarId( Track, lsids );
+//			Track->id = -1;
+//		}
+//		Track->Color = cvScalar( 0,0,0);
+		Track->FrameCount +=1;
 		Track->EstadoCount += 1;
 		Track->FlyActual = NULL;
 		Track->Flysig = NULL;

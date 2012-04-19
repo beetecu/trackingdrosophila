@@ -220,6 +220,7 @@ using namespace std;
 		IplImage* ImKalman;
 		STStatFrame * Stats;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
+		int numTracks;
 		tlcde* Tracks; //!< Puntero a lista circular doblemente enlazada (tlcde) con cada Track.
 	}STFrame;
 

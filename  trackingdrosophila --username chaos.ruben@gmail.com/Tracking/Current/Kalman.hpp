@@ -27,6 +27,7 @@
 
 #define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
 #define V_ANGULAR 2.6//5.2 // velocidad angular del blob en pixeles por frame
+#define MAX_JUMP 100
 #define NUMBER_OF_MATRIX 6
 
 #define SLEEPING 0
@@ -63,6 +64,8 @@ typedef struct{
 	CvMat* z_k; // Zk = H Medida + V. Valor observado
 
 	unsigned int Estado;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
+	unsigned int InitTime; //!< Numero de frame en el que se creó el track.
+	CvPoint InitPos; //!< posición en la que  se inició el track
 	unsigned int EstadoCount;
 	unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
 	unsigned int EstadoBlob; //!< Indica el estado en que se encuentra el blob: FG(0) BG (1) o MISSED (2).
@@ -280,7 +283,7 @@ float generarR_PhiZk( );
 */
 
 
-void updateTrack( STTrack* Track, int EstadoTrack );
+void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsIds );
 
 /*!\brief
 *-# Corrige la diferencia de vueltas.\n
