@@ -177,8 +177,9 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 	{
 
 		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
+		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
 		iniciarLcde( fly->Tracks );
-
+		fly->siguiente = NULL;
 		fly->etiqueta = -1; // Identificación del blob
 		fly->Color = cvScalar( 0,0,0,0); // Color para dibujar el blob
 //		fly->FrameCount = 0;

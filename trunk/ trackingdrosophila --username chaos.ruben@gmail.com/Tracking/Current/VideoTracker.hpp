@@ -122,6 +122,12 @@ using namespace std;
 #endif //_INTERFAZ_LCSE_H
 
 	typedef struct {
+		float CMov30Med;  //!< Cantidad de movimiento medio en los últimos 30 min.
+		float TOn;  //!< Tiempo en movimiento desde el inicio.
+		float TOff; //!< Tiempo parada desde el inicio.
+	}STStatFly;
+
+	typedef struct {
 
 		// Identificación
 		int etiqueta;  //!< Identificación del blob
@@ -161,8 +167,11 @@ using namespace std;
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
 
 		void* siguiente;
+		STStatFly* Stats;
 		tlcde* Tracks; //!< Indica los tracks que han sido asignados a este blob
 	}STFly;
+
+
 
 /// Estructura para almacenar el modelo de fondo estático.
 
@@ -175,6 +184,7 @@ using namespace std;
 		int PRadio ;//!< Radio del plato.
 		CvRect DataFROI;//!< Region de interes de la imagen.
 	}StaticBGModel;
+
 
 /// Estructura que almacena cálculos estadísticos globales simples para mostrar en tiempo de ejecución.
 

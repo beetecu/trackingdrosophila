@@ -761,6 +761,7 @@ void liberarListaFlies(tlcde *lista)
   while (flydata)
   {
 	if (flydata->Tracks ) free(flydata->Tracks);
+	if (flydata->Stats) free(flydata->Stats);
     free(flydata); // borrar el área de datos del elemento eliminado
 
     flydata = NULL;

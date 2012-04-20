@@ -140,6 +140,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	asignarNuevaId( Track , ids );
 	Fly->etiqueta = Track->id;
 	Fly->Color = Track->Color;
+	// añadir al final en Fly->Tracks el track
 
 	Track->Estado = CAM_CONTROL;
 	Track->EstadoCount = 1;
@@ -417,10 +418,13 @@ void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsids ){
 		Track->Flysig = NULL;
 		return;
 	}
+
+	Track->FlyActual->siguiente = (STFly*)Track->Flysig;
+	// fly actual pasa a ser fly seiguiente.
 	Track->FlyActual = Track->Flysig;
 	Track->Flysig = NULL;
-	Track->dstTotal = Track->dstTotal + distancia;
 
+	Track->dstTotal = Track->dstTotal + distancia;
 	Track->EstadoCount += 1;
 	Track->FrameCount ++;
 	if( distancia >0 ) Track->EstadoBlob = IN_FG;
@@ -430,6 +434,7 @@ void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsids ){
 	//	SetStateBlob( Track );
 	flyActual = Track->FlyActual;
 	// ETIQUETAR Y ACTUALIZAR FLY ACTUAL
+
 	if( EstadoTrack == CAM_CONTROL ){
 
 		flyActual->etiqueta = Track->id;
