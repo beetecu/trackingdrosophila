@@ -1,0 +1,68 @@
+#summary 8-Descripcion del modulo de rastreo
+#labels Phase-Design,Phase-Implementation
+
+=6 Tracking =
+
+==6.1 Que se entiende por tracking? ==
+	Explicar y definir Tracking, track, blob, buffer, nacimiento, muerte, tiempo de vida (de un track), track
+	activo, track durmiendo...
+
+==6.2 Generalidades acerca del algoritmo de rastreo ==
+
+Hasta aquí el programa trabaja solo con información espacial, es decir, los datos del instante t.
+En este punto disponemos de la estructura STFrame  ( frameDataIn ) que contiene los datos necesatios del frame t
+para poder iniciar el rastreo. Estos son:
+	typedef struct {
+		int num_frame; //!< Identificación del Frame procesado.
+		IplImage* Frame;//!< Imagen fuente de 8 bit de niveles de gris preprocesada.
+		IplImage* BGModel;//!< Imagen de 8 bits que contiene el  BackGround Model Dinámico.
+		IplImage* IDesvf;//!< Imagen de 32 bits que contiene la Desviación Típica del modelo de fondo dinámico.
+		IplImage* FG;  //!< Imagen que contiene el Foreground.
+		IplImage* ImKalman;
+		STStatFrame * Stats; //!< estadísticas.
+		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
+
+		tlcde* Tracks; //!< Puntero a lista circular doblemente enlazada (tlcde) con cada Trak. Creado por Tracking
+	}STFrame;
+
+ *	- La función de rastreo recibe los datos del frame del instante t y lo almacena temporalmente, de forma que se mantendrán en
+ *	memoria las estructuras correspondientes a MAX_BUFFER frames ( framesBuff, buffer de datos  ).
+ *	Los buffers son colas FIFO. En este punto ya disponemos de la información temporal.
+ *	- Asi mismo se crea una cola FIFO para almacenar los datos de cada track. Habrá un track por cada objeto a rastrear
+ *	- Se crea a su vez una cola FIFO para almacenar las identidades ( id y color ), de modo que sean únicas.
+ *	-
+==6.3 Detalles del algoritmo de rastrea==
+
+Antes de comenzar con los detalles del algoritmo, vamos a introducir una serie se definiciones relativas a los Tracks y que se usarán a lo largo del texto:
+
+Según su estado, podemos encontrar :
+
+		1) Tracks activos: Serían tracks en estado CAM_CONTROL o KALMAN_CONTROL. Están recibiendo nuevos datos
+			a) CAM_CONTROL: Tienen asignacion válida y única
+			b) KALMAN_CONTROL: Tiene asignacio válida pero no única.
+		2) Tracks durmiendo: Han perdido el objetivo a rastrear
+
+		Según el origen del track distinguimos:
+
+		1) Tracks válidos: Generados por moscas. LLevan un tiempo rastreando con éxito.
+		2) Tracks "posiblemente" válidos. Serían los nuevos tracks.No se sabe con certeza si han sido generados por moscas.
+		2) Falsos tracks: Tracks generados por espurios o por "fantasmas (ghost)"
+		En tracking se realiza la función de rastreo propiamente dicha. en este punto disponemos de todos los datos necesarios para
+		identificar y seguir a cada mosca, tratando de no perderla.
+
+		Una vez hechas las definiciones, se resumen a continuación los principales cometidos del algoritmo de rastreo:
+
+		1) Añadir nuevo elemento al buffer de datos.
+		2) En AsignarIdentidades se validan blobs y se resuelven las asociaciones en base a las predicciones
+		  de kalman mediante el algoritmo Hungaro.
+		3) En validarTracks se eliminan falsos tracks en base al ;
+		- Kalman( frameDataIn , Identities, lsTracks):
+			-  Crea un track para cada blob.
+			-  Inicia un filtro de kalman por cada track.
+			-  Genera nueva medida en base a los datos obtenidos de la camara y de asignar identidades.
+			-  Filtra de la dirección y resuelve ambiguedad en la orientación.
+			-  Actualiza de los parámetros de rastreo: Track y fly (en base a los nuevos datos).
+			-  Realiza la predicción para t+1.
+		- Aplicación de Heurísticas. Se usa la información temporal del buffer para decidir si eliminar o no tracks.
+
+  *
