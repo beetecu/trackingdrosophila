@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
 
 		//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-		if(SHOW_WINDOW) DraWWindow( frame, FrameDataOut1, BGModel,VWriter, TRAKING );
+		if(SHOW_WINDOW) DraWWindow( frame, FrameDataOut2, BGModel,VWriter, TRAKING );
 
 		//////////  ALMACENAR ////////////
 		if(!GuardarSTFrame( FrameDataOut2, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}

@@ -594,8 +594,8 @@ void ShowStatDataFr( STStatFrame* Stats,IplImage* Window ){
 	sprintf(FPS,"FPS: %.2f ",(1000/Stats->TiempoFrame));
 
 	sprintf(TotalBlobs,"Total Blobs detected: %d ", Stats->TotalBlobs);
-	sprintf(BlobsUp,"Blobs activos: %d ", Stats->dinamicBlobs);
-	sprintf(BlobsDown, "Blobs inactivos: %d ",Stats->staticBlobs);
+	sprintf(BlobsUp,"Blobs activos: %0.1f %% ", Stats->dinamicBlobs);
+	sprintf(BlobsDown, "Blobs inactivos: %0.1f %%",Stats->staticBlobs);
 
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
 	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.9, 0.9, 0, 1, 8);
