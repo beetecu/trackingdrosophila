@@ -76,9 +76,11 @@ void statsBlobs( STFrame* frameData ){
 		fly = (STFly*)obtener(i,frameData->Flies);
 		if( fly->Estado == 1 ) frameData->Stats->dinamicBlobs +=1;
 		else frameData->Stats->staticBlobs +=1;
+
 		// velocidad instantánea
 		EUDistance( fly->Vx, fly->Vy, NULL, &fly->Stats->VInst);
 	}
-
+	frameData->Stats->dinamicBlobs = (frameData->Stats->dinamicBlobs/frameData->Stats->TotalBlobs)*100;
+	frameData->Stats->staticBlobs = (frameData->Stats->staticBlobs/ frameData->Stats->TotalBlobs)*100;
 
 }
