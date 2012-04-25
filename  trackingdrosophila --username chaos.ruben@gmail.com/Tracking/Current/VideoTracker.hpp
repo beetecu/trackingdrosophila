@@ -65,16 +65,17 @@ using namespace std;
 #define SHOW_KALMAN_DATA 0
 
 // VISUALIZACIÓN DE IMAGENES
-#define SHOW_WINDOW 0 //!< Switch de 0 a 1 para visualizar presentación.
-#define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
+#define SHOW_WINDOW 1 //!< Switch de 0 a 1 para visualizar resultado
+#define SHOW_PRESENT 0 //!< Switch de 0 a 1 para visualizar presentacion
+#define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
 
-#define SHOW_VISUALIZATION 1 //!< Switch de 0 a 1 GENERAL para visualizar resultados.
+#define SHOW_VISUALIZATION 0 //!< Switch de 0 a 1 GENERAL para visualizar resultados.
 #define ACTIVAR_OPCIONES_VISUALIZACION 1
 
 // Depuración preprocesado
-#define SHOW_LEARNING_FLAT 1
-#define SHOW_INIT_BACKGROUND 1
-#define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+#define SHOW_LEARNING_FLAT 0
+#define SHOW_INIT_BACKGROUND 0
+#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 
 // Depuración procesado
 #define SHOW_PROCESS_IMAGES 0 //!< Switch de 0 a 1 para visualizar los resultados del procesado etapa a etapa.
@@ -82,10 +83,10 @@ using namespace std;
 #define SHOW_VALIDATION_IMAGES 0//!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
 
 
-#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+#define SHOW_BG_REMOVAL 0 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
-#define SHOW_MOTION_TEMPLATE 1//!< Switch de 0 a 1 para visualizar el gradiente.
-#define SHOW_KALMAN 1
+#define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
+#define SHOW_KALMAN 0
 #define GRABAR_VISUALIZACION 0
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
@@ -122,9 +123,10 @@ using namespace std;
 #endif //_INTERFAZ_LCSE_H
 
 	typedef struct {
-		float CMov30Med;  //!< Cantidad de movimiento medio en los últimos 30 min.
+		float VInst; //!< Velocidad instantánea
+		float CMov30Med;  //!< Cantidad de movimiento medio .
 		float TOn;  //!< Tiempo en movimiento desde el inicio.
-		float TOff; //!< Tiempo parada desde el inicio.
+		float TOff; //!< Tiempo parado desde el inicio.
 	}STStatFly;
 
 	typedef struct {
@@ -220,7 +222,7 @@ using namespace std;
 
 	typedef struct {
 		int num_frame; //!< Identificación del Frame procesado.
-		IplImage* Frame;//!< Imagen fuente de 8 bit de niveles de gris preprocesada.
+		IplImage* Frame;//!< Imagen fuente de 3 canales ( RAW ).
 		IplImage* BGModel;//!< Imagen de 8 bits que contiene el  BackGround Model Dinámico.
 		IplImage* IDesvf;//!< Imagen de 32 bits que contiene la Desviación Típica del modelo de fondo dinámico.
 		IplImage* OldFG; //!< Imagen que contiene el OldForeGround ( blobs estáticos ).

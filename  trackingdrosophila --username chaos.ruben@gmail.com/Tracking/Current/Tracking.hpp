@@ -409,7 +409,7 @@
 #include "AsignarIdentidades.hpp"
 #include "FlujoOptico.hpp"
 
-#define MAX_TRACKS 14
+#define MAX_TRACKS 10
 #define MAX_TIME_SLEPT 200
 
 #define NUMBER_OF_IDENTITIES 100

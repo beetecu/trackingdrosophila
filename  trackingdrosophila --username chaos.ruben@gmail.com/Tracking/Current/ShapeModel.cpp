@@ -116,15 +116,13 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 
 			currentBlob->FillBlob( Imblob, CV_RGB(255,0,0));
 
-
-
 			k++;//incrementar indice del vector que contiene las areas
 
 		}//Fin del For 1
 		num_frames += 1;
 		cvResetImageROI(frameData->FG);
 		if(SHOW_WINDOW){
-			DraWWindow(frameData, BGModel,  NULL, SHAPE);
+			DraWWindow(frame, frameData, BGModel,  NULL, SHAPE);
 		}
 		if (SHOW_VISUALIZATION && SHOW_SHAPE_MODELING ){
 				cvShowImage("Modelando forma...",Imblob);
@@ -134,11 +132,9 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		}
 
 	}//Fin del while
-	if(SHOW_WINDOW){
-		CvRect rect = cvRect(0,	0,visParams->Resolucion.width,
-					visParams->Resolucion.height);
-		desvanecer( NULL, 20, rect);
-	}
+//	if(SHOW_WINDOW){
+		desvanecer( NULL, 20);
+//	}
 	Shape->FlyAreaMedia=Shape->FlyAreaMedia/total_blobs;// Media de las Areas para cada frame
 
 	//Calcular la desvición típica

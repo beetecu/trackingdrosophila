@@ -194,7 +194,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 				cvMoveWindow("Aprendiendo fondo...", 0, 0 );
 			}
 			if(SHOW_WINDOW){
-				DraWWindow( NULL , bgmodel, NULL, BG_MODEL );
+				DraWWindow( frame, NULL , bgmodel, NULL, BG_MODEL );
 			}
 			count_update = 0;
 
@@ -203,7 +203,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 		num_frames += 1;
 		jumpFrCount +=1;
 	}
-	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...", 50);
+//	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...", 50);
 #ifdef	MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\t\t-Tiempo total %0.2f s\n", TiempoParcial);
@@ -260,8 +260,8 @@ void MascaraPlato(CvCapture* t_capture,
 			medY = frame->height/2;
 			medR = minRadio;
 			if(SHOW_WINDOW){
-				Transicion("Iniciando preprocesado...", 1,1000, 50 );
-				Transicion2( "Buscando plato... ", 20 );
+
+			//	Transicion4( "Buscando plato... ", 20 );
 			}
 		}
 		// Imagen a un canal de niveles de gris
@@ -277,7 +277,7 @@ void MascaraPlato(CvCapture* t_capture,
 		// establecemos el radio mínimo según la resolución de la imagen
 
 		cvCanny(Im,Im, 50, 100, 3);
-		cvShowImage( "Foreground",Im);
+//		cvShowImage( "Foreground",Im);
 //		cvWaitKey(0);
 
 		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,Im->height/4,200,100, minRadio,
@@ -289,7 +289,7 @@ void MascaraPlato(CvCapture* t_capture,
 			// Excluimos los radios que se salgan de la imagen
 			float* p = (float*)cvGetSeqElem( circles, i );
 
-			if(  (  cvRound( p[0]) < cvRound( p[2] )  ) || // si x es menor que r ( circ se sale por la izda
+			if(  (  cvRound( p[0]) < cvRound( p[2] )  ) || // si x es menor que r ( circ se sale por la izda )
 					( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) || //o si el ancho menos x es menor que r ( se sale por la dercha)
 					(  cvRound( p[1] )  < cvRound( p[2] ) ) || // o si y es menor que r (se sale por arriba )
 					( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) ) // se sale por abajo
@@ -311,7 +311,7 @@ void MascaraPlato(CvCapture* t_capture,
 						,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
 			}
 
-			if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
+			if( ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
 				if (Flat->PRadio>0){
 					 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
 					 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
@@ -321,12 +321,17 @@ void MascaraPlato(CvCapture* t_capture,
 			//cvWaitKey(0);
 			}
 			if(SHOW_WINDOW){
-				DraWWindow( NULL, Flat,  NULL, FLAT);
+//				 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+				 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
+				 cvAdd( Im, Flat->Imed,Flat->Imed);
+				DraWWindow(frame, NULL, Flat,  NULL, FLAT);
 			}
 		} // FIN FOR
 		if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
-			if (Flat->PRadio>0)
-			cvCircle(Flat->Imed , cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);
+			if (Flat->PRadio>0){
+				cvAdd( Im, Flat->Imed,Flat->Imed);
+				cvCircle(Flat->Imed , cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);}
+			DraWWindow(frame, NULL, Flat,  NULL, FLAT);
 			if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT ){
 				cvShowImage("Buscando Plato...",Flat->Imed);
 				//cvWaitKey(0);
@@ -365,7 +370,7 @@ void MascaraPlato(CvCapture* t_capture,
 			else	ptr[x] = 0;
 		}
 	}
-	if(SHOW_WINDOW) Transicion4("Buscando plato...", 50);
+//	if(SHOW_WINDOW) Transicion4("Buscando plato...", 50);
 	printf("\t\t-Creación de máscara de plato finalizada.");
 	cvReleaseImage(&Im);
 

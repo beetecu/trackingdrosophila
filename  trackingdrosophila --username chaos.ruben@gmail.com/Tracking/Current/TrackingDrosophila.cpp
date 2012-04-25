@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 	struct timeval ti,  tif, tinicio; // iniciamos la estructura de medida de tiempos
 	float TiempoFrame;
 	float TiempoGlobal;
-	double TotalFrames ;
+	double TotalFrames = 0 ;
 	double FPS;
 
 	char nombreFichero[30];
@@ -66,23 +66,7 @@ int main(int argc, char* argv[]) {
 
 
 	///////////  INICIALIZACIÓN ////////////
-	printf("\nInicializando parámetros...");
-	AllocDefaultVisParams( NULL );
-	if(SHOW_WINDOW) DraWPresent(  );
-
-	TiempoGlobal = 0;
-	NumFrame = 0;
-	TiempoFrame = 0;
-	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
-
-	//////////  PREPROCESADO   ////////////
-
-	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(NULL, NULL);
-
-	/////////	PROCESADO   ///////////////
-
 	//  CAPTURA  //
-
 	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
 	CvVideoWriter* VWriter;
 	IplImage* frame;
@@ -97,11 +81,30 @@ int main(int argc, char* argv[]) {
 	}
 //	VWriter = iniciarAvi( g_capture, nombreVideo);
 //  Iniciar parámetros de visualización y creación de ventanas
-	AllocDefaultVisParams( BGModel->Imed);
 
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
+	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0.95);
+	float TotalTime = cvGetCaptureProperty( g_capture, CV_CAP_PROP_POS_MSEC);
+	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0);
 	if(!TotalFrames) TotalFrames = getAVIFrames(argv[1]); // en algun linux no funciona lo anterior
 	FPS = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FPS);
+	printf("\nInicializando parámetros...");
+	frame = cvQueryFrame( g_capture );
+	AllocDefaultVisParams( frame );
+	TiempoGlobal = 0;
+	NumFrame = 0;
+	TiempoFrame = 0;
+	////////// PRESENTACIÓN ////////////////
+	if(SHOW_WINDOW && SHOW_PRESENT) DraWPresent(  );
+
+	////////// INICIALIZACIÓN //////////////
+	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
+
+	//////////  PREPROCESADO   ////////////
+
+	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(NULL, NULL);
+
+	/////////	PROCESADO   ///////////////
 
 	printf("\n\nIniciando procesado...\n");
 	if(SHOW_WINDOW) Transicion("Iniciando Tracking...", 1,1000, 50 );
@@ -140,7 +143,7 @@ int main(int argc, char* argv[]) {
 
 		//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-		if(SHOW_WINDOW) DraWWindow( FrameDataOut1, BGModel,VWriter, TRAKING );
+		if(SHOW_WINDOW) DraWWindow( frame, FrameDataOut1, BGModel,VWriter, TRAKING );
 
 		//////////  ALMACENAR ////////////
 		if(!GuardarSTFrame( FrameDataOut2, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
@@ -149,6 +152,7 @@ int main(int argc, char* argv[]) {
 		liberarSTFrame( FrameDataOut2 );
 
 		FrameDataOut2 = FrameDataOut1;
+
 		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
 
 
