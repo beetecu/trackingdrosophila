@@ -211,7 +211,6 @@ void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
 
 void muestrearPosicion( tlcde* flies, int id ){
 
-
 //	for( int i = 0; i < 1000; i++ ){
 //				sprintf(nombreFichero,"SamplePosfly1.csv ",i);
 //				if( !existe( nombreFichero) ) {
@@ -1017,21 +1016,33 @@ int GuardarSTFrame( STFrame* frameData , char *nombreFichero){
 
 	//obtenemos la lista
 	if(!frameData) return 1;
-	Flies = frameData->Flies;
-	if (Flies->numeroDeElementos == 0||!Flies) {printf("\nElemento no guardado.Lista vacía\n");return 1;}
-	int i = 0, tam = Flies->numeroDeElementos;
 	// Abrir el fichero nombreFichero para añadir "a".
-	if ((pf = fopen(nombreFichero, "a")) == NULL)
-	{
-		printf("El fichero no puede abrirse.");
-		return 0;
+		if ((pf = fopen(nombreFichero, "a")) == NULL)
+		{
+			printf("El fichero no puede abrirse.");
+
+			return 0;
+		}
+	Flies = frameData->Flies;
+	if (Flies->numeroDeElementos == 0||!Flies) {
+		printf("\nElemento no guardado.Lista vacía\n");
+		fprintf(pf,"\n"); // linea en blanco
+		fclose(pf);
+		return 1;
 	}
-	while( i < tam ){
-		fly = (STFly*)obtener(i, Flies);
-		fprintf(pf,"%d;%d",fly->posicion.x,fly->posicion.y);
-		fprintf(pf,"\n");
-		i++;
+	int i = 0, tam = Flies->numeroDeElementos;
+
+	// las de etiqueta 0 no se computarán.
+	for( int i= 1; i <= Flies->numeroDeElementos; i++){
+		for(int j = 0; j < Flies->numeroDeElementos; j++){
+			fly =  (STFly*)obtener(j, Flies);
+			if( fly->etiqueta == i ) break;
+			else fly = NULL;
+		}
+		if(fly)	fprintf(pf,"%d;%d;%0.1f;",fly->posicion.x,fly->posicion.y,fly->dir_filtered); // si se encuentra
+		else fprintf(pf," ; ; ;"); // campos en blanco
 	}
+	fprintf(pf,"\n"); // siguiente línea
 	fclose(pf);
 	return 1;
 
