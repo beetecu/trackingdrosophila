@@ -7,9 +7,10 @@
 
 #include "Stats.hpp"
 
-// Las estadisticas se calculan actualizando el último frameDataOut ( frame de salida anterior)
-// El cálculo se hace en el primer frame del buffer que ya ha sido procesado que será el
-// siguiente frameDataOut.
+// Las estadisticas se calculan actualizando el último frameDataOut ( frameDataStats, frame de salida anterior)
+// El cálculo se hace en el elemento recién salido del buffer ( ya procesado ).Éste será el siguiente frameDataStats.
+// Solo se trabajará sobre frameDataOut. El frameDataStats se usará como memoria para actualizar los diferentes cálculos
+// estadísticos.
 void CalcStatsFrame( STFrame* frameDataStats,STFrame* frameDataOut ){
 
 	struct timeval ti;
@@ -18,12 +19,16 @@ void CalcStatsFrame( STFrame* frameDataStats,STFrame* frameDataOut ){
 	if( !frameDataStats) return;
 #ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
-
-	printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
-	statsBlobs( frameDataOut );
-
 	printf( "Rastreo finalizado con éxito ..." );
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
+	printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
+
+	// estadísticas de cada blob
+	statsBloB(frameDataStats, frameDataOut );
+	// estadísticas generales
+	statsBlobS( frameDataStats, frameDataOut );
+
+
 	printf( "Análisis finalizado ...\n" );
 #ifdef MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , NULL);
@@ -68,19 +73,23 @@ STStatFrame* InitStatsFrame( int NumFrame, timeval tif, timeval tinicio, int Tot
 
 }
 
-void statsBlobs( STFrame* frameData ){
+void statsBloB( STFrame* frameDataStats,STFrame* frameDataOut ){
 
 	STFly* fly = NULL;
-	frameData->Stats->TotalBlobs = frameData->Flies->numeroDeElementos;
-	for(int i = 0; i< frameData->Stats->TotalBlobs ; i++){
-		fly = (STFly*)obtener(i,frameData->Flies);
-		if( fly->Estado == 1 ) frameData->Stats->dinamicBlobs +=1;
-		else frameData->Stats->staticBlobs +=1;
+	frameDataOut->Stats->TotalBlobs = frameDataOut->Flies->numeroDeElementos;
+	for(int i = 0; i< frameDataOut->Stats->TotalBlobs ; i++){
+		fly = (STFly*)obtener(i,frameDataOut->Flies);
+		if( fly->Estado == 1 ) frameDataOut->Stats->dinamicBlobs +=1;
+		else frameDataOut->Stats->staticBlobs +=1;
 
 		// velocidad instantánea
 		EUDistance( fly->Vx, fly->Vy, NULL, &fly->Stats->VInst);
 	}
-	frameData->Stats->dinamicBlobs = (frameData->Stats->dinamicBlobs/frameData->Stats->TotalBlobs)*100;
-	frameData->Stats->staticBlobs = (frameData->Stats->staticBlobs/ frameData->Stats->TotalBlobs)*100;
+	frameDataOut->Stats->dinamicBlobs = (frameDataOut->Stats->dinamicBlobs/frameDataOut->Stats->TotalBlobs)*100;
+	frameDataOut->Stats->staticBlobs = (frameDataOut->Stats->staticBlobs/ frameDataOut->Stats->TotalBlobs)*100;
+
+}
+
+void statsBlobS( STFrame* frameDataStats,STFrame* frameDataOut ){
 
 }

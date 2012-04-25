@@ -14,6 +14,8 @@ void CalcStatsFrame( STFrame* frameDataStats,STFrame* frameDataOut );
 
 STStatFrame* InitStatsFrame( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS  );
 
-void statsBlobs( STFrame* frameData );
+void statsBloB( STFrame* frameDataStats,STFrame* frameDataOut );
+
+void statsBlobS( STFrame* frameDataStats,STFrame* frameDataOut );
 
 #endif /* STATS_HPP_ */

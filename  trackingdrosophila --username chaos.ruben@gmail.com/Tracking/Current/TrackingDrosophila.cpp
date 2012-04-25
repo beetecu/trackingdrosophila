@@ -164,6 +164,10 @@ int main(int argc, char* argv[]) {
 //		if(!SHOW_WINDOW)	VisualizarFr( FrameDataIn, BGModel, VWriter, visParams );
 //		liberarSTFrame( FrameDataIn );
     }
+
+    ///////// POST-PROCESADO ///////////////////
+
+
 	///////// LIBERAR MEMORIA Y TERMINAR////////
     Finalizar(&g_capture, &VWriter);
 
