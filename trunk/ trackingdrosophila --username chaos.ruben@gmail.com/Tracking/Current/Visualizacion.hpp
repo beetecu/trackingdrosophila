@@ -22,14 +22,22 @@
 #define BG_MODEL 2
 #define SHAPE 3
 #define TRAKING 4
+
 #define CENTRAR cvPoint(-1,-1)
 #define CENTRAR_SUP cvPoint(-2, -2 )
 #define CENTRAR_INF cvPoint(-3, -3 )
+
+// parametros para visualizar estadisticas de blobs
+
+#define MAX_COLS 8 // numero maximo de columnas
+#define MAX_FILS 2 // número máximo de filas
+#define MAX_ELEMENTS MAX_COLS*MAX_FILS // número máximo de tracks a visualizar
 
 typedef struct {
 	bool pause;
 	bool stop;
 	bool Grab;
+	bool pasoApaso;
 	int VisualPos;
 	CvSize Resolucion;
 	CvRect ROITracking;
@@ -57,11 +65,11 @@ void Transicion3( const char texto[] , int delay_up );
 
 void Transicion4(const char texto[], int delay_down);
 
-void desvanecer( IplImage* Imagen , int Delay,CvRect ROI );
+void desvanecer( IplImage* Imagen , int Delay );
 
 /// VISUALIZACIÓN RESULTADOS ///
 
-void DraWWindow( STFrame* FrameDataOut, StaticBGModel* BGModel, CvVideoWriter* Writer, int num  );
+void DraWWindow(IplImage* frame, STFrame* FrameDataOut, StaticBGModel* BGModel, CvVideoWriter* Writer, int num  );
 
 void Incrustar( IplImage* src1, IplImage* src2, IplImage* dst, CvRect ROI );
 
@@ -85,6 +93,8 @@ void IncrustarTxt( int num );
  */
 
 void ShowStatDataFr( STStatFrame* Stats, IplImage* ImVisual);
+
+void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks );
 
 void VerEstadoBuffer( IplImage* Imagen,int num, int max );
 

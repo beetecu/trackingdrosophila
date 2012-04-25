@@ -140,12 +140,15 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	asignarNuevaId( Track , ids );
 	Fly->etiqueta = Track->id;
 	Fly->Color = Track->Color;
+	Fly->Estado = IN_FG;
+
 	// añadir al final en Fly->Tracks el track
 
 	Track->Estado = CAM_CONTROL;
 	Track->EstadoCount = 1;
 	Track->FrameCount = 1;
-	Track->EstadoBlob = 0;
+	Track->EstadoBlob = 1;
+	Track->EstadoBlobCount = 0;
 
 	// iniciar kalman
 	Track->kalman = initKalman( Fly , fps);
@@ -346,19 +349,22 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 
 void EUDistance( int a, int b, float* direccion, float* distancia){
 
+	float phi;
 	if( a == 0){
-		if( b == 0 ) *direccion = -1; // No hay movimiento.
-		if( b > 0 ) *direccion = 270; // Hacia abajo.
-		if( b < 0 ) *direccion = 90; // Hacia arriba.
+		if( b == 0 ) phi = -1; // No hay movimiento.
+		if( b > 0 ) phi = 270; // Hacia abajo.
+		if( b < 0 ) phi = 90; // Hacia arriba.
 	}
 	else if ( b == 0) {
-		if (a < 0) *direccion = 180; // hacia la izquierda.
-		else *direccion = 0;			// hacia la derecha.
+		if (a < 0) phi = 180; // hacia la izquierda.
+		else phi = 0;			// hacia la derecha.
 	}
-	else	*direccion = atan2( (float)-b , (float)a )* 180 / CV_PI;
+	else	phi = atan2( (float)-b , (float)a )* 180 / CV_PI;
 	// calcular modulo del desplazamiento.
 	*distancia = sqrt( pow( a ,2 )  + pow( b ,2 ) ); // sqrt( a² + b² )
 
+	if( direccion == NULL ) return;
+	else *direccion = phi;
 }
 
 // Al inicio queremos una convergencia rápida de la dirección. En las primeras iteraciones
@@ -427,8 +433,20 @@ void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsids ){
 	Track->dstTotal = Track->dstTotal + distancia;
 	Track->EstadoCount += 1;
 	Track->FrameCount ++;
-	if( distancia >0 ) Track->EstadoBlob = IN_FG;
-	else  Track->EstadoBlob = IN_BG;
+	if( distancia > 1 ) {
+		if( Track->EstadoBlob == IN_BG){
+			Track->EstadoBlobCount = 0;
+		}
+		Track->EstadoBlob = IN_FG;
+		Track->EstadoBlobCount += 1;
+	}
+	else{
+		if( Track->EstadoBlob == IN_FG){
+			Track->EstadoBlobCount = 0;
+		}
+		Track->EstadoBlob = IN_BG;
+		Track->EstadoBlobCount += 1;
+	}
 
 	//	updateCounts( Track );
 	//	SetStateBlob( Track );
@@ -448,6 +466,7 @@ void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsids ){
 
 		flyActual->dstTotal = Track->dstTotal;
 		flyActual->Estado = Track->EstadoBlob;
+
 	}
 	if( EstadoTrack ==  KALMAN_CONTROL){
 		// actualizar fly

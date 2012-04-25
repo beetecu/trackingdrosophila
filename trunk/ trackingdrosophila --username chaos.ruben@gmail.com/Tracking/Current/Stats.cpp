@@ -20,6 +20,7 @@ void CalcStatsFrame( STFrame* frameDataStats,STFrame* frameDataOut ){
 #endif
 
 	printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
+	statsBlobs( frameDataOut );
 
 	printf( "Rastreo finalizado con éxito ..." );
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
@@ -38,12 +39,13 @@ STStatFrame* InitStatsFrame( int NumFrame, timeval tif, timeval tinicio, int Tot
 	Stats = ( STStatFrame *) malloc( sizeof(STStatFrame));
 	if(!Stats) {error(4); return 0;}
 		//FrameData->Stats->totalFrames = 0;
+	// FRAME
 	Stats->TiempoFrame = obtenerTiempo( tif, 0 );
 	Stats->TiempoGlobal = obtenerTiempo( tinicio, 1);
 	Stats->totalFrames = TotalFrames;
 	Stats->numFrame = NumFrame;
 	Stats->fps = FPS;
-
+	// BLOBS
 	Stats->TProces = 0;
 	Stats->TTacking= 0;
 	Stats->staticBlobs= 0; //!< blobs estáticos en tanto por ciento.
@@ -63,5 +65,20 @@ STStatFrame* InitStatsFrame( int NumFrame, timeval tif, timeval tinicio, int Tot
 	Stats->CMovMedio = 0;
 
 	return Stats;
+
+}
+
+void statsBlobs( STFrame* frameData ){
+
+	STFly* fly = NULL;
+	frameData->Stats->TotalBlobs = frameData->Flies->numeroDeElementos;
+	for(int i = 0; i< frameData->Stats->TotalBlobs ; i++){
+		fly = (STFly*)obtener(i,frameData->Flies);
+		if( fly->Estado == 1 ) frameData->Stats->dinamicBlobs +=1;
+		else frameData->Stats->staticBlobs +=1;
+		// velocidad instantánea
+		EUDistance( fly->Vx, fly->Vy, NULL, &fly->Stats->VInst);
+	}
+
 
 }

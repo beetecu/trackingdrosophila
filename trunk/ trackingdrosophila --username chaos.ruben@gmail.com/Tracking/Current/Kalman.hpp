@@ -34,8 +34,6 @@
 #define CAM_CONTROL 1
 #define KALMAN_CONTROL 2
 
-
-
 #define IN_BG 0
 #define IN_FG 1
 #define MISSED 2
