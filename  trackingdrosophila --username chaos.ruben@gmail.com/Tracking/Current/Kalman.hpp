@@ -28,7 +28,6 @@
 #define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
 #define V_ANGULAR 2.6//5.2 // velocidad angular del blob en pixeles por frame
 #define MAX_JUMP 100
-#define NUMBER_OF_MATRIX 6
 
 #define SLEEPING 0
 #define CAM_CONTROL 1
@@ -39,11 +38,39 @@
 #define MISSED 2
 
 typedef struct{
+	float sum;
+}valorSumB;
+
+typedef struct {
+	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
+
+	tlcde* VectorSumB;//!< vector que contiene las velocidades instantáneas en 1800 frames
+	float SumatorioMed; //! sumatorio para la velocidad media en 1 seg
+//	float SumatorioDes; //! sumatorio para la desviación en la velocidad
+
+	float CMov1SMed;  //!< Cantidad de movimiento medio pixels/frame.
+	float CMov1MMed;  //!< Cantidad de movimiento medio.pixels/frames1m
+	float CMov1HMed;  //!< Cantidad de movimiento medio.pixels/frames1h
+	float TOn;  //!< Tiempo en movimiento desde el inicio.
+	float TOff; //!< Tiempo parado desde el inicio.
+
+	unsigned int Estado;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
+	unsigned int InitTime; //!< Numero de frame en el que se creó el track.
+	CvPoint InitPos; //!< posición en la que  se inició el track
+	unsigned int EstadoCount;
+	unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
+	unsigned int EstadoBlob; //!< Indica el estado en que se encuentra el blob: FG(0) BG (1) o MISSED (2).
+	unsigned int EstadoBlobCount;
+
+
+}STStatTrack;
+
+typedef struct{
 
 	int id;
 	CvScalar Color;
-	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
 	bool validez; // Flag que indica que el track es válido con una alta probabilidad.
+	float VInst; //!< Velocidad instantánea
 
 	CvKalman* kalman ; // Estructura de kalman para la linealizada
 
@@ -61,15 +88,7 @@ typedef struct{
 	CvMat* Medida;	// Valor real ( medido )
 	CvMat* z_k; // Zk = H Medida + V. Valor observado
 
-	unsigned int Estado;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
-	unsigned int InitTime; //!< Numero de frame en el que se creó el track.
-	CvPoint InitPos; //!< posición en la que  se inició el track
-	unsigned int EstadoCount;
-	unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
-	unsigned int EstadoBlob; //!< Indica el estado en que se encuentra el blob: FG(0) BG (1) o MISSED (2).
-	unsigned int EstadoBlobCount;
-
-	tlcde* listFlyNext;
+	STStatTrack* Stats; //! estadísticas del track
 	STFly* Flysig; // Fly asignada en t+1. Obtenemos de aqui la nueva medida
 	STFly* FlyActual; // Fly asignada en t.
 
@@ -117,9 +136,10 @@ typedef struct{
  * @param frameData Datos del nuevo frame. Imagenes y momentos de primer orden de cada blob.
  * @param lsIds  lista de identidades para asignar al nuevo track.
  * @param lsTracks  Lista que un track de cada blob.
+ * @param Frames por segundo
  */
 
-void Kalman(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks);
+void Kalman(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks, int FPS);
 
 /*! \brief Reserva memoria e inicializa un track: Le asigna una id, un color e inicia el filtro de kalman
  * Se le asigna al blob la id del track y se establece éste como fly Actual.
@@ -256,32 +276,6 @@ void EUDistance( int a, int b, float* direccion, float* distancia);
 
 float generarR_PhiZk( );
 
-/*!\brief
- - Actualiza los parámetros de Track con la nueva medida
- - Actualiza los parámetros de  fly a partir de los nuevos datos
-
- Dependiendo del estado del track se actualizará de una forma o de otra:
- -# Se actualiza el track con la nueva fly:
-	- Si Estado Track = SELEEPING(0) se establece Fly Actual y Fly Sig a NULL.
-	- Si no la fly siguiente pasa a ser fly actual y fly siguiente se pone a NULL .
- -# Se actualiza y etiqueta flyActual en función del estado del track:
-	- Correspondencia uno a uno entre blob y track. CAM_CONTROL(1).
-		-# Se identifica a la fly con la id y el color del track.
-		-# Se actualizan otros parámetros del track como distancia total, numframe, etc
-		-# Se actualizan otros parámetros de fly actual como el estado (background o foreground), etc
-	- Varios tracks que apuntan al mismo blob  KALMAN_CONTROL(2)
-		-# Se identifica a la fly con id = 0 y color blanco.
-		-# Se establece la dirección del blob como su orientación.
-		-# Se establece la distancia total en 0;
-
-
-	  \param Track Track
-	  \param EstadoTrack Situación del Track: SLEEPING(0), CAM_CONTROL(1), KALMAN_CONTROL(2)
-
-*/
-
-
-void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsIds );
 
 /*!\brief
 *-# Corrige la diferencia de vueltas.\n
@@ -301,6 +295,47 @@ void updateTrack( STTrack* Track, int EstadoTrack, tlcde* lsIds );
 	  \return : Orientación corregida
 	*/
 float corregirTita( float phiXk, float tita );
+
+/*!brief Calcula la media de la velocidad instantánea para los  frames correspondientes al
+ * último segundo. *
+ *
+ * @param Stats
+ * @param FPS
+ */
+
+/*!\brief
+ - Actualiza los parámetros de Track con la nueva medida
+ - Actualiza los parámetros de  fly a partir de los nuevos datos
+
+ Dependiendo del estado del track se actualizará de una forma o de otra:
+ -# Se actualiza el track con la nueva fly:
+	- Si Estado Track = SELEEPING(0) se establece Fly Actual y Fly Sig a NULL.
+	- Si no la fly siguiente pasa a ser fly actual y fly siguiente se pone a NULL .
+ -# Se actualiza y etiqueta flyActual en función del estado del track:
+	- Correspondencia uno a uno entre blob y track. CAM_CONTROL(1).
+		-# Se identifica a la fly con la id y el color del track.
+		-# Se actualizan otros parámetros del track como distancia total, numframe, etc
+		-# Se actualizan otros parámetros de fly actual como el estado (background o foreground), etc
+	- Varios tracks que apuntan al mismo blob  KALMAN_CONTROL(2)
+		-# Se identifica a la fly con id = 0 y color blanco.
+		-# Se establece la dirección del blob como su orientación.
+		-# Se establece la distancia total en 0;
+
+	  \param Track Track
+	  \param EstadoTrack Situación del Track: SLEEPING(0), CAM_CONTROL(1), KALMAN_CONTROL(2)
+
+*/
+void updateTracks( tlcde* lsTracks,tlcde* Flies, int FPS );
+
+void updateStatsTrack( STTrack* Track, int FPS );
+
+void updateFlyTracked( STTrack* Track, tlcde* Flies );
+
+void generarFly( STTrack* Track, tlcde* Flies);
+
+void mediaMovilFPS( STStatTrack* Stats, int FPS );
+
+void mostrarVMedia( tlcde* Vector);
 
 int dejarId( STTrack* Track, tlcde* identities );
 

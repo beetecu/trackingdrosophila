@@ -25,7 +25,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 	CBlobResult blobs;
 	CBlob *currentBlob;
 
-	IplImage* ImGray = cvCreateImage(cvGetSize( BGModel->Imed ), 8, 1 );
+	IplImage* ImGris = cvCreateImage(cvGetSize( BGModel->Imed ), 8, 1 );
 	IplImage* Imblob = cvCreateImage(cvGetSize( BGModel->Imed ), 8, 3 );
 	IplImage* lastBG = cvCreateImage( cvGetSize( BGModel->Imed ),8, 1 );
 	IplImage* lastIdes = cvCreateImage( cvGetSize( BGModel->Imed ), IPL_DEPTH_32F, 1);
@@ -53,7 +53,7 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		}
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
-		ImPreProcess( frame, ImGray, BGModel->ImFMask, 0, BGModel->DataFROI);
+		ImPreProcess( frame, ImGris, BGModel->ImFMask, 0, BGModel->DataFROI);
 
 		// Cargamos datos del fondo
 		if(!frameData ) { //en la primera iteración iniciamos el modelo dinamico al estático
@@ -72,9 +72,9 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		// Actualización del fondo
 		// establecer parametros
 		if( BGParams == NULL ) DefaultBGMParams( &BGParams);
-		UpdateBGModel( ImGray,frameData->BGModel,frameData->IDesvf, BGParams, BGModel->DataFROI, BGModel->ImFMask );
+		UpdateBGModel( ImGris,frameData->BGModel,frameData->IDesvf, BGParams, BGModel->DataFROI, BGModel->ImFMask );
 		/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
-		BackgroundDifference( ImGray, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGParams, BGModel->DataFROI);
+		BackgroundDifference( ImGris, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGParams, BGModel->DataFROI);
 
 		// guardamos las imagenes para iniciar el siguiente frame
 		cvCopy( frameData->BGModel, lastBG);
@@ -156,10 +156,10 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 
 	if(SHOW_SHAPE_MODEL_DATA_MEDIANA )
 		printf("\n MEDIANA AREAS: %f \t MEDIA AREAS: %f \t DESVIACION AREAS: %f",Shape->FlyAreaMed,Shape->FlyAreaMedia,Shape->FlyAreaDes);
-	if( visParams) free( visParams);
+
 	free( BGParams);
 	liberarSTFrame( frameData );
-	cvReleaseImage( &ImGray);
+	cvReleaseImage( &ImGris);
 	cvReleaseImage( &Imblob);
 	cvReleaseImage( &lastIdes);
 	cvReleaseImage( &lastBG);

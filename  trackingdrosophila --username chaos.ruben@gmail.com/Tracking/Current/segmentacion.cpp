@@ -62,7 +62,8 @@ tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect 
 
 //		cvShowImage("Foreground",FGTemp);
 //				cvWaitKey(0);
-#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#ifdef MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 #endif
 
 	//////  DISTANCIA DE CADA PIXEL A SU MODELO DE FONDO.
@@ -197,17 +198,14 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 		fly->flag_seg = false;
 		fly->Px = 0;
 		fly->areaElipse = CV_PI*fly->b*fly->a;
-		fly->Vx = 0;
-		fly->Vy = 0;
-		fly->Ax = 0;
-		fly->Ay = 0;
+
 		fly->dir_filtered = 0;
 
 		return fly;
 	}
 	else{
 		free(fly);
-		fly == NULL;
+		fly = NULL;
 		return fly;
 	}
 

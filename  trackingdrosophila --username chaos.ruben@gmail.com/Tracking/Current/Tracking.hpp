@@ -437,11 +437,12 @@
  * @param MaxTracks Numero máximo de tracks
  * @param BGModel Modelo de fondo
  * @param Writer Estructura necesaria para grabar partes de la salida
+ * @param Frames por segundo
  * @return STFrame FrameDataOut. Devuelve estructura tipo STFrame que contiene las imagenes y datos del frame de salida
 			0 Mientras el buffer no esté lleno;
  */
 
-STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer );
+STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer, int FPS );
 
 /*! \brief Elimina tracks de espurios y blobs que aparecen en t y desaparecen en t+1.
  * Da una idea de la validez de un track en base al tiempo que esta en estado CAM_CONTROL
@@ -513,6 +514,12 @@ y este es válido ( OJO con esto. Si no verificamos
 void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds);
 
 void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo, int viejo);
+
+/*!brief Ordena la lista tracks de forma creciente
+ *
+ * @param lsTracks
+ */
+void ordenarTracks( tlcde* lsTracks );
 
 void AllocateTrackImages( IplImage *I );
 

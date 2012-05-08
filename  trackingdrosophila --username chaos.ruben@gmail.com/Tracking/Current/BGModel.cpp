@@ -22,17 +22,13 @@ int g_slider_position = 50;
 
 // Float 1-Channel
 IplImage* Idesf; // Almacena el valor median|I(p)- median(p)| del frame t-1
-IplImage *IdifF;	// Almacena |I(p)- median(p)|
-IplImage *Idif;
+IplImage *Idif;// Almacena |I(p)- median(p)|
 
 //Byte 1-Channel
 IplImage *ImGray; /// Imagen preprocesada
-IplImage *ImGrayF; /// Imagen preprocesada float
 
 IplImage *Imaskt; // mascara para actualización no selectiva de fondo
 IplImage *fgTemp; // copia del fg para buscar los contornos
-IplImage *IlowF; /// La mediana menos x veces la desviación típica
-IplImage *IHiF;
 
 IplImage *bgTemp = NULL; // imagen temporal para almacenar el fondo antes de actualización no selectiva
 IplImage *desTemp = NULL;
@@ -253,9 +249,9 @@ void MascaraPlato(CvCapture* t_capture,
 		if ( (cvWaitKey(10) & 255) == 27 ) break;
 
 		//		VerEstadoBGModel( frame );
-		if(!Im){
+		if(!Im){ // inicializar
 			Im = cvCreateImage(cvSize(frame->width,frame->height),8,1);
-			minRadio = cvRound(frame->height / 3);
+			minRadio = cvRound(frame->height / 3); // radio minimo inicial
 			medX = frame->width /2;
 			medY = frame->height/2;
 			medR = minRadio;
@@ -281,7 +277,7 @@ void MascaraPlato(CvCapture* t_capture,
 //		cvWaitKey(0);
 
 		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,Im->height/4,200,100, minRadio,
-				cvRound( Im->height/2 ));
+				cvRound( Im->height )/2 + 20);
 		int i;
 		for (i = 0; i < circles->total; i++)
 		{
@@ -291,8 +287,8 @@ void MascaraPlato(CvCapture* t_capture,
 
 			if(  (  cvRound( p[0]) < cvRound( p[2] )  ) || // si x es menor que r ( circ se sale por la izda )
 					( ( Im->width - cvRound( p[0]) ) < cvRound( p[2] )  ) || //o si el ancho menos x es menor que r ( se sale por la dercha)
-					(  cvRound( p[1] )  < cvRound( p[2] ) ) || // o si y es menor que r (se sale por arriba )
-					( ( Im->height - cvRound( p[1]) ) < cvRound( p[2] ) ) // se sale por abajo
+					(  cvRound( p[1] )  < cvRound( p[2]-10 ) ) || // o si y es menor que r (se sale por arriba )
+					( ( Im->height - cvRound( p[1]) ) < cvRound( p[2]-10 ) ) // se sale por abajo
 			) continue;
 			if ( cvRound( p[0] )  > medX ) medX++;
 							else if ( cvRound( p[0] )  < medX ) medX--;
@@ -317,8 +313,8 @@ void MascaraPlato(CvCapture* t_capture,
 					 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
 				}
 //				if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
-				//	cvShowImage("Buscando Plato...",Visual);
-			//cvWaitKey(0);
+//					cvShowImage("Buscando Plato...",Flat->Imed);
+//					cvWaitKey(0);
 			}
 			if(SHOW_WINDOW){
 //				 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
@@ -331,11 +327,12 @@ void MascaraPlato(CvCapture* t_capture,
 			if (Flat->PRadio>0){
 				cvAdd( Im, Flat->Imed,Flat->Imed);
 				cvCircle(Flat->Imed , cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);}
-			DraWWindow(frame, NULL, Flat,  NULL, FLAT);
+
 			if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT ){
 				cvShowImage("Buscando Plato...",Flat->Imed);
-				//cvWaitKey(0);
+//				cvWaitKey(0);
 			}
+			if(SHOW_WINDOW) DraWWindow(frame, NULL, Flat,  NULL, FLAT);
 		}
 		minRadio = medR ;
 		num_frames +=1;
@@ -350,13 +347,26 @@ void MascaraPlato(CvCapture* t_capture,
 	printf("\t\t-Plato localizado. Estableciendo parámetros :\n ");
 	printf("\t\t\t-Centro x : %d \n\t\t\t-Centro y %d \n\t\t\t-Radio: %d \n"
 			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
-	Flat->DataFROI = cvRect(Flat->PCentroX-Flat->PRadio,
-			Flat->PCentroY-Flat->PRadio,
-			2*Flat->PRadio,
-			2*Flat->PRadio ); // Datos para establecer ROI del plato
+
+	// establecemos la roi del plato
+	int x;
+	int y;
+	int width;
+	int height;
+
+	if(  Flat->PCentroX < Flat->PRadio  ) x = 0; // si x es menor que r ( circ se sale por la izda )
+	else x = Flat->PCentroX-Flat->PRadio;
+	if(  Flat->PCentroY < Flat->PRadio  )  y = 0; //  si y es menor que r (se sale por arriba )
+	else y = Flat->PCentroY-Flat->PRadio;
+	if( ( Im->width - Flat->PCentroX ) < Flat->PRadio  ) width = Im->width - x ;//o si el ancho menos x es menor que r ( se sale por la derecha)
+	else width = 2*Flat->PRadio;
+	if( ( Im->height - Flat->PCentroY ) < Flat->PRadio ) height = Im->height- y;
+	else height = 2*Flat->PRadio;
+
+	Flat->DataFROI = cvRect(x, y, width, height ); // Datos para establecer ROI del plato
+
+
 	// Creacion de mascara
-
-
 	//	GlobalTime = (double)cvGetTickCount() - GlobalTime;
 	//	printf( " %.1f\n", GlobalTime/(cvGetTickFrequency()*1000.) );
 	for (int y = 0; y< Im->height; y++){
@@ -377,7 +387,7 @@ void MascaraPlato(CvCapture* t_capture,
 	return;
 }
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , IplImage* mask = NULL ) {
-	// si la máscara es null, se crea una inicializada a 0, lo que implicará
+	// si la máscara es null(POR DEFECTO), se crea una inicializada a 0, lo que implicará
 	// la actualización de todos los pixeles del background
 	struct timeval ti; // iniciamos la estructura
 	double tiempoParcial;
@@ -520,6 +530,7 @@ void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGM
 	else if(Param->MODEL_TYPE == GAUSSIAN || Param->MODEL_TYPE == GAUSSIAN_S_UP){
 		if ( Param->MODEL_TYPE == GAUSSIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI , 0);
 		else{
+			// selectiva
 			accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Mask);
 		}
 	}
@@ -855,70 +866,42 @@ void DeallocateBGM( StaticBGModel* BGModel){
 void AllocateTempImages( IplImage *I ) {  // I is just a sample for allocation purposes
 
 	CvSize sz = cvGetSize( I );
-	if( !Idif ||
-			Idif->width != sz.width ||
-			Idif->height != sz.height ) {
-
-		cvReleaseImage( &Idesf);
-		cvReleaseImage( &Idif);
-		cvReleaseImage( &IdifF);
-		cvReleaseImage( &IlowF );
-		cvReleaseImage( &IHiF );
-		cvReleaseImage( &ImGray );
-		cvReleaseImage( &ImGrayF );
-		cvReleaseImage( &Imaskt );
-
-		cvReleaseImage(&fgTemp);
-		cvReleaseImage(&bgTemp);
-		cvReleaseImage(&desTemp);
+	if( !Idif  ) {
 
 		Idesf = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-		IdifF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 		Idif = cvCreateImage( sz, 8, 1 );
-		IlowF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
-		IHiF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 		ImGray = cvCreateImage( sz, 8, 1 );
-		ImGrayF = cvCreateImage( sz, IPL_DEPTH_32F, 1 );
 		Imaskt = cvCreateImage( sz, 8, 1 );
 		fgTemp = cvCreateImage(sz, IPL_DEPTH_8U, 1);
 		bgTemp = cvCreateImage(sz, IPL_DEPTH_8U, 1);
 		desTemp = cvCreateImage(sz, IPL_DEPTH_32F, 1);
 
 		cvZero( Idesf);
-		cvZero( IdifF );
 		cvZero( Idif );
-		cvZero( IlowF );
 		cvZero(ImGray);
-		cvZero(ImGrayF);
 
 		cvZero(Imaskt);
 		cvZero(fgTemp);
 		cvZero(bgTemp);
 		cvZero(desTemp);
-
 	}
 }
 
 void DeallocateTempImages() {
 
 	cvReleaseImage( &Idesf);
-	cvReleaseImage( &IdifF );
 	cvReleaseImage( &Idif );
-	cvReleaseImage( &IlowF );
-	cvReleaseImage( &IHiF );
 	cvReleaseImage( &Imaskt );
+
 	cvReleaseImage( &ImGray );
-	cvReleaseImage( &ImGrayF );
 	cvReleaseImage( &fgTemp );
+
 	cvReleaseImage( &bgTemp );
 	cvReleaseImage( &desTemp );
 
 	Idesf = NULL;
-	IdifF =NULL;
 	Idif = NULL;
-	IlowF = NULL;
 	ImGray = NULL;
-	ImGrayF = NULL;
 	Imaskt = NULL;
 	fgTemp = NULL;
 	bgTemp = NULL;

@@ -43,6 +43,10 @@ typedef struct {
 	CvRect ROITracking;
 	CvRect ROIPreProces;
 	int DelayLogo;
+	int DelayUp;
+	int DelayDown;
+	int DelayTr;
+	bool TransOff;
 	int BPrWidth; // ancho de la barra de progeso
 }VisParams;
 
@@ -92,7 +96,7 @@ void IncrustarTxt( int num );
  * \param Im Imagen de 8 bits, donde se visualiza el frame actual.
  */
 
-void ShowStatDataFr( STStatFrame* Stats, IplImage* ImVisual);
+void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats, IplImage* ImVisual);
 
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks );
 
