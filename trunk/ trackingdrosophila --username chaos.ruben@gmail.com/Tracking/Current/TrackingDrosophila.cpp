@@ -25,26 +25,15 @@ StaticBGModel* BGModel = NULL;
 // Modelado de forma
 SHModel* Shape;
 
-// PROCESADO
-/// Estructura fly
-STFly* Fly = NULL;
-/// Lista flies
-tlcde *Flies = NULL;
+/// PROCESADO
 /// Estructura frame
 STFrame* FrameDataIn = NULL;
-STFrame* FrameDataOut1 = NULL;
-STFrame* FrameDataOut2 = NULL;
+STFrame* FrameDataOut = NULL;
+
 ///Parámetros fondo para procesado
 BGModelParams *BGPrParams = NULL;
 ///Parámetros Validación para procesado
 ValParams* valParams = NULL;
-
-///TRACKING
-/// Buffer frames
-tlcde *FramesBuf = NULL;
-
-/// Estructura estadísticas
-STStatFrame* Stats;
 
 ///HightGui
 int g_slider_pos = 0;
@@ -79,18 +68,22 @@ int main(int argc, char* argv[]) {
 		help();
 		return -1;
 	}
-//	VWriter = iniciarAvi( g_capture, nombreVideo);
+
 //  Iniciar parámetros de visualización y creación de ventanas
 
 	TotalFrames = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FRAME_COUNT);
-	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0.95);
-	float TotalTime = cvGetCaptureProperty( g_capture, CV_CAP_PROP_POS_MSEC);
-	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0);
+//	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0.95);
+//	float TotalTime = cvGetCaptureProperty( g_capture, CV_CAP_PROP_POS_MSEC);
+//	cvSetCaptureProperty( g_capture, CV_CAP_PROP_POS_AVI_RATIO,0);
 	if(!TotalFrames) TotalFrames = getAVIFrames(argv[1]); // en algun linux no funciona lo anterior
 	FPS = cvGetCaptureProperty( g_capture, CV_CAP_PROP_FPS);
+	FPS = 15;
 	printf("\nInicializando parámetros...");
 	frame = cvQueryFrame( g_capture );
+
 	AllocDefaultVisParams( frame );
+
+
 	TiempoGlobal = 0;
 	NumFrame = 0;
 	TiempoFrame = 0;
@@ -99,7 +92,7 @@ int main(int argc, char* argv[]) {
 
 	////////// INICIALIZACIÓN //////////////
 	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
-
+	VWriter = iniciarAvi( g_capture, nombreVideo);
 	//////////  PREPROCESADO   ////////////
 
 	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(NULL, NULL);
@@ -134,31 +127,29 @@ int main(int argc, char* argv[]) {
 		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR  ////////////
-		FrameDataOut1 = Tracking( FrameDataIn, 14, BGModel, VWriter );
+		FrameDataOut = Tracking( FrameDataIn, 10, BGModel, VWriter,FPS );
 
 		// SI BUFFER LLENO
 		////////// ESTADISTICAS //////////
-		// para su cálculo usamos el frameDataOut anterior.
-		CalcStatsFrame( FrameDataOut2, FrameDataOut1 );
+
+		CalcStatsFrame( FrameDataOut );
 
 		//////////  VISUALIZAR     ////////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-		if(SHOW_WINDOW) DraWWindow( frame, FrameDataOut2, BGModel,VWriter, TRAKING );
+		if(SHOW_WINDOW) DraWWindow( frame, FrameDataOut, BGModel,VWriter, TRAKING );
 
 		//////////  ALMACENAR ////////////
-		if(!GuardarSTFrame( FrameDataOut2, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
+		if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
 
 //			////////// LIBERAR MEMORIA  ////////////
-		liberarSTFrame( FrameDataOut2 );
+		liberarSTFrame( FrameDataOut );
 
-		FrameDataOut2 = FrameDataOut1;
-
-		FrameDataIn->Stats = InitStatsFrame( NumFrame, tif, tinicio, TotalFrames, FPS );
+		FrameDataIn->GStats = SetGlobalStats( NumFrame, tif, tinicio, TotalFrames, FPS );
 
 
 		printf("\n//////////////////////////////////////////////////\n");
-		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->Stats->TiempoFrame);
-		printf("Segundos de video procesados: %0.f seg \n", FrameDataIn->Stats->TiempoGlobal);
+		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame-1, FrameDataIn->GStats->TiempoFrame);
+		printf("Segundos de video procesados: %0.f seg \n", FrameDataIn->GStats->TiempoGlobal);
 		printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/TotalFrames)*100 );
 		printf("\n//////////////////////////////////////////////////\n");
 //		if(!SHOW_WINDOW)	VisualizarFr( FrameDataIn, BGModel, VWriter, visParams );
@@ -188,17 +179,13 @@ void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
 	// liberar imagenes y datos de procesado
 	releaseDataProcess(valParams, BGPrParams);
 	if( FrameDataIn ) liberarSTFrame( FrameDataIn);
-	if( FrameDataOut1 ) liberarSTFrame( FrameDataOut1);
-	if( FrameDataOut2 ) liberarSTFrame( FrameDataOut2);
-	if(Fly) free(Fly);
-	//liberar listas
-	if(Flies) free( Flies );
+//	if( FrameDataOut ) liberarSTFrame( FrameDataOut);
 
 	// liberar imagenes y datos de tracking
 	ReleaseDataTrack( );
 
 	// liberar estructura estadísticas
-	if( Stats ) free(Stats);
+	releaseStats();
 	// liberar imagenes y datos de visualización
 	releaseVisParams( );
 	DestroyWindows( );

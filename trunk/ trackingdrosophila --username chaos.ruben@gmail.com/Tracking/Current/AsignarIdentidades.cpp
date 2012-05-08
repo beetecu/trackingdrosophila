@@ -326,7 +326,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 	for(int list=0;list<lsTraks->numeroDeElementos;list++){
 			Track_list=(STTrack*)obtener(list,lsTraks);
-			if(Track_list->Estado==0){
+			if(Track_list->Stats->Estado==0){
 				anyadirAlFinal(Track_list,sleep_list);
 				borrarEl(list,lsTraks);
 			}
@@ -390,11 +390,12 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 //	}
 //
 //	}
+
 	printf("/n********* PESOS*********************************");
 	for(int r=0;r<Matrix_Hungarian->rows;r++){
-		printf("\n");
+		if(SHOW_AI_DATA) printf("\n");
 		for(int b=0;b<Matrix_Hungarian->cols;b++){
-		printf("\t %f",Matrix_Hungarian->data.fl[ger]);
+			if(SHOW_AI_DATA) printf("\t %f",Matrix_Hungarian->data.fl[ger]);
 		ger++;
 		}
 	}
@@ -402,12 +403,13 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 	Matrix_Asignation=Hungaro(Matrix_Hungarian);
 
 	double Asignation_Matrix[Matrix_Asignation->rows][Matrix_Asignation->cols];
+
 	printf("\n********************* ASIGNACION********************");
 	for(int l=0;l<Matrix_Asignation->rows;l++){
-		printf("\n");
+		if(SHOW_AI_DATA) printf("\n");
 		for(int m=0;m<Matrix_Asignation->cols;m++){
 			Asignation_Matrix[l][m] = Matrix_Asignation->data.fl[g];
-			printf("\t %f",Matrix_Asignation->data.fl[g]);
+			if(SHOW_AI_DATA) printf("\t %f",Matrix_Asignation->data.fl[g]);
 			g++;
 		}
 	}
@@ -432,7 +434,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 					if(FlySiguiente && TrackActual){
 
 						TrackActual->Flysig=FlySiguiente;
-						if(TrackActual->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+						if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 
 					}
 
@@ -466,7 +468,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 									indCandidato=n_row;
 									indFlie=y;
 
-									}// if
+								}// if
 
 							}// for
 
@@ -512,7 +514,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 								if(FlySiguiente && TrackActual){
 
 									TrackActual->Flysig=FlySiguiente;
-									if(TrackActual->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+									if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 
 								}
 

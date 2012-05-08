@@ -73,6 +73,11 @@ int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape ){
 
 void InitialBGModelParams( BGModelParams* Params){
 
+	// leer fichero.
+
+	// si no se encuentra, establecer parámetros por defecto.
+	// Params->DETECTAR_PLATO = true;
+	 Params->MODEL_TYPE = MEDIAN_S_UP;
 	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 500;
 	 else Params->FLAT_FRAMES_TRAINING = 0;
 	 Params->BG_Update = 5;
@@ -82,7 +87,7 @@ void InitialBGModelParams( BGModelParams* Params){
 	 Params->ALPHA = 0 ;
 	 Params->INITIAL_DESV = 0.05;
 
-	 Params->MODEL_TYPE = MEDIAN_S_UP;
+
 
 	 Params->MORFOLOGIA = true;
 	 Params->CVCLOSE_ITR = 1;

@@ -150,7 +150,7 @@ void *sustituirEl( void *e, tlcde *lcde, int i);
 void *borrarEl(int i,tlcde *lcde);
 
 
-//!\brief Avanzar la posición actual al siguiente elemento dentro de l lita.
+//!\brief Avanzar la posición actual al siguiente elemento dentro de l lista.
 /*!
  *\param lcde Lista circular doblemente enlazada.
  */

@@ -83,6 +83,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 		cvCopy( BGModel->Imed,lastBG);
 		cvCopy( BGModel->IDesvf,lastIdes);
 	}
+	// inicializar parámetros de modelo de fondo y de validación
 	if( !BGPrParams) {
 		DefaultBGMParams( &BGPrParams );
 		putBGModelParams( BGPrParams );
@@ -142,7 +143,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 
 	/////// VALIDACIÓN
 
-	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
+//	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
 	if( SHOW_PROCESS_IMAGES){
 			cvShowImage( "Foreground", frameData->FG);
@@ -209,6 +210,8 @@ STFrame* InitNewFrameData(IplImage* I ){
 	FrameData->Flies = NULL;
 	FrameData->Stats = NULL;
 	FrameData->Tracks = NULL;
+	FrameData->GStats = NULL;
+
 	FrameData->num_frame = (int)NumFrame;
 
 	return FrameData;

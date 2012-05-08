@@ -26,7 +26,7 @@
 
 using namespace cv;
 using namespace std;
-//#include "Libreria.h"
+
 
 #define CVX_RED CV_RGB(255,0,0)
 #define CVX_BLUE CV_RGB(0,0,255)
@@ -38,12 +38,13 @@ using namespace std;
 
 
 // OPCIONES GENERALES DE PROGRAMA
-#define INIT_DELAY 50
-#define MODO_DEPURACION
-#define DETECTAR_PLATO 1
-#define MEDIR_TIEMPOS 0
+#define INIT_DELAY 50 // retardo al inicio
+#define DETECTAR_PLATO 1 // activa la detección del plato
+//#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
+#define CALC_STATS_MOV 1
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
+#define MODO_DEPURACION
 
 #define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
@@ -60,6 +61,7 @@ using namespace std;
 #define SHOW_VALIDATION_DATA 0//!< Switch de 0 a 1 para visualizar los datos de la validación.
 #define SHOW_VALIDATION_TIMES 0
 
+#define SHOW_AI_DATA 0
 #define SHOW_MT_DATA 0
 
 #define SHOW_KALMAN_DATA 0
@@ -68,14 +70,15 @@ using namespace std;
 #define SHOW_WINDOW 1 //!< Switch de 0 a 1 para visualizar resultado
 #define SHOW_PRESENT 0 //!< Switch de 0 a 1 para visualizar presentacion
 #define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
-
-#define SHOW_VISUALIZATION 0 //!< Switch de 0 a 1 GENERAL para visualizar resultados.
 #define ACTIVAR_OPCIONES_VISUALIZACION 1
 
+// DEPURACION
+#define SHOW_VISUALIZATION 0 //!< Switch de 0 a 1 GENERAL para visualizar resultados de depuración.
+
 // Depuración preprocesado
-#define SHOW_LEARNING_FLAT 0
-#define SHOW_INIT_BACKGROUND 0
-#define SHOW_SHAPE_MODELING 0//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
+#define SHOW_LEARNING_FLAT 1
+#define SHOW_INIT_BACKGROUND 1
+#define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
 
 // Depuración procesado
 #define SHOW_PROCESS_IMAGES 0 //!< Switch de 0 a 1 para visualizar los resultados del procesado etapa a etapa.
@@ -83,11 +86,11 @@ using namespace std;
 #define SHOW_VALIDATION_IMAGES 0//!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
 
 
-#define SHOW_BG_REMOVAL 0 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
+#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
 #define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
-#define SHOW_KALMAN 0
-#define GRABAR_VISUALIZACION 0
+#define SHOW_KALMAN 1
+#define GRABAR_VISUALIZACION 1
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
 
@@ -122,12 +125,15 @@ using namespace std;
 
 #endif //_INTERFAZ_LCSE_H
 
-	typedef struct {
-		float VInst; //!< Velocidad instantánea
-		float CMov30Med;  //!< Cantidad de movimiento medio .
-		float TOn;  //!< Tiempo en movimiento desde el inicio.
-		float TOff; //!< Tiempo parado desde el inicio.
-	}STStatFly;
+typedef struct {
+
+	float CMov1SMed;  //!< Cantidad de movimiento medio mm/s.
+	float CMov1MMed;  //!< Cantidad de movimiento medio.mm/min
+	float CMov1HMed;  //!< Cantidad de movimiento medio.mm/h
+	unsigned int EstadoTrack;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
+	unsigned int EstadoBlobCount;  //!< Tiempo que el blob permanece en un estado
+	unsigned int EstadoTrackCount;
+}STStatFly;
 
 	typedef struct {
 
@@ -155,13 +161,10 @@ using namespace std;
 				  // Px = e^(⁻|areaElipse - area_media|/desviacion )
 
 		// Tracking. Dinámica
+		float VInst; //!< Velocidad instantánea
 		float dstTotal; //!< almacena la distancia total recorrida hasta el momento
 		float direccion; //!<almacena la dirección del desplazamiento
 		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
-		float Vx;
-		float Vy;
-		int Ax; //!< incremento de la posición en x entre frame t-1 y el actual
-		int Ay; //!< incremento de la posición en x entre frame t-1 y el actual
 
 		unsigned int Estado;
 		bool salto;	//!< Indica que la mosca ha saltado
@@ -188,8 +191,6 @@ using namespace std;
 	}StaticBGModel;
 
 
-/// Estructura que almacena cálculos estadísticos globales simples para mostrar en tiempo de ejecución.
-
 	typedef struct {
 		CvRect ROIS; //!< Zonas de interes
 		int totalFrames; //!< Numero de Frames que posee en video
@@ -197,6 +198,17 @@ using namespace std;
 		float fps;
 		float TiempoFrame;
 		float TiempoGlobal;
+	}STGlobStatF;
+
+/// Estructura que almacena cálculos estadísticos globales simples para mostrar en tiempo de ejecución.
+
+	typedef struct {
+//		CvRect ROIS; //!< Zonas de interes
+//		int totalFrames; //!< Numero de Frames que posee en video
+//		int numFrame; //!< Numero de Frame que se está procesando.
+//		float fps;
+//		float TiempoFrame;
+//		float TiempoGlobal;
 
 		float TProces;
 		float TTacking;
@@ -204,17 +216,36 @@ using namespace std;
 		float dinamicBlobs; //!< blobs en movimiento en tanto por ciento
 		int TotalBlobs; //!< Número total de blobs.
 
+		float CMov1SMed;
+		float CMov1SDes;
+		float CMov30SMed;
+		float CMov30SDes;
+		float CMov1Med;
+		float CMov1Des;
+		float CMov5Med;
+		float CMov5Des;
+		float CMov10Med;
+		float CMov10Des;
+		float CMov15Med;
+		float CMov15Des;
 		float CMov30Med;  //!< Cantidad de movimiento medio en los últimos 30 min.
 		float CMov30Des;
 		float CMov1HMed;  //!< Cantidad de movimiento medio en la última hora.
 		float CMov1HDes;
-		float CMov2H;	//!< Cantidad de movimiento medio en  últimas 2 horas.
-		float CMov4H;
-		float CMov8H;
-		float CMov16H;
-		float CMov24H;
-		float CMov48H;
+		float CMov2HMed;	//!< Cantidad de movimiento medio en  últimas 2 horas.
+		float CMov2HDes;
+		float CMov4HMed;
+		float CMov4HDes;
+		float CMov8HMed;
+		float CMov8HDes;
+		float CMov16HMed;
+		float CMov16HDes;
+		float CMov24HMed;
+		float CMov24HDes;
+		float CMov48HMed;
+		float CMov48HDes;
 		float CMovMedio; //!< Cantidad de movimiento medio desde el comienzo.
+		float CMovMedioDes;
 	}STStatFrame;
 
 /// Estructura que almacena las capas del frame, los datos para realizar calculos estadisticos simples en
@@ -231,6 +262,7 @@ using namespace std;
 		IplImage* ImMotion;//!< Imagen que contiene la orientación de moscas.
 		IplImage* ImKalman;
 		STStatFrame * Stats;
+		STGlobStatF * GStats;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
 		int numTracks;
 		tlcde* Tracks; //!< Puntero a lista circular doblemente enlazada (tlcde) con cada Track.

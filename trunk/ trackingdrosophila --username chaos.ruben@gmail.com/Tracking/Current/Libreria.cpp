@@ -605,70 +605,8 @@ void mostrarListaFlies(int pos,tlcde *lista)
 	for (n = 0; n < pos; n++) irAlSiguiente(lista);
 	// obtenemos la lista de flies
 	frameData = (STFrame*)obtenerActual( lista );
-	flies = frameData->Flies;
 	// Mostrar todos los elementos de la lista
-	int i = 0, tam = flies->numeroDeElementos;
-	STFly* flydata = NULL;
-	for(int j = 0; j < 12; j++){
-		while( i < tam ){
-			flydata = (STFly*)obtener(i, flies);
-			if (j == 0){
-				if (i == 0) printf( "\n\netiquetas");
-				printf( "\t%d",flydata->etiqueta);
-			}
-			if( j == 1 ){
-				if (i == 0) printf( "\nPosiciones");
-				int x,y;
-				x = flydata->posicion.x;
-				y = flydata->posicion.y;
-				printf( "\t%d %d",x,y);
-			}
-
-			if( j == 2 ){
-				if (i == 0) printf( "\nOrientacion");
-				printf( "\t%0.1f",flydata->orientacion);
-			}
-			if( j == 3 ){
-				if (i == 0) printf( "\nDirección");
-				printf( "\t%0.1f",flydata->direccion);
-			}
-			if( j == 4 ){
-				if (i == 0) printf( "\nDir_filter");
-				printf( "\t%0.1f",flydata->dir_filtered);
-			}
-			if( j == 5 ){
-				if (i == 0) printf( "\nVx\t");
-				printf( "\t%0.1f",flydata->Vx);
-			}
-			if( j == 6 ){
-				if (i == 0) printf( "\nVy\t");
-				printf( "\t%0.1f",flydata->Vy);
-			}
-			if( j == 7 ){
-				if (i == 0) printf( "\nArea\t");
-				printf( "\t%0.1f",flydata->areaElipse);
-			}
-//			if( j == 8 ){
-//				if (i == 0) printf( "\nEstado\t");
-//				printf( "\t%d",flydata->Estado);
-//			}
-//			if( j == 9 ){
-//				if (i == 0) printf( "\nFrameCount");
-//				printf( "\t%d",flydata->FrameCount);
-//			}
-//			if( j == 10 ){
-//				if (i == 0) printf( "\nStaticFrames");
-//				printf( "\t%d",flydata->StaticFrames);
-//			}
-			if( j == 11 ){
-				if (i == 0) printf( "\nNumFrame");
-				printf( "\t%d",flydata->num_frame);
-			}
-			i++;
-		}
-		i=0;
-	}
-	if (tam == 0 ) printf(" Lista vacía\n");
+	mostrarFliesFrame(frameData);
 	// regresamos lista al punto en que estaba antes de llamar a la funcion de mostrar lista.
 	irAlPrincipio(lista);
 	for (n = 0; n < pos_act; n++) irAlSiguiente(lista);
@@ -683,7 +621,7 @@ void mostrarFliesFrame(STFrame *frameData)
 	// Mostrar todos los elementos de la lista
 	int i = 0, tam = flies->numeroDeElementos;
 	STFly* flydata = NULL;
-	for(int j = 0; j < 12; j++){
+	for(int j = 0; j < 6; j++){
 		while( i < tam ){
 			flydata = (STFly*)obtener(i, flies);
 			if (j == 0){
@@ -710,18 +648,18 @@ void mostrarFliesFrame(STFrame *frameData)
 				if (i == 0) printf( "\nDir_filtered");
 				printf( "\t%0.1f",flydata->dir_filtered);
 			}
-			if( j == 5 ){
-				if (i == 0) printf( "\nVx\t");
-				printf( "\t%0.1f",flydata->Vx);
-			}
-			if( j == 6 ){
-				if (i == 0) printf( "\nVy\t");
-				printf( "\t%0.1f",flydata->Vy);
-			}
-			if( j == 7 ){
-				if (i == 0) printf( "\nArea\t");
-				printf( "\t%0.1f",flydata->areaElipse);
-			}
+//			if( j == 5 ){
+//				if (i == 0) printf( "\nVx\t");
+//				printf( "\t%0.1f",flydata->Vx);
+//			}
+//			if( j == 6 ){
+//				if (i == 0) printf( "\nVy\t");
+//				printf( "\t%0.1f",flydata->Vy);
+//			}
+//			if( j == 7 ){
+//				if (i == 0) printf( "\nArea\t");
+//				printf( "\t%0.1f",flydata->areaElipse);
+//			}
 //			if( j == 8 ){
 //				if (i == 0) printf( "\nEstado\t");
 //				printf( "\t%d",flydata->Estado);
@@ -735,7 +673,7 @@ void mostrarFliesFrame(STFrame *frameData)
 //				if (i == 0) printf( "\nStaticFrames");
 //				printf( "\t%d",flydata->StaticFrames);
 //			}
-			if( j == 11 ){
+			if( j == 5 ){
 				if (i == 0) printf( "\nNumFrame");
 				printf( "\t%d",flydata->num_frame);
 			}
@@ -841,9 +779,12 @@ void liberarSTFrame( STFrame* frameData ){
 
 	liberarListaFlies( frameData->Flies);
 	if (frameData->Flies ) free( frameData->Flies);
-	if( frameData->Stats) free(frameData->Stats);
+	if( frameData->GStats) free(frameData->GStats);
 
+	frameData->Flies = NULL;
+	frameData->GStats = NULL;
     free(frameData); // borrar el área de datos del elemento eliminado
+    frameData = NULL;
 }
 
 void liberarBuffer(tlcde *FramesBuf)
@@ -851,25 +792,13 @@ void liberarBuffer(tlcde *FramesBuf)
   // Borrar todos los elementos del buffer
   STFrame *frameData = NULL;
   if (FramesBuf->numeroDeElementos == 0 ) return;
-  // borrar: borra siempre el elemento actual
-  irAlPrincipio(FramesBuf);
-  frameData = (STFrame *)borrar( FramesBuf );
-  while (frameData)
-  {
-	liberarListaFlies( frameData->Flies);
-	free( frameData->Flies );
-	if( frameData->Stats) free(frameData->Stats);
-	cvReleaseImage(&frameData->Frame);
-	cvReleaseImage(&frameData->BGModel);
-	cvReleaseImage(&frameData->FG);
-	cvReleaseImage(&frameData->IDesvf);
-	cvReleaseImage(&frameData->ImMotion);
-	cvReleaseImage(&frameData->OldFG);
-	cvReleaseImage(&frameData->ImAdd);
-	cvReleaseImage(&frameData->ImKalman);
-    free(frameData); // borrar el área de datos del elemento eliminado
-    frameData = (STFrame *)borrar( FramesBuf );
-  }
+	irAlPrincipio( FramesBuf);
+	frameData = (STFrame*)borrar( FramesBuf);
+	while(frameData){
+		liberarSTFrame( frameData );
+		frameData = NULL;
+		frameData = (STFrame*)borrar( FramesBuf);
+	}
 }
 void CrearIdentidades(tlcde* Identities){
 
@@ -914,6 +843,8 @@ void CrearIdentidades(tlcde* Identities){
  		printf("Id = %d\n", id->etiqueta);
  	}
  }
+
+
 
  void visualizarId(IplImage* Imagen,CvPoint pos, int id , CvScalar color ){
 
@@ -1032,15 +963,18 @@ int GuardarSTFrame( STFrame* frameData , char *nombreFichero){
 	}
 	int i = 0, tam = Flies->numeroDeElementos;
 
-	// las de etiqueta 0 no se computarán.
-	for( int i= 1; i <= Flies->numeroDeElementos; i++){
+	// cuando haya una con etiqueta 0 no se computarán, se almacenará la posición de la fly con la id del track
+	for( int i= 1; i <= Flies->numeroDeElementos; i++){ //etiquetas
 		for(int j = 0; j < Flies->numeroDeElementos; j++){
 			fly =  (STFly*)obtener(j, Flies);
 			if( fly->etiqueta == i ) break;
 			else fly = NULL;
 		}
 		if(fly)	fprintf(pf,"%d;%d;%0.1f;",fly->posicion.x,fly->posicion.y,fly->dir_filtered); // si se encuentra
-		else fprintf(pf," ; ; ;"); // campos en blanco
+		else {
+
+			fprintf(pf," ; ; ;"); // campos en blanco
+		}
 	}
 	fprintf(pf,"\n"); // siguiente línea
 	fclose(pf);
@@ -1057,22 +991,25 @@ void QuitarCR (char *cadena)
 }
 ///!brief inicia la estructura para grabar un video.
 CvVideoWriter* iniciarAvi( CvCapture* capture, char* nombreVideo){
+
+	CvVideoWriter *writer = NULL;
 	double fps = cvGetCaptureProperty (
 										capture,
 										CV_CAP_PROP_FPS
 										);
-	CvSize size = cvSize(
-						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_WIDTH),
-						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT)
-						);
-
-//	CvSize size = cvSize(1024,768);
-	CvVideoWriter *writer = cvCreateVideoWriter(
+//	CvSize size = cvSize(
+//						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_WIDTH),
+//						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT)
+//						);
+//	fps = 30;
+	CvSize size = cvSize(1280,800); //( 1280, 800)
+	writer = cvCreateVideoWriter(
 							nombreVideo,
 							CV_FOURCC('P','I','M','1'),
 							fps,
 							size
-							);
+							);//'F', 'M', 'P', '4';'M', 'J', 'P', 'G';'D','I','V','X';'P','I','M','1'
+
 	return writer;
 }
 
