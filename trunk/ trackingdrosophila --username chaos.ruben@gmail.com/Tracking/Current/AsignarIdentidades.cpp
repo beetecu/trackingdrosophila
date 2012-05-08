@@ -433,9 +433,9 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 					if(FlySiguiente && TrackActual){
 
-						TrackActual->Flysig=FlySiguiente;
-						if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 
+						if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+						TrackActual->Flysig=FlySiguiente;
 					}
 
 					}
@@ -448,20 +448,22 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 	if(Matrix_Hungarian->rows > Matrix_Hungarian->cols){
 
-		int flag=0;
+		int flag;
 		int Dif_cols = Matrix_Asignation->cols-Matrix_Hungarian->cols;
 		int Add_cols = Matrix_Hungarian->cols + Dif_cols;
-		float valor_max=0;
+		float valor_max;
 
 
 				for(int n_col=Matrix_Asignation->cols-Dif_cols;n_col<Add_cols;n_col++){
 					for(int n_row=0;n_row<Matrix_Asignation->rows;n_row++){
 						if(Asignation_Matrix[n_row][n_col]==1){
 
+							valor_max=0;
+							flag=0;
 
 							for(int y=0;y < Matrix_Hungarian->cols;y++){
 
-								if( Hungarian_Matrix[n_row][y] >80 && Hungarian_Matrix[n_row][y] > valor_max ){
+								if(Hungarian_Matrix[n_row][y] >20 && Hungarian_Matrix[n_row][y] > valor_max ){
 
 									flag=1;
 									valor_max=Hungarian_Matrix[n_row][y];
@@ -513,9 +515,9 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 								if(FlySiguiente && TrackActual){
 
-									TrackActual->Flysig=FlySiguiente;
-									if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 
+									if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+									TrackActual->Flysig=FlySiguiente;
 								}
 
 								}
