@@ -433,8 +433,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 					if(FlySiguiente && TrackActual){
 
-
-						if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+						anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 						TrackActual->Flysig=FlySiguiente;
 					}
 
@@ -479,7 +478,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 								Asignation_Matrix[n_row][n_col]=0;
 								flag=0;
 							}
-//							else Asignation_Matrix[n_row][n_col]=0;
+							else Asignation_Matrix[n_row][n_col]=0;
 
 
 						}// if
@@ -515,8 +514,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 								if(FlySiguiente && TrackActual){
 
-
-									if(TrackActual->Stats->Estado!=0)anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
+									anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 									TrackActual->Flysig=FlySiguiente;
 								}
 
@@ -600,15 +598,16 @@ double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal){
 	float Y = CordReal->data.fl[1];
 	float EX = Predict->data.fl[0];
 	float EY = Predict->data.fl[1];
-	float VarX = sqrt(Matrix_error_cov[0]);
-	float VarY = sqrt(Matrix_error_cov[1]);
+//	float VarX = sqrt(Matrix_error_cov[0]);
+//	float VarY = sqrt(Matrix_error_cov[1]);
 
-//	float VarX = sqrt(50);
-//	float VarY = sqrt(50);
+	float VarX = 10;
+	float VarY = 10;
 
 	double ValorX,ValorY;
 	double DIVX,DIVY;
 	double ProbKalman;
+
 
 	ValorX=X-EX;
 	ValorY=Y-EY;
@@ -640,17 +639,3 @@ void releaseMotionTemplate(){
 }
 
 
-//void TrackbarSliderMHI(  int pos ){
-//	float div = 100;
-//	MHI_DURATION = pos / div;
-//}
-//
-//void TrackbarSliderDMin(int pos){
-//	float div = 100;
-//	MIN_TIME_DELTA = pos/div;
-//}
-//
-//void TrackbarSliderDMax(int pos){
-//	float div=100;
-//	MAX_TIME_DELTA = pos/div;
-//}
