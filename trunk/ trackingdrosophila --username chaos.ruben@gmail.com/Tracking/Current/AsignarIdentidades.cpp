@@ -435,7 +435,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 						anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 						TrackActual->Flysig=FlySiguiente;
-						TrackActual->Flysig->Tracks=FlySiguiente->Tracks;
+//						anyadirAlFinal(TrackActual,TrackActual->Flysig->Tracks);
 					}
 
 					}
@@ -517,7 +517,8 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 									anyadirAlFinal(TrackActual,FlySiguiente->Tracks);
 									TrackActual->Flysig=FlySiguiente;
-									TrackActual->Flysig->Tracks=FlySiguiente->Tracks;
+	//								anyadirAlFinal(TrackActual,TrackActual->Flysig->Tracks);
+
 								}
 
 								}
