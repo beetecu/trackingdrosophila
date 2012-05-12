@@ -21,12 +21,10 @@
 #include <cvaux.h>
 #include <stdio.h>
 #include <cxcore.h>
-
-
+#include <libconfig.h>
 
 using namespace cv;
 using namespace std;
-
 
 #define CVX_RED CV_RGB(255,0,0)
 #define CVX_BLUE CV_RGB(0,0,255)
@@ -34,11 +32,8 @@ using namespace std;
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 
-
-
-
 // OPCIONES GENERALES DE PROGRAMA
-#define INIT_DELAY 50 // retardo al inicio
+
 #define DETECTAR_PLATO 1 // activa la detección del plato
 //#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
 #define CALC_STATS_MOV 1
@@ -51,7 +46,7 @@ using namespace std;
 
 #define SHOW_PROCESS_TIMES
 
-#define SHOW_BGMODEL_DATA 0 //!< Switch de 0 a 1 para visualizar el Background.
+#define SHOW_BGMODEL_DATA 0 //!< Switch de 0 a 1 para mostrar en consola datos del modelo de fondo.
 #define SHOW_BGMODEL_TIMES 0
 
 #define SHOW_SEGMENTATION_TIMES 0 //!< Switch de 0 a 1 para visualizar los tiempos.
@@ -82,9 +77,8 @@ using namespace std;
 
 // Depuración procesado
 #define SHOW_PROCESS_IMAGES 0 //!< Switch de 0 a 1 para visualizar los resultados del procesado etapa a etapa.
-#define SHOW_BG_DIF_IMAGES 0 //!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
+#define SHOW_BG_DIF_IMAGES 0 //!< Switch de 0 a 1 para visualizar las imagenes antes y despues de la limpieza de FG.
 #define SHOW_VALIDATION_IMAGES 0//!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
-
 
 #define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
 #define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.

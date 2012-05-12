@@ -17,7 +17,7 @@
 #include "Visualizacion.hpp"
 #include <opencv2/video/background_segm.hpp>
 
-#define INTERVAL_BG_UPDATE 10
+//
 
 //!\brief Procesado2: - Obtención del foreground mediante modelo de fondo mediana
 //!\n con actualización selectiva en tres etapas :

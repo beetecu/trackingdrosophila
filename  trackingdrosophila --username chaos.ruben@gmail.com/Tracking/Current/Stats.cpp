@@ -30,11 +30,13 @@ void CalcStatsFrame(STFrame* frameDataOut ){
 	static int init = 1;
 
 	if( !frameDataOut) return;
-#ifdef MEDIR_TIEMPOS gettimeofday(&ti, NULL);
-#endif
+#ifdef MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 	printf( "Rastreo finalizado con éxito ..." );
 	printf( "Comenzando análisis estadístico de los datos obtenidos ...\n" );
 	printf("\n3)Cálculo de estadísticas en tiempo de ejecución:\n");
+
+#endif
 
 
 	// Iniciar estructuras de estadísticas.
@@ -46,8 +48,9 @@ void CalcStatsFrame(STFrame* frameDataOut ){
 	// cálculos estadísticos del movimiento de los blobs en conjunto
 	if( CALC_STATS_MOV ) statsBlobS( frameDataOut );
 
-	printf( "Análisis finalizado ...\n" );
+
 #ifdef MEDIR_TIEMPOS
+	printf( "Análisis finalizado ...\n" );
 	TiempoParcial = obtenerTiempo( ti , NULL);
 	printf("Cálculos realizados. Tiempo total %5.4g ms\n", TiempoParcial);
 #endif

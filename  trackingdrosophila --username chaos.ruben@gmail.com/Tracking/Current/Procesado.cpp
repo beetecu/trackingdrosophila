@@ -104,7 +104,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 	gettimeofday(&ti, NULL);
 	printf("\t1)Actualización del modelo de fondo:\n");
 #endif
-	if( update_count == INTERVAL_BG_UPDATE - 1 )
+	if( update_count == BGPrParams->BG_Update  )
 		UpdateBGModel( Imagen,frameData->BGModel,frameData->IDesvf, BGPrParams, BGModel->DataFROI, BGModel->ImFMask );
 
 #ifdef	MEDIR_TIEMPOS
@@ -143,7 +143,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 
 	/////// VALIDACIÓN
 
-//	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
+	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
 	if( SHOW_PROCESS_IMAGES){
 			cvShowImage( "Foreground", frameData->FG);
@@ -156,14 +156,14 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 #endif
 	/////// ACTUALIZACIÓN SELECTIVA. Modelo de fondo estático.
 	//	Obtención de máscara de foreground
-	if( update_count == INTERVAL_BG_UPDATE - 1 ){
+	if( update_count == BGPrParams->BG_Update  ){
 		cvZero( FGMask);
 		cvDilate( frameData->FG, FGMask, 0, 2 );
 		cvAdd( BGModel->ImFMask, FGMask, FGMask);
 		UpdateBGModel( Imagen, lastBG, lastIdes, BGPrParams, BGModel->DataFROI, FGMask );
 		cvCopy( lastBG, frameData->BGModel);
 		cvCopy(  lastIdes, frameData->IDesvf);
-		update_count = -1;
+		update_count = 0;
 	}
 	else{
 		cvCopy( frameData->BGModel, lastBG );
@@ -228,6 +228,7 @@ void putBGModelParams( BGModelParams* Params){
 	 Params->CVCLOSE_ITR = 1;
 	 Params->MAX_CONTOUR_AREA = 0 ; //200
 	 Params->MIN_CONTOUR_AREA = 0; //5
+	 Params->K = 0.6745;
 
 	 if (CREATE_TRACKBARS == 1){
 				 // La primera vez inicializamos los valores.

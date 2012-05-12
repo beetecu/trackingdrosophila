@@ -78,7 +78,8 @@ void InitialBGModelParams( BGModelParams* Params){
 	// si no se encuentra, establecer parámetros por defecto.
 	// Params->DETECTAR_PLATO = true;
 	 Params->MODEL_TYPE = MEDIAN_S_UP;
-	 if ( DETECTAR_PLATO ) Params->FLAT_FRAMES_TRAINING = 500;
+	 Params->FLAT_DETECTION = true;
+	 if ( Params->FLAT_DETECTION ) Params->FLAT_FRAMES_TRAINING = 500;
 	 else Params->FLAT_FRAMES_TRAINING = 0;
 	 Params->BG_Update = 5;
 	 Params->Jumps = 4;
@@ -86,7 +87,7 @@ void InitialBGModelParams( BGModelParams* Params){
 	 Params->FRAMES_TRAINING = 700;//1500
 	 Params->ALPHA = 0 ;
 	 Params->INITIAL_DESV = 0.05;
-
+	 Params->K = 0.6745;
 
 
 	 Params->MORFOLOGIA = true;

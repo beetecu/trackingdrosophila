@@ -17,24 +17,26 @@
 #define MEDIAN 3	//MODELO MEDIANA SIN ACTUALIZACIÓN SELECTIVA
 #define MEDIAN_S_UP 4	//MODELO MEDIANA CON ACTUALIZACIÓN SELECTIVA
 
-#define K 0.6745	/// Para la corrección de la MAD ( Median Absolute Deviation )
-					/// con el que se estima la desviación típica.
+/// ESTRUCTURA DE DATOS DEL MODELO DE FONDO ///
+
 typedef struct{
-	//Parametros del modelo
+	//Parametros inicialización del modelo de fondo
 	int Jumps; // frames de salto a distintas partes del video
 	int BG_Update; // Intervalo de actualización del fondo
 	int initDelay; // El aprendizaje comenzará initDelay frames despues del comienzo
+	bool FLAT_DETECTION; //! Activa o desactiva la detección del plato
 	int MODEL_TYPE; // tipo de modelo de fondo. Afecta a la resta y a la actualización.
 					//Cuando se inicia se hace automaticamente el gaussiano
 	int FLAT_FRAMES_TRAINING;//!< Nº de frames para aprendizaje del plato.
 	int FRAMES_TRAINING ;//!< Nº de frames para el aprendizaje del fondo.
-	int HIGHT_THRESHOLD; //!< Umbral alto para la resta de fondo.
-	int LOW_THRESHOLD ; //!< Umbral bajo para la resta de fondo.
-	double ALPHA;
 	float INITIAL_DESV;
+	float K; 			 //!<Para la corrección de la MAD ( Median Absolute Deviation )
+							//!<con el que se estima la desviación típica para el modelo gaussiano.
+	double ALPHA;
 
-	//Parametros de limpieza de foreground
-
+	//Parametros resta de fondo y de limpieza de foreground
+	int LOW_THRESHOLD ; //!< Umbral bajo para la resta de fondo.
+	int HIGHT_THRESHOLD; //!< Umbral alto para la limpieza de fondo tras resta.
 	bool MORFOLOGIA ; //<! si esta a 1 se aplica erosión y cierre ( no se usa ).
 	int CVCLOSE_ITR ; //<! Número de iteraciones en op morfológicas.
 	int MAX_CONTOUR_AREA;//!< Máxima area del blob.
@@ -65,7 +67,7 @@ void DefaultBGMParams(BGModelParams **Parameters);
 	*/
 StaticBGModel* initBGModel( CvCapture* t_capture,BGModelParams* Param );
 
-void iniciarIdesv( IplImage* Idesv,float Valor, IplImage* mask );
+void iniciarIdesv( IplImage* Idesv,float Valor, IplImage* mask, float K );
 
 
 //!\brief Binariza la Imagen.
@@ -89,15 +91,17 @@ IplImage* getBinaryImage(IplImage * image);
       \param Idesf Imagen sobre la que se estimada la desviación típica.
       \param DataROI Región de interes perteneciente al plato.
       \param mask Imagen sobre la que se actualizará el fondo.
+      \param K Para la corrección de la MAD ( Median Absolute Deviation )
+      		   con el que se estima la desviación típica para el modelo gaussiano.
 
-      \return : La estimación de la mediana y la desviación típica para establecer la distribucion Gaussiana del fondo.
+      \return : La estimación de la mediana y la desviación tí pica para establecer la distribucion Gaussiana del fondo.
     */
 
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesf,CvRect DataROI, IplImage* mask );
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesf,CvRect DataROI,float K, IplImage* mask  );
 
 void updateMedian(IplImage* ImGray,IplImage* BGMod,IplImage* mask,CvRect ROI );
 
-void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* mask, CvRect ROI );
+void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* mask, CvRect ROI, float K );
 
 //! \brief Recibe una imagen en escala de grises preprocesada. estima a la mediana
 //!	en BGMod y la varianza en IvarF según:

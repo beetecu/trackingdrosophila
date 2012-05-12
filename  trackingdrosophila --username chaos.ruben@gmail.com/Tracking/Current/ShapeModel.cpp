@@ -13,6 +13,8 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 	int total_blobs=0;
 	int k=0;
 	float Dif=0;
+	float MaxContourArea = 0;
+	float MaxContourPerimeter = 0;
 
 	float areas[SM_FRAMES_TRAINING*15]; // almacena las areas de todos los blobs encontrados
 
