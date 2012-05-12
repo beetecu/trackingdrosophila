@@ -391,7 +391,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 //
 //	}
 
-	printf("/n********* PESOS*********************************");
+	if(SHOW_AI_DATA) printf("/n********* PESOS*********************************");
 	for(int r=0;r<Matrix_Hungarian->rows;r++){
 		if(SHOW_AI_DATA) printf("\n");
 		for(int b=0;b<Matrix_Hungarian->cols;b++){
@@ -404,7 +404,7 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 
 	double Asignation_Matrix[Matrix_Asignation->rows][Matrix_Asignation->cols];
 
-	printf("\n********************* ASIGNACION********************");
+	if(SHOW_AI_DATA) printf("\n********************* ASIGNACION********************");
 	for(int l=0;l<Matrix_Asignation->rows;l++){
 		if(SHOW_AI_DATA) printf("\n");
 		for(int m=0;m<Matrix_Asignation->cols;m++){
@@ -492,12 +492,12 @@ int asignarIdentidades(  tlcde* lsTraks , tlcde *Flies){
 				g=0;
 				indCandidato=0;
 
-				printf("\n");
+				if(SHOW_AI_DATA) printf("\n");
 				for(int l=0;l<Matrix_Asignation->rows;l++){
-					printf("\n");
+					if(SHOW_AI_DATA) printf("\n");
 					for(int m=0;m<Matrix_Asignation->cols;m++){
 						Matrix_Asignation->data.fl[g] = Asignation_Matrix[l][m];
-						printf("\t %f",Matrix_Asignation->data.fl[g]);
+						if(SHOW_AI_DATA) printf("\t %f",Matrix_Asignation->data.fl[g]);
 						g++;
 					}
 				}

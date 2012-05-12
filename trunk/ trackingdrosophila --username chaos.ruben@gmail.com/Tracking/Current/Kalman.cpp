@@ -220,10 +220,7 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 	const float F[] = {1,0,dt,0,0, 0,1,0,dt,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1}; // Matriz de transición F
 	// Matriz R inicial. Errores en medidas. ( Rx, Ry,RVx, RVy, Rphi ). Al inicio el error en el angulo es de +-180º
 	const float R_inicial[] = {100,0,0,0,0, 0,100,0,0,0, 0,0,200,0,0, 0,0,0,200,0, 0,0,0,0,360};//{50,50,50,50,180};
-	const float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
-	float initialState[] = {Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion};
-//
-	CvMat x_k =cvMat(1, 5, CV_32FC1, initialState);
+	float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
 
 	// establecer parámetros
 	memcpy( Kalman->transition_matrix->data.fl, F, sizeof(F)); // F
@@ -343,7 +340,7 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 	// 1) Caso normal. Un blob corresponde a un fly
 	if (EstadoTrack == CAM_CONTROL ) {
 		//1) Posición
-		R_x = 1;
+		R_x = 1;	// implementar método de cuantificación del ruido.
 		R_y = R_x;
 
 		//2) Velocidad
@@ -401,7 +398,7 @@ float generarR_PhiZk( ){
 	// Error debido a la velocidad. Esta directamente relaccionada con la resolución
 
 	float phiDif; // error debido a la diferencia entre el nuevo valor y el filtrado
-	float errorV; // invertidumbre en la dirección debido a la velocidad
+	float errorV; // incertidumbre en la dirección debido a la velocidad
 	float errIz; // error debido a la velocidad por la izqd del ángulo
 	float errDr; // error debido a la velocidad por la drcha del ángulo
 
@@ -867,9 +864,7 @@ int dejarId( STTrack* Track, tlcde* identities ){
 
 void asignarNuevaId( STTrack* Track, tlcde* identities){
 	Identity *id;
-	mostrarIds( identities);
 	id = (Identity* )borrarEl( identities->numeroDeElementos - 1, identities);
-	 mostrarIds( identities);
 	Track->id = id->etiqueta;
 	Track->Color = id->color;
 	free(id);

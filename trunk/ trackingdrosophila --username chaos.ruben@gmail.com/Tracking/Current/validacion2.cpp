@@ -98,13 +98,14 @@ void Validacion2(IplImage *Imagen,
 
 			setBGModParams( ValBGParams);
 			// sustituir por un for con el número máximo de iteraciones.
+			int j = 0;
 			while( 1 ){
 				// primero probar con el umbral anterior. si el blob desaparece o no da un resutado satisfactorio
 				// proceder desde el umbral predetermindado
 
 				// Incrementar umbral
 				ValBGParams->LOW_THRESHOLD += 1;
-
+				j++;
 				// Restar fondo
 				BackgroundDifference( Imagen, FrameData->BGModel, NULL ,FrameData->FG,ValBGParams, FlyDataRoi);
 				//verMatrizIm(FrameData->FG, FlyDataRoi);
@@ -135,7 +136,7 @@ void Validacion2(IplImage *Imagen,
 					FlyData=(STFly *)obtener(0, TempSeg);
 					Exceso = CalcProbFly( SH , FlyData, Params);
 					// no se rebasa la pximin.Almacenar la probabilidad mas alta y continuar
-					if (Exceso > -1 ){
+					if (Exceso > -1 && j< Params->MaxIncLTHIters && ValBGParams->LOW_THRESHOLD < Params->MaxLowTH) {
 						if(FlyData->Px > BestPxi ){
 							MejorFly = FlyData;
 							BestPxi=FlyData->Px;
@@ -147,7 +148,8 @@ void Validacion2(IplImage *Imagen,
 
 						continue;
 					}
-					// se ha rebasado la pxmin. Restaurar y pasar al siguiente
+					// se ha rebasado la pxmin o bien se ha alcanzado el máximo de iteraciones o bien se ha llegado
+					// al máximo valor permitido. Restaurar y pasar al siguiente
 					else {
 						RestaurarElMejor( FrameData->Flies,  FrameData->FG, MejorFly,  FlyDataRoi, i );
 						//Restaurar(FrameData->Flies, FrameData->FG, Mask, FlyDataRoi, i);
@@ -436,18 +438,10 @@ void iniciarValParams( ValParams** Parameters, SHModel* SH){
 		Params->Umbral_L = 5;			 // Establece el tamaño mínimo del blob válido en 1.5 desviaciones típicas de la media
 		Params->PxiMin = CalcPxMin( SH, Params->Umbral_L, 10 );		 // establece la mínima probabilidad permitida para exceso.
 		Params->MaxDecLTHIters = 15; // número máximo de veces que se podrá decrementar el umbral bajo.
-		Params->MaxIncLTHIters= 20;  // número máximo de veces que se podrá incrementar el umbral bajo
-		Params->MaxLowTH = 20; 		 // límite superior para el umbral bajo ( exceso )
+		Params->MaxIncLTHIters= 100;  // número máximo de veces que se podrá incrementar el umbral bajo
+		Params->MaxLowTH = 1000; 		 // límite superior para el umbral bajo ( exceso )
 		Params->MinLowTH = 1;		 // límite inferior para el umbral bajo ( defecto )
-		Params->UmbralProb = 3;
 
-//		if (CREATE_TRACKBARS == 1){
-//			if(first==1){
-//				cvCreateTrackbar("UmbralProb","Foreground",&Params->UmbralProb,1);
-//				cvCreateTrackbar("UmbralCirc","Foreground",&Params->UmbralCirc,1);
-//				first=0;
-//			}
-//		}
 	}
 	else
 	{
@@ -477,6 +471,7 @@ void iniciarBGModParams( BGModelParams** Parameters){
 		Params->MIN_CONTOUR_AREA = 0;
 		Params->HIGHT_THRESHOLD = 20;
 		Params->LOW_THRESHOLD = 15;
+		Params->K = 0.6745;
 	}
 	else	Params=*Parameters;
 
@@ -496,6 +491,7 @@ void setBGModParams( BGModelParams* Params){
 		Params->MIN_CONTOUR_AREA = 0;
 		Params->HIGHT_THRESHOLD = 20;
 		Params->LOW_THRESHOLD = 15;
+		Params->K = 0.6745;
 
 }
 //Probabilidad de todas las moscas

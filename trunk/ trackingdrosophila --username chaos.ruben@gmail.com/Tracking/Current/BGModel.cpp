@@ -75,9 +75,16 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 #endif
 
 
-	if  ( Param->FLAT_FRAMES_TRAINING >0){
+	if  ( Param->FLAT_DETECTION ){
+
+		if( Param->FLAT_FRAMES_TRAINING == 0) {
+			printf("\n No ha establecido el número de frames que se usarán para la"
+					" detección del plato. Se establecerán 500 por defecto.");
+			Param->FLAT_FRAMES_TRAINING = 500; // por defecto
+		}
 		printf("\n\t\t1)Localizando y parametrizando plato...\n ");
 		MascaraPlato( t_capture, bgmodel, Param->FLAT_FRAMES_TRAINING);
+
 		if (bgmodel->PRadio == 0  ){
 			char Opcion[2];
 			int hecho = 0;
@@ -90,6 +97,9 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 				if (Opcion[0] == 'd'|| Opcion[0] =='D') return 0;
 				else if (Opcion[0] == 'c'||Opcion[0] =='C'){
 					bgmodel->DataFROI = cvRect(0,0,frame->width,frame->height );
+					bgmodel->PCentroX = 0;
+					bgmodel->PCentroY = 0;
+					bgmodel->PRadio = 0;
 					cvZero(bgmodel->ImFMask);
 					hecho = 1;
 				}
@@ -102,7 +112,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 	}
 	// Datos para establecer ROI si no se quiere detectar el plato
 	else{
-		printf("\n No ha activado la detección del plato. Esto afectará a la velocidad"
+		printf("\n No ha activado la detección del plato.Esto afectará a la velocidad"
 				"de ejecución.\nEscoja si desea activar dicha opción:");
 
 		bgmodel->DataFROI = cvRect(0,0,frame->width,frame->height );
@@ -160,7 +170,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 				cvCopy( ImGray, bgTemp );
 				// Iniciamos la desviación a un valor muy pequeño
 				//apropiado para fondos con poco movimiento (unimodales).
-				iniciarIdesv( desTemp,Param->INITIAL_DESV, bgmodel->ImFMask );
+				iniciarIdesv( desTemp,Param->INITIAL_DESV, bgmodel->ImFMask, Param->K );
 				cvCopy( desTemp, bgmodel->IDesvf );
 			}
 			// Aprendizaje del fondo
@@ -303,7 +313,7 @@ void MascaraPlato(CvCapture* t_capture,
 				Flat->PRadio = cvRound( p[2] );
 				Flat->PCentroX = cvRound( p[0] );
 				Flat->PCentroY = cvRound( p[1] );
-				printf("\t\t\t-Centro x:\t%d \t\t\t-Centro y:\t%d \t\t\t-Radio:\t%d \n"
+				if(SHOW_BGMODEL_DATA ) printf("\t\t\t-Centro x:\t%d \t\t\t-Centro y:\t%d \t\t\t-Radio:\t%d \n"
 						,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
 			}
 
@@ -322,7 +332,7 @@ void MascaraPlato(CvCapture* t_capture,
 				 cvAdd( Im, Flat->Imed,Flat->Imed);
 				DraWWindow(frame, NULL, Flat,  NULL, FLAT);
 			}
-		} // FIN FOR
+		} // FIN FOR Hecho
 		if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
 			if (Flat->PRadio>0){
 				cvAdd( Im, Flat->Imed,Flat->Imed);
@@ -344,6 +354,7 @@ void MascaraPlato(CvCapture* t_capture,
 		Flat->PCentroX = medX;
 		Flat->PCentroY = medY;
 	}
+
 	printf("\t\t-Plato localizado. Estableciendo parámetros :\n ");
 	printf("\t\t\t-Centro x : %d \n\t\t\t-Centro y %d \n\t\t\t-Radio: %d \n"
 			,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
@@ -386,7 +397,7 @@ void MascaraPlato(CvCapture* t_capture,
 
 	return;
 }
-void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , IplImage* mask = NULL ) {
+void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , float K, IplImage* mask = NULL ) {
 	// si la máscara es null(POR DEFECTO), se crea una inicializada a 0, lo que implicará
 	// la actualización de todos los pixeles del background
 	struct timeval ti; // iniciamos la estructura
@@ -415,9 +426,9 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,Cv
 	// median(p)
 #ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
-	updateMedian( ImGray, BGMod, Imaskt, ROI);
+	updateMedian( ImGray, BGMod, Imaskt, ROI );
 	if( Idesvf != NULL){
-		updateDesv( ImGray, BGMod, Idesvf, Imaskt, ROI );
+		updateDesv( ImGray, BGMod, Idesvf, Imaskt, ROI, K );
 	}
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti , NULL);
@@ -435,7 +446,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,Cv
 	}
 }
 
-void iniciarIdesv( IplImage* Idesv,float Valor, IplImage* mask ){
+void iniciarIdesv( IplImage* Idesv,float Valor, IplImage* mask, float K ){
 
 	int step0		= Idesv->widthStep/sizeof(float);
 	int step1       = Idesf->widthStep/sizeof(float);
@@ -476,7 +487,7 @@ void updateMedian(IplImage* ImGray,IplImage* Median,IplImage* mask,CvRect ROI ){
 
 }
 
-void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Imaskt, CvRect ROI ){
+void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Imaskt, CvRect ROI, float K ){
 
 	int step1       = Idesf->widthStep/sizeof(float);
 	int step4       = Idesf->widthStep/sizeof(float);
@@ -515,23 +526,23 @@ void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* Ima
 
 }
 
-void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGModelParams* Param, CvRect DataROI, IplImage* Mask){
+void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGModelParams* Param, CvRect DataROI,IplImage* Mask){
 
 	// mediana
 	if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP){
 		//no selectiva
-		if ( Param->MODEL_TYPE == MEDIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,NULL, DataROI , 0);
+		if ( Param->MODEL_TYPE == MEDIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,NULL, DataROI ,Param->K, 0);
 		else{
 			//selectiva
-			accumulateBackground( tmp_frame, BGModel,NULL, DataROI ,Mask);
+			accumulateBackground( tmp_frame, BGModel,NULL, DataROI, Param->K, Mask);
 		}
 	}
 	// gausiana simple
 	else if(Param->MODEL_TYPE == GAUSSIAN || Param->MODEL_TYPE == GAUSSIAN_S_UP){
-		if ( Param->MODEL_TYPE == GAUSSIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI , 0);
+		if ( Param->MODEL_TYPE == GAUSSIAN || Mask == NULL) accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Param->K, 0);
 		else{
 			// selectiva
-			accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Mask);
+			accumulateBackground( tmp_frame, BGModel,ImDesv, DataROI ,Param->K, Mask );
 		}
 	}
 }
@@ -648,10 +659,10 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 
 	}
 	if( SHOW_BG_DIF_IMAGES ){
-						cvShowImage( "Foreground", fg);
-						cvShowImage( "Background",bg_model);
-						cvWaitKey(0);
-		}
+			cvShowImage( "Foreground", fg);
+			cvShowImage( "Background",bg_model);
+			cvWaitKey(0);
+	}
 	// limpieza de FG
 #ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) gettimeofday(&ti, NULL);
@@ -792,11 +803,11 @@ void DefaultBGMParams( BGModelParams **Parameters){
 	if( *Parameters == NULL )
 	{
 		Params = ( BGModelParams *) malloc( sizeof( BGModelParams) );
+		Params->FLAT_DETECTION = true; //! Activa o desactiva la detección del plato
 		Params->FLAT_FRAMES_TRAINING = 50;
 		Params->MODEL_TYPE = MEDIAN_S_UP;
 		Params->Jumps = 0;
 		Params->initDelay = 0;
-
 
 		Params->FRAMES_TRAINING = 20;
 		Params->ALPHA = 0.5 ;
@@ -806,12 +817,14 @@ void DefaultBGMParams( BGModelParams **Parameters){
 		Params->MIN_CONTOUR_AREA = 0;
 		Params->HIGHT_THRESHOLD = 20;
 		Params->LOW_THRESHOLD = 10;
-		Params->INITIAL_DESV = 0.5;
+		Params->INITIAL_DESV = 0.05;
+		Params->K = 0.6745;
 		*Parameters = Params ;
 	}
 	else
 	{
 		Params = *Parameters;
+		Params->FLAT_DETECTION = true;
 		Params->FLAT_FRAMES_TRAINING = 50;
 		Params->FRAMES_TRAINING = 20;
 		Params->MODEL_TYPE = MEDIAN_S_UP;
@@ -825,7 +838,8 @@ void DefaultBGMParams( BGModelParams **Parameters){
 		Params->MIN_CONTOUR_AREA = 0;
 		Params->HIGHT_THRESHOLD = 20;
 		Params->LOW_THRESHOLD = 10;
-		Params->INITIAL_DESV = 0.5;
+		Params->INITIAL_DESV = 0.05;
+		Params->K = 0.6745;
 	}
 
 }

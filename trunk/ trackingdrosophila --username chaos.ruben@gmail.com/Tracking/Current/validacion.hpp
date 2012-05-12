@@ -16,16 +16,18 @@
 /// Parametros validación
 
 typedef struct {
-	int UmbralProb; //!< establece cuantas desviaciones tipicas se puede alejar el area del area media sin que se considere inválido el blob
 	int UmbralCirc; //!< Máxima circularidad a partir de la cual un blob se considerará no válido
-	int MaxIncLTHIters; //!< Número de iteraciones en las que se incrementará el umbral bajo para dividir una elipse
-	int MaxLowTH; //!< Máximo valor que alcanzará el umbral mínimo para dividir elipse
-	float PxiMin; //!< Probabilidad mínima admisible a partir de la cual se deja de aumentar MaxLowTH
-	int MaxDecLTHIters; //!< Número de iteraciones en las que se incrementará el umbral bajo para aumentar P(xi)
-	int MinLowTH; //!< Mínimo valor que alcanzará el umbral bajo para aumentar P(xi)
-	float Umbral_H;//!< Umbral Alto,que debe alcanzar la probailidad del blob para se considerado valido.
-	float Umbral_L;//!< Umbral Bajo,que debe alcanzar la probailidad del blob para se considerado valido.
-	float PxiMax;
+	float Umbral_L;	//!< Establece el tamaño máximo del blob válido en Umbral_L desviaciones típicas de la media
+	float PxiMax; 	//!< Establece la máxima probabilidad permitida para defecto. ( el área máxima )
+	float Umbral_H;	//!< Establece el tamaño mínimo del blob válido en Umbral_H desviaciones típicas de la media
+	float PxiMin; 	//!< // establece la mínima probabilidad permitida para exceso ( el área mínima )
+
+	int MaxIncLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para intentar dividir el blob
+	int MaxDecLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para aumentar P(xi) ( el área del blob )
+	int MaxLowTH;		 //!< Limite superior para el umbral bajo
+	int MinLowTH;		 //!< Limite inferior para el umbral bajo
+
+
 
 }ValParams;
 

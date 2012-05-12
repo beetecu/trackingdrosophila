@@ -78,7 +78,7 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 		if( GRABAR_VISUALIZACION){
 			cvWriteFrame( Writer,ImVisual);
 		}
-		printf("Hecho\n");
+
 		if (SHOW_VISUALIZATION){
 			// MOSTRAMOS IMAGENES
 			printf( "\t-Mostrando ventana de visualización...");
@@ -391,8 +391,8 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 					fflush( stdin);
 				}
 				if( (cvWaitKey(1) & 255) == 'f' || (cvWaitKey(5) & 255) == 'F' ){
-									visParams->pasoApaso = true;
-									fflush( stdin);
+					visParams->pasoApaso = true;
+					fflush( stdin);
 				}
 				if( (cvWaitKey(1) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C')	{
 					visParams->pasoApaso = false;
@@ -429,7 +429,7 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 		}
 		else cvShowImage("TrackingDrosophila",Window);
 
-		printf("Hecho\n");
+
 
 	}
 }
