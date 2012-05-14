@@ -115,9 +115,9 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 #endif
 	/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
 	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGPrParams, BGModel->DataFROI);
+	DraWWindow( NULL,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );
 	if( SHOW_PROCESS_IMAGES ){
-		cvShowImage( "Foreground", frameData->FG);
-		cvWaitKey(0);
+
 	}
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
@@ -129,10 +129,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 
 	frameData->Flies = segmentacion2(Imagen, frameData->BGModel,frameData->FG, BGModel->DataFROI, NULL);
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
-	if( SHOW_PROCESS_IMAGES ){
-		cvShowImage( "Foreground", frameData->FG);
-		cvWaitKey(0);
-	}
+	DraWWindow( NULL,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
@@ -145,10 +142,9 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 
 	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
-	if( SHOW_PROCESS_IMAGES){
-			cvShowImage( "Foreground", frameData->FG);
-			cvWaitKey(0);
-	}
+
+	DraWWindow( NULL,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );
+
 #ifdef	MEDIR_TIEMPOS
 	tiempoParcial = obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo %5.4g ms\n", tiempoParcial);

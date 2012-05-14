@@ -115,9 +115,12 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, int FPS) {
 		irAlSiguiente(lsTracks);
 	}
 
-
 	///////////////////// VISUALIZAR RESULTADOS ////////////////
-	visualizarKalman( frameData, lsTracks );
+	if( obtenerVisParam( SHOW_KALMAN ) ) {
+		visualizarKalman( frameData, lsTracks );
+	}
+
+
 
 	return;
 }// Fin de Kalman
@@ -447,7 +450,7 @@ void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
 
 	STTrack* Track;
 
-	if( SHOW_KALMAN_DATA || (SHOW_VISUALIZATION && SHOW_KALMAN) ){
+
 		for(int i = 0; i < lsTracks->numeroDeElementos ; i++){
 			Track = (STTrack*)obtener(i, lsTracks);
 			// EN CONSOLA
@@ -455,7 +458,7 @@ void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
 				printf("\n*********************** FRAME %d; BLOB NUMERO %d ************************",frameData->num_frame,Track->id);
 				showKalmanData( Track );
 			}
-			if(SHOW_VISUALIZATION && SHOW_KALMAN){
+			if( obtenerVisParam( SHOW_KALMAN ) ){
 				double magnitude = 30;
 				// EN IMAGEN
 				cvCircle(ImKalman,cvPoint(cvRound(Track->z_k->data.fl[0]),cvRound(Track->z_k->data.fl[1] )),1,CVX_BLUE,-1,8); // observado
@@ -481,10 +484,10 @@ void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
 			}
 
 		}
-		cvAdd(ImKalman,frameData->ImKalman,frameData->ImKalman );
+		if( obtenerVisParam( SHOW_KALMAN ) ) cvAdd(ImKalman,frameData->ImKalman,frameData->ImKalman );
 
 
-	}
+
 }
 
 void showKalmanData( STTrack *Track){

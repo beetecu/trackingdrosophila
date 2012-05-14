@@ -442,7 +442,7 @@
 			0 Mientras el buffer no esté lleno;
  */
 
-STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer, int FPS );
+STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, int FPS );
 
 /*! \brief Elimina tracks de espurios y blobs que aparecen en t y desaparecen en t+1.
  * Da una idea de la validez de un track en base al tiempo que esta en estado CAM_CONTROL

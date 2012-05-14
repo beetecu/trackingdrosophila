@@ -96,7 +96,7 @@ void ShowParams( char* Campo );
 
 //!\brief FinalizarTraking: Destruir todas las ventanas,imagenes,estructuras etc.
 
-	void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter);
+	void Finalizar(CvCapture **g_capture);
 
 
 //!\brief onTrackbarSlider: Crea una trackbar para posicionarse en puntos concretos del video.

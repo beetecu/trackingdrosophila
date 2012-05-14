@@ -14,7 +14,7 @@ tlcde* Identities = NULL;
 tlcde* lsTracks = NULL;
 tlcde* framesBuf = NULL;
 
-STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, CvVideoWriter* Writer, int FPS ){
+STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, int FPS ){
 
 
 	STFrame* frameDataOut = NULL; // frame de salida
@@ -119,7 +119,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, C
 		frameDataOut = (STFrame*)liberarPrimero( framesBuf ) ;
 		if(!frameDataOut){error(7); exit(1);}
 
-		if(SHOW_VISUALIZATION) VisualizarEl( framesBuf, PENULTIMO, BGModel, Writer );
+		VisualizarEl( framesBuf, PENULTIMO, BGModel );
 
 #ifdef MEDIR_TIEMPOS
 		tiempoParcial = obtenerTiempo( tif , NULL);
@@ -129,7 +129,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, C
 	}
 	else {
 		VerEstadoBuffer( frameDataIn->Frame, framesBuf->numeroDeElementos, IMAGE_BUFFER_LENGTH);
-		if(!SHOW_WINDOW) VisualizarEl( framesBuf, PENULTIMO, BGModel, Writer );
+		VisualizarEl( framesBuf, PENULTIMO, BGModel );
 #ifdef MEDIR_TIEMPOS
 		tiempoParcial = obtenerTiempo( tif , NULL);
 		printf("Tracking correcto.Tiempo total %5.4g ms\n", tiempoParcial);

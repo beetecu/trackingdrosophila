@@ -990,26 +990,5 @@ void QuitarCR (char *cadena)
 	cadena [i] = 0;
 }
 ///!brief inicia la estructura para grabar un video.
-CvVideoWriter* iniciarAvi( CvCapture* capture, char* nombreVideo){
 
-	CvVideoWriter *writer = NULL;
-	double fps = cvGetCaptureProperty (
-										capture,
-										CV_CAP_PROP_FPS
-										);
-//	CvSize size = cvSize(
-//						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_WIDTH),
-//						(int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT)
-//						);
-//	fps = 30;
-	CvSize size = cvSize(1280,800); //( 1280, 800)
-	writer = cvCreateVideoWriter(
-							nombreVideo,
-							CV_FOURCC('P','I','M','1'),
-							fps,
-							size
-							);//'F', 'M', 'P', '4';'M', 'J', 'P', 'G';'D','I','V','X';'P','I','M','1'
-
-	return writer;
-}
 

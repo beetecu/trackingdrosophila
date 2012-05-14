@@ -338,7 +338,6 @@ int GuardarSTFrame( STFrame* frameData , char *nombreFichero);
 
 void QuitarCR (char *cadena);
 
-CvVideoWriter* iniciarAvi( CvCapture* capture, char* nombreVideo);
 
 #endif //_FICHEROS_
 
