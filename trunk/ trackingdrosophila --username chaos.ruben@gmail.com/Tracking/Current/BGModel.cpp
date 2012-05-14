@@ -204,7 +204,6 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 		num_frames += 1;
 		jumpFrCount +=1;
 	}
-//	if(SHOW_WINDOW) Transicion4("Aprendiendo fondo...", 50);
 #ifdef	MEDIR_TIEMPOS
 	TiempoParcial = obtenerTiempo( ti , 1);
 	printf("\t\t-Tiempo total %0.2f s\n", TiempoParcial);
@@ -260,10 +259,7 @@ void MascaraPlato(CvCapture* t_capture,
 			medX = frame->width /2;
 			medY = frame->height/2;
 			medR = minRadio;
-			if(SHOW_WINDOW){
 
-			//	Transicion4( "Buscando plato... ", 20 );
-			}
 		}
 		// Imagen a un canal de niveles de gris
 		cvCvtColor( frame , Im, CV_BGR2GRAY);
@@ -374,7 +370,6 @@ void MascaraPlato(CvCapture* t_capture,
 			else	ptr[x] = 0;
 		}
 	}
-//	if(SHOW_WINDOW) Transicion4("Buscando plato...", 50);
 	printf("\t\t-Creación de máscara de plato finalizada.");
 	cvReleaseImage(&Im);
 

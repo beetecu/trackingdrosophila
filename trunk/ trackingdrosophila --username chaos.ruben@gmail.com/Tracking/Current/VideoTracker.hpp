@@ -70,23 +70,6 @@ using namespace std;
 // DEPURACION
 #define SHOW_VISUALIZATION 0 //!< Switch de 0 a 1 GENERAL para visualizar resultados de depuración.
 
-// Depuración preprocesado
-//#define SHOW_LEARNING_FLAT 1
-//#define SHOW_INIT_BACKGROUND 1
-//#define SHOW_SHAPE_MODELING 1//!< Switch de 0 a 1 para visualizar los resultados del modelado de forma.
-
-// Depuración procesado
-//#define SHOW_PROCESS_IMAGES 0 //!< Switch de 0 a 1 para visualizar los resultados del procesado etapa a etapa.
-//#define SHOW_BG_DIF_IMAGES 0 //!< Switch de 0 a 1 para visualizar las imagenes antes y despues de la limpieza de FG.
-//#define SHOW_VALIDATION_IMAGES 0//!< Switch de 0 a 1 para visualizar las imagenes de la validación etapa a etapa.
-
-#define SHOW_BG_REMOVAL 1 //!< Switch de 0 a 1 para visualizar el Background y Foreground.
-#define SHOW_OPTICAL_FLOW 0 //!< Switch de 0 a 1 para visualizar el flujo optico.
-#define SHOW_MOTION_TEMPLATE 0//!< Switch de 0 a 1 para visualizar el gradiente.
-#define SHOW_KALMAN 1
-
-#define GRABAR_VISUALIZACION 1
-
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
 

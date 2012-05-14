@@ -127,10 +127,8 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		DraWWindow(Imblob, frameData, BGModel, SHOW_SHAPE_MODELING, COMPLETO);
 		DraWWindow(Imblob, frameData, BGModel, SHAPE,SIMPLE );
 
-	}//Fin del while
-//	if(SHOW_WINDOW){
-		desvanecer( NULL, 20);
-//	}
+	}
+	desvanecer( NULL, 20);
 	Shape->FlyAreaMedia=Shape->FlyAreaMedia/total_blobs;// Media de las Areas para cada frame
 
 	//Calcular la desvición típica

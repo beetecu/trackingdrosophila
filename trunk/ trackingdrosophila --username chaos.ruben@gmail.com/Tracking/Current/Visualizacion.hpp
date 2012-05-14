@@ -34,7 +34,7 @@
 #define SHOW_VALIDATION_IMAGES 6//!< imagenes de la validación etapa a etapa.
 //
 #define SHOW_BG_REMOVAL 7//!< Background y Foreground.
-//#define SHOW_KALMAN 8
+#define SHOW_KALMAN 8
 //
 //#define SHOW_WINDOW 9 //!<  Resultado
 #define FLAT 10

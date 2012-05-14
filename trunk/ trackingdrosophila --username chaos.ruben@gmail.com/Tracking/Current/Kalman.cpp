@@ -116,8 +116,8 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, int FPS) {
 	}
 
 	///////////////////// VISUALIZAR RESULTADOS ////////////////
-	if( obtenerVisParam( SHOW_KALMAN ) ) {
-		visualizarKalman( frameData, lsTracks );
+	if( obtenerVisParam( MODE ) && obtenerVisParam( SHOW_KALMAN ) ) {
+		 visualizarKalman( frameData, lsTracks );
 	}
 
 

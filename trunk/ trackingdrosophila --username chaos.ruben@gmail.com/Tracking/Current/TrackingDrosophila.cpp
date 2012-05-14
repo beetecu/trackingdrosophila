@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
 	/////////	PROCESADO   ///////////////
 	printf("\n\nIniciando procesado...\n");
-	if(SHOW_WINDOW) Transicion("Iniciando Tracking...", 1,1000, 50 );
+	Transicion("Iniciando Tracking...", 1,1000, 50 );
 	//NumFrame = 0;
 
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
@@ -127,7 +127,6 @@ int main(int argc, char* argv[]) {
 		printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/GParams->TotalFrames)*100 );
 		printf("\n//////////////////////////////////////////////////\n");
 		printf("\n//////////////////////////////////////////////////\n");
-//		if(!SHOW_WINDOW)	VisualizarFr( FrameDataIn, BGModel, VWriter, visParams );
 //		liberarSTFrame( FrameDataIn );
     }
 
