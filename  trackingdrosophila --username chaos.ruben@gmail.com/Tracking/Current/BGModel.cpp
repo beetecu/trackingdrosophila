@@ -193,15 +193,10 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 				cvCopy(bgmodel->IDesvf, desTemp);
 			}
 
-			if(SHOW_VISUALIZATION && SHOW_INIT_BACKGROUND){
+			DraWWindow( frame, NULL , bgmodel, SHOW_INIT_BACKGROUND, COMPLETO );
 
-				cvShowImage("Aprendiendo fondo...", bgmodel->Imed);
+			DraWWindow( frame, NULL , bgmodel, BG_MODEL, SIMPLE );
 
-				cvMoveWindow("Aprendiendo fondo...", 0, 0 );
-			}
-			if(SHOW_WINDOW){
-				DraWWindow( frame, NULL , bgmodel, NULL, BG_MODEL );
-			}
 			count_update = 0;
 
 		}
@@ -317,33 +312,21 @@ void MascaraPlato(CvCapture* t_capture,
 						,Flat->PCentroX,Flat->PCentroY , Flat->PRadio);
 			}
 
-			if( ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
-				if (Flat->PRadio>0){
-					 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
-					 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
-				}
-//				if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT )
-//					cvShowImage("Buscando Plato...",Flat->Imed);
-//					cvWaitKey(0);
-			}
-			if(SHOW_WINDOW){
-//				 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
-				 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
-				 cvAdd( Im, Flat->Imed,Flat->Imed);
-				DraWWindow(frame, NULL, Flat,  NULL, FLAT);
-			}
-		} // FIN FOR Hecho
-		if(SHOW_WINDOW || ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT) ){
 			if (Flat->PRadio>0){
-				cvAdd( Im, Flat->Imed,Flat->Imed);
-				cvCircle(Flat->Imed , cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);}
-
-			if ( SHOW_VISUALIZATION && SHOW_LEARNING_FLAT ){
-				cvShowImage("Buscando Plato...",Flat->Imed);
-//				cvWaitKey(0);
+				 cvCircle( Flat->Imed, cvPoint(Flat->PCentroX,Flat->PCentroY ), Flat->PRadio, CVX_RED, 1, 8, 0);
+				 cvCircle( Flat->Imed, cvPoint(cvRound( p[0]),cvRound( p[1] ) ), cvRound( p[2] ), CVX_BLUE, 1, 8, 0);
 			}
-			if(SHOW_WINDOW) DraWWindow(frame, NULL, Flat,  NULL, FLAT);
-		}
+			cvAdd( Im, Flat->Imed,Flat->Imed);
+			DraWWindow( NULL,NULL, Flat, SHOW_LEARNING_FLAT, COMPLETO );		// dibujar modo completo
+			DraWWindow(frame, NULL, Flat, FLAT, SIMPLE); // dibujar visualización preprocesado
+
+		} // FIN FOR Hecho
+
+		if (Flat->PRadio>0)	cvCircle(Flat->Imed , cvPoint(medX,medY ), medR, CVX_GREEN, 1, 8, 0);
+
+		DraWWindow(frame, NULL, Flat, SHOW_LEARNING_FLAT, COMPLETO);
+		DraWWindow(frame, NULL, Flat, FLAT, SIMPLE );
+
 		minRadio = medR ;
 		num_frames +=1;
 		cvClearMemStorage( storage);
@@ -658,11 +641,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
 
 	}
-	if( SHOW_BG_DIF_IMAGES ){
-			cvShowImage( "Foreground", fg);
-			cvShowImage( "Background",bg_model);
-			cvWaitKey(0);
-	}
+	DraWWindow( NULL,NULL, NULL, SHOW_BG_DIF_IMAGES, COMPLETO  );
+
 	// limpieza de FG
 #ifdef	MEDIR_TIEMPOS
 	if(SHOW_BGMODEL_TIMES) gettimeofday(&ti, NULL);
@@ -685,11 +665,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
 
 	}
-	if( SHOW_BG_DIF_IMAGES ){
-						cvShowImage( "Foreground", fg);
-						cvShowImage( "Background",bg_model);
-						cvWaitKey(0);
-		}
+
+	DraWWindow( NULL,NULL, NULL, SHOW_BG_DIF_IMAGES, COMPLETO  );
 }
 /// Limpia y redibuja el FG
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi){

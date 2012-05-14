@@ -24,8 +24,9 @@ IplImage* ImScale= NULL; // Imagen escalada de ImVisual si ImVisual es menor o i
 
 // parametros de visualización
 VisParams* visParams = NULL;
+CvVideoWriter* VWriter;
 
-void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter* Writer  ){
+void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
 	struct timeval tif;
 	float TiempoParcial;
@@ -52,9 +53,7 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 	frameData = (STFrame*)obtenerActual(frameBuf);
 	flies = frameData->Flies;
 
-	if (SHOW_VISUALIZATION == 1||GRABAR_VISUALIZACION == 1){
-		// Establecer parámetros
-		if (!visParams ) AllocDefaultVisParams( frameData->Frame );
+	if ( visParams->ModoCompleto ){
 
 		if(!ImVisual) {
 			ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,3);
@@ -63,7 +62,7 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 		cvCopy(frameData->Frame,ImVisual);
 
 		// DIBUJAR PLATO
-		if( DETECTAR_PLATO ){
+		if( Flat->PCentroX > 0 ){
 			cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
 			cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 		}
@@ -74,16 +73,11 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 		// MOSTRAR datos estadísticos en la ventana de visualización
 		if(frameData->Stats) ShowStatDataFr( frameData->Stats,frameData->GStats, ImVisual );
 
-		// GUARDAR VISUALIZACION
-		if( GRABAR_VISUALIZACION){
-			cvWriteFrame( Writer,ImVisual);
-		}
-
-		if (SHOW_VISUALIZATION){
+		if ( visParams->ModoCompleto ){
 			// MOSTRAMOS IMAGENES
 			printf( "\t-Mostrando ventana de visualización...");
 			cvShowImage( "Visualización", ImVisual );
-			if (SHOW_BG_REMOVAL == 1){
+			if (visParams->ShowBGremoval){
 				printf( "\t-Mostrando Background, Foreground, OldBackground... ");
 				cvShowImage("Background", frameData->BGModel);
 				cvShowImage( "Foreground",frameData->FG);
@@ -91,13 +85,8 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 
 				printf("Hecho\n");
 			}
-			if ( SHOW_MOTION_TEMPLATE == 1){
-				printf("\t-Mostrando Motion...");
-				cvShowImage( "Motion",frameData->ImMotion);
-				printf("Hecho\n");
-			}
 
-			if(SHOW_KALMAN){
+			if(visParams->ShowKalman){
 				printf("\t-Mostrando predicciones del filtro de Kalman...");
 				cvShowImage( "Filtro de Kalman", frameData->ImKalman );
 				printf("Hecho\n");
@@ -105,7 +94,7 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 			//cvWaitKey(0);
 
 			// OPCIONES
-			if(ACTIVAR_OPCIONES_VISUALIZACION){
+			if(visParams->HightGUIControls){
 				// si se pulsa p ó P  => pause = true
 				if( (cvWaitKey(5) & 255) == 80 || (cvWaitKey(5) & 255) == 112 ){
 					visParams->pause = true;
@@ -116,20 +105,17 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 				}
 				// si se pulsa v ó V => grab = true
 				if( (cvWaitKey(5) & 255) == 'v' || (cvWaitKey(5) & 255) == 'V' ){
-					visParams->Grab = true;
+					visParams->RecWindow = true;
 				}
 				// PAUSA
 				if(visParams->pause){
 					cvShowImage( "Visualización", frameData->Frame );
-					if (SHOW_BG_REMOVAL == 1){
+					if (visParams->ShowBGremoval ){
 						cvShowImage("Background", frameData->BGModel);
 						cvShowImage( "Foreground",frameData->FG);
-					//	cvShowImage( "OldForeground",frameData->OldFG);
-					//	cvShowImage( "Foreground+Oldforeground", frameData->ImAdd);
+
 					}
-					if ( SHOW_MOTION_TEMPLATE == 1){
-						cvShowImage( "Motion",frameData->ImMotion);
-					}
+
 					fflush( stdin);
 					if( cvWaitKey(0) == 'f' || cvWaitKey(0) == 'F'){
 						cvSaveImage( "Captura.jpg", frameData->Frame);
@@ -139,28 +125,9 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 				if( (cvWaitKey(5) & 255) == 67 || (cvWaitKey(5) & 255) == 99 ){
 					visParams->pause = false;
 				}
-				if(visParams->Grab){
-	//
-	//				static int first = 0;
-	//				char videoName[30];
-	//				for( int i = 0; i < 1000; i++ ){
-	//							sprintf(nombreVideo,"Muestra%d.avi",i);
-	//							if( !existe( videoName ) ) {
-	//								break;
-	//							}
-	//				}
-	//				writer = iniciarAvi( cap, nombreVideo);
-	//				cvWriteFrame( VWriter,frameData->Frame);
-				}
-				// si se pulsa v comienza a grabar un video hasta pulsar S
-		//		if( opcion == 'v' || opcion == 'V'){
-		//			visParams->Grab = true;
-		//		}
-				//STOP
-
 				while(visParams->stop){
 					if(visParams->VisualPos == -1) visParams->VisualPos = pos;
-					visualizarBuffer( frameBuf,Flat, Writer);
+					visualizarBuffer( frameBuf,Flat);
 					// mientras no se presione c ó C ( continue ) continuamos en el while
 					if(!visParams->stop) break;
 				}
@@ -176,16 +143,16 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat, CvVideoWriter
 #endif
 }
 
-void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer ){
+void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 
-	if (SHOW_VISUALIZATION == 1||GRABAR_VISUALIZACION == 1){
+	if (visParams->ModoCompleto ){
 
 		if(!ImVisual) ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,3);
 
 		cvCopy(frameData->Frame,ImVisual);
 
 		// DIBUJAR PLATO
-		if( DETECTAR_PLATO ){
+		if( Flat->PCentroX > 0 ){
 			cvCircle( ImVisual, cvPoint( Flat->PCentroX,Flat->PCentroY ), 3, CV_RGB(0,0,0), -1, 8, 0 );
 			cvCircle( ImVisual, cvPoint(Flat->PCentroX,Flat->PCentroY ),Flat->PRadio, CV_RGB(0,0,0),2 );
 		}
@@ -196,242 +163,180 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat,CvVideoWriter* Writer
 		// MOSTRAR datos estadísticos en la ventana de visualización
 		if(frameData->Stats) ShowStatDataFr( frameData->Stats,frameData->GStats, ImVisual );
 
-		// GUARDAR VISUALIZACION
-		if( GRABAR_VISUALIZACION){
-			cvWriteFrame( Writer,ImVisual);
-		}
-		printf("Hecho\n");
-		if (SHOW_VISUALIZATION){
-			// MOSTRAMOS IMAGENES
-			printf( "\t-Mostrando ventana de visualización...");
-			cvShowImage( "Visualización", ImVisual );
-			if (SHOW_BG_REMOVAL == 1){
-				printf( "\t-Mostrando Background, Foreground, OldBackground... ");
-				cvShowImage("Background", frameData->BGModel);
-				cvShowImage( "Foreground",frameData->FG);
-				//cvShowImage( "OldForeground",frameData->OldFG);
+		// MOSTRAMOS IMAGENES
+		printf( "\t-Mostrando ventana de visualización...");
+		cvShowImage( "Visualización", ImVisual );
+		if (SHOW_BG_REMOVAL == 1){
+			printf( "\t-Mostrando Background, Foreground, OldBackground... ");
+			cvShowImage("Background", frameData->BGModel);
+			cvShowImage( "Foreground",frameData->FG);
+			//cvShowImage( "OldForeground",frameData->OldFG);
 
-				printf("Hecho\n");
-			}
-			if ( SHOW_MOTION_TEMPLATE == 1){
-				printf("\t-Mostrando Motion...");
-				cvShowImage( "Motion",frameData->ImMotion);
-				printf("Hecho\n");
-			}
-
-			if(SHOW_KALMAN){
-				printf("\t-Mostrando predicciones del filtro de Kalman...");
-				cvShowImage( "Filtro de Kalman", frameData->ImKalman );
-				printf("Hecho\n");
-			}
+			printf("Hecho\n");
 		}
+		if ( SHOW_MOTION_TEMPLATE == 1){
+			printf("\t-Mostrando Motion...");
+			cvShowImage( "Motion",frameData->ImMotion);
+			printf("Hecho\n");
+		}
+
+		if(SHOW_KALMAN){
+			printf("\t-Mostrando predicciones del filtro de Kalman...");
+			cvShowImage( "Filtro de Kalman", frameData->ImKalman );
+			printf("Hecho\n");
+		}
+
 	}
 
 }
 
-void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, CvVideoWriter* VWriter, int type  ){
+void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, int type, int Mode  ){
 
 	tlcde* flies = NULL;
 	STStatFrame* Stats = NULL;
 	IplImage* ImRaw = NULL;
 	static int first = 1;
-//  if( visParams->modoDepuracion) // cambiar SHOW_VISUALIZATION por MOD_DEPURACION
-//	if( type == PRE_PROCESADO)
-//		if( visParams->showLearningFlat)
-//
-//		if( visParams->
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
 
-	if (SHOW_WINDOW || GRABAR_VISUALIZACION ){
-
-		// ESTABLECEMOS DATOS SEGÚN EL TIPO DE PROCESO A VISUALIZAR
-		if( type == FLAT || type == BG_MODEL){
-			ImRaw =BGModel->Imed;
-			flies = NULL ;
-			Stats = NULL ;
-		}
-		else if( type == SHAPE  ){
-			ImRaw = FrameDataOut->FG;
-			flies = NULL ;
-			Stats = NULL ;
-		}
-		else if( type == TRAKING ){
-			// si el tipo es TRAKING, hasta que no esté lleno el buffer no hace nada
-			if( !FrameDataOut) return;
-			ImRaw = FrameDataOut->Frame ;
-			flies = FrameDataOut->Flies ;
-			Stats = FrameDataOut->Stats ;
-		}
-		if( ImRaw->nChannels == 1)	cvCvtColor( ImRaw , ImVisual, CV_GRAY2BGR);
-		else cvCopy(ImRaw,ImVisual);
-
-		if( type == FLAT && first ){
-			Transicion("Iniciando preprocesado...", 1,1000, 50 );
-			Transicion2( "Buscando plato...",50); // desaparece la ventana y hace aparecer
-			first = 0;
-		}
-		if( type == BG_MODEL && !first){
-			Transicion4("Buscando plato...", 50);
-			first = 1;
-		}
-		if( type == SHAPE && first ){
-			 Transicion4("Aprendiendo fondo...", 50);
-			 first = 0;
-		}
-		if( type == TRAKING && !first  ){
-				Transicion3( "", 20 );
-				first = 1;
-		}
-		//DIBUJAMOS ELEMENTOS EN VENTANA DE VIDEO
-		// DIBUJAR PLATO
-		if( BGModel->PRadio > 0 ){
-
-			//cvCircle( ImVisual, cvPoint(BGModel->PCentroX,BGModel->PCentroY ),BGModel->PRadio, CVX_RED, 1, 8, 0);
-			cvCircle( ImVisual, cvPoint(cvRound( BGModel->PCentroX),cvRound( BGModel->PCentroY ) ), cvRound( BGModel->PRadio ), CVX_BLUE, 1, 8, 0);
-		}
-		// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
-		if( flies && flies->numeroDeElementos>0 ) dibujarBlobs( ImVisual, flies );
-
-		cvZero( Window);
-
-		//REESCALAR
-		// si la imagen es de 320 o menos la escalamos al doble
-		if(ImVisual->width <= 320){
-			cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
-		}
-		else  ImScale = ImVisual;
-
-		//DIBUJAMOS ELEMENTOS EN VENTANA DE VISUALIZACION
-		if( type == FLAT || type == BG_MODEL || type  == SHAPE ){
-
-			// incrustamos el video en pequeño en la parte superior
-			IplImage* video;
-
-			CvSize size = cvSize(320,240 );
-			if(frame->width == 640) size = cvSize(frame->width/2,frame->height/2 );
-			if(frame->width == 1280) size = cvSize(frame->width/4,frame->height/4 );
-			if(frame->width == 1280) size = cvSize(frame->width,frame->height);
-			video = cvCreateImage( size,8,3);
-			CvRect rect = cvRect( (Window->width-video->width)/2,
-									( Window->height-video->height)/8,
-									video->width,
-									video->height);
-			if(frame->width == 640){
-				 cvPyrDown( frame, video,IPL_GAUSSIAN_5x5);
-			}
-			else if(frame->width == 1280){
-				IplImage* video1;
-				CvSize size = cvSize(640,480 );
-				video1 = cvCreateImage( cvSize(frame->width/2,frame->height/2 ),8,3);
-				cvPyrDown( frame, video1,IPL_GAUSSIAN_5x5);
-				cvPyrDown( video1, video,IPL_GAUSSIAN_5x5);
-				cvReleaseImage(&video1);
-			}
-			else cvCopy( frame, video );
-
-			// incrustamos las imagenes del preprocesado
-			Incrustar( Window, ImScale, Window, visParams->ROIPreProces);
-			Incrustar( Window, video, Window, rect);
-			// dibujamos sendos rectangulos blancos entorno a cada imagen incrustada
-			cvRectangle( Window,
-														cvPoint(rect.x,rect.y),
-														cvPoint(rect.x + rect.width,
-																rect.y +rect.height),
-														CVX_WHITE, 1 );
-			cvRectangle( Window,
-					cvPoint(visParams->ROIPreProces.x,visParams->ROIPreProces.y),
-					cvPoint(visParams->ROIPreProces.x + visParams->ROIPreProces.width,
-							visParams->ROIPreProces.y +visParams->ROIPreProces.height),
-					CVX_WHITE, 1 );
-
-			cvReleaseImage(&video);
-
-		}
-		else if (type == TRAKING){
-
-			DibujarFondo( );
-			Incrustar( Window, ImScale, Window, visParams->ROITracking);
-			// MOSTRAR datos estadísticos en la ventana de visualización
-			// frame
-			if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
-			// blobs
-			ShowStatDataBlobs( FrameDataOut->Flies , FrameDataOut->Tracks);
-			// Barra de progreso
-			float contadorX = 0;
-			float x;
-			if( FrameDataOut->GStats->totalFrames > 0){
-				contadorX = contadorX + (visParams->BPrWidth*FrameDataOut->GStats->numFrame/ FrameDataOut->GStats->totalFrames);
-				x =  contadorX ;
-				cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2,( Window->height - 30 - Window->height/64) ),
-									cvPoint( (Window->width-visParams->BPrWidth )/2 + cvRound(x), (Window->height - 30 + Window->height/64) ), CVX_BLUE, -1 );
-			}
-			if(ACTIVAR_OPCIONES_VISUALIZACION){
-				// si se pulsa p ó P  => pause = true
-				if( (cvWaitKey(1) & 255) == 'p' || (cvWaitKey(5) & 255) == 'P' ){
-					visParams->pause = true;
-					fflush( stdin);
-				}
-				if( (cvWaitKey(1) & 255) == 'r' || (cvWaitKey(5) & 255) == 'R' ){
-					visParams->Grab = true;
-					fflush( stdin);
-				}
-				if( (cvWaitKey(1) & 255) == 's' || (cvWaitKey(5) & 255) == 'S' ){
-					visParams->Grab = false;
-					fflush( stdin);
-				}
-				if( (cvWaitKey(1) & 255) == 'f' || (cvWaitKey(5) & 255) == 'F' ){
-					visParams->pasoApaso = true;
-					fflush( stdin);
-				}
-				if( (cvWaitKey(1) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C')	{
-					visParams->pasoApaso = false;
-					fflush( stdin);
-				}
-			}
-			while(visParams->pause){
-				DibujarFondo( );
-				Incrustar( Window, ImScale, Window, visParams->ROITracking);
-				// MOSTRAR datos estadísticos en la ventana de visualización
-				// frame
-				if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
-				// blobs
-				ShowStatDataBlobs( FrameDataOut->Flies , FrameDataOut->Tracks);
-				// si se pulsa c ó C  => pause = false
-				if( (cvWaitKey(5) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C'){
-					visParams->pause = false;
-					fflush( stdin);
-				}
-				if( cvWaitKey(5) == 'g' || cvWaitKey(5) == 'G'){
-					cvSaveImage( "Captura1.jpg", Window );
-					fflush( stdin);
-				}
-			}
-		}
-		IncrustarTxt( type );
-		// GUARDAR VISUALIZACION
-		if(visParams->Grab){
-			cvWriteFrame( VWriter,Window);
-		}
-		if(visParams->pasoApaso){
-			cvShowImage("TrackingDrosophila",Window);
-			cvWaitKey(0);
-		}
-		else cvShowImage("TrackingDrosophila",Window);
-
-
-
+	if(type == SHOW_PRESENT ) {
+		if( visParams->ShowPresent) DraWPresent(  );
 	}
+	else {
+		switch( Mode ){
+				case SIMPLE :
+					/// VISUALIZACIÓN MODO SIMPLE
+					if( visParams->ShowWindow || visParams->RecWindow ){
+						// ESTABLECEMOS LA IMAGEN BASE ( RAW ) SEGÚN EL TIPO DE PROCESO A VISUALIZAR
+						if( type == FLAT || type == BG_MODEL){
+							ImRaw =BGModel->Imed;
+							flies = NULL ;
+							Stats = NULL ;
+						}
+						else if( type == SHAPE  ){
+							ImRaw = FrameDataOut->FG;
+							flies = NULL ;
+							Stats = NULL ;
+						}
+						else if( type == TRAKING ){
+							// si el tipo es TRAKING, hasta que no esté lleno el buffer no hace nada
+							if( !FrameDataOut) return;
+							ImRaw = FrameDataOut->Frame ;
+							flies = FrameDataOut->Flies ;
+							Stats = FrameDataOut->Stats ;
+						}
+						if( ImRaw->nChannels == 1)	cvCvtColor( ImRaw , ImVisual, CV_GRAY2BGR);
+						else cvCopy(ImRaw,ImVisual);
+
+						// DIBUJAMOS LAS ANIMACIONES DE INICIO Y FIN DE ETAPAS
+						if( type == FLAT && first ){
+							Transicion("Iniciando preprocesado...", 1,1000, 50 );
+							Transicion2( "Buscando plato...",50); // desaparece la ventana y hace aparecer
+							first = 0;
+						}
+						if( type == BG_MODEL && !first){
+							Transicion4("Buscando plato...", 50);
+							first = 1;
+						}
+						if( type == SHAPE && first ){
+							 Transicion4("Aprendiendo fondo...", 50);
+							 first = 0;
+						}
+						if( type == TRAKING && !first  ){
+								Transicion3( "", 20 );
+								first = 1;
+						}
+						//DIBUJAMOS ELEMENTOS EN VENTANA DE VIDEO
+						// DIBUJAR PLATO
+						if( BGModel->PRadio > 0 ){
+
+							//cvCircle( ImVisual, cvPoint(BGModel->PCentroX,BGModel->PCentroY ),BGModel->PRadio, CVX_RED, 1, 8, 0);
+							cvCircle( ImVisual, cvPoint(cvRound( BGModel->PCentroX),cvRound( BGModel->PCentroY ) ), cvRound( BGModel->PRadio ), CVX_BLUE, 1, 8, 0);
+						}
+						// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
+						if( flies && flies->numeroDeElementos>0 ) dibujarBlobs( ImVisual, flies );
+
+						cvZero( Window);
+
+						//REESCALAR
+						// si la imagen es de 320 o menos la escalamos al doble
+						if(ImVisual->width <= 320){
+							cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
+						}
+						else  ImScale = ImVisual;
+
+						//DIBUJAMOS ELEMENTOS EN VENTANA DE VISUALIZACION DEPENDIENDO DEL TIPO
+						if( type == FLAT || type == BG_MODEL || type  == SHAPE ){
+
+							DrawPreprocesWindow( frame );
+
+						}
+						else if (type == TRAKING){
+
+							DrawTrackingWindow( frame, FrameDataOut,  BGModel);
+						}
+						IncrustarTxt( type );
+						// GUARDAR VISUALIZACION
+						if(visParams->RecWindow){
+							cvWriteFrame( VWriter,Window);
+						}
+
+						if ( visParams->ShowWindow ) cvShowImage("TrackingDrosophila",Window);
+						else if(visParams->pasoApaso){
+							cvShowImage("TrackingDrosophila",Window);
+							cvWaitKey(0);
+						}
+
+					}// FIN SHOW WINDOW
+
+					break;
+				case COMPLETO:
+					/// VISUALIZACIÓN MODO COMPLETO
+					if( visParams->ModoCompleto){
+						switch( type ){
+							case SHOW_LEARNING_FLAT :
+								if( visParams->ShowLearningFlat) cvShowImage( "Buscando Plato...",BGModel->Imed);
+								break;
+							case SHOW_INIT_BACKGROUND:
+								if( visParams->ShowInitBackground ) cvShowImage("Aprendiendo fondo...", BGModel->Imed);
+								break;
+							case SHOW_SHAPE_MODELING:
+								if( visParams->ShowShapeModel ){
+									cvShowImage("Modelando forma...",frame);
+									cvMoveWindow("Modelando forma...", 0, 0 );
+									cvShowImage("Foreground", FrameDataOut->FG);
+									cvMoveWindow("Foreground", FrameDataOut->FG->width, 0 );
+								}
+								break;
+							case SHOW_PROCESS_IMAGES:
+								if( visParams->ShowProcessPhases){
+									cvShowImage( "Foreground", FrameDataOut->FG);
+									cvWaitKey(0);
+								}
+								break;
+							case SHOW_BG_DIF_IMAGES:
+								if( visParams->ShowBGdiffImages){
+									cvShowImage( "Foreground", FrameDataOut->FG);
+									cvShowImage( "Background",FrameDataOut->BGModel);
+									cvWaitKey(0);
+								}
+								break;
+
+							case SHOW_VALIDATION_IMAGES :
+								if( visParams->ShowValidationPhases) {
+									cvShowImage( "Foreground",FrameDataOut->FG);
+									cvWaitKey(0);
+								}
+								break;
+
+						}
+					}
+		}
+	}
+
+}
+
+int obtenerVisParam( int type ){
+	if ( type == SHOW_KALMAN ) return visParams->ShowKalman;
+	if ( type == MODE ) return visParams->ModoCompleto;
 }
 
 void DraWPresent(  ){
@@ -511,6 +416,112 @@ void DraWPresent(  ){
 //			return 0;
 //	}
 
+}
+
+void DrawPreprocesWindow( IplImage* frame){
+	// incrustamos el video en pequeño en la parte superior
+	IplImage* video;
+
+	CvSize size = cvSize(320,240 );
+	if(frame->width == 640) size = cvSize(frame->width/2,frame->height/2 );
+	if(frame->width == 1280) size = cvSize(frame->width/4,frame->height/4 );
+	if(frame->width == 1280) size = cvSize(frame->width,frame->height);
+	video = cvCreateImage( size,8,3);
+	CvRect rect = cvRect( (Window->width-video->width)/2,
+							( Window->height-video->height)/8,
+							video->width,
+							video->height);
+	// Reescalar video
+	if(frame->width == 640){
+		 cvPyrDown( frame, video,IPL_GAUSSIAN_5x5);
+	}
+	else if(frame->width == 1280){
+		IplImage* video1;
+		CvSize size = cvSize(640,480 );
+		video1 = cvCreateImage( cvSize(frame->width/2,frame->height/2 ),8,3);
+		cvPyrDown( frame, video1,IPL_GAUSSIAN_5x5);
+		cvPyrDown( video1, video,IPL_GAUSSIAN_5x5);
+		cvReleaseImage(&video1);
+	}
+	else cvCopy( frame, video );
+
+	// incrustamos las imagenes del preprocesado
+	Incrustar( Window, ImScale, Window, visParams->ROIPreProces);
+	Incrustar( Window, video, Window, rect);
+	// dibujamos sendos rectangulos blancos entorno a cada imagen incrustada
+	cvRectangle( Window,
+												cvPoint(rect.x,rect.y),
+												cvPoint(rect.x + rect.width,
+														rect.y +rect.height),
+												CVX_WHITE, 1 );
+	cvRectangle( Window,
+			cvPoint(visParams->ROIPreProces.x,visParams->ROIPreProces.y),
+			cvPoint(visParams->ROIPreProces.x + visParams->ROIPreProces.width,
+					visParams->ROIPreProces.y +visParams->ROIPreProces.height),
+			CVX_WHITE, 1 );
+
+	cvReleaseImage(&video);
+}
+
+void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* BGModel ){
+
+	DibujarFondo( );
+	Incrustar( Window, ImScale, Window, visParams->ROITracking);
+	// MOSTRAR datos estadísticos en la ventana de visualización
+	// frame
+	if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
+	// blobs
+	ShowStatDataBlobs( FrameDataOut->Flies , FrameDataOut->Tracks);
+	// Barra de progreso
+	float contadorX = 0;
+	float x;
+	if( FrameDataOut->GStats->totalFrames > 0){
+		contadorX = contadorX + (visParams->BPrWidth*FrameDataOut->GStats->numFrame/ FrameDataOut->GStats->totalFrames);
+		x =  contadorX ;
+		cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2,( Window->height - 30 - Window->height/64) ),
+							cvPoint( (Window->width-visParams->BPrWidth )/2 + cvRound(x), (Window->height - 30 + Window->height/64) ), CVX_BLUE, -1 );
+	}
+	if(ACTIVAR_OPCIONES_VISUALIZACION){
+		// si se pulsa p ó P  => pause = true
+		if( (cvWaitKey(1) & 255) == 'p' || (cvWaitKey(5) & 255) == 'P' ){
+			visParams->pause = true;
+			fflush( stdin);
+		}
+		if( (cvWaitKey(1) & 255) == 'r' || (cvWaitKey(5) & 255) == 'R' ){
+			visParams->RecWindow = true;
+			fflush( stdin);
+		}
+		if( (cvWaitKey(1) & 255) == 's' || (cvWaitKey(5) & 255) == 'S' ){
+			visParams->RecWindow = false;
+			fflush( stdin);
+		}
+		if( (cvWaitKey(1) & 255) == 'f' || (cvWaitKey(5) & 255) == 'F' ){
+			visParams->pasoApaso = true;
+			fflush( stdin);
+		}
+		if( (cvWaitKey(1) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C')	{
+			visParams->pasoApaso = false;
+			fflush( stdin);
+		}
+	}
+	while(visParams->pause){
+		DibujarFondo( );
+		Incrustar( Window, ImScale, Window, visParams->ROITracking);
+		// MOSTRAR datos estadísticos en la ventana de visualización
+		// frame
+		if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
+		// blobs
+		ShowStatDataBlobs( FrameDataOut->Flies , FrameDataOut->Tracks);
+		// si se pulsa c ó C  => pause = false
+		if( (cvWaitKey(5) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C'){
+			visParams->pause = false;
+			fflush( stdin);
+		}
+		if( cvWaitKey(5) == 'g' || cvWaitKey(5) == 'G'){
+			cvSaveImage( "Captura1.jpg", Window );
+			fflush( stdin);
+		}
+	}
 }
 
 void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
@@ -946,13 +957,13 @@ void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
 // a (A,mcb) cuyo centro es mcb. La unión de A,B,C dará el triangulo resultante.
 
 
-void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, CvVideoWriter* writer ){
+void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat  ){
 
 	STFrame* frameData;
 
 	unsigned char opcion = 0;
 
-	visParams->Grab = false;
+//	visParams->RecWindow = false;
 	fflush( stdin);
 
 
@@ -961,7 +972,7 @@ void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat, CvVideoWriter* writer 
 //	cvCopy(frameData->Frame,ImVisual);
 
 
-	VisualizarFr( frameData, Flat, writer);
+	VisualizarFr( frameData, Flat );
 	CvFont fuente1;
 	char PBuf[100];
 	sprintf(PBuf," Posicion del Buffer: %d ",visParams->VisualPos );
@@ -1318,20 +1329,198 @@ void Transicion4(const char texto[], int delay_down){
 	desvanecer( Window, delay_down);
 	cvResetImageROI(Window);
 }
-void AllocDefaultVisParams(  IplImage* ImRef ){
+
+void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
     //init parameters
+	config_t cfg;
+	config_setting_t *setting;
+	char settingName[30];
+	char configFile[30];
+	char settingFather[30];
+
+
+	int EXITO;
+	int DEFAULT = false;
 
 	// si no han sido localizados hacerlo.
 	if( !visParams){
 		visParams = ( VisParams *) malloc( sizeof( VisParams) );
 		if(!visParams) {error(4); return;}
 	}
+	printf("\nFlujo de fichero de vídeo iniciado.");
+	VWriter = iniciarAvi(  nombreVideo, FPS);
+	printf("\nCargando parámetros de configuración globales...");
+	config_init(&cfg);
+
+	sprintf( configFile, "config.cfg");
+	sprintf( settingFather,"Visualizacion" );
+
+	 /* Leer archivo. si hay un error, informar y cargar configuración por defecto */
+	if(! config_read_file(&cfg, configFile))
+	{
+		fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
+				config_error_line(&cfg), config_error_text(&cfg));
+
+		fprintf(stderr, "Error al acceder al fichero de configuración %s .\n"
+						" Estableciendo valores por defecto.\n"
+						,configFile);
+		DEFAULT = true;
+	}
+	else
+	{
+		setting = config_lookup(&cfg, settingFather);
+		/* Si no se se encuentra la setting o bien existe la variable hijo Auto y ésta es true, se establecen TODOS los valores por defecto.*/
+		if(setting != NULL)
+		{
+			sprintf(settingName,"Auto");
+			/* Obtener el valor */
+			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
+			if(!EXITO) DEFAULT = true;
+			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+												" Estableciendo valores por defecto.\n",settingFather);
+			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+												" Estableciendo valores del fichero de configuración.\n",settingFather);
+		}
+		else {
+			DEFAULT = true;
+			fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+		}
+	}
+
+	if( DEFAULT ) SetDefaultHightGUIParams( ImRef );
+	/* Valores leídos del fichero de configuración. Algunos valores puedes ser establecidos por defecto si se indica
+	 * expresamente en el fichero de configuración. Si el valor es erroneo o no se encuentra la variable, se establecerán
+	 * a los valores por defecto.
+	 */
+	else{
+		 /* Get the store name. */
+		sprintf(settingName,"ShowWindow");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowWindow )  ){
+			visParams->ShowWindow = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+										"Establecer por defecto a %d \n",settingName,visParams->ShowWindow);
+		}
+
+		sprintf(settingName,"ShowPresent");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowPresent )  ){
+			visParams->ShowPresent = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowPresent);
+
+		}
+
+		sprintf(settingName,"ShowTransition");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowTransition )  ){
+			visParams->ShowTransition  = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowTransition );
+
+		}
+
+		sprintf(settingName,"HightGUIControls");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->HightGUIControls )  ){
+			visParams->HightGUIControls = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->HightGUIControls);
+
+		}
+
+		sprintf(settingName,"ModoCompleto");
+
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ModoCompleto )  ){
+			visParams->ModoCompleto = false;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ModoCompleto);
+
+		}
+
+		sprintf(settingName,"ShowBGdiffImages");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowBGdiffImages )  ){
+			visParams->ShowBGdiffImages  = false ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowBGdiffImages);
+
+		}
+
+		sprintf(settingName,"ShowLearningFlat");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowLearningFlat )  ){
+			visParams->ShowLearningFlat = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowLearningFlat);
+
+		}
+
+		sprintf(settingName,"ShowInitBackground");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowInitBackground )  ){
+			visParams->ShowInitBackground = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowInitBackground);
+
+		}
+
+		sprintf(settingName,"ShowShapeModel");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowShapeModel)  ){
+			visParams->ShowShapeModel= true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowShapeModel);
+
+		}
+
+		sprintf(settingName,"ShowProcessPhases");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowProcessPhases )  ){
+			visParams->ShowProcessPhases = false ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowProcessPhases);
+
+		}
+
+		sprintf(settingName,"ShowValidationPhases");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowValidationPhases )  ){
+			visParams->ShowValidationPhases = false;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowValidationPhases);
+
+		}
+
+		sprintf(settingName,"ShowBGremoval");
+		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowBGremoval ) ){
+			visParams->ShowBGremoval = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowBGremoval);
+
+		}
+
+		sprintf(settingName,"ShowKalman");
+		if(!config_setting_lookup_bool ( setting, settingName, &visParams->ShowKalman ) ){
+			visParams->ShowKalman = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,visParams->ShowKalman);
+
+		}
+	}
+
+	SetPrivatetHightGUIParams(  ImRef );
+
+//	ShowParams( settingFather );
+	config_destroy(&cfg);
+}
+
+void SetPrivatetHightGUIParams(  IplImage* ImRef ){
+
+	// Parametros no configurables
 	visParams->pause = false;
 	visParams->stop = false;
-	visParams->Grab = true;
+	visParams->RecWindow = true;
 	visParams->pasoApaso = false;
 	visParams->VisualPos = -1;
 	visParams->Resolucion = cvSize(1280,800 );
+	visParams->DelayLogo = 2000;
+	visParams->DelayDown = 20;
+	visParams->DelayUp = 20 ;
+	visParams->DelayTr = 20;
+	visParams->TransOff = true;
+	visParams->BPrWidth = visParams->Resolucion.width - 20;
 
 	if(!Window)	Window = cvCreateImage( visParams->Resolucion,8,3);
 	cvZero(Window);
@@ -1358,15 +1547,47 @@ void AllocDefaultVisParams(  IplImage* ImRef ){
 			}
 		}
 	}
-	visParams->DelayLogo = 2000;
-	visParams->DelayDown = 20;
-	visParams->DelayUp = 20 ;
-	visParams->DelayTr = 20;
-	visParams->TransOff = true;
-	visParams->BPrWidth = visParams->Resolucion.width - 20;
+}
+
+void SetDefaultHightGUIParams(  IplImage* ImRef ){
+
+	visParams->ShowWindow = true;
+
+	visParams->ShowPresent = true ;
+
+	visParams->ShowTransition = true;
+	visParams->HightGUIControls = true ;
+	visParams->ModoCompleto = false;
+	visParams->ShowBGdiffImages  = false ;
+
+	// Resultados de preprocesado
+	visParams->ShowLearningFlat = true;
+	visParams->ShowInitBackground = true;
+	visParams->ShowShapeModel= true;
+
+	// Resultados de procesado
+	visParams->ShowProcessPhases = false ;
+	visParams->ShowValidationPhases = false;
+	visParams->ShowBGremoval = true;
+	visParams->ShowKalman = true;
 
 }
 
+CvVideoWriter* iniciarAvi(  char* nombreVideo, double fps){
+
+	CvVideoWriter *writer = NULL;
+
+	CvSize size = cvSize(1280,800); //( 1280, 800)
+	fps = 30;
+	writer = cvCreateVideoWriter(
+							nombreVideo,
+							CV_FOURCC('P','I','M','1'),
+							fps,
+							size
+							);//'F', 'M', 'P', '4';'M', 'J', 'P', 'G';'D','I','V','X';'P','I','M','1'
+
+	return writer;
+}
 
 void releaseVisParams( ){
 	free( visParams);
@@ -1374,6 +1595,7 @@ void releaseVisParams( ){
 	ImVisual = NULL;
 //	if( ImScale) cvReleaseImage( &ImScale);
 	cvReleaseImage(&Window);
+	if (VWriter) cvReleaseVideoWriter(&VWriter);
 }
 //void VerEstadoSHModel( IplImage* Imagen,int num ){
 //

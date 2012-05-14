@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
 	//  CAPTURA  //
 	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
-	CvVideoWriter* VWriter;
+
 	IplImage* frame;
 
 	struct timeval ti,  tif, tinicio; // iniciamos la estructura de medida de tiempos
@@ -63,18 +63,17 @@ int main(int argc, char* argv[]) {
 	}
 
 	printf("\nInicializando parámetros...");
+
 //  Iniciar parámetros generales y de visualización y crear interface.
+	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
 	SetGlobalConf( g_capture );
-	AllocDefaultVisParams( cvQueryFrame( g_capture ) );
+	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS);
 
 	////////// PRESENTACIÓN ////////////////
-	if(SHOW_WINDOW && SHOW_PRESENT) DraWPresent(  );
-
-	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
-	VWriter = iniciarAvi( g_capture, nombreVideo);
+	DraWWindow( NULL,NULL, NULL, SHOW_PRESENT, 0  );
 
 	//////////  PREPROCESADO   ////////////
-	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(NULL, NULL);
+	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(&g_capture);
 
 	/////////	PROCESADO   ///////////////
 	printf("\n\nIniciando procesado...\n");
@@ -105,17 +104,17 @@ int main(int argc, char* argv[]) {
 		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
 
 		//////////  RASTREAR  ////////////
-		FrameDataOut = Tracking( FrameDataIn, 10, BGModel, VWriter,GParams->FPS );
+		FrameDataOut = Tracking( FrameDataIn, 10, BGModel,GParams->FPS );
 
 		////////// ESTADISTICAS //////////
 		CalcStatsFrame( FrameDataOut );
 
 		//////////  VISUALIZAR  //////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
-		if(SHOW_WINDOW) DraWWindow( frame, FrameDataOut, BGModel,VWriter, TRAKING );
+		DraWWindow( frame, FrameDataOut, BGModel, TRAKING, SIMPLE );
 
 		//////////  ALMACENAR ////////////
-		if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture, &VWriter);}
+		if(!GuardarSTFrame( FrameDataOut, nombreFichero ) ){error(6);Finalizar(&g_capture);}
 
 		////////// LIBERAR MEMORIA  ////////////
 		liberarSTFrame( FrameDataOut );
@@ -135,7 +134,7 @@ int main(int argc, char* argv[]) {
     ///////// POST-PROCESADO ///////////////////
 
 	///////// LIBERAR MEMORIA Y TERMINAR////////
-    Finalizar(&g_capture, &VWriter);
+    Finalizar(&g_capture);
 
 }
 
@@ -276,7 +275,7 @@ void ShowParams( char* Campo ){
 
 }
 
-void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
+void Finalizar(CvCapture **g_capture){
 
 	CvCapture *capture;
 	CvVideoWriter *Writer;
@@ -307,9 +306,9 @@ void Finalizar(CvCapture **g_capture,CvVideoWriter**VWriter){
 
 	//liberar resto de estructuras
 	capture = *g_capture;
-	Writer = *VWriter;
+
 	if (capture)cvReleaseCapture(&capture);
-	if (Writer) cvReleaseVideoWriter(&Writer);
+
 
 	exit (1);
 }

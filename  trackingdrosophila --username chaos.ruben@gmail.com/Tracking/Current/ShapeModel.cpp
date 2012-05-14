@@ -123,15 +123,9 @@ SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel ){
 		}//Fin del For 1
 		num_frames += 1;
 		cvResetImageROI(frameData->FG);
-		if(SHOW_WINDOW){
-			DraWWindow(frame, frameData, BGModel,  NULL, SHAPE);
-		}
-		if (SHOW_VISUALIZATION && SHOW_SHAPE_MODELING ){
-				cvShowImage("Modelando forma...",Imblob);
-				cvMoveWindow("Modelando forma...", 0, 0 );
-				cvShowImage("Foreground", frameData->FG);
-				cvMoveWindow("Foreground", frameData->FG->width, 0 );
-		}
+
+		DraWWindow(Imblob, frameData, BGModel, SHOW_SHAPE_MODELING, COMPLETO);
+		DraWWindow(Imblob, frameData, BGModel, SHAPE,SIMPLE );
 
 	}//Fin del while
 //	if(SHOW_WINDOW){
