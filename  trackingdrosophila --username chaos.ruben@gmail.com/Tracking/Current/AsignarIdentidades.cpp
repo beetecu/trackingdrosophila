@@ -181,14 +181,14 @@ void MotionTemplate( tlcde* framesBuf, tlcde* Etiquetas){
 			// check for the case of little motion
 			if( count < comp_rect.width*comp_rect.height * 0.05 )	continue;
 			//if(!fly) exit(1);
-			if(SHOW_VISUALIZATION&&SHOW_MOTION_TEMPLATE){
-				// draw a clock with arrow indicating the direction
-				center = cvPoint( (comp_rect.x + comp_rect.width/2),
-								  (comp_rect.y + comp_rect.height/2) );
-				cvCircle( frameIdx1->ImMotion, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
-				cvLine( frameIdx1->ImMotion, center, cvPoint( cvRound( center.x + magnitude*cos(angle*CV_PI/180)),
-						cvRound( center.y - magnitude*sin(angle*CV_PI/180))), color, 3, CV_AA, 0 );
-			}
+//			if(SHOW_VISUALIZATION&&SHOW_MOTION_TEMPLATE){
+//				// draw a clock with arrow indicating the direction
+//				center = cvPoint( (comp_rect.x + comp_rect.width/2),
+//								  (comp_rect.y + comp_rect.height/2) );
+//				cvCircle( frameIdx1->ImMotion, center, cvRound(magnitude*1.2), color, 3, CV_AA, 0 );
+//				cvLine( frameIdx1->ImMotion, center, cvPoint( cvRound( center.x + magnitude*cos(angle*CV_PI/180)),
+//						cvRound( center.y - magnitude*sin(angle*CV_PI/180))), color, 3, CV_AA, 0 );
+//			}
 
 
 			}//ELSE

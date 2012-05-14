@@ -12,9 +12,9 @@
 using namespace cv;
 using namespace std;
 
-extern float TiempoGlobal ;
+extern float TiempoGlobal;
 extern float TiempoFrame;
-extern double NumFrame ; /// contador de frames absolutos ( incluyendo preprocesado )
+extern double NumFrame; /// contador de frames absolutos ( incluyendo preprocesado )
 
 
 
@@ -82,7 +82,6 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 				cvShowImage("Background", frameData->BGModel);
 				cvShowImage( "Foreground",frameData->FG);
 				//cvShowImage( "OldForeground",frameData->OldFG);
-
 				printf("Hecho\n");
 			}
 
@@ -174,13 +173,13 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 
 			printf("Hecho\n");
 		}
-		if ( SHOW_MOTION_TEMPLATE == 1){
-			printf("\t-Mostrando Motion...");
-			cvShowImage( "Motion",frameData->ImMotion);
-			printf("Hecho\n");
-		}
+//		if ( visParams->ShowKalman ){
+//			printf("\t-Mostrando Motion...");
+//			cvShowImage( "Motion",frameData->ImMotion);
+//			printf("Hecho\n");
+//		}
 
-		if(SHOW_KALMAN){
+		if(visParams->ShowKalman){
 			printf("\t-Mostrando predicciones del filtro de Kalman...");
 			cvShowImage( "Filtro de Kalman", frameData->ImKalman );
 			printf("Hecho\n");
@@ -900,7 +899,7 @@ void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
 	CvFont fuente2;
 	float porcentaje;
 
-	if (SHOW_WINDOW || SHOW_VISUALIZATION || GRABAR_VISUALIZACION ){
+	if( visParams->ShowWindow || visParams->ModoCompleto) {
 
 		anchoBuf = Window->width/2;
 		cvZero( Window);
@@ -941,10 +940,12 @@ void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
 
 
 		if( num == IMAGE_BUFFER_LENGTH - 1){
-//			if(SHOW_WINDOW) Transicion3( "", 20 );
 		}
 
 		cvShowImage( "TrackingDrosophila", Window );
+		if(visParams->RecWindow){
+			cvWriteFrame( VWriter,Window);
+		}
 	}
 //	cvWaitKey(0);
 }
@@ -1596,6 +1597,7 @@ void releaseVisParams( ){
 //	if( ImScale) cvReleaseImage( &ImScale);
 	cvReleaseImage(&Window);
 	if (VWriter) cvReleaseVideoWriter(&VWriter);
+	cvDestroyAllWindows();
 }
 //void VerEstadoSHModel( IplImage* Imagen,int num ){
 //
@@ -1638,17 +1640,17 @@ void CreateWindows( IplImage* ImRef){
 		cvMoveWindow("Background", 0, ImRef->height );
 		cvMoveWindow("Foreground", ImRef->width, ImRef->height);
 	}
-	if ( SHOW_MOTION_TEMPLATE == 1){
-		cvNamedWindow( "Motion", 1 );
-	}
+//	if ( SHOW_MOTION_TEMPLATE == 1){
+//		cvNamedWindow( "Motion", 1 );
+//	}
 
 
-	if (SHOW_OPTICAL_FLOW == 1){
-		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
-		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
-		cvMoveWindow("Flujo Optico X", 0, 0 );
-		cvMoveWindow("Flujo Optico Y", 640, 0);
-	}
+//	if (SHOW_OPTICAL_FLOW == 1){
+//		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
+//		cvNamedWindow( "Flujo Optico X",CV_WINDOW_AUTOSIZE);
+//		cvMoveWindow("Flujo Optico X", 0, 0 );
+//		cvMoveWindow("Flujo Optico Y", 640, 0);
+//	}
 	if (SHOW_VISUALIZATION == 1){
 			cvNamedWindow( "Visualización",CV_WINDOW_AUTOSIZE);
 			cvMoveWindow("Visualización", 0, 0 );
@@ -1665,20 +1667,20 @@ void DestroyWindows( ){
 
 	//cvDestroyWindow( "Drosophila.avi" );
 
-	if (SHOW_BG_REMOVAL == 1){
-		cvDestroyWindow( "Background");
-		cvDestroyWindow( "Foreground");
-	}
-	if (SHOW_OPTICAL_FLOW == 1){
-		cvDestroyWindow( "Flujo Optico X");
-		cvDestroyWindow( "Flujo Optico Y");
-	}
-	if ( SHOW_MOTION_TEMPLATE == 1){
-		cvDestroyWindow( "Motion");
-	}
-	if (SHOW_VISUALIZATION == 1) {
-		cvDestroyWindow( "Visualización" );
-	}
+//	if (SHOW_BG_REMOVAL == 1){
+//		cvDestroyWindow( "Background");
+//		cvDestroyWindow( "Foreground");
+//	}
+//	if (SHOW_OPTICAL_FLOW == 1){
+//		cvDestroyWindow( "Flujo Optico X");
+//		cvDestroyWindow( "Flujo Optico Y");
+//	}
+//	if ( SHOW_MOTION_TEMPLATE == 1){
+//		cvDestroyWindow( "Motion");
+//	}
+//	if (SHOW_VISUALIZATION == 1) {
+//		cvDestroyWindow( "Visualización" );
+//	}
 
 }
 
