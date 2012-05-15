@@ -18,11 +18,6 @@
 #include "Stats.hpp"
 #include "Visualizacion.hpp"
 
-#define MAX_BUFFER IMAGE_BUFFER_LENGTH //!< máximo número de frames que almacenará la estructura.
-
-//#define INTERVAL_BACKGROUND_UPDATE 10000
-
-
 //PROTOTIPOS DE FUNCIONES
 //#ifndef PROTOTIPOS_DE_FUNCIONES
 //#define PROTOTIPOS_DE_FUNCIONES
@@ -96,7 +91,7 @@ void ShowParams( char* Campo );
 
 //!\brief FinalizarTraking: Destruir todas las ventanas,imagenes,estructuras etc.
 
-	void Finalizar(CvCapture **g_capture);
+void Finalizar(CvCapture **g_capture);
 
 
 //!\brief onTrackbarSlider: Crea una trackbar para posicionarse en puntos concretos del video.

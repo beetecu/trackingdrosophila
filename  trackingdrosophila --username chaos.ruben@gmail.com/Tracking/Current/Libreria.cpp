@@ -800,7 +800,7 @@ void liberarBuffer(tlcde *FramesBuf)
 		frameData = (STFrame*)borrar( FramesBuf);
 	}
 }
-void CrearIdentidades(tlcde* Identities){
+void CrearIdentidades(tlcde* Identities, int Max){
 
  	Identity* Id;
  	RNG rng(0xFFFFFFFF); // para generar un color aleatorio
@@ -809,8 +809,8 @@ void CrearIdentidades(tlcde* Identities){
  //	nombre = "Pepe";
  //	nombre = "Tomas";
  //	nombre = "Manuel";
- 	int i = NUMBER_OF_IDENTITIES-1;
- 	for(i=NUMBER_OF_IDENTITIES-1; i >= 0 ; i--){
+ 	int i = Max-1;
+ 	for(i=Max-1; i >= 0 ; i--){
  		Id = ( Identity* )malloc( sizeof(Identity ));
  		Id->etiqueta = i + 1;
  		Id->color = randomColor(rng);

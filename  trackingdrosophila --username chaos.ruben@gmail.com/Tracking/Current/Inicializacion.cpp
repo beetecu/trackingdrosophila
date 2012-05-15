@@ -18,20 +18,21 @@ int Inicializacion( int argc,
 
 	if( argc == 2 ){
 		argc = 4;
-		printf("\nNo se ha especificado nombre para el fichero de Datos.\n ");
+		fprintf(stderr,"\nNo se ha especificado nombre para el fichero de Datos.\n ");
+		// leer de fichero de configuración.
 		for( int i = 0; i < 1000; i++ ){
 			sprintf(nombreFichero,"Data_%d.csv",i);
 			if( !existe( nombreFichero) ) {
 				crearFichero( nombreFichero );
-				printf("Se estableció por defecto %s",nombreFichero);
+				fprintf(stderr,"Se estableció por defecto %s",nombreFichero);
 				break;
 			}
 		}
-		printf("\nNo se ha especificado nombre para el fichero de video.\n ");
+		fprintf(stderr,"\nNo se ha especificado nombre para el fichero de video.\n ");
 		for( int i = 0; i < 1000; i++ ){
 			sprintf(nombreVideo,"Visual_%d.avi",i);
 			if( !existe( nombreVideo) ){
-				printf("Se estableció por defecto %s",nombreVideo);
+				fprintf(stderr,"Se estableció por defecto %s",nombreVideo);
 				break;
 			}
 		}
@@ -65,7 +66,7 @@ int Inicializacion( int argc,
 			int hecho = 0;
 			do
 			{
-				printf("\n\nEl fichero de datos %s existe. Indique si desea sobrescribirlo (s/n): ",nombreFichero);
+				fprintf(stderr,"\n\nEl fichero de datos %s existe. Indique si desea sobrescribirlo (s/n): ",nombreFichero);
 				fscanf( stdin, "%s",resp);
 				fflush(stdin);
 				QuitarCR( resp );
@@ -75,7 +76,7 @@ int Inicializacion( int argc,
 				}
 				else if (resp[0] == 'n'||resp[0] =='N'){
 
-					printf("\nEscriba el nuevo nombre o pulse intro para nombre por defecto: ");
+					fprintf(stderr,"\nEscriba el nuevo nombre o pulse intro para nombre por defecto: ");
 					fscanf(stdin,"%s",nombreFichero );
 					fflush(stdin);
 					QuitarCR( nombreFichero );
@@ -96,11 +97,11 @@ int Inicializacion( int argc,
 
 					if (strlen(nombreFichero)<5) {// nombre por defecto
 						for( int i = 0; i < 1000; i++ ){
-							printf("\nNombre por defecto: ");
+							fprintf(stderr,"\nNombre por defecto: ");
 							sprintf(nombreFichero,"Data_%d.csv ",i);
 							if( !existe( nombreFichero) ) {
 								crearFichero( nombreFichero );
-								printf("%s",nombreFichero);
+								fprintf(stderr,"%s",nombreFichero);
 								break;
 							}
 						}
@@ -109,7 +110,7 @@ int Inicializacion( int argc,
 					if (existe(nombreFichero)) hecho = 0;
 					else hecho = 1;
 				}
-				else printf("\nResponda s/n.\n");
+				else fprintf(stderr,"\nResponda s/n.\n");
 
 			}
 			while (!hecho);
@@ -119,30 +120,11 @@ int Inicializacion( int argc,
 		}
 		// creamos el fichero de video.
 //		int hecho = 0;
-		printf(" No se ha especificado nombre para el fichero de video.\n ");
+		fprintf(stderr," No se ha especificado nombre para el fichero de video.\n ");
 
-//		do{
-//			fscanf( stdin, "%s",&resp);
-//			fflush(stdin);
-//			QuitarCR( resp );
-//			if (resp[0] == 's'|| resp[0] =='S'){
-//				GRABAR_VISUALIZACION = 1;
-//				for( int i = 0; i < 1000; i++ ){
-//					sprintf(nombreVideo,"Visual_%d.avi",i);
-//					if( !existe( nombreVideo) )  break;
-//				}
-//				hecho = 1;
-//			}
-//			else if (resp[0] == 'n'||resp[0] =='N'){
-//				GRABAR_VISUALIZACION = 0;
-//				hecho = 1;
-//			}
-//			else printf("Respuesta incorrecta. Indique s/n:");
-//		}
-//		while (!hecho);
 		for( int i = 0; i < 1000; i++ ){
 			sprintf(nombreVideo,"Visual_%d.avi",i);
-			printf("Se estableció por defecto %s",nombreVideo);
+			fprintf(stderr,"Se estableció por defecto %s",nombreVideo);
 			if( !existe( nombreVideo) )  break;
 		}
 	} // si se especifica nombre de fichero de datos y video
@@ -186,7 +168,7 @@ int Inicializacion( int argc,
 			char resp[2];
 			do
 			{
-				printf("\n\nEl fichero de datos %s existe. Indique si desea sobrescribirlo (s/n): ",nombreFichero);
+				fprintf(stderr,"\n\nEl fichero de datos %s existe. Indique si desea sobrescribirlo (s/n): ",nombreFichero);
 				fscanf( stdin, "%s",resp);
 				fflush(stdin);
 				QuitarCR( resp );
@@ -196,7 +178,7 @@ int Inicializacion( int argc,
 				}
 				else if (resp[0] == 'n'||resp[0] =='N'){
 
-					printf("\nEscriba el nuevo nombre o pulse intro para nombre por defecto: ");
+					fprintf(stderr,"\nEscriba el nuevo nombre o pulse intro para nombre por defecto: ");
 					fscanf(stdin,"%s",nombreFichero );
 					fflush(stdin);
 					QuitarCR( nombreFichero );
@@ -230,7 +212,7 @@ int Inicializacion( int argc,
 					if (existe(nombreFichero)) hecho = 0;
 					else hecho = 1;
 				}
-				else printf("\nResponda s/n.\n");
+				else fprintf(stderr,"\nResponda s/n.\n");
 
 			}
 			while (!hecho);
@@ -245,14 +227,14 @@ int Inicializacion( int argc,
 			char resp[2];
 			do
 			{
-				printf("\nEl fichero de video %s existe. Indique si desea sobrescribirlo (s/n): ",nombreVideo);
+				fprintf(stderr,"\nEl fichero de video %s existe. Indique si desea sobrescribirlo (s/n): ",nombreVideo);
 				fscanf( stdin, "%s",resp);
 				fflush(stdin);
 				QuitarCR( resp );
 				if (resp[0] == 's'||resp[0] =='S')  hecho = 1;
 				else if (resp[0] == 'n'||resp[0] =='N'){
 
-					printf("\nEscriba el nuevo nombre o pulse intro para nombre por defecto: ");
+					fprintf(stderr,"\nEscriba el nuevo nombre o pulse intro para nombre por defecto: ");
 					fscanf(stdin,"%s",nombreVideo );
 					fflush(stdin);
 					QuitarCR( nombreVideo );
@@ -271,7 +253,7 @@ int Inicializacion( int argc,
 					}
 
 					if (strlen(nombreVideo)<5) {// nombre por defecto
-						printf("\nNombre por defecto: ");
+						fprintf(stderr,"\nNombre por defecto: ");
 						for( int i = 0; i < 1000; i++ ){
 							sprintf(nombreVideo,"Video_%d.avi ",i);
 							if( !existe( nombreVideo) ) {
@@ -284,7 +266,7 @@ int Inicializacion( int argc,
 					if (existe(nombreVideo)) hecho = 0;
 					else hecho = 1;
 				}
-				else printf("\nResponda s/n.\n");
+				else fprintf(stderr,"\nResponda s/n.\n");
 			}
 			while (!hecho);
 		}

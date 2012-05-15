@@ -35,12 +35,15 @@
 //
 #define SHOW_BG_REMOVAL 7//!< Background y Foreground.
 #define SHOW_KALMAN 8
-//
+
+
 //#define SHOW_WINDOW 9 //!<  Resultado
 #define FLAT 10
 #define BG_MODEL 11
 #define SHAPE 12
 #define TRAKING 13
+
+#define SHOW_STATS_MOV 14
 
 #define CENTRAR cvPoint(-1,-1)
 #define CENTRAR_SUP cvPoint(-2, -2 )
@@ -84,6 +87,9 @@ typedef struct {
 	int	ShowBGremoval ; 				/// Switch true/false para visualizar el Background y Foreground.
 	int	ShowKalman ;
 
+	// ventana de tracking
+	int ShowStatsMov;
+
 	//Private
 	bool pause;
 	bool stop;
@@ -97,7 +103,6 @@ typedef struct {
 	int DelayUp;
 	int DelayDown;
 	int DelayTr;
-	bool TransOff;
 	int BPrWidth; // ancho de la barra de progeso
 }VisParams;
 

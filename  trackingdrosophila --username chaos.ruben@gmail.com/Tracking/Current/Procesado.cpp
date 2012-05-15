@@ -48,8 +48,12 @@ IplImage *lastIdes = NULL;
  * 			OBTENCION DE MODELO DINAMICO Y ESTÁTICO	DEL FONDO		*
  ********************************************************************/
 
+///Parámetros fondo para procesado
+BGModelParams *BGPrParams = NULL;
+///Parámetros Validación para procesado
+ValParams* valParams = NULL;
 
-STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValParams* valParams, BGModelParams *BGPrParams ){
+STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 
 	extern double NumFrame;
 	struct timeval ti, tif; // iniciamos la estructura
@@ -62,7 +66,6 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValP
 	STFrame* frameData = NULL;
 	tlcde* OldFGFlies = NULL;
 	tlcde* FGFlies = NULL;
-
 
 
 #ifdef	MEDIR_TIEMPOS
@@ -263,7 +266,7 @@ void AllocateDataProcess( IplImage *I ) {
 		cvZero( FGMask );
 
 }
-void releaseDataProcess(ValParams* valParams, BGModelParams *BGPrParams){
+void releaseDataProcess( ){
 	free(BGPrParams);
 	free( valParams);
 	cvReleaseImage( &Imagen );
