@@ -34,17 +34,12 @@ using namespace std;
 
 // OPCIONES GENERALES DE PROGRAMA
 
-#define DETECTAR_PLATO 1 // activa la detección del plato
 //#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
-#define CALC_STATS_MOV 1
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
-#define MODO_DEPURACION
 
 #define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
 #define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
-
-#define SHOW_PROCESS_TIMES
 
 #define SHOW_BGMODEL_DATA 0 //!< Switch de 0 a 1 para mostrar en consola datos del modelo de fondo.
 #define SHOW_BGMODEL_TIMES 0
@@ -61,14 +56,7 @@ using namespace std;
 
 #define SHOW_KALMAN_DATA 0
 
-// VISUALIZACIÓN DE IMAGENES
-#define SHOW_WINDOW 1 //!< Switch de 0 a 1 para visualizar resultado
-//#define SHOW_PRESENT 0 //!< Switch de 0 a 1 para visualizar presentacion
 #define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
-#define ACTIVAR_OPCIONES_VISUALIZACION 1
-
-// DEPURACION
-#define SHOW_VISUALIZATION 0 //!< Switch de 0 a 1 GENERAL para visualizar resultados de depuración.
 
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
@@ -112,6 +100,8 @@ typedef struct {
 	unsigned int EstadoTrack;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
 	unsigned int EstadoBlobCount;  //!< Tiempo que el blob permanece en un estado
 	unsigned int EstadoTrackCount;
+	unsigned int CountActiva;
+	unsigned int CountPasiva;
 }STStatFly;
 
 	typedef struct {

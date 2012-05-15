@@ -22,7 +22,7 @@
 #ifndef KALMAN_HPP_
 #define KALMAN_HPP_
 
-#include "VideoTracker.hpp"
+//#include "VideoTracker.hpp"
 #include "Tracking.hpp"
 
 #define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
@@ -36,6 +36,43 @@
 #define IN_BG 0
 #define IN_FG 1
 #define MISSED 2
+
+typedef struct{
+
+				int MaxBlobs  ;			// Número máximo de elementos a rastrear
+
+				int MaxBuffer;			// Longitud del buffer. El módulo de tracking mantiene en memoria un número de frames
+													// igual al valor introducido. Supondría almacenar MAX_BUFFER / FPS segundos de video.
+													// Cuanta mayor sea la longitud del buffer, más eficaz será la fase de corrección y
+													//  a la vez mayores serán las necesidades de memoria, con lo que un valor demasiado alto podría
+													// afectar seriamente al rendimiento del equipo y por consiguiente, de la aplicación.
+													// Para un con procesador Intel(R) Pentium(R) M a 1.73GHz y 1 Gb de RAM
+													// corriendo Ubuntu 10.10 y GNOME 2.32.0 se aconseja un máximo de 80
+
+				int MaxTimeSlept;		// Marca un tiempo máximo en farmes a partir del cual se eliminará un track. Dicho track ha
+													// de cumplir ciertas condiciones para ser eliminado:
+													// 1) Haber perdido el objeto a rastrear y no encontrarlo durante MAX_TIME_SLEPT frames
+													// 2) Ser un track no prioritario, es decir, un track cuya de id sea superior al número máximo de blobs
+
+				int NumberOfIdentities;	// Número máximo de identidades que se podrán asignar a los tracks. Cada vez que se crea un track, se le
+													// asigna una identidad. Durante la ejecución pueden crearse tracks para falsos blobs ( por ejemplo reflejos)
+													// que serán posteriormente eliminados.
+				int PeriodoVelMed  ; 		// Establece el período de tiempo (en frames) para el cual se calcula la media móvil de
+													// la velocidad de cada blob. Un valor demasiado alto afectaría al rendimiento.
+
+													// ACLARACIÓN: Suponiendo un Frame Rate de 30 y un período de 30 , se calcularía la
+													// velocidad media de un segundo. ( pixels/s ). En caso de realizarse el calibrado
+													// ésta será en mm/s.
+
+				double MediumActivityTh	;		// Establece el umbral de velocidad media (en mm/s) si es inferior se considerará
+													// que un blob tiene actividad Media.
+
+				double LowActivityTh	 ;		// Establece el umbral de velocidad media (en mm/s) a partir de la cual se considerará
+													// que un blob tiene actividad BAJA
+
+				double NullActivityTh ;		// Establece el umbral de velocidad media (en mm/s) a partir de la cual se considerará
+													// que un blob tiene actividad INACTIVO
+}TrackingParams;
 
 typedef struct{
 	float sum;
@@ -59,8 +96,10 @@ typedef struct {
 	CvPoint InitPos; //!< posición en la que  se inició el track
 	unsigned int EstadoCount;
 	unsigned int FrameCount; //! Contador de frames desde que se detectó el blob
-	unsigned int EstadoBlob; //!< Indica el estado en que se encuentra el blob: FG(0) BG (1) o MISSED (2).
+	unsigned int EstadoBlob; //!< Indica el estado de actividad en que se encuentra el blob: pasivo(0) actividad baja (1),media (2),alta(3), oculto(4).
 	unsigned int EstadoBlobCount;
+	unsigned int TimeBlobOn;
+	unsigned int TimeBlobOff;
 
 
 }STStatTrack;
@@ -93,6 +132,7 @@ typedef struct{
 	STFly* FlyActual; // Fly asignada en t.
 
 }STTrack;
+
 
 /*!\brief En la primera iteración
  *-# Genera un track por cada blob ( un track por cada nueva etiqueta = -1 ) y los introduce en una lista doblemente enlazada
@@ -139,7 +179,7 @@ typedef struct{
  * @param Frames por segundo
  */
 
-void Kalman(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks, int FPS);
+void Kalman(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks, TrackingParams* trackParams);
 
 /*! \brief Reserva memoria e inicializa un track: Le asigna una id, un color e inicia el filtro de kalman
  * Se le asigna al blob la id del track y se establece éste como fly Actual.
@@ -181,7 +221,7 @@ void ReInitTrack( STTrack* Track, STFly* Fly , float fps );
 	  \param FlySig: Nueva medida
 	  \return : El estado del Track que dependerá de si hay a o no medida/s 0 para SLEEPING, 1 para CAM_CONTROL, 2 para KALMAN_CONTROL
 	*/
-int establecerEstado( STTrack* Track, STFly* flySig );
+int SetStateTrack( STTrack* Track, STFly* flySig );
 
 /*!\brief  Establece el vector Z_K con la nueva medida.
  *  Genera la medida a partir de los nuevos datos obtenidos de la cámara ( flySig (t+1) );
@@ -325,15 +365,17 @@ float corregirTita( float phiXk, float tita );
 	  \param EstadoTrack Situación del Track: SLEEPING(0), CAM_CONTROL(1), KALMAN_CONTROL(2)
 
 */
-void updateTracks( tlcde* lsTracks,tlcde* Flies, int FPS );
+void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams );
 
-void updateStatsTrack( STTrack* Track, int FPS );
+void updateStatsTrack( STTrack* Track, TrackingParams* trackParams );
+
+void SetStateBlobTracked( STTrack* Track, TrackingParams* trackParams );
 
 void updateFlyTracked( STTrack* Track, tlcde* Flies );
 
 void generarFly( STTrack* Track, tlcde* Flies);
 
-void mediaMovilFPS( STStatTrack* Stats, int FPS );
+void mediaMovilFPS( STStatTrack* Stats, int Max );
 
 void mostrarVMedia( tlcde* Vector);
 

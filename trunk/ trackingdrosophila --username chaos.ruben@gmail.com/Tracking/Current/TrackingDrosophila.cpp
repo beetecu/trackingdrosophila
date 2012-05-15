@@ -29,11 +29,6 @@ SHModel* Shape;
 STFrame* FrameDataIn = NULL;
 STFrame* FrameDataOut = NULL;
 
-///Parámetros fondo para procesado
-BGModelParams *BGPrParams = NULL;
-///Parámetros Validación para procesado
-ValParams* valParams = NULL;
-
 ///HightGui
 int g_slider_pos = 0;
 
@@ -65,9 +60,12 @@ int main(int argc, char* argv[]) {
 	printf("\nInicializando parámetros...");
 
 //  Iniciar parámetros generales y de visualización y crear interface.
-	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
 	SetGlobalConf( g_capture );
+	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
+
 	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS);
+	SetStatsParams( (int)GParams->FPS );
+	SetTrackingParams(  );
 
 	////////// PRESENTACIÓN ////////////////
 	DraWWindow( NULL,NULL, NULL, SHOW_PRESENT, 0  );
@@ -101,7 +99,7 @@ int main(int argc, char* argv[]) {
 		if ( (cvWaitKey(10) & 255) == 27 ) break; // si se puls ESC salir
 
 		//////////  PROCESAR  ////////////
-		FrameDataIn = Procesado(frame, BGModel, Shape, valParams, BGPrParams );
+		FrameDataIn = Procesado(frame, BGModel, Shape );
 
 		//////////  RASTREAR  ////////////
 		FrameDataOut = Tracking( FrameDataIn, 10, BGModel,GParams->FPS );
@@ -154,7 +152,7 @@ void SetGlobalConf(  CvCapture* Cap ){
 		GParams = ( GlobalConf *) malloc( sizeof( GlobalConf) );
 		if(!GParams) {error(4); exit(1);}
 	}
-	printf("\nCargando parámetros de configuración globales...");
+	fprintf(stderr,"\nCargando parámetros de configuración globales...");
 	config_init(&cfg);
 
 	sprintf( configFile, "config.cfg");
@@ -289,7 +287,7 @@ void Finalizar(CvCapture **g_capture){
 	if( Shape) free(Shape);
 
 	// liberar imagenes y datos de procesado
-	releaseDataProcess(valParams, BGPrParams);
+	releaseDataProcess( );
 	if( FrameDataIn ) liberarSTFrame( FrameDataIn);
 //	if( FrameDataOut ) liberarSTFrame( FrameDataOut);
 

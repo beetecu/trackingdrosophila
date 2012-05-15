@@ -17,7 +17,7 @@
 #include "Stats.hpp"
 
 
-
+STStatsParams* statsParams = NULL;
 STStatsCoef* Coef = NULL;
 tlcde* vectorSumFr = NULL;
 STStatFrame* Stats = NULL;
@@ -38,16 +38,14 @@ void CalcStatsFrame(STFrame* frameDataOut ){
 
 #endif
 
-
-	// Iniciar estructuras de estadísticas.
-	 frameDataOut->Stats = InitStatsFrame(  frameDataOut->GStats->fps );
-
-	// estadísticas de cada blob
-	statsBloB( frameDataOut );
-
-	// cálculos estadísticos del movimiento de los blobs en conjunto
-	if( CALC_STATS_MOV ) statsBlobS( frameDataOut );
-
+	// Inicializar estadísticas para el nuevo frame
+	 if( statsParams->CalcStatsMov) {
+		 frameDataOut->Stats = InitStatsFrame(  frameDataOut->GStats->fps );
+		 // Blobs en movimiento
+		 statsBloB( frameDataOut );
+		// cálculos estadísticos del movimiento de los blobs en conjunto
+		 statsBlobS( frameDataOut );
+	 }
 
 #ifdef MEDIR_TIEMPOS
 	printf( "Análisis finalizado ...\n" );
@@ -74,23 +72,6 @@ STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int Tot
 }
 
 STStatFrame* InitStatsFrame(  int fps){
-
-	if (!Stats){
-		Stats = ( STStatFrame *) malloc( sizeof(STStatFrame));
-		if(!Stats) {error(4); exit(1) ;}
-	}
-
-	if(!Coef){
-		Coef =  ( STStatsCoef *) malloc( sizeof(STStatsCoef));
-		calcCoef( fps );
-	}
-
-	// iniciar vector de cantidad de movimiento por frame
-	if(!vectorSumFr) {
-		vectorSumFr = ( tlcde * )malloc( sizeof(tlcde ));
-		if( !vectorSumFr ) {error(4);exit(1);}
-		iniciarLcde( vectorSumFr );
-	}
 
 //	// FRAME
 //	Stats->TiempoFrame = obtenerTiempo( tif, 0 );
@@ -209,7 +190,8 @@ void calcCoef( int FPS ){
 	Coef->F16H = 57600*FPS;
 	Coef->F24H = 115200*FPS;
 	Coef->F48H = 234000*FPS;
-	Coef->FMax = Coef->F48H;
+	if( statsParams->MaxBufferTime == 0) statsParams->MaxBufferTime = 234000;
+	Coef->FMax = statsParams->MaxBufferTime*FPS;
 }
 
 unsigned int sumFrame( tlcde* Flies ){
@@ -396,20 +378,140 @@ void iniciarMedias( STStatFrame* Stats, unsigned int valor ){
 
 }
 
-void releaseStats(  ){
-	// Borrar todos los elementos de la lista
-	valorSum *valor = NULL;
-	// Comprobar si hay elementos
-	if(vectorSumFr == NULL || vectorSumFr->numeroDeElementos<1)  return;
-	// borrar: borra siempre el elemento actual
+void SetStatsParams( int FPS ){
 
-	valor = (valorSum *)borrar(vectorSumFr);
-	while (valor)
-	{
-		free(valor);
-		valor = NULL;
-		valor = (valorSum *)borrar(vectorSumFr);
+    //init parameters
+	config_t cfg;
+	config_setting_t *setting;
+	char settingName[30];
+	char configFile[30];
+	char settingFather[30];
+
+	int EXITO;
+	int DEFAULT = false;
+
+	// Reservar memoria
+	if( !statsParams){
+		statsParams = ( STStatsParams *) malloc( sizeof( STStatsParams) );
+		if(!statsParams) {error(4); return;}
 	}
-	free( Stats );
-	free(Coef);
+
+	fprintf(stderr, "\nCargando parámetros para cálculos estadísticos...");
+	config_init(&cfg);
+
+	sprintf( configFile, "config.cfg");
+	sprintf( settingFather,"Estadisticas" );
+
+	 /* Leer archivo. si hay un error, informar y cargar configuración por defecto */
+	if(! config_read_file(&cfg, configFile))
+	{
+		fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
+				config_error_line(&cfg), config_error_text(&cfg));
+
+		fprintf(stderr, "Error al acceder al fichero de configuración %s .\n"
+						" Estableciendo valores por defecto.\n"
+						,configFile);
+		DEFAULT = true;
+	}
+	else
+	{
+		setting = config_lookup(&cfg, settingFather);
+		/* Si no se se encuentra la setting o bien existe la variable hijo Auto y ésta es true, se establecen TODOS los valores por defecto.*/
+		if(setting != NULL)
+		{
+			sprintf(settingName,"Auto");
+			/* Obtener el valor */
+			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
+			if(!EXITO) DEFAULT = true;
+			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+												" Estableciendo valores por defecto.\n",settingFather);
+			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+												" Estableciendo valores del fichero de configuración.\n",settingFather);
+		}
+		else {
+			DEFAULT = true;
+			fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+		}
+	}
+
+	if( DEFAULT ) SetDefaultStatsParams(  );
+	/* Valores leídos del fichero de configuración. Algunos valores puedes ser establecidos por defecto si se indica
+	 * expresamente en el fichero de configuración. Si el valor es erroneo o no se encuentra la variable, se establecerán
+	 * a los valores por defecto.
+	 */
+	else{
+		 /* Get the store name. */
+		sprintf(settingName,"CalcStatsMov");
+		if(! config_setting_lookup_bool ( setting, settingName, &statsParams->CalcStatsMov  )  ){
+			statsParams->CalcStatsMov = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+										"Establecer por defecto a %d \n",settingName,statsParams->CalcStatsMov);
+		}
+
+		sprintf(settingName,"MaxBufferTime");
+		if(! config_setting_lookup_int ( setting, settingName, &statsParams->MaxBufferTime )  ){
+			statsParams->MaxBufferTime = 8;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,statsParams->MaxBufferTime);
+
+		}
+	}
+
+	SetPrivateStatsParams( FPS );
+
+//	ShowStatsParams( settingFather );
+	config_destroy(&cfg);
+}
+
+void SetDefaultStatsParams(   ){
+
+	statsParams->CalcStatsMov = true; 		// Switch true/false para activar el cálculo de estadísticas de movimiento
+	statsParams->MaxBufferTime = 8;
+
+}
+
+void SetPrivateStatsParams( int fps ){
+
+	if( statsParams->CalcStatsMov){
+		if (!Stats){
+			Stats = ( STStatFrame *) malloc( sizeof(STStatFrame));
+			if(!Stats) {error(4); exit(1) ;}
+		}
+
+		// iniciar vector de cantidad de movimiento por frame
+		if(!vectorSumFr) {
+			vectorSumFr = ( tlcde * )malloc( sizeof(tlcde ));
+			if( !vectorSumFr ) {error(4);exit(1);}
+			iniciarLcde( vectorSumFr );
+		}
+
+		if(!Coef){
+			Coef =  ( STStatsCoef *) malloc( sizeof(STStatsCoef));
+			calcCoef( fps );
+		}
+	}
+
+}
+
+void releaseStats(  ){
+
+	if( statsParams->CalcStatsMov ){
+		// Borrar todos los elementos de la lista
+		valorSum *valor = NULL;
+		// Comprobar si hay elementos
+		if(vectorSumFr == NULL || vectorSumFr->numeroDeElementos<1)  return;
+		// borrar: borra siempre el elemento actual
+
+		valor = (valorSum *)borrar(vectorSumFr);
+		while (valor)
+		{
+			free(valor);
+			valor = NULL;
+			valor = (valorSum *)borrar(vectorSumFr);
+		}
+		free( Stats );
+		free(Coef);
+	}
+	free( statsParams);
 }

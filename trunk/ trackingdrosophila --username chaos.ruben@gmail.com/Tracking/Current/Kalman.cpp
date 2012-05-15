@@ -44,7 +44,7 @@ float distancia; // sqrt( Ax² + Ay² )
 //Imagenes
 IplImage* ImKalman = NULL;
 
-void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, int FPS) {
+void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* trackParams) {
 
 	tlcde* Flies;
 	STTrack* Track;
@@ -66,7 +66,7 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, int FPS) {
 			// obtener Track
 			Track = (STTrack*)obtenerActual(lsTracks);
 			// Esablece estado del track según haya no nueva/s medida/s
-			Track->Stats->Estado = establecerEstado( Track, Track->Flysig );
+			Track->Stats->Estado = SetStateTrack( Track, Track->Flysig );
 
 			////////////////////// GENERAR MEDIDA ////////////////////
 			// Generar la nueva medida en función del estado
@@ -82,7 +82,7 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, int FPS) {
 			irAlSiguiente( lsTracks );
 		}
 		/////////////// ACTUALIZACIÓN DE TRACKS CON LOS NUEVOS DATOS //////////////
-		updateTracks( lsTracks,frameData->Flies, FPS );
+		updateTracks( lsTracks,frameData->Flies, trackParams );
 	}
 
 
@@ -163,7 +163,8 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track->Stats->EstadoBlob = 1;
 	Track->Stats->EstadoBlobCount = 0;
 	Track->Stats->dstTotal = 0;
-
+	Track->Stats->TimeBlobOff = 0;
+	Track->Stats->TimeBlobOn = 1;
 	// iniciamos parámetros del track
 	// iniciar kalman
 	Track->kalman = initKalman( Fly , fps);
@@ -194,7 +195,8 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Fly->Stats->CMov1SMed = Track->Stats->CMov1SMed;
 	Fly->Stats->EstadoTrack = Track->Stats->Estado;
 	Fly->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
-
+	Fly->Stats->CountActiva = Track->Stats->TimeBlobOn;
+	Fly->Stats->CountPasiva =Track->Stats->TimeBlobOff;
 	//Asignamos la fly al track
 	Track->FlyActual = Fly;
 	Track->Flysig = NULL;
@@ -243,7 +245,7 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 
 
 //Establecer el estado del Track según haya o no medida/s. en caso de cambio de estado inicia los contadores de estado.
-int establecerEstado( STTrack* Track, STFly* flySig ){
+int SetStateTrack( STTrack* Track, STFly* flySig ){
 
 
 	if ( !flySig || !Track->FlyActual ){ // si no hay flysig o fly actual SLEEPING
@@ -611,7 +613,7 @@ void showKalmanData( STTrack *Track){
 //	cvZero(Track->x_k_Pre_);
 //	cvZero(Track->P_k_Pre_);
 //}
-void updateTracks( tlcde* lsTracks,tlcde* Flies, int FPS ){
+void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams ){
 
 	STTrack* Track;
 
@@ -622,7 +624,7 @@ void updateTracks( tlcde* lsTracks,tlcde* Flies, int FPS ){
 		Track = (STTrack*)obtenerActual( lsTracks);
 		// ACTUALIZAR TRACK
 		// actualizar estadísticas del track en base a su estado
-		updateStatsTrack( Track, FPS );
+		updateStatsTrack( Track, trackParams );
 		// ETIQUETAR Y ACTUALIZAR FLY DEL TRACK
 		// en caso de Kalman_control se crea una mosca para simular la posición
 		updateFlyTracked( Track , Flies);
@@ -642,15 +644,20 @@ void updateTracks( tlcde* lsTracks,tlcde* Flies, int FPS ){
 	}
 }
 
-void updateStatsTrack( STTrack* Track, int FPS ){
+void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
 
 	valorSumB* valor;
 
+	// actualizar contadores
 	if ( Track->Stats->Estado == SLEEPING){
 		Track->Stats->FrameCount +=1;
 		Track->Stats->EstadoCount += 1;
 		return;
 	}
+	Track->Stats->EstadoCount += 1;
+	Track->Stats->FrameCount ++;
+	// calcular distancia y media movil para la velocidad
+
 	// para el caso kalman control, establecemos la distancia en base a lo pos corregida
 	if( Track->Stats->Estado == KALMAN_CONTROL){
 
@@ -661,42 +668,61 @@ void updateStatsTrack( STTrack* Track, int FPS ){
 		EUDistance( Ax, Ay, NULL, &Track->VInst );
 	}
 	Track->Stats->dstTotal = Track->Stats->dstTotal + Track->VInst;
-	Track->Stats->EstadoCount += 1;
-	Track->Stats->FrameCount ++;
-
-	// calculamos la velocidad en 1 seg
-	  // al ser t= 1 la distancia coincide con Vt
+	// calculamos la velocidad en x seg
+	  // al ser t = 1 la distancia coincide con Vt
 	// Obtener el nuevo valor
 	valor =  ( valorSumB *) malloc( sizeof(valorSumB));
 	valor->sum = Track->VInst;
 	anyadirAlFinal( valor, Track->Stats->VectorSumB );
-//	calculo de la velocidad media de los  frames equivalentes a 1 seg.( 30 frames )
-	mediaMovilFPS( Track->Stats, FPS );
+//	calculo de la velocidad media de los  frames equivalentes al periodo establecido
+	mediaMovilFPS( Track->Stats, trackParams->PeriodoVelMed );
 	// si el vector llega a fps elementos eliminamos el primero.
-	if( Track->Stats->VectorSumB->numeroDeElementos > FPS){
+	if( Track->Stats->VectorSumB->numeroDeElementos > trackParams->PeriodoVelMed){
 		valor = (valorSumB*)liberarPrimero(  Track->Stats->VectorSumB );
 		free(valor);
 	}
 
-//	mostrarVMedia(Track->Stats->VectorSumB);
-	// en función de la velocidad anterior establecemos el estado del blob
-	if( Track->Stats->CMov1SMed > 1 ) {
-		if( Track->Stats->EstadoBlob == IN_BG){
-			Track->Stats->EstadoBlobCount = 0;
-		}
-		Track->Stats->EstadoBlob = IN_FG;
-		Track->Stats->EstadoBlobCount += 1;
-	}
-	else{
-		if( Track->Stats->EstadoBlob == IN_FG){
-			Track->Stats->EstadoBlobCount = 0;
-		}
-		Track->Stats->EstadoBlob = IN_BG;
-		Track->Stats->EstadoBlobCount += 1;
-	}
-
+	// en función de la velocidad media anterior establecemos el estado del blob y actualizamos los contadores
+	SetStateBlobTracked( Track, trackParams );
 }
 
+void SetStateBlobTracked( STTrack* Track, TrackingParams* trackParams ){
+
+	if( (Track->Stats->CMov1SMed >= 0)&&(Track->Stats->CMov1SMed <= trackParams->NullActivityTh) ) {
+		if( Track->Stats->EstadoBlob != 0 ){
+			Track->Stats->EstadoBlobCount = 0;
+		}
+		Track->Stats->TimeBlobOff +=1;
+		Track->Stats->EstadoBlob = 0; // actividad nula
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if( (Track->Stats->CMov1SMed > trackParams->NullActivityTh)&&(Track->Stats->CMov1SMed <= trackParams->LowActivityTh) ){
+		if( Track->Stats->EstadoBlob != 1 ){
+			Track->Stats->EstadoBlobCount = 0;
+		}
+		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->EstadoBlob = 1;  // actividad baja
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if(( Track->Stats->CMov1SMed > trackParams->LowActivityTh)&&(Track->Stats->CMov1SMed <= trackParams->MediumActivityTh) ){
+		if( Track->Stats->EstadoBlob != 2 ){
+			Track->Stats->EstadoBlobCount = 0;
+		}
+		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->EstadoBlob = 2;  // actividad Media
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if( Track->Stats->CMov1SMed > trackParams->MediumActivityTh){
+		if( Track->Stats->EstadoBlob != 3 ){
+			Track->Stats->EstadoBlobCount = 0; // Actividad alta
+		}
+		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->EstadoBlob = 3;
+		Track->Stats->EstadoBlobCount += 1;
+	}
+
+
+}
 void updateFlyTracked( STTrack* Track, tlcde* Flies ){
 
 	if( Track->Stats->Estado == CAM_CONTROL ){
@@ -715,6 +741,9 @@ void updateFlyTracked( STTrack* Track, tlcde* Flies ){
 		Track->Flysig->Stats->CMov1SMed = Track->Stats->CMov1SMed;
 		Track->Flysig->Stats->EstadoTrack = Track->Stats->Estado;
 		Track->Flysig->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
+		// contadores
+		Track->Flysig->Stats->CountActiva = Track->Stats->TimeBlobOn;
+		Track->Flysig->Stats->CountPasiva = Track->Stats->TimeBlobOff;
 	}
 	if( Track->Stats->Estado ==  KALMAN_CONTROL){
 		// actualizar fly ( Eliminarla??? )
@@ -770,19 +799,22 @@ void generarFly( STTrack* Track, tlcde* Flies ){
 		fly->areaElipse = CV_PI*fly->b*fly->a;
 		// estadisticas
 		fly->dstTotal = Track->Stats->dstTotal;
-		fly->Estado = Track->Stats->EstadoBlob;
+		fly->Estado = 4 ; //
 		fly->Stats->EstadoTrack = Track->Stats->Estado;
 		fly->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
-		fly->Stats->EstadoBlobCount = Track->Stats->EstadoBlobCount;
+		fly->Stats->EstadoBlobCount = Track->Stats->EstadoCount;;
 		fly->Stats->CMov1SMed = Track->Stats->CMov1SMed;
 		fly->VInst = Track->VInst;
+
+		fly->Stats->CountActiva = Track->Stats->TimeBlobOn;
+		fly->Stats->CountPasiva = Track->Stats->TimeBlobOff;
 
 		Track->Flysig = fly;
 		anyadirAlFinal(( STFly*) fly, Flies );
 }
 
 
-void mediaMovilFPS( STStatTrack* Stats, int FPS ){
+void mediaMovilFPS( STStatTrack* Stats, int Max ){
 
 	valorSumB* valor;
 	valorSumB* valorT;
@@ -792,12 +824,12 @@ void mediaMovilFPS( STStatTrack* Stats, int FPS ){
 	valorT = ( valorSumB*)obtenerActual( Stats->VectorSumB );
 	Stats->SumatorioMed = Stats->SumatorioMed + valorT->sum;
 
-	if(Stats->VectorSumB->numeroDeElementos > FPS){
+	if(Stats->VectorSumB->numeroDeElementos > Max){
 	// los que hayan alcanzado el valor máximo restamos al sumatorio el primer valor
 		irAlPrincipio( Stats->VectorSumB);
 		valor = ( valorSumB*)obtenerActual(  Stats->VectorSumB );
 		Stats->SumatorioMed =Stats->SumatorioMed - valor->sum; // sumatorio para la media
-		Stats->CMov1SMed   =  Stats->SumatorioMed / FPS; // cálculo de la media
+		Stats->CMov1SMed   =  Stats->SumatorioMed / Max; // cálculo de la media
 	}
 }
 

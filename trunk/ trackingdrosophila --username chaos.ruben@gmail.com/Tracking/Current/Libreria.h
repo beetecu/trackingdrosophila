@@ -292,7 +292,7 @@ void liberarSTFrame( STFrame* frameData );
 
 ///////////////////////// INTERFACE PARA GESTIONAR IDENTIDADES /////////////////////
 
-void CrearIdentidades(tlcde* Etiquetas);
+void CrearIdentidades(tlcde* Etiquetas, int Max);
 
 static Scalar randomColor(RNG& rng);
 

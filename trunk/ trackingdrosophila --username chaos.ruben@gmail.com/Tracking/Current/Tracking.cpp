@@ -13,6 +13,7 @@
 tlcde* Identities = NULL;
 tlcde* lsTracks = NULL;
 tlcde* framesBuf = NULL;
+TrackingParams* trackParams = NULL;
 
 STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, int FPS ){
 
@@ -29,28 +30,6 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 #endif
 
 
-	/////////////// Inicializar /////////////////
-
-	// cola Lifo de identidades
-	if(!Identities) {
-		Identities = ( tlcde * )malloc( sizeof(tlcde ));
-		if( !Identities ) {error(4);exit(1);}
-		iniciarLcde( Identities );
-		CrearIdentidades(Identities);
-		//mostrarIds( Identities );
-	}
-	//buffer de Imagenes y datos.
-	if(!framesBuf){
-		framesBuf = ( tlcde * )malloc( sizeof(tlcde));
-		if( !framesBuf ) {error(4);exit(1);}
-		iniciarLcde( framesBuf );
-	}
-	//Tracks
-	if(!lsTracks){
-		lsTracks = ( tlcde * )malloc( sizeof(tlcde ));
-		if( !lsTracks ) {error(4);exit(1);}
-		iniciarLcde( lsTracks );
-	}
 
 	////////////// AÑADIR AL BUFFER /////////////
 	anyadirAlFinal( frameDataIn, framesBuf);
@@ -90,12 +69,12 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	/////////////// ELIMIRAR FALSOS TRACKS ///
 	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
 	// y unicas. Si no es así se considera un trackDead:
-	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, MaxTracks );
+	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, trackParams->MaxBlobs );
 
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 
-	Kalman( frameDataIn , Identities, lsTracks, FPS);
+	Kalman( frameDataIn , Identities, lsTracks, trackParams);
 
 	frameDataIn->Tracks = lsTracks;
 
@@ -110,7 +89,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	ordenarTracks( lsTracks );
 
 	// SI BUFFER LLENO
-	if( framesBuf->numeroDeElementos == IMAGE_BUFFER_LENGTH ){
+	if( framesBuf->numeroDeElementos == trackParams->MaxBuffer ){
 
 		corregirTracks(framesBuf,  lsTracks, Identities );
 
@@ -128,7 +107,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 		return frameDataOut;
 	}
 	else {
-		VerEstadoBuffer( frameDataIn->Frame, framesBuf->numeroDeElementos, IMAGE_BUFFER_LENGTH);
+		VerEstadoBuffer( frameDataIn->Frame, framesBuf->numeroDeElementos, trackParams->MaxBuffer);
 		VisualizarEl( framesBuf, PENULTIMO, BGModel );
 #ifdef MEDIR_TIEMPOS
 		tiempoParcial = obtenerTiempo( tif , NULL);
@@ -199,7 +178,7 @@ void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 	if( framesBuf->numeroDeElementos < 3 ) return;
 	frameData1 = (STFrame*)obtener(framesBuf->numeroDeElementos-1, framesBuf);
 //	frameData0 = (STFrame*)obtener(0, framesBuf);
-	if( lsTracks->numeroDeElementos <= MAX_TRACKS  ) return;
+	if( lsTracks->numeroDeElementos <= trackParams->MaxBlobs  ) return;
 	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 		// obtener Track
 		NewTrack = (STTrack*)obtener(i, lsTracks);
@@ -211,7 +190,7 @@ void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 			for(int j = 0;j < lsTracks->numeroDeElementos ; j++){
 				// si hay tracks durmiendo escogemos el nuevo track más cercano con un umbral
 				SleepingTrack = (STTrack*)obtener(j, lsTracks);
-				if( SleepingTrack->Stats->Estado == SLEEPING  ){ // && SleepingTrack->id <= MAX_TRACKS) ??si hay tracks durmiento
+				if( SleepingTrack->Stats->Estado == SLEEPING  ){ // && SleepingTrack->id <= trackParams->MaxBlobs) ??si hay tracks durmiento
 					// una vez se haya confirmado la validez de los tracks restringimos mas.
 
 					// nos quedamos con el más cercano al punto donde se inicio el nuevo track
@@ -254,11 +233,11 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 		// en orden
 		SleepingTrack = (STTrack*)obtener(i, lsTracks);
 //		if( SleepingTrack->Stats->Estado == SLEEPING &&
-//						SleepingTrack->id <= MAX_TRACKS &&
+//						SleepingTrack->id <= trackParams->MaxBlobs &&
 //						SleepingTrack->EstadoCount == MAX_BUFFER )
 
 		if( SleepingTrack->Stats->Estado == SLEEPING &&
-				SleepingTrack->Stats->EstadoCount == IMAGE_BUFFER_LENGTH-1 ){
+				SleepingTrack->Stats->EstadoCount == trackParams->MaxBuffer-1 ){
 			// intentamos asignarle un nuevo track
 			// damos prioridad a los que tengan la menor etiqueta frente a los más altos,
 					// que es lo  mismo que escojer el nuevo track más antiguo
@@ -268,7 +247,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 				// de los nuevos asignamos el más antiguo
 				NewTrack = (STTrack*)obtener(j, lsTracks);
 				tiempoVivo = frameData1->num_frame - NewTrack->Stats->InitTime;
-				if( tiempoVivo < IMAGE_BUFFER_LENGTH && tiempoVivo > ultimo ){
+				if( tiempoVivo < trackParams->MaxBuffer && tiempoVivo > ultimo ){
 					masAntiguo = j;
 					ultimo = tiempoVivo;
 				}
@@ -284,7 +263,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 			// si su etiqueta es menor que maxTracks, no hacer nada. Esperar a que aparezca el nuevo track.
 			// Nunca será eliminado un track de este tipo. Se intentará reasignar al más adecuado en cuanto
 			// sea posible
-			if(	SleepingTrack->id <= MAX_TRACKS ) continue;
+			if(	SleepingTrack->id <= trackParams->MaxBlobs ) continue;
 			// en cambio si su etiqueta es mayor, si durante un tiempo no aparecen nuevos tracks, eliminarlo
 			// , dejar su id y eliminar los datos de la fly que creó.
 			else {
@@ -384,6 +363,8 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 		NewTrack->Stats->FrameCount = SleepingTrack->Stats->FrameCount + NewTrack->Stats->FrameCount;
 		NewTrack->Stats->InitTime = SleepingTrack->Stats->InitTime;
 		NewTrack->Stats->InitPos = SleepingTrack->Stats->InitPos;
+		NewTrack->Stats->TimeBlobOff = SleepingTrack->Stats->TimeBlobOff + NewTrack->Stats->TimeBlobOff;
+		NewTrack->Stats->TimeBlobOn = SleepingTrack->Stats->TimeBlobOn + NewTrack->Stats->TimeBlobOn;
 	}
 }
 
@@ -406,6 +387,179 @@ void ordenarTracks( tlcde* lsTracks ){
 		}
 	}
 }
+
+void SetTrackingParams(  ){
+
+    //init parameters
+	config_t cfg;
+	config_setting_t *setting;
+	char settingName[30];
+	char configFile[30];
+	char settingFather[30];
+
+	int EXITO;
+	int DEFAULT = false;
+
+	// Reservar memoria
+	if( !trackParams){
+		trackParams = ( TrackingParams *) malloc( sizeof( TrackingParams) );
+		if(!trackParams) {error(4); return;}
+	}
+
+	fprintf(stderr, "\nCargando parámetros para Tracking...");
+	config_init(&cfg);
+
+	sprintf( configFile, "config.cfg");
+	sprintf( settingFather,"TrackingParams" );
+
+	 /* Leer archivo. si hay un error, informar y cargar configuración por defecto */
+	if(! config_read_file(&cfg, configFile))
+	{
+		fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
+				config_error_line(&cfg), config_error_text(&cfg));
+
+		fprintf(stderr, "Error al acceder al fichero de configuración %s .\n"
+						" Estableciendo valores por defecto.\n"
+						,configFile);
+		DEFAULT = true;
+	}
+	else
+	{
+		setting = config_lookup(&cfg, settingFather);
+		/* Si no se se encuentra la setting o bien existe la variable hijo Auto y ésta es true, se establecen TODOS los valores por defecto.*/
+		if(setting != NULL)
+		{
+			sprintf(settingName,"Auto");
+			/* Obtener el valor */
+			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
+			if(!EXITO) DEFAULT = true;
+			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+												" Estableciendo valores por defecto.\n",settingFather);
+			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+												" Estableciendo valores del fichero de configuración.\n",settingFather);
+		}
+		else {
+			DEFAULT = true;
+			fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+		}
+	}
+
+	if( DEFAULT ) SetDefaultTrackParams(  );
+	/* Valores leídos del fichero de configuración. Algunos valores puedes ser establecidos por defecto si se indica
+	 * expresamente en el fichero de configuración. Si el valor es erroneo o no se encuentra la variable, se establecerán
+	 * a los valores por defecto.
+	 */
+	else{
+		 /* Get the store name. */
+		sprintf(settingName,"MaxBlobs");
+		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxBlobs )  ){
+			trackParams->MaxBlobs = 10;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,trackParams->MaxBlobs );
+
+		}
+
+		sprintf(settingName,"MaxTimeSlept");
+		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxTimeSlept  )  ){
+			trackParams->MaxTimeSlept = 200;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,trackParams->MaxTimeSlept );
+
+		}
+
+		sprintf(settingName,"MaxBuffer");
+		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxBuffer )  ){
+			trackParams->MaxBuffer = 50;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,trackParams->MaxBuffer);
+		}
+
+		sprintf(settingName,"NumberOfIdentities");
+		if(! config_setting_lookup_int ( setting, settingName, &trackParams->NumberOfIdentities )  ){
+			trackParams->NumberOfIdentities = 100;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,trackParams->NumberOfIdentities);
+		}
+
+		sprintf(settingName,"PeriodoVelMed");
+		if(! config_setting_lookup_int ( setting, settingName, &trackParams->PeriodoVelMed )  ){
+			trackParams->PeriodoVelMed = 15 ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %d \n",settingName,trackParams->PeriodoVelMed );
+		}
+
+		sprintf(settingName,"MediumActivityTh");
+		if(! config_setting_lookup_float ( setting, settingName, &trackParams->MediumActivityTh )  ){
+			trackParams->MediumActivityTh	= 2.0 ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %0.1f \n",settingName,trackParams->MediumActivityTh);
+
+		}
+
+		sprintf(settingName,"LowActivityTh");
+		if(! config_setting_lookup_float ( setting, settingName, &trackParams->LowActivityTh )  ){
+			trackParams->LowActivityTh	= 0.5 ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %0.1f \n",settingName,trackParams->LowActivityTh);
+
+		}
+
+		sprintf(settingName,"NullActivityTh");
+		if(! config_setting_lookup_float ( setting, settingName, &trackParams->NullActivityTh )  ){
+			trackParams->NullActivityTh	= 0.2 ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+							"Establecer por defecto a %0.1f \n",settingName,trackParams->NullActivityTh);
+		}
+
+	}
+
+	SetPrivateTrackParams(  );
+
+//	ShowStatsParams( settingFather );
+	config_destroy(&cfg);
+}
+
+void SetDefaultTrackParams(   ){
+
+	trackParams->MaxBlobs = 10;
+	trackParams->MaxTimeSlept = 200;
+	trackParams->MaxBuffer = 50;
+	trackParams->NumberOfIdentities = 100;
+	trackParams->PeriodoVelMed = 15 ;
+	trackParams->MediumActivityTh	= 2 ;
+	trackParams->LowActivityTh	= 0.5 ;
+	trackParams->NullActivityTh	= 0.2 ;
+}
+
+void SetPrivateTrackParams(  ){
+
+	/////////////// Inicializar /////////////////
+
+	// cola Lifo de identidades
+	if(!Identities) {
+		Identities = ( tlcde * )malloc( sizeof(tlcde ));
+		if( !Identities ) {error(4);exit(1);}
+		iniciarLcde( Identities );
+		CrearIdentidades(Identities, trackParams->NumberOfIdentities);
+		//mostrarIds( Identities );
+	}
+	//buffer de Imagenes y datos.
+	if(!framesBuf){
+		framesBuf = ( tlcde * )malloc( sizeof(tlcde));
+		if( !framesBuf ) {error(4);exit(1);}
+		iniciarLcde( framesBuf );
+	}
+	//Tracks
+	if(!lsTracks){
+		lsTracks = ( tlcde * )malloc( sizeof(tlcde ));
+		if( !lsTracks ) {error(4);exit(1);}
+		iniciarLcde( lsTracks );
+	}
+
+
+}
+
 void ReleaseDataTrack(  ){
 
 	if(Identities){
@@ -418,6 +572,7 @@ void ReleaseDataTrack(  ){
 	}
 	DeallocateKalman( lsTracks );
 	free(lsTracks);
+	free( trackParams);
 
 }
 

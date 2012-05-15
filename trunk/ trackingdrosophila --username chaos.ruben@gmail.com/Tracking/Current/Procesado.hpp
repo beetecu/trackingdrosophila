@@ -42,7 +42,7 @@
  * \see VideoTracker.hpp
  */
 
-STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape, ValParams* valParams, BGModelParams *BGPrParams );
+STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape  );
 
 //!\brief InitNewFrameData:  Inicializa las imagenes de la estructura FrameData y la Lista Flies.
 /*!
@@ -61,5 +61,5 @@ void putBGModelParams( BGModelParams* Params);
 
 void AllocateDataProcess( IplImage *I );
 
-void releaseDataProcess(ValParams* valParams, BGModelParams *BGPrParams);
+void releaseDataProcess( );
 #endif /* PROCESADO_HPP_ */

@@ -84,6 +84,33 @@ typedef struct{
 
 }STStatsCoef;
 
+typedef struct{
+
+	// public
+	int CalcStatsMov ; 		// Switch true/false para activar el cálculo de estadísticas de movimiento
+
+
+	int MaxBufferTime ;				// Establece el periodo máximo de la media móvil simple para el cálculo de
+								// la cantidad de movimiento de los blobs en conjunto, o lo que es lo mismo,
+								// el tamaño máximo del vector  que almacena las cantidades de movimiento
+								// de cada frame.
+
+								// VALORES: 0,1,2,4,8,16,24,48
+
+								// Esto es, un valor de 1 indica que se calcularán estadísticas de la última hora como máximo.
+								// y así sucesivamente hasta el máximo de 48 horas. Un valor de 0 indirá el máximo.
+
+								// ACLARACIÓN: Suponiendo un Frame Rate de 30, un valor de 48 horas supondrá almacenar
+								// en memoria un vector de 7020000 elementos con el consiguiente coste computacional
+								// y de memoria.
+}STStatsParams;
+
+void SetStatsParams( int FPS );
+
+void SetDefaultStatsParams(   );
+
+void SetPrivateStatsParams( int fps );
+
 void CalcStatsFrame( STFrame* frameDataOut );
 
 STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS  );

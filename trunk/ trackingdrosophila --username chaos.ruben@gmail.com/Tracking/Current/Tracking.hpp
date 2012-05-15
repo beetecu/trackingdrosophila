@@ -409,14 +409,15 @@
 #include "AsignarIdentidades.hpp"
 #include "FlujoOptico.hpp"
 
-#define MAX_TRACKS 10
-#define MAX_TIME_SLEPT 200
+#define ULTIMO 2
+#define PENULTIMO 1
 
-#define NUMBER_OF_IDENTITIES 100
-#define IMAGE_BUFFER_LENGTH 50
-#define ULTIMO IMAGE_BUFFER_LENGTH-1
-#define PENULTIMO IMAGE_BUFFER_LENGTH-2
-#define PRIMERO 0
+
+void SetTrackingParams(  );
+
+void SetDefaultTrackParams(   );
+
+void SetPrivateTrackParams(  );
 
 /*!\brief	- Añade nuevo elemento al buffer de datos.
  - asignarIdentidades( lsTracks,frameDataIn->Flies): valida blobs y resuelve las asociaciones usando las predicciones
@@ -520,6 +521,8 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
  * @param lsTracks
  */
 void ordenarTracks( tlcde* lsTracks );
+
+void SetTrackingParams(  );
 
 void AllocateTrackImages( IplImage *I );
 
