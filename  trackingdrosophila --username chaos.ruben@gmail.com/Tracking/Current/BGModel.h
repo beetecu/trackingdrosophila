@@ -24,7 +24,7 @@ typedef struct{
 	int Jumps; // frames de salto a distintas partes del video
 	int BG_Update; // Intervalo de actualización del fondo
 	int initDelay; // El aprendizaje comenzará initDelay frames despues del comienzo
-	bool FLAT_DETECTION; //! Activa o desactiva la detección del plato
+	int FLAT_DETECTION; //! Activa o desactiva la detección del plato
 	int MODEL_TYPE; // tipo de modelo de fondo. Afecta a la resta y a la actualización.
 					//Cuando se inicia se hace automaticamente el gaussiano
 	int FLAT_FRAMES_TRAINING;//!< Nº de frames para aprendizaje del plato.
@@ -32,12 +32,12 @@ typedef struct{
 	float INITIAL_DESV;
 	float K; 			 //!<Para la corrección de la MAD ( Median Absolute Deviation )
 							//!<con el que se estima la desviación típica para el modelo gaussiano.
-	double ALPHA;
+
 
 	//Parametros resta de fondo y de limpieza de foreground
 	int LOW_THRESHOLD ; //!< Umbral bajo para la resta de fondo.
 	int HIGHT_THRESHOLD; //!< Umbral alto para la limpieza de fondo tras resta.
-	bool MORFOLOGIA ; //<! si esta a 1 se aplica erosión y cierre ( no se usa ).
+	int MORFOLOGIA ; //<! si esta a 1 se aplica erosión y cierre ( no se usa ).
 	int CVCLOSE_ITR ; //<! Número de iteraciones en op morfológicas.
 	int MAX_CONTOUR_AREA;//!< Máxima area del blob.
 	int MIN_CONTOUR_AREA;//!< Mínima area del blob.
@@ -121,16 +121,7 @@ void updateDesv( IplImage* ImGray,IplImage* BGMod,IplImage* Idesvf,IplImage* mas
 void UpdateBGModel(IplImage * tmp_frame, IplImage* BGModel,IplImage* DESVI,BGModelParams* Param,  CvRect DataROI, IplImage* Mask = NULL);
 
 
-//! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano
-/*!
-      \param ImGray : Imagen fuente de 8 bit de niveles de gris preprocesada.
-      \param Cap : Imagen fuente de 8 bit de niveles de gris. Contiene la estimación de la mediana de cada pixel
-      \param fg : Imagen destino ( máscara ) de 8 bit de niveles de gris.
 
-
-    */
-
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesf,double ALPHA, CvRect dataroi );
 
 //! \brief Crea una mascara binaria (0,255) donde 255 significa primer  plano.
 //! Se establece un umbral bajo ( LOW_THRESHOLD ) para los valores de la normal

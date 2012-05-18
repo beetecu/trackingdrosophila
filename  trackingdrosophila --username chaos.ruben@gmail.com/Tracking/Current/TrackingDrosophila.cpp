@@ -63,9 +63,11 @@ int main(int argc, char* argv[]) {
 	SetGlobalConf( g_capture );
 	if (!Inicializacion( argc, argv,nombreFichero,nombreVideo ) ) return -1;
 
-	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS);
-	SetStatsParams( (int)GParams->FPS );
+	SetPreProcesParams(  );
+	SetProcesParams(  );
 	SetTrackingParams(  );
+	SetStatsParams( (int)GParams->FPS );
+	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS);
 
 	////////// PRESENTACIÓN ////////////////
 	DraWWindow( NULL,NULL, NULL, SHOW_PRESENT, 0  );
@@ -179,9 +181,9 @@ void SetGlobalConf(  CvCapture* Cap ){
 			/* Obtener el valor */
 			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
 			if(!EXITO) DEFAULT = true;
-			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
 												" Estableciendo valores por defecto.\n",settingFather);
-			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
 												" Estableciendo valores del fichero de configuración.\n",settingFather);
 		}
 		else {
@@ -211,7 +213,7 @@ void SetGlobalConf(  CvCapture* Cap ){
 		EXITO = config_setting_lookup_int ( setting, settingName, &GParams->FPS);
 		if(! EXITO || GParams->FPS == 0 ){
 			GParams->FPS = cvGetCaptureProperty( Cap, 5 );
-			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 										"Establecido por defecto a %0.1f \n",settingName,GParams->FPS);
 			if( GParams->FPS == 0 ) fprintf(stderr, "Establecer %s por defecto a %0.1f \n",settingName,GParams->TotalFrames);
 		}
@@ -221,7 +223,7 @@ void SetGlobalConf(  CvCapture* Cap ){
 		if(!EXITO || GParams->TotalFrames == 0 ){
 			GParams->TotalFrames = 0;
 			GParams->TotalFrames = cvGetCaptureProperty( Cap, 7);
-			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 					"Establecido por defecto a %0.1f \n",settingName,GParams->TotalFrames);
 			if( GParams->TotalFrames == 0 ) fprintf(stderr, "Establecer %s por defecto a %0.1f \n",settingName,GParams->TotalFrames);
 			//if(!GParams->TotalFrames) GParams->TotalFrames = getAVIFrames(argv[1]);
@@ -231,7 +233,7 @@ void SetGlobalConf(  CvCapture* Cap ){
 		EXITO = config_setting_lookup_int ( setting, settingName, &GParams->InitDelay);
 		if(! EXITO ){
 			GParams->InitDelay = 50;
-			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 										"Establecido por defecto a %d \n",settingName,GParams->InitDelay);
 		}
 	}
@@ -275,7 +277,6 @@ void ShowParams( char* Campo ){
 void Finalizar(CvCapture **g_capture){
 
 	CvCapture *capture;
-	CvVideoWriter *Writer;
 
 	// liberar parámetros globales de configuración
 	free( GParams);
@@ -304,7 +305,7 @@ void Finalizar(CvCapture **g_capture){
 	//liberar resto de estructuras
 	capture = *g_capture;
 
-	if (capture)cvReleaseCapture(&capture);
+	if (capture) cvReleaseCapture(&capture);
 
 
 	exit (1);

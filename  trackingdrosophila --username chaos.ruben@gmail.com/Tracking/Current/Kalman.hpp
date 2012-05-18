@@ -39,6 +39,8 @@
 
 typedef struct{
 
+				int ShowKalmanData; 	// Muesta por consola los resultados de cada filtro de kalman en cada frame
+
 				int MaxBlobs  ;			// Número máximo de elementos a rastrear
 
 				int MaxBuffer;			// Longitud del buffer. El módulo de tracking mantiene en memoria un número de frames
@@ -387,7 +389,7 @@ int falsoTrack( STTrack* Track );
 
 int deadTrack( tlcde* Tracks, int id );
 
-void visualizarKalman( STFrame* frameData, tlcde* lsTracks);
+void visualizarKalman( STFrame* frameData, tlcde* lsTracks, bool dataOn);
 
 void showKalmanData( STTrack *Track);
 

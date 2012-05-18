@@ -111,6 +111,8 @@ void SetDefaultStatsParams(   );
 
 void SetPrivateStatsParams( int fps );
 
+void ShowStatsParams( char* Campo );
+
 void CalcStatsFrame( STFrame* frameDataOut );
 
 STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS  );

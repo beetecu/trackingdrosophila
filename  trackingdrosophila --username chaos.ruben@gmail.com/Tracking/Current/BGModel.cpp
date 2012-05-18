@@ -15,7 +15,7 @@
 //int FRAMES_TRAINING = 20;
 //int HIGHT_THRESHOLD = 20;
 //int LOW_THRESHOLD = 10;
-//double ALPHA = 0 ;
+
 
 int g_slider_position = 50;
 
@@ -140,7 +140,8 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 	int intervalJump = totalFrames/ Param->Jumps; // numero de frames entre cada posición de salto
 
 	int jumpFrCount = 0; // contador del numero de frames para el salto.
-	int frForJump = cvRound(Param->FRAMES_TRAINING / Param->Jumps); // numero de frames por salto
+	int frForJump = 0;
+	if (Param->Jumps > 0 ) frForJump = cvRound(Param->FRAMES_TRAINING / Param->Jumps); // numero de frames por salto
 	double Seek = 0 + Param->initDelay ; // puntero a las partes del video donde se saltará
 
 	while( num_frames < Param->FRAMES_TRAINING ){
@@ -524,37 +525,7 @@ void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGM
 		}
 	}
 }
-void RunningBGGModel( IplImage* Image, IplImage* median, IplImage* Idesf, double ALPHA,CvRect dataroi ){
 
-	IplImage* ImTemp;
-	CvSize sz = cvGetSize( Image );
-	ImTemp = cvCreateImage( sz, 8, 1);
-
-	cvCopy( Image, ImTemp);
-
-	cvSetImageROI( ImTemp, dataroi );
-	cvSetImageROI( median, dataroi );
-	cvSetImageROI( Idif, dataroi );
-	cvSetImageROI( Idesf, dataroi );
-
-	// Para la mediana
-	cvConvertScale(ImTemp, ImTemp, ALPHA,0);
-	cvConvertScale( median, median, (1 - ALPHA),0);
-	cvAdd(ImTemp , median , median );
-
-	// Para la desviación típica
-	cvConvertScale(Idif, ImTemp, ALPHA,0);
-	cvConvertScale( Idesf, Idesf, (1 - ALPHA),0);
-	cvAdd(ImTemp , Idesf , Idesf );
-
-	cvResetImageROI( median );
-	cvResetImageROI( Idif );
-	cvResetImageROI( Idesf );
-
-	cvReleaseImage( &ImTemp );
-
-	DeallocateTempImages();
-}
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf,IplImage* fg,BGModelParams* Param, CvRect ROI){
 
 	struct timeval ti; // iniciamos la estructura
@@ -762,12 +733,6 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 
 }
 
-
-
-
-//void onTrackbarSlide(pos, BGModelParams* Param) {
-//   Param->ALPHA = pos / 100;
-//}
 void DefaultBGMParams( BGModelParams **Parameters){
 	//init parameters
 	BGModelParams *Params;
@@ -782,7 +747,6 @@ void DefaultBGMParams( BGModelParams **Parameters){
 		Params->initDelay = 0;
 
 		Params->FRAMES_TRAINING = 20;
-		Params->ALPHA = 0.5 ;
 		Params->MORFOLOGIA = true;
 		Params->CVCLOSE_ITR = 0;
 		Params->MAX_CONTOUR_AREA = 0 ;
@@ -803,7 +767,6 @@ void DefaultBGMParams( BGModelParams **Parameters){
 		Params->Jumps = 0;
 		Params->initDelay = 0;
 
-		Params->ALPHA = 0.5 ;
 		Params->MORFOLOGIA = true;
 		Params->CVCLOSE_ITR = 0;
 		Params->MAX_CONTOUR_AREA = 0 ;

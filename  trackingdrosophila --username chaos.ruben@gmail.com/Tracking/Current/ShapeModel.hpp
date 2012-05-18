@@ -15,8 +15,19 @@
 #include <BlobResult.h>
 #include <Blob.h>
 
-#define SM_FRAMES_TRAINING 200 /// Numero de frames utilizados para los calculos del modelado de forma.
 
+typedef struct{
+
+	int SHOW_DATA_AREAS; 		// Al modelar la forma, se excluirán del cálculo aquellos blobs con un área mayor de Max_area Pixels
+
+	int FramesTraining;
+
+	int Max_Area ;					// Al modelar la forma, se excluirán del cálculo aquellos blobs con un área mayor de Max_area Pixels
+
+	int Max_Perimeter ;				// Al modelar la forma, se excluirán del cálculo aquellos blobs con un perímetro mayor de Max_Perimeter Pixels
+
+
+}ShapeParams;
 //!\brief ShapeModel: Establece los valores del area media y la desviacion tipica de las areas
 //! del total de los blobs detectados en los frames_training, con el fin de realizar el
 //! modelado de forma para una posterior segementación y validacion de los blobs.
@@ -31,8 +42,14 @@
  * \see ViodeoTracker.hpp
  *
  */
-void ShapeModel( CvCapture* g_capture, SHModel *SH,IplImage* ImMask, CvRect ROI );
 
-SHModel* ShapeModel2( CvCapture* g_capture,StaticBGModel* BGModel );
+SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel, BGModelParams* BGParams );
+
+void SetShapeParams(  BGModelParams* BGParams );
+
+void SetDefaultShapeParams(  BGModelParams* BGParams );
+
+void ShowShapeParams( char* Campo ,BGModelParams* BGParams);
+
 
 #endif /* SHAPEMODEL_HPP_ */

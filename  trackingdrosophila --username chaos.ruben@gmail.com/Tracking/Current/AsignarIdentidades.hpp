@@ -50,4 +50,6 @@ void TrackbarSliderDMax(  int pos );
 
 double PesosKalman(const CvMat* Matrix,const CvMat* Predict,CvMat* CordReal);
 
+void releaseAI();
+
 #endif /* ASIGNARIDENTIDADES_HPP_ */

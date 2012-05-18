@@ -34,12 +34,10 @@ using namespace std;
 
 // OPCIONES GENERALES DE PROGRAMA
 
-//#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
+#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
 
-#define SHOW_SHAPE_MODEL_DATA_AREAS 1//!< Switch de 0 a 1 para visualizar el valor de las areas de cada blob.
-#define SHOW_SHAPE_MODEL_DATA_MEDIANA 1//!< Switch de 0 a 1 para visualizar el valor mediana para todos los blobs.
 
 #define SHOW_BGMODEL_DATA 0 //!< Switch de 0 a 1 para mostrar en consola datos del modelo de fondo.
 #define SHOW_BGMODEL_TIMES 0
@@ -52,9 +50,10 @@ using namespace std;
 #define SHOW_VALIDATION_TIMES 0
 
 #define SHOW_AI_DATA 0
+
 #define SHOW_MT_DATA 0
 
-#define SHOW_KALMAN_DATA 0
+#define SHOW_KALMAN_DATA 1
 
 #define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
 

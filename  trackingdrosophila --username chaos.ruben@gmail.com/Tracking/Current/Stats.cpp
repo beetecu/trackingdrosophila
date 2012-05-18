@@ -198,10 +198,15 @@ unsigned int sumFrame( tlcde* Flies ){
 
 	STFly* flyOut = NULL;
 	float sumatorio = 0;
-	unsigned int sumUint;
-	for(int i = 0; i< Flies->numeroDeElementos ; i++){
-		flyOut = (STFly*)obtener(i,Flies);
-		sumatorio = flyOut->VInst + sumatorio;
+	unsigned int sumUint = 0;
+
+	if( !Flies ) return sumUint;
+	else if( Flies->numeroDeElementos == 0) return sumUint;
+	else{
+		for(int i = 0; i< Flies->numeroDeElementos ; i++){
+			flyOut = (STFly*)obtener(i,Flies);
+			sumatorio = flyOut->VInst + sumatorio;
+		}
 	}
 	sumUint = ( unsigned int)cvRound(sumatorio);
 	return sumUint;
@@ -423,9 +428,9 @@ void SetStatsParams( int FPS ){
 			/* Obtener el valor */
 			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
 			if(!EXITO) DEFAULT = true;
-			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
 												" Estableciendo valores por defecto.\n",settingFather);
-			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
 												" Estableciendo valores del fichero de configuración.\n",settingFather);
 		}
 		else {
@@ -445,14 +450,14 @@ void SetStatsParams( int FPS ){
 		sprintf(settingName,"CalcStatsMov");
 		if(! config_setting_lookup_bool ( setting, settingName, &statsParams->CalcStatsMov  )  ){
 			statsParams->CalcStatsMov = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 										"Establecer por defecto a %d \n",settingName,statsParams->CalcStatsMov);
 		}
 
 		sprintf(settingName,"MaxBufferTime");
 		if(! config_setting_lookup_int ( setting, settingName, &statsParams->MaxBufferTime )  ){
 			statsParams->MaxBufferTime = 8;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,statsParams->MaxBufferTime);
 
 		}
@@ -460,7 +465,7 @@ void SetStatsParams( int FPS ){
 
 	SetPrivateStatsParams( FPS );
 
-//	ShowStatsParams( settingFather );
+	ShowStatsParams( settingFather );
 	config_destroy(&cfg);
 }
 
@@ -468,6 +473,14 @@ void SetDefaultStatsParams(   ){
 
 	statsParams->CalcStatsMov = true; 		// Switch true/false para activar el cálculo de estadísticas de movimiento
 	statsParams->MaxBufferTime = 8;
+
+}
+
+void ShowStatsParams( char* Campo ){
+
+	printf(" \nVariables para el campo %s : \n", Campo);
+	printf(" -CalcStatsMov = %d \n", statsParams->CalcStatsMov);
+	printf(" -MaxBufferTime = %d \n",statsParams->MaxBufferTime );
 
 }
 

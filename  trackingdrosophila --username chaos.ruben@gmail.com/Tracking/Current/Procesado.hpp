@@ -59,6 +59,13 @@ STFrame* InitNewFrameData(IplImage* I );
 
 void putBGModelParams( BGModelParams* Params);
 
+void DefaultProcesBGParams( );
+
+void SetProcesParams(  );
+
+void ShowProcesBGParams( char* Campo );
+
+
 void AllocateDataProcess( IplImage *I );
 
 void releaseDataProcess( );

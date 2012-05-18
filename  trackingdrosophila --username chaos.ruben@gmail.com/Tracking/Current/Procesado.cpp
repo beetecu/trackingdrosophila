@@ -50,8 +50,6 @@ IplImage *lastIdes = NULL;
 
 ///Parámetros fondo para procesado
 BGModelParams *BGPrParams = NULL;
-///Parámetros Validación para procesado
-ValParams* valParams = NULL;
 
 STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 
@@ -86,12 +84,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 		cvCopy( BGModel->Imed,lastBG);
 		cvCopy( BGModel->IDesvf,lastIdes);
 	}
-	// inicializar parámetros de modelo de fondo y de validación
-	if( !BGPrParams) {
-		DefaultBGMParams( &BGPrParams );
-		putBGModelParams( BGPrParams );
-	}
-	if(!valParams) iniciarValParams( &valParams, Shape);
+
 
 	// Iniciar estructura para datos del nuevo frame
 	frameData = InitNewFrameData( frame );
@@ -143,7 +136,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 
 	/////// VALIDACIÓN
 
-	Validacion2(Imagen, frameData , Shape, FGMask, valParams);
+	Validacion2(Imagen, frameData , Shape, FGMask );
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
 
 	DraWWindow( NULL,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );
@@ -216,40 +209,235 @@ STFrame* InitNewFrameData(IplImage* I ){
 	return FrameData;
 }
 
-void putBGModelParams( BGModelParams* Params){
-	 static int first = 1;
-	 Params->BG_Update = 1;
-	 Params->initDelay = 0;
-	 Params->MODEL_TYPE = MEDIAN_S_UP;
-	 Params->FRAMES_TRAINING = 20;
-	 Params->ALPHA = 0 ;
-	 Params->MORFOLOGIA = true;
-	 Params->CVCLOSE_ITR = 1;
-	 Params->MAX_CONTOUR_AREA = 0 ; //200
-	 Params->MIN_CONTOUR_AREA = 0; //5
-	 Params->K = 0.6745;
 
-	 if (CREATE_TRACKBARS == 1){
-				 // La primera vez inicializamos los valores.
-				 if (first == 1){
-					 Params->HIGHT_THRESHOLD = 20;
 
-					 Params->LOW_THRESHOLD = 10;
+void SetProcesParams(  ){
 
-					 first = 0;
-				 }
-	 			cvCreateTrackbar( "HighT",
-	 							  "Foreground",
-	 							  &Params->HIGHT_THRESHOLD,
-	 							  100  );
-	 			cvCreateTrackbar( "LowT",
-	 							  "Foreground",
-	 							  &Params->LOW_THRESHOLD,
-	 							  100  );
-	 }else{
-		 Params->HIGHT_THRESHOLD = 20;
-		 Params->LOW_THRESHOLD = 15;
-	 }
+    //init parameters
+	config_t cfg;
+	config_setting_t *setting;
+	char settingName[50];
+	char configFile[30];
+	char settingFather[50];
+
+	int EXITO;
+	int DEFAULT = false;
+
+	// Reservar memoria
+
+	BGPrParams = ( BGModelParams *) malloc( sizeof( BGModelParams));
+	if ( !BGPrParams ) {error(4);exit (1 );}
+
+	fprintf(stderr, "\nCargando parámetros de Procesado:");
+	fprintf(stderr, "\nCargando parámetros de umbralización y limpieza de primer plano...");
+
+	config_init(&cfg);
+
+	sprintf( configFile, "config.cfg");
+
+
+	 /* Leer archivo. si hay un error, informar y cargar configuración por defecto */
+	if(! config_read_file(&cfg, configFile))
+	{
+		fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
+				config_error_line(&cfg), config_error_text(&cfg));
+
+		fprintf(stderr, "Error al acceder al fichero de configuración %s .\n"
+						" Estableciendo valores por defecto.\n"
+						,configFile);
+		DEFAULT = true;
+	}
+	else
+	{
+		sprintf( settingFather,"Procesado" );
+		setting = config_lookup(&cfg, settingFather);
+		/* Si no se se encuentra la setting o bien existe la variable hijo Auto y ésta es true, se establecen TODOS los valores por defecto.*/
+		if(setting != NULL)
+		{
+			sprintf(settingName,"Auto");
+			/* Obtener el valor */
+			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
+			if(!EXITO) DEFAULT = true;
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
+												" Estableciendo valores por defecto.\n",settingFather);
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
+												" Estableciendo valores del fichero de configuración.\n",settingFather);
+		}
+		else {
+			DEFAULT = true;
+			fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+		}
+		sprintf( settingFather,"Procesado.BGModel" );
+		setting = config_lookup(&cfg, settingFather);
+		/* Si no se se encuentra la setting o bien existe la variable hijo Auto y ésta es true, se establecen TODOS los valores por defecto.*/
+		if(setting != NULL)
+		{
+			sprintf(settingName,"Auto");
+			/* Obtener el valor */
+			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
+			if(!EXITO) DEFAULT = true;
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
+												" Estableciendo valores por defecto.\n",settingFather);
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
+												" Estableciendo valores del fichero de configuración.\n",settingFather);
+		}
+		else {
+			DEFAULT = true;
+			fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+		}
+	}
+
+	if( DEFAULT ) {
+		DefaultProcesBGParams( );
+	}
+	/* Valores leídos del fichero de configuración. Algunos valores puedes ser establecidos por defecto si se indica
+	 * expresamente en el fichero de configuración. Si el valor es erroneo o no se encuentra la variable, se establecerán
+	 * a los valores por defecto.
+	 */
+	else{
+		double val;
+		sprintf(settingName,"MODEL_TYPE");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->MODEL_TYPE )  ){
+			 BGPrParams->MODEL_TYPE = MEDIAN_S_UP;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName, BGPrParams->MODEL_TYPE );
+
+		}
+
+		sprintf(settingName,"BG_Update");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->BG_Update )  ){
+			 BGPrParams->BG_Update = 10;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName,BGPrParams->BG_Update);
+		}
+		else{ // tipo de valor correcto pero erróneo
+			if( ( !BGPrParams->BG_Update ) ){
+				BGPrParams->BG_Update = 10;
+				fprintf(stderr, "El valor de %s está fuera de límites\n "
+								"Establecer por defecto %s a %d \n",settingName,settingName,BGPrParams->BG_Update);
+			}
+		}
+
+
+		sprintf(settingName,"K");
+		if(! config_setting_lookup_float ( setting, settingName, &val   )  ){
+			BGPrParams->K = 0.6745;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %0.6f \n",settingName,BGPrParams->K  );
+		}
+		else {
+			if( ( !val ) ){
+				val = 0.6745;
+				fprintf(stderr, "El valor de %s está fuera de límites\n "
+								"Establecer por defecto %s a %0.6f \n",settingName,settingName,BGPrParams->K);
+			}
+			BGPrParams->K = (float)val;
+		}
+
+		sprintf(settingName,"MORFOLOGIA");
+		if(! config_setting_lookup_bool ( setting, settingName, &BGPrParams->MORFOLOGIA )  ){
+			BGPrParams->MORFOLOGIA = true;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName,BGPrParams->MORFOLOGIA);
+
+		}
+
+		sprintf(settingName,"CVCLOSE_ITR");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->CVCLOSE_ITR )  ){
+			BGPrParams->CVCLOSE_ITR = 1;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName,BGPrParams->CVCLOSE_ITR);
+
+		}
+
+		sprintf(settingName,"MAX_CONTOUR_AREA");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->MAX_CONTOUR_AREA )  ){
+			BGPrParams->MAX_CONTOUR_AREA = 0 ;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName,BGPrParams->MAX_CONTOUR_AREA);
+		}
+
+		sprintf(settingName,"MIN_CONTOUR_AREA");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->MIN_CONTOUR_AREA )  ){
+			BGPrParams->MIN_CONTOUR_AREA = 0; //5
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName,BGPrParams->MIN_CONTOUR_AREA);
+
+		}
+
+		sprintf(settingName,"HIGHT_THRESHOLD");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->HIGHT_THRESHOLD )  ){
+			BGPrParams->HIGHT_THRESHOLD = 20;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %0.1f \n",settingName,BGPrParams->HIGHT_THRESHOLD);
+
+		}
+		else {
+			if( ( !BGPrParams->HIGHT_THRESHOLD || BGPrParams->HIGHT_THRESHOLD>255 ) ){
+				BGPrParams->HIGHT_THRESHOLD = 20;
+				fprintf(stderr, "El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %d \n",settingName,settingName,BGPrParams->BG_Update);
+			}
+
+		}
+
+		sprintf(settingName,"LOW_THRESHOLD");
+		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->LOW_THRESHOLD )  ){
+			BGPrParams->LOW_THRESHOLD = 15;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+							"Establecer por defecto a %d \n",settingName,BGPrParams->LOW_THRESHOLD);
+		}
+		else {
+			if( ( !BGPrParams->LOW_THRESHOLD || BGPrParams->LOW_THRESHOLD>255 ) ){
+				BGPrParams->LOW_THRESHOLD = 15;
+				fprintf(stderr, "El valor de %s está fuera de límites\n "
+								"Establecer por defecto %s a %d \n",settingName,settingName,BGPrParams->BG_Update);
+				if( BGPrParams->LOW_THRESHOLD > 50 ) fprintf(stderr, "ADVERTENCIA: El valor de %s es muy elevado\n "
+						"Establecer por defecto %s a %d \n",settingName,settingName,BGPrParams->LOW_THRESHOLD);
+			}
+
+		}
+
+	}
+	ShowProcesBGParams( settingFather );
+	SetValidationParams( );
+
+//	ShowStatsParams( settingFather );
+	config_destroy(&cfg);
+}
+
+void DefaultProcesBGParams( ){
+
+	 BGPrParams->BG_Update = 10;
+
+	 BGPrParams->MODEL_TYPE = MEDIAN_S_UP;
+
+	 BGPrParams->MORFOLOGIA = true;
+	 BGPrParams->CVCLOSE_ITR = 1;
+	 BGPrParams->MAX_CONTOUR_AREA = 0 ; //200
+	 BGPrParams->MIN_CONTOUR_AREA = 0; //5
+	 BGPrParams->K = 0.6745;
+
+	 BGPrParams->HIGHT_THRESHOLD = 20;
+	 BGPrParams->LOW_THRESHOLD = 15;
+
+}
+
+void ShowProcesBGParams( char* Campo ){
+
+	printf(" \nVariables para el campo %s : \n", Campo);
+	printf(" -MODEL_TYPE = %d \n", BGPrParams->MODEL_TYPE);
+	printf(" -BG_Update = %d \n",  BGPrParams->BG_Update);
+	printf(" -LOW_THRESHOLD = %d \n", BGPrParams->LOW_THRESHOLD);
+	printf(" -MORFOLOGIA = %d \n",BGPrParams->MORFOLOGIA);
+	printf(" -CVCLOSE_ITR = %d \n", BGPrParams->CVCLOSE_ITR );
+	printf(" -MAX_CONTOUR_AREA = %d \n",  BGPrParams->MAX_CONTOUR_AREA);
+	printf(" -MIN_CONTOUR_AREA= %d \n", BGPrParams->MIN_CONTOUR_AREA);
+	printf(" -HIGHT_THRESHOLD = %d \n", BGPrParams->HIGHT_THRESHOLD);
+	printf(" -K = %0.6f \n", BGPrParams->K);
+
 }
 
 void AllocateDataProcess( IplImage *I ) {
@@ -268,10 +456,11 @@ void AllocateDataProcess( IplImage *I ) {
 }
 void releaseDataProcess( ){
 	free(BGPrParams);
-	free( valParams);
+
 	cvReleaseImage( &Imagen );
 	cvReleaseImage( &FGMask );
 	cvReleaseImage( &lastBG );
 	cvReleaseImage( &lastIdes );
 	ReleaseDataSegm( );
+	ReleaseDataVal( );
 }

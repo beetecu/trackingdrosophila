@@ -35,25 +35,24 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
 #ifdef MEDIR_TIEMPOS
 	 gettimeofday(&tif, NULL);
+	 printf("\n4)Visualización:\n");
 #endif
-	printf("\n4)Visualización:\n");
 
 
-	// Establecer la posición en del bufer para visualizar
-	if( pos == PENULTIMO ) pos = frameBuf->numeroDeElementos-2;
-	if( pos == ULTIMO ) pos = frameBuf->numeroDeElementos-1;
+	 if ( visParams->ModoCompleto ){
+		// Establecer la posición en del bufer para visualizar
+		if( pos == PENULTIMO ) pos = frameBuf->numeroDeElementos-2;
+		if( pos == ULTIMO ) pos = frameBuf->numeroDeElementos-1;
 
-	if(visParams->VisualPos == -1){
-		if(pos>-1)irAl( pos, frameBuf );
-		else irAl( 0 , frameBuf );
-	}
-	else irAl(visParams->VisualPos, frameBuf );
+		if(visParams->VisualPos == -1){
+			if(pos>-1)irAl( pos, frameBuf );
+			else irAl( 0 , frameBuf );
+		}
+		else irAl(visParams->VisualPos, frameBuf );
 
-	// OBTENER FRAME
-	frameData = (STFrame*)obtenerActual(frameBuf);
-	flies = frameData->Flies;
-
-	if ( visParams->ModoCompleto ){
+		// OBTENER FRAME
+		frameData = (STFrame*)obtenerActual(frameBuf);
+		flies = frameData->Flies;
 
 		if(!ImVisual) {
 			ImVisual = cvCreateImage( cvGetSize( frameData->Frame ),8,3);
@@ -527,60 +526,62 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
 			// obtener lista de blobs.
 			fly = (STFly*)obtener(i, flies);
-			// Dibujar un trianguno isósceles que representa el blob
-			CvPoint A   = cvPoint( cvRound( fly->posicion.x + fly->a*cos(fly->orientacion*CV_PI/180) ),
-								   cvRound( fly->posicion.y - fly->a*sin(fly->orientacion*CV_PI/180)));
-			CvPoint Mcb = cvPoint( cvRound( fly->posicion.x - fly->a*cos(fly->orientacion*CV_PI/180)),
-								   cvRound( fly->posicion.y + fly->a*sin(fly->orientacion*CV_PI/180)));
-			CvPoint B =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion+90)*CV_PI/180) ),
-								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion+90)*CV_PI/180)));
-			CvPoint C =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion-90)*CV_PI/180) ),
-								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion-90)*CV_PI/180)));
-//			if( fly->Estado == 1){
-				cvLine( Imagen,A,B,fly->Color,1,CV_AA, 0 );
-				cvLine( Imagen,B,C,fly->Color,1,CV_AA, 0 );
-				cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
-//			}
-//			else{
-//				cvLine( Imagen,A,B,CVX_WHITE,1,CV_AA, 0 );
-//				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
-//				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
-//			}
-			muestrearPosicion( flies, 4 );
-//			Mat img(Imagen);
-//			rectangle(img,
-//					Point(fly->Roi.x,fly->Roi.y),
-//					Point(fly->Roi.x+fly->Roi.width,fly->Roi.y+fly->Roi.height),
-//					Scalar(255), 1,8,0);
-//			imshow("CamShift Demo",img);
-			// visualizar direccion
-			//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
-			if(fly->etiqueta == 11)	cvCircle( Imagen, fly->posicion, 10, fly->Color, 3, CV_AA, 0 );
+			if( fly->etiqueta){
+				// Dibujar un trianguno isósceles que representa el blob
+				CvPoint A   = cvPoint( cvRound( fly->posicion.x + fly->a*cos(fly->orientacion*CV_PI/180) ),
+									   cvRound( fly->posicion.y - fly->a*sin(fly->orientacion*CV_PI/180)));
+				CvPoint Mcb = cvPoint( cvRound( fly->posicion.x - fly->a*cos(fly->orientacion*CV_PI/180)),
+									   cvRound( fly->posicion.y + fly->a*sin(fly->orientacion*CV_PI/180)));
+				CvPoint B =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion+90)*CV_PI/180) ),
+									   cvRound( Mcb.y - fly->b*sin( (fly->orientacion+90)*CV_PI/180)));
+				CvPoint C =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion-90)*CV_PI/180) ),
+									   cvRound( Mcb.y - fly->b*sin( (fly->orientacion-90)*CV_PI/180)));
+	//			if( fly->Estado == 1){
+					cvLine( Imagen,A,B,fly->Color,1,CV_AA, 0 );
+					cvLine( Imagen,B,C,fly->Color,1,CV_AA, 0 );
+					cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
+	//			}
+	//			else{
+	//				cvLine( Imagen,A,B,CVX_WHITE,1,CV_AA, 0 );
+	//				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
+	//				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
+	//			}
+				muestrearPosicion( flies, 4 );
+	//			Mat img(Imagen);
+	//			rectangle(img,
+	//					Point(fly->Roi.x,fly->Roi.y),
+	//					Point(fly->Roi.x+fly->Roi.width,fly->Roi.y+fly->Roi.height),
+	//					Scalar(255), 1,8,0);
+	//			imshow("CamShift Demo",img);
+				// visualizar direccion
+				//double op_angle = 360.0 - fly->direccion;  // adjust for images with top-left origin
+				if(fly->etiqueta == 11)	cvCircle( Imagen, fly->posicion, 10, fly->Color, 3, CV_AA, 0 );
 
-			double magnitude = 30;
-			cvLine( Imagen,
-					fly->posicion,
-					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-					CVX_RED,
-					1, CV_AA, 0 );
-			// dirección de kalman
-			if(fly->Stats->EstadoTrack != 2){
-				cvLine( Imagen,
-									fly->posicion,
-									cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
-											 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
-									CVX_GREEN,
-									1, CV_AA, 0 );
-			}else{
+				double magnitude = 30;
 				cvLine( Imagen,
 						fly->posicion,
-						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
-								 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
-						CVX_BLUE,
+						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+								 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+						CVX_RED,
 						1, CV_AA, 0 );
+				// dirección de kalman
+				if(fly->Stats->EstadoTrack != 2){
+					cvLine( Imagen,
+										fly->posicion,
+										cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
+												 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
+										CVX_GREEN,
+										1, CV_AA, 0 );
+				}else{
+					cvLine( Imagen,
+							fly->posicion,
+							cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
+									 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
+							CVX_BLUE,
+							1, CV_AA, 0 );
+				}
+				visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
 			}
-			visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
 		}
 	}
 	else return;
@@ -732,18 +733,18 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 		cvPutText( Window, CMov16HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 3*linea), &fuente2, CVX_BLACK  );
 		cvPutText( Window, CMov16HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 4*linea), &fuente2, CVX_BLACK   );
 
-		sprintf( CMov24HMed,"MovMed_24h: %0.1f ",Stats->CMov4HMed);
-		sprintf( CMov24HDes,"MovDes_24h: %0.1f ",Stats->CMov4HDes);
+		sprintf( CMov24HMed,"MovMed_24h: %0.1f ",Stats->CMov24HMed);
+		sprintf( CMov24HDes,"MovDes_24h: %0.1f ",Stats->CMov24HDes);
 		cvPutText( Window, CMov24HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 5*linea), &fuente2, CVX_BLUE  );
 		cvPutText( Window, CMov24HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 6*linea), &fuente2, CVX_BLUE   );
 
 		sprintf( CMov48HMed,"MovMed_48h: %0.1f ",Stats->CMov48HMed);
 		sprintf( CMov48HDes,"MovDes_48h: %0.1f ",Stats->CMov48HDes);
-		cvPutText( Window, CMov8HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 7*linea), &fuente2, CVX_BLACK  );
-		cvPutText( Window, CMov8HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 8*linea), &fuente2, CVX_BLACK   );
+		cvPutText( Window, CMov48HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 7*linea), &fuente2, CVX_BLACK  );
+		cvPutText( Window, CMov48HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 8*linea), &fuente2, CVX_BLACK   );
 	}
 	else{
-		sprintf( CMov1SMed,"NO STATS ",Stats->CMov1SMed);
+		sprintf( CMov1SMed,"NO STATS ");
 		CvSize textsize = getTextSize(CMov1SMed, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 		cvPutText( Window,  CMov1SMed, cvPoint( margenIz + margenTxt ,margenSup + linea), &fuente2, CVX_BLUE );
 
@@ -1358,9 +1359,10 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		visParams = ( VisParams *) malloc( sizeof( VisParams) );
 		if(!visParams) {error(4); return;}
 	}
-	printf("\nFlujo de fichero de vídeo iniciado.");
+	fprintf(stderr,"\nIniciando flujo a fichero de video...\n");
 	VWriter = iniciarAvi(  nombreVideo, FPS);
-	printf("\nCargando parámetros de visualización...");
+
+	fprintf(stderr,"\nCargando parámetros de visualización...");
 	config_init(&cfg);
 
 	sprintf( configFile, "config.cfg");
@@ -1387,9 +1389,9 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 			/* Obtener el valor */
 			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
 			if(!EXITO) DEFAULT = true;
-			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
 												" Estableciendo valores por defecto.\n",settingFather);
-			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
 												" Estableciendo valores del fichero de configuración.\n",settingFather);
 		}
 		else {
@@ -1409,14 +1411,14 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowWindow");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowWindow )  ){
 			visParams->ShowWindow = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 										"Establecer por defecto a %d \n",settingName,visParams->ShowWindow);
 		}
 
 		sprintf(settingName,"ShowPresent");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowPresent )  ){
 			visParams->ShowPresent = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowPresent);
 
 		}
@@ -1424,7 +1426,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowTransition");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowTransition )  ){
 			visParams->ShowTransition  = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowTransition );
 
 		}
@@ -1432,7 +1434,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"HightGUIControls");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->HightGUIControls )  ){
 			visParams->HightGUIControls = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->HightGUIControls);
 
 		}
@@ -1441,7 +1443,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ModoCompleto )  ){
 			visParams->ModoCompleto = false;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ModoCompleto);
 
 		}
@@ -1449,7 +1451,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowBGdiffImages");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowBGdiffImages )  ){
 			visParams->ShowBGdiffImages  = false ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowBGdiffImages);
 
 		}
@@ -1457,7 +1459,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowLearningFlat");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowLearningFlat )  ){
 			visParams->ShowLearningFlat = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowLearningFlat);
 
 		}
@@ -1465,7 +1467,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowInitBackground");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowInitBackground )  ){
 			visParams->ShowInitBackground = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowInitBackground);
 
 		}
@@ -1473,7 +1475,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowShapeModel");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowShapeModel)  ){
 			visParams->ShowShapeModel= true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowShapeModel);
 
 		}
@@ -1481,7 +1483,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowProcessPhases");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowProcessPhases )  ){
 			visParams->ShowProcessPhases = false ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowProcessPhases);
 
 		}
@@ -1489,7 +1491,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowValidationPhases");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowValidationPhases )  ){
 			visParams->ShowValidationPhases = false;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowValidationPhases);
 
 		}
@@ -1497,7 +1499,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowBGremoval");
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowBGremoval ) ){
 			visParams->ShowBGremoval = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowBGremoval);
 
 		}
@@ -1505,21 +1507,21 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS ){
 		sprintf(settingName,"ShowKalman");
 		if(!config_setting_lookup_bool ( setting, settingName, &visParams->ShowKalman ) ){
 			visParams->ShowKalman = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowKalman);
 
 		}
 		sprintf(settingName,"ShowStatsMov");
 		if(!config_setting_lookup_bool ( setting, settingName, &visParams->ShowStatsMov ) ){
 			visParams->ShowStatsMov = true;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,visParams->ShowStatsMov);
 
 		}
 	}
 
 	SetPrivatetHightGUIParams(  ImRef );
-
+	ShowHightGUIParams( settingFather   );
 //	ShowParams( settingFather );
 	config_destroy(&cfg);
 }
@@ -1588,6 +1590,25 @@ void SetDefaultHightGUIParams(  IplImage* ImRef ){
 	visParams->ShowBGremoval = true;
 	visParams->ShowKalman = true;
 	visParams->ShowStatsMov = true;
+
+}
+
+void ShowHightGUIParams( char* Campo  ){
+
+	printf(" \nVariables para el campo %s : \n", Campo);
+	printf(" -ShowPresent = %d \n", visParams->ShowPresent);
+	printf(" -ShowTransition = %d \n",visParams->ShowTransition);
+	printf(" -HightGUIControls = %d \n", visParams->HightGUIControls);
+	printf(" -ModoCompleto = %d \n", visParams->ModoCompleto);
+	printf(" -ShowBGdiffImages = %d \n", visParams->ShowBGdiffImages);
+	printf(" -ShowLearningFlat = %d \n", visParams->ShowLearningFlat);
+	printf(" -ShowInitBackground = %d \n", visParams->ShowInitBackground );
+	printf(" -ShowShapeModel = %d \n", visParams->ShowShapeModel);
+	printf(" -ShowProcessPhases = %d \n", visParams->ShowProcessPhases);
+	printf(" -ShowValidationPhases = %d \n", visParams->ShowValidationPhases);
+	printf(" -ShowBGremoval = %d \n", visParams->ShowBGremoval);
+	printf(" -ShowKalman  = %d \n", visParams->ShowKalman );
+	printf(" -ShowStatsMov = %d \n", visParams->ShowStatsMov);
 
 }
 
