@@ -419,6 +419,9 @@ void SetDefaultTrackParams(   );
 
 void SetPrivateTrackParams(  );
 
+void ShowTrackParams( char* Campo );
+
+
 /*!\brief	- Añade nuevo elemento al buffer de datos.
  - asignarIdentidades( lsTracks,frameDataIn->Flies): valida blobs y resuelve las asociaciones usando las predicciones
    de kalman mediante el algoritmo Hungaro.

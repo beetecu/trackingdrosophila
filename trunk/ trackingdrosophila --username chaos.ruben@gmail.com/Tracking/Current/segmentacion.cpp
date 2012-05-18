@@ -168,7 +168,8 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 
 	fly = ( STFly *) malloc( sizeof( STFly));
 	if ( !fly ) {error(4);	exit(1);}
-
+	fly->Tracks = NULL;
+	fly->Stats = NULL;
 
 	if( ellipseFit( rect, pesos, mask,
 					&fly->b,  // semieje menor
@@ -178,8 +179,12 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 	{
 
 		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
-		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
+		if ( !fly->Tracks ) {error(4);	exit(1);}
 		iniciarLcde( fly->Tracks );
+
+		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
+		if ( !fly->Stats ) {error(4);	exit(1);}
+
 		fly->siguiente = NULL;
 		fly->etiqueta = -1; // Identificación del blob
 		fly->Color = cvScalar( 0,0,0,0); // Color para dibujar el blob
@@ -187,6 +192,7 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 //		fly->StaticFrames = 0;
 		fly->direccion = 0;
 		fly->dstTotal = 0;
+		fly->VInst = 0;
 	//		fly->perimetro = cv::arcLength(contorno,0);
 		fly->Roi = rect;
 		fly->Estado = 1;  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)

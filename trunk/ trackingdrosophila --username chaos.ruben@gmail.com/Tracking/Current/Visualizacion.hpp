@@ -106,7 +106,7 @@ typedef struct {
 	int BPrWidth; // ancho de la barra de progeso
 }VisParams;
 
-/// Crea las ventanas de visualización
+/// Crea las ventanas de visualización e iniciar parámetros
 void CreateWindows(IplImage* ImRef);
 
 void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS );
@@ -117,11 +117,15 @@ void SetPrivatetHightGUIParams(  IplImage* ImRef );
 
 int obtenerVisParam( int type );
 
+void ShowHightGUIParams( char* Campo );
+
 /// PRESENTACIÓN INICIO ///
 
 void DraWPresent( );
 
 void IncrustarLogo(const char Cad[100], IplImage* ImLogos,CvPoint Origen,int Delay, bool Clear );
+
+/// ANIMACIONES ///
 
 void Transicion( const char texto[],int delay_up, int delay_on, int delay_down);
 

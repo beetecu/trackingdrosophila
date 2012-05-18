@@ -42,7 +42,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	// resolver las asociaciones usando las predicciones de kalman mediante el algoritmo Hungaro
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
-	if( frameDataIn->num_frame == 425 ){
+	if( frameDataIn->num_frame == 424 ){
 						printf("hola");
 					}
 	if( frameDataIn->num_frame == 433 ){
@@ -433,9 +433,9 @@ void SetTrackingParams(  ){
 			/* Obtener el valor */
 			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
 			if(!EXITO) DEFAULT = true;
-			else if( EXITO && DEFAULT ) fprintf(stderr, "Opción Auto activada para el campo %s.\n"
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
 												" Estableciendo valores por defecto.\n",settingFather);
-			else if( EXITO && !DEFAULT) fprintf(stderr, "Opción Auto desactivada para el campo %s.\n"
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
 												" Estableciendo valores del fichero de configuración.\n",settingFather);
 		}
 		else {
@@ -455,15 +455,23 @@ void SetTrackingParams(  ){
 		sprintf(settingName,"MaxBlobs");
 		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxBlobs )  ){
 			trackParams->MaxBlobs = 10;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,trackParams->MaxBlobs );
+
+		}
+
+		sprintf(settingName,"ShowKalmanData");
+				if(! config_setting_lookup_bool ( setting, settingName, &trackParams->ShowKalmanData )  ){
+					trackParams->ShowKalmanData = false;
+					fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+									"Establecer por defecto a %d \n",settingName,trackParams->ShowKalmanData );
 
 		}
 
 		sprintf(settingName,"MaxTimeSlept");
 		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxTimeSlept  )  ){
 			trackParams->MaxTimeSlept = 200;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,trackParams->MaxTimeSlept );
 
 		}
@@ -471,28 +479,28 @@ void SetTrackingParams(  ){
 		sprintf(settingName,"MaxBuffer");
 		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxBuffer )  ){
 			trackParams->MaxBuffer = 50;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,trackParams->MaxBuffer);
 		}
 
 		sprintf(settingName,"NumberOfIdentities");
 		if(! config_setting_lookup_int ( setting, settingName, &trackParams->NumberOfIdentities )  ){
 			trackParams->NumberOfIdentities = 100;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,trackParams->NumberOfIdentities);
 		}
 
 		sprintf(settingName,"PeriodoVelMed");
 		if(! config_setting_lookup_int ( setting, settingName, &trackParams->PeriodoVelMed )  ){
 			trackParams->PeriodoVelMed = 15 ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %d \n",settingName,trackParams->PeriodoVelMed );
 		}
 
 		sprintf(settingName,"MediumActivityTh");
 		if(! config_setting_lookup_float ( setting, settingName, &trackParams->MediumActivityTh )  ){
 			trackParams->MediumActivityTh	= 2.0 ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %0.1f \n",settingName,trackParams->MediumActivityTh);
 
 		}
@@ -500,7 +508,7 @@ void SetTrackingParams(  ){
 		sprintf(settingName,"LowActivityTh");
 		if(! config_setting_lookup_float ( setting, settingName, &trackParams->LowActivityTh )  ){
 			trackParams->LowActivityTh	= 0.5 ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %0.1f \n",settingName,trackParams->LowActivityTh);
 
 		}
@@ -508,7 +516,7 @@ void SetTrackingParams(  ){
 		sprintf(settingName,"NullActivityTh");
 		if(! config_setting_lookup_float ( setting, settingName, &trackParams->NullActivityTh )  ){
 			trackParams->NullActivityTh	= 0.2 ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o su valor es erróneo.\n "
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
 							"Establecer por defecto a %0.1f \n",settingName,trackParams->NullActivityTh);
 		}
 
@@ -516,12 +524,13 @@ void SetTrackingParams(  ){
 
 	SetPrivateTrackParams(  );
 
-//	ShowStatsParams( settingFather );
+	ShowTrackParams( settingFather );
 	config_destroy(&cfg);
 }
 
 void SetDefaultTrackParams(   ){
 
+	trackParams->ShowKalmanData = false;
 	trackParams->MaxBlobs = 10;
 	trackParams->MaxTimeSlept = 200;
 	trackParams->MaxBuffer = 50;
@@ -530,6 +539,20 @@ void SetDefaultTrackParams(   ){
 	trackParams->MediumActivityTh	= 2 ;
 	trackParams->LowActivityTh	= 0.5 ;
 	trackParams->NullActivityTh	= 0.2 ;
+}
+
+void ShowTrackParams( char* Campo ){
+
+	printf(" \nVariables para el campo %s : \n", Campo);
+	printf(" -MaxBlobs = %d \n", trackParams->MaxBlobs);
+	printf(" -MaxTimeSlept = %d \n",trackParams->MaxTimeSlept);
+	printf(" -MaxBuffer = %d \n", trackParams->MaxBuffer );
+	printf(" -NumberOfIdentities = %d \n",  trackParams->NumberOfIdentities);
+	printf(" -PeriodoVelMed= %d \n", trackParams->PeriodoVelMed );
+	printf(" -MediumActivityTh = %0.3f \n", trackParams->MediumActivityTh );
+	printf(" -LowActivityTh  = %0.3f \n",  trackParams->LowActivityTh );
+	printf(" -NullActivityTh  = %0.3f \n", trackParams->NullActivityTh );
+
 }
 
 void SetPrivateTrackParams(  ){
@@ -573,6 +596,7 @@ void ReleaseDataTrack(  ){
 	DeallocateKalman( lsTracks );
 	free(lsTracks);
 	free( trackParams);
+	releaseAI();
 
 }
 

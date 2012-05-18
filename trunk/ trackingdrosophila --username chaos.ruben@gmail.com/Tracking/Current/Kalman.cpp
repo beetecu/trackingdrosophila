@@ -116,8 +116,9 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 	}
 
 	///////////////////// VISUALIZAR RESULTADOS ////////////////
-	if( obtenerVisParam( MODE ) && obtenerVisParam( SHOW_KALMAN ) ) {
-		 visualizarKalman( frameData, lsTracks );
+	// si modo completo activado y mostrar kalman activado o bien SHOW_KALMAN_DATA activado
+	if( (obtenerVisParam( MODE ) && obtenerVisParam( SHOW_KALMAN ))||trackParams->ShowKalmanData ) {
+		 visualizarKalman( frameData, lsTracks, trackParams->ShowKalmanData );
 	}
 
 
@@ -149,6 +150,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track->Stats->TOn = 0;  //!< Tiempo en movimiento desde el inicio.
 	Track->Stats->TOff = 0; //!< Tiempo parado desde el inicio.
 	Track->Stats->SumatorioMed = 0;
+
 	Track->Stats->VectorSumB = ( tlcde * )malloc( sizeof(tlcde ));
 	if( !Track->Stats->VectorSumB ) {error(4);exit(1);}
 	iniciarLcde( Track->Stats->VectorSumB );
@@ -448,7 +450,7 @@ float corregirTita( float phiXk, float tita ){
 	return tita;
 }
 
-void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
+void visualizarKalman( STFrame* frameData, tlcde* lsTracks, bool dataOn) {
 
 	STTrack* Track;
 
@@ -456,7 +458,7 @@ void visualizarKalman( STFrame* frameData, tlcde* lsTracks) {
 		for(int i = 0; i < lsTracks->numeroDeElementos ; i++){
 			Track = (STTrack*)obtener(i, lsTracks);
 			// EN CONSOLA
-			if(SHOW_KALMAN_DATA ){
+			if(dataOn ){
 				printf("\n*********************** FRAME %d; BLOB NUMERO %d ************************",frameData->num_frame,Track->id);
 				showKalmanData( Track );
 			}
@@ -771,9 +773,15 @@ void generarFly( STTrack* Track, tlcde* Flies ){
 		fly = ( STFly *) malloc( sizeof( STFly));
 		if ( !fly ) {error(4);	exit(1);}
 		fly->Tracks = NULL;
-		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
+		fly->Stats = NULL;
+
+		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
+		if ( !fly->Tracks ) {error(4);	exit(1);}
 		iniciarLcde( fly->Tracks );
 		anyadirAlFinal( Track, fly->Tracks);
+
+		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
+
 		fly->siguiente = NULL;
 
 		fly->etiqueta = Track->id; // Identificación del blob
@@ -847,7 +855,7 @@ void mostrarVMedia( tlcde* Vector){
 int deadTrack( tlcde* Tracks, int id ){
 
 	STTrack* Track = NULL;
-	STStatTrack* Stats= NULL;
+
 	valorSumB* val = NULL;
 	Track = (STTrack*)borrarEl( id , Tracks);
 	if(Track) {

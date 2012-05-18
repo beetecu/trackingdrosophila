@@ -14,22 +14,26 @@
 
 
 /// Parametros validación
+typedef struct{
+	float PxiMax; 	//!< Establece la máxima probabilidad permitida para defecto. ( el área máxima )
+	float PxiMin; 	//!< // establece la mínima probabilidad permitida para exceso ( el área mínima )
+	float HThInicio;
+	float LThInicio;
+}ValParamsPrivate;
 
 typedef struct {
 	int UmbralCirc; //!< Máxima circularidad a partir de la cual un blob se considerará no válido
 	float Umbral_L;	//!< Establece el tamaño máximo del blob válido en Umbral_L desviaciones típicas de la media
-	float PxiMax; 	//!< Establece la máxima probabilidad permitida para defecto. ( el área máxima )
 	float Umbral_H;	//!< Establece el tamaño mínimo del blob válido en Umbral_H desviaciones típicas de la media
-	float PxiMin; 	//!< // establece la mínima probabilidad permitida para exceso ( el área mínima )
-
 	int MaxIncLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para intentar dividir el blob
 	int MaxDecLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para aumentar P(xi) ( el área del blob )
 	int MaxLowTH;		 //!< Limite superior para el umbral bajo
 	int MinLowTH;		 //!< Limite inferior para el umbral bajo
-
-
+	ValParamsPrivate* privateParams;
 
 }ValParams;
+
+
 
 //!\brief Realiza la división y combinación de los componentes o blobs conectados, de la siguiente manera:
 //!\n
@@ -55,32 +59,27 @@ typedef struct {
  *
  */
 
-tlcde* Validacion(IplImage *Imagen, STFrame* FrameData, SHModel* SH,CvRect Segroi,BGModelParams* BGParams, ValParams* VisParams,IplImage* Mask);
-
-void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH ,IplImage* Mask, ValParams* Params);
+void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH ,IplImage* Mask );
 
 tlcde* ValidarBLOB( tlcde* Flies,int posBlob,int numFlies,STFrame* FrameData,SHModel* SH,ValParams* Params	);
 //!\brief Inicializada los Parametros del modelado de fondo.
 /*!
- * \param Params Parametros para el modelado de fondo.
- */
+ * \param Params Parametros para el modelado de fondo. */
 
-void iniciarBGModParams( BGModelParams** Params);
+void SetValidationParams(  );
 
-void setBGModParams(BGModelParams* Params);
+void DefaultValParams( );
 
+void DefaultBGValParams();
+
+
+void PrivateValParams( SHModel*SH, ValParamsPrivate** privateParams );
 
 float CalcPxMin( SHModel* SH,float Umbral_L, int areaMin );
 
 float CalcPxMax( SHModel* SH,float Umbral_H, int areaMax );
 
-//!\brief Inicializa los Parametros para la validación.
-/*!
- * \param Params Parametros de validación.
- */
 
-
-void iniciarValParams( ValParams** Parameters, SHModel* SH);
 
 //!\brief Calcula la probabilidad total de todos los blos detectados en el frame.
 /*!
@@ -169,5 +168,8 @@ void RestaurarElMejor(tlcde* lista, IplImage* Fg, STFly* MejorFly, CvRect Roi, i
  */
 int comprobarPxi( tlcde* TempSeg,SHModel* SH, ValParams* Params);
 
+void ReleaseDataVal( );
+
+void ShowValParams( char* Campo );
 
 #endif /* VALIDACION_HPP_ */

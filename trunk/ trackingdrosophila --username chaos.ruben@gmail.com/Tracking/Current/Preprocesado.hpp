@@ -20,13 +20,17 @@
 
 int PreProcesado(char* nombreVideo, StaticBGModel** BGModel,SHModel** Shape );
 
+//!\brief SetPreProcesParams: Inicializar los parametros necesarios realizar el modelado de fondo y de forma.
+
+void SetPreProcesParams(  );
+
+void DefaultInitBGModelParams( );
+
+void SetPrivatePrPcParams(  );
+
+void ShowInitBGModelParams( char* Campo );
+
 void releaseDataPreProcess();
 
-//!\brief InitialBGModelParams: Inicializar los parametros necesarios realizar el modelado de fondo.
-/*!
- * \param Params Estructura que contiene los parámetros necesarios para el modelado de fondo.
- *
- * \return Los parátros para un correcto modelado de fondo.
- */
-void InitialBGModelParams( BGModelParams* Params);
+
 #endif /* PREPROCESADO_HPP_ */
