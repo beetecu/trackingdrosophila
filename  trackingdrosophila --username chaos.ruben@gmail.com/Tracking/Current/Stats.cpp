@@ -353,33 +353,33 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 
 void iniciarMedias( STStatFrame* Stats, unsigned int valor ){
 
-	Coef->F30SSum = valor;
-	Coef->F1Sum   = valor;
-	Coef->F5Sum   = valor;
-	Coef->F10Sum  = valor;
-	Coef->F15Sum  = valor;
-	Coef->F30Sum  = valor;
-	Coef->F1HSum  = valor;
-	Coef->F2HSum  = valor;
-	Coef->F4HSum  = valor;
-	Coef->F8HSum  = valor;
-	Coef->F16HSum = valor;
-	Coef->F24HSum = valor;
-	Coef->F48HSum = valor;
+	Coef->F30SSum = 0;
+	Coef->F1Sum   = 0;
+	Coef->F5Sum   = 0;
+	Coef->F10Sum  = 0;
+	Coef->F15Sum  = 0;
+	Coef->F30Sum  = 0;
+	Coef->F1HSum  = 0;
+	Coef->F2HSum  = 0;
+	Coef->F4HSum  = 0;
+	Coef->F8HSum  = 0;
+	Coef->F16HSum = 0;
+	Coef->F24HSum = 0;
+	Coef->F48HSum = 0;
 
-	Coef->F30SSum2 = valor*valor;
-	Coef->F1Sum2   = valor*valor;
-	Coef->F5Sum2   = valor*valor;
-	Coef->F10Sum2  = valor*valor;
-	Coef->F15Sum2  = valor*valor;
-	Coef->F30Sum2  = valor*valor;
-	Coef->F1HSum2  = valor*valor;
-	Coef->F2HSum2  = valor*valor;
-	Coef->F4HSum2  = valor*valor;
-	Coef->F8HSum2  = valor*valor;
-	Coef->F16HSum2 = valor*valor;
-	Coef->F24HSum2 = valor*valor;
-	Coef->F48HSum2 = valor*valor;
+	Coef->F30SSum2 = 0;
+	Coef->F1Sum2   = 0;
+	Coef->F5Sum2   = 0;
+	Coef->F10Sum2  = 0;
+	Coef->F15Sum2  = 0;
+	Coef->F30Sum2  = 0;
+	Coef->F1HSum2  = 0;
+	Coef->F2HSum2  = 0;
+	Coef->F4HSum2  = 0;
+	Coef->F8HSum2  = 0;
+	Coef->F16HSum2 = 0;
+	Coef->F24HSum2 = 0;
+	Coef->F48HSum2 = 0;
 
 }
 

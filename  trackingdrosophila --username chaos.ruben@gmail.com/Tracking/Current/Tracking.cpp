@@ -63,13 +63,13 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	tiempoParcial= obtenerTiempo( ti, 0);
 	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 	gettimeofday(&ti, NULL);
-	printf("\t2)Filtro de Kalman\n");
+	fprintf(stderr,"\t2)Filtro de Kalman\n");
 #endif
 
 	/////////////// ELIMIRAR FALSOS TRACKS ///
 	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
 	// y unicas. Si no es así se considera un trackDead:
-	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, trackParams->MaxBlobs );
+	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, trackParams->MaxBlobs, frameDataIn->num_frame );
 
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
@@ -118,7 +118,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 }
 
 
-int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxTracks ){
+int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxTracks, int numFrame ){
 
 	STTrack* Track = NULL;
 	int valCount = 0;
@@ -129,7 +129,7 @@ int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxT
 			// obtener Track
 			Track = (STTrack*)obtenerActual( lsTracks);
 			// eliminar los tracks creados en t y sin asignación en t+1
-			if( falsoTrack( Track ) ){
+			if( falsoTrack( Track, numFrame ) ){
 				dejarId( Track, identities );
 				reasignarTracks(lsTracks, framesBuf, identities, NULL, i);
 				deadTrack( lsTracks, i );
@@ -146,9 +146,11 @@ int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxT
 
 }
 
-int falsoTrack( STTrack* Track ){
+int falsoTrack( STTrack* Track, int numFrame ){
 
-	if( Track->Stats->Estado == CAM_CONTROL && Track->Stats->EstadoCount == 1 ){
+	int tiempoVivo = numFrame - Track->Stats->InitTime ;
+
+	if( tiempoVivo == 1 ){
 		if(!Track->Flysig || Track->Flysig->Tracks->numeroDeElementos > 1 ){
 			return 1;
 		}
@@ -184,7 +186,7 @@ void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 		NewTrack = (STTrack*)obtener(i, lsTracks);
 		// comprobar si se han iniciado nuevos tracks. Los tracks que lleguen aqui
 		// son posibles tracks válidos( no han sido eliminados en validar tracks), es decir,
-		// lleva vivos 1 frames
+		// llevan vivos 1 frames y tienen asignación válida
 		tiempoVivo = frameData1->num_frame - NewTrack->Stats->InitTime ;
 		if( tiempoVivo == 1 ){ //deteccion de nuevos tracks posiblemente válidos
 			for(int j = 0;j < lsTracks->numeroDeElementos ; j++){
@@ -223,7 +225,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 	int masAntiguo ;
 	int tiempoVivo;
 	// posición (tiempo) desde el que se van a examinar nuevos tracks
-					// si fuese 0 se pisaría a despertarTrack
+	// si fuese 0 se pisaría a despertarTrack
 	frameData1 = (STFrame*)obtener(framesBuf->numeroDeElementos-1, framesBuf);
 
 
@@ -240,7 +242,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 				SleepingTrack->Stats->EstadoCount == trackParams->MaxBuffer-1 ){
 			// intentamos asignarle un nuevo track
 			// damos prioridad a los que tengan la menor etiqueta frente a los más altos,
-					// que es lo  mismo que escojer el nuevo track más antiguo
+				// que es lo  mismo que escojer el nuevo track más antiguo
 			int ultimo = 0;
 
 			for( int j = 0;j < lsTracks->numeroDeElementos ; j++){

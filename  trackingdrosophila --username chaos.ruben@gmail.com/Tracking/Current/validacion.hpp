@@ -24,6 +24,7 @@ typedef struct{
 typedef struct {
 	int UmbralCirc; //!< Máxima circularidad a partir de la cual un blob se considerará no válido
 	float Umbral_L;	//!< Establece el tamaño máximo del blob válido en Umbral_L desviaciones típicas de la media
+	int Umbral_MinArea; 	//!< Establece el área mínima permitida en píxels para validación.
 	float Umbral_H;	//!< Establece el tamaño mínimo del blob válido en Umbral_H desviaciones típicas de la media
 	int MaxIncLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para intentar dividir el blob
 	int MaxDecLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para aumentar P(xi) ( el área del blob )

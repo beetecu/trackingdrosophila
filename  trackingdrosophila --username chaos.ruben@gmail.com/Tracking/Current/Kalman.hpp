@@ -385,7 +385,7 @@ int dejarId( STTrack* Track, tlcde* identities );
 
 void asignarNuevaId( STTrack* Track, tlcde* identities);
 
-int falsoTrack( STTrack* Track );
+int falsoTrack( STTrack* Track, int numFrame );
 
 int deadTrack( tlcde* Tracks, int id );
 

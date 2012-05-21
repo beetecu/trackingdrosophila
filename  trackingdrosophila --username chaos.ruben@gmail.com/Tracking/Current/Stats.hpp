@@ -20,7 +20,6 @@ typedef struct{
 	unsigned int AbsCount;//!< Contador absoluto de frames para la media total
 	unsigned int FMax; //!< Número máximo de valores a almacenar en el vector
 
-
 	float F1SSum; //!< Sumatorio de las velocidades de los frames correspondientes a 30 s
 	float F1SSum2; //!< Sumatorio del cuadrado de las velocidades de los frames correspondientes a 30 s
 	unsigned int F1S;	//!< Número de frames necesarios para calcular la media de 30 s

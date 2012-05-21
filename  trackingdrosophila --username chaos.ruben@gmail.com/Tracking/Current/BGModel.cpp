@@ -607,7 +607,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		printf("\n\n Matriz FG(p) ");verMatrizIm(fg, ventana);
 
 	}
-	DraWWindow( NULL,NULL, NULL, SHOW_BG_DIF_IMAGES, COMPLETO  );
+	DraWWindow( fg,NULL, NULL, SHOW_BG_DIF_IMAGES, COMPLETO  );
 
 	// limpieza de FG
 #ifdef	MEDIR_TIEMPOS
@@ -632,7 +632,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 
 	}
 
-	DraWWindow( NULL,NULL, NULL, SHOW_BG_DIF_IMAGES, COMPLETO  );
+	DraWWindow( fg,NULL, NULL, SHOW_BG_DIF_IMAGES, COMPLETO  );
 }
 /// Limpia y redibuja el FG
 void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataroi){

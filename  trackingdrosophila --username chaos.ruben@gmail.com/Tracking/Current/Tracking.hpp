@@ -469,7 +469,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
  * @return el número de tracks que están catalogados como válidos
  */
 
-int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxTracks );
+int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxTracks, int numFrame );
 
 /*!\brief Mientras haya tracks durmiendo, cada nuevo track creado en las inmediaciones
  de un track durmiendo, se intercambiará la id con el track durmiendo mas cercano. Los
