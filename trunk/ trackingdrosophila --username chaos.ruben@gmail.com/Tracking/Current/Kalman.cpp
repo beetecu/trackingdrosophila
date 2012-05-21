@@ -151,6 +151,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track->Stats->TOff = 0; //!< Tiempo parado desde el inicio.
 	Track->Stats->SumatorioMed = 0;
 
+
 	Track->Stats->VectorSumB = ( tlcde * )malloc( sizeof(tlcde ));
 	if( !Track->Stats->VectorSumB ) {error(4);exit(1);}
 	iniciarLcde( Track->Stats->VectorSumB );
@@ -186,6 +187,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track->Measurement_noise = cvCreateMat( 5, 1, CV_32FC1 );
 	Track->Measurement_noise_cov = Track->kalman->measurement_noise_cov;
 	Track->z_k = cvCreateMat( 5, 1, CV_32FC1 );
+	Track->VInst = 0;
 
 	cvZero(Track->Medida);
 	cvZero(Track->z_k );
@@ -293,6 +295,10 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 
 	//Establecemos la dirección phi y el modulo del vector de desplazamiento
 	EUDistance( vx_Zk, vy_Zk, &phiZk, &distancia );
+	if( distancia > 100 ){
+		printf("hola");
+	}
+
 	//Caso 1: Se ha encontrado la siguiente posición. la medida se genera a partir de los datos obtenidos de los sensores
 	if( EstadoTrack == CAM_CONTROL ) {
 
@@ -334,7 +340,7 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
 
 	cvGEMM(H, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
-	Track->VInst = distancia; // para las estadisticas
+	Track->VInst = distancia;
 	return ;
 }
 
@@ -513,7 +519,7 @@ void showKalmanData( STTrack *Track){
 			Track->Measurement_noise->data.fl[3],
 			Track->Measurement_noise->data.fl[4]);
 
-	printf("\n Error Process noise:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+	printf("\n Error Measurement noise:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
 			Track->Measurement_noise_cov->data.fl[0],
 			Track->Measurement_noise_cov->data.fl[6],
 			Track->Measurement_noise_cov->data.fl[12],
@@ -660,13 +666,15 @@ void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
 	Track->Stats->FrameCount ++;
 	// calcular distancia y media movil para la velocidad
 
-	// para el caso kalman control, establecemos la distancia en base a lo pos corregida
+	// para el caso kalman control, establecemos la distancia en base a la pos anterior y a la corregida ( predicha??)
 	if( Track->Stats->Estado == KALMAN_CONTROL){
 
 		float Ax = Track->x_k_Pos->data.fl[0] - Track->FlyActual->posicion.x;
 		float Ay = Track->x_k_Pos->data.fl[1] - Track->FlyActual->posicion.y;
 
 		//Establecemos la dirección phi y el modulo del vector de desplazamiento
+//		EUDistance( Track->x_k_Pos->data.fl[2], Track->x_k_Pos->data.fl[3], NULL, &Track->VInst );
+
 		EUDistance( Ax, Ay, NULL, &Track->VInst );
 	}
 	Track->Stats->dstTotal = Track->Stats->dstTotal + Track->VInst;
@@ -690,7 +698,12 @@ void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
 
 void SetStateBlobTracked( STTrack* Track, TrackingParams* trackParams ){
 
-	if( (Track->Stats->CMov1SMed >= 0)&&(Track->Stats->CMov1SMed <= trackParams->NullActivityTh) ) {
+	if( Track->Stats->Estado== KALMAN_CONTROL ){
+		Track->Stats->TimeBlobOff +=1;
+		Track->Stats->EstadoBlob = 4; // actividad nula
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if( (Track->Stats->CMov1SMed >= 0)&&(Track->Stats->CMov1SMed <= trackParams->NullActivityTh) ) {
 		if( Track->Stats->EstadoBlob != 0 ){
 			Track->Stats->EstadoBlobCount = 0;
 		}
@@ -786,13 +799,14 @@ void generarFly( STTrack* Track, tlcde* Flies ){
 
 		fly->etiqueta = Track->id; // Identificación del blob
 		fly->Color = Track->Color; // Color para dibujar el blob
-		fly->a = Track->Flysig->a;
-		fly->b = Track->Flysig->b;
+		fly->a = Track->FlyActual->a; // el tamaño de la actual
+		fly->b = Track->FlyActual->b;
 
 		fly->direccion = Track->x_k_Pos->data.fl[4]; // la dirección es la filtrada
 		fly->dir_filtered = fly->direccion;
 		fly->orientacion = fly->direccion;
-
+		fly->posicion.x = Track->x_k_Pos->data.fl[0];
+		fly->posicion.y = Track->x_k_Pos->data.fl[1];
 		fly->dstTotal = Track->Stats->dstTotal;
 	//		fly->perimetro = cv::arcLength(contorno,0);
 //		fly->Roi = rect;

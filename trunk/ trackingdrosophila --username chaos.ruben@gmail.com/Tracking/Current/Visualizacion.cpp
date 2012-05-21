@@ -24,7 +24,7 @@ IplImage* ImScale= NULL; // Imagen escalada de ImVisual si ImVisual es menor o i
 
 // parametros de visualización
 VisParams* visParams = NULL;
-CvVideoWriter* VWriter;
+CvVideoWriter* VWriter = NULL;
 
 void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
@@ -164,7 +164,7 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 		// MOSTRAMOS IMAGENES
 		printf( "\t-Mostrando ventana de visualización...");
 		cvShowImage( "Visualización", ImVisual );
-		if (SHOW_BG_REMOVAL == 1){
+		if (visParams->ShowBGremoval){
 			printf( "\t-Mostrando Background, Foreground, OldBackground... ");
 			cvShowImage("Background", frameData->BGModel);
 			cvShowImage( "Foreground",frameData->FG);
@@ -306,7 +306,7 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 								break;
 							case SHOW_PROCESS_IMAGES:
 								if( visParams->ShowProcessPhases){
-									cvShowImage( "Foreground", FrameDataOut->FG);
+									cvShowImage( "Foreground", frame);
 									cvWaitKey(0);
 								}
 								break;
@@ -320,7 +320,7 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 
 							case SHOW_VALIDATION_IMAGES :
 								if( visParams->ShowValidationPhases) {
-									cvShowImage( "Foreground",FrameDataOut->FG);
+									cvShowImage( "Foreground",frame);
 									cvWaitKey(0);
 								}
 								break;
@@ -546,7 +546,7 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 	//				cvLine( Imagen,B,C,CVX_WHITE,1,CV_AA, 0 );
 	//				cvLine( Imagen,C,A,CVX_WHITE,1,CV_AA, 0 );
 	//			}
-				muestrearPosicion( flies, 4 );
+	//			muestrearPosicion( flies, 4 );
 	//			Mat img(Imagen);
 	//			rectangle(img,
 	//					Point(fly->Roi.x,fly->Roi.y),
@@ -565,19 +565,19 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 						CVX_RED,
 						1, CV_AA, 0 );
 				// dirección de kalman
-				if(fly->Stats->EstadoTrack != 2){
+				if(fly->Estado == 4){
 					cvLine( Imagen,
 										fly->posicion,
 										cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
 												 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
-										CVX_GREEN,
+												 CVX_BLUE,
 										1, CV_AA, 0 );
 				}else{
 					cvLine( Imagen,
 							fly->posicion,
 							cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
 									 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
-							CVX_BLUE,
+									 CVX_GREEN,
 							1, CV_AA, 0 );
 				}
 				visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
@@ -1634,6 +1634,7 @@ CvVideoWriter* iniciarAvi(  char* nombreVideo, double fps){
 }
 
 void releaseVisParams( ){
+
 	free( visParams);
 	if(ImVisual) cvReleaseImage(&ImVisual);
 	ImVisual = NULL;

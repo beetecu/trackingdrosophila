@@ -16,6 +16,7 @@
 ///Parámetros Validación para procesado
 ValParams* valParams = NULL;
 BGModelParams* ValBGParams = NULL;
+
 ////////////////// VALIDACION /////////////////
 
 void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
@@ -23,7 +24,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 
 	//Inicializar estructura para almacenar los datos cada mosca
 	STFly *FlyData = NULL;
-	ValParamsPrivate* privateParams = NULL;
+
 
 	int Exceso;//Flag que indica si la Pxi minima no se alcanza por exceso o por defecto.
 	double Circul; // Para almacenar la circularidad del blob actual
@@ -35,7 +36,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 
 	// establecer los umbrales de resta iniciales
 
-	if (privateParams == NULL) {
+	if (valParams->privateParams == NULL) {
 		PrivateValParams(SH, &valParams->privateParams);
 	}
 
@@ -113,7 +114,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 				TempSeg = segmentacion2(Imagen, FrameData->BGModel,
 						FrameData->FG, FlyDataRoi, NULL);
 
-				DraWWindow(NULL, NULL, NULL, SHOW_VALIDATION_IMAGES, COMPLETO );
+				DraWWindow(FrameData->FG, NULL, NULL, SHOW_VALIDATION_IMAGES, COMPLETO );
 
 				// Comprobar si se ha conseguido dividir el blob y verificar si el resultado es optimo
 
@@ -121,7 +122,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 				if (TempSeg->numeroDeElementos < 1 || TempSeg == NULL) {
 					RestaurarElMejor(FrameData->Flies, FrameData->FG, MejorFly,
 							FlyDataRoi, i);
-					DraWWindow(NULL, NULL, NULL, SHOW_VALIDATION_IMAGES,
+					DraWWindow(FrameData->FG, NULL, NULL, SHOW_VALIDATION_IMAGES,
 							COMPLETO );
 					// liberar lista
 					liberarListaFlies(TempSeg);
@@ -154,7 +155,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 								MejorFly, FlyDataRoi, i);
 						//Restaurar(FrameData->Flies, FrameData->FG, Mask, FlyDataRoi, i);
 						liberarListaFlies(TempSeg);
-						DraWWindow(NULL, NULL, NULL, SHOW_VALIDATION_IMAGES,
+						DraWWindow(FrameData->FG, NULL, NULL, SHOW_VALIDATION_IMAGES,
 								COMPLETO );
 
 						break;
@@ -232,7 +233,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 				TempSeg = segmentacion2(Imagen, FrameData->BGModel,
 						FrameData->FG, newRoi, NULL);
 				//TempSeg = segmentacion(Imagen, FrameData, newRoi,NULL);
-				DraWWindow(NULL, NULL, NULL, SHOW_VALIDATION_IMAGES, COMPLETO );
+				DraWWindow(FrameData->FG, NULL, NULL, SHOW_VALIDATION_IMAGES, COMPLETO );
 
 				if (TempSeg == NULL || TempSeg->numeroDeElementos < 1)
 					continue;
@@ -250,7 +251,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 						== valParams->MaxDecLTHIters) {
 					// cuando deje de mejorar o bien se llegue al máximo de iteraciones
 					//nos quedamos con aquel que dio la mejor probabilidad. Lo insertamos en la lista en la misma posición.
-					DraWWindow(NULL, NULL, NULL, SHOW_VALIDATION_IMAGES,
+					DraWWindow(FrameData->FG, NULL, NULL, SHOW_VALIDATION_IMAGES,
 							COMPLETO );
 					sustituirEl(MejorFly, FrameData->Flies, i);
 					break;
@@ -889,9 +890,8 @@ void SetValidationParams() {
 									"Establecer por defecto %s a %0.1f \n",
 								settingName, settingName,
 								val);
-						valParams->Umbral_H = (float)val;
 					}
-
+					valParams->Umbral_H = (float)val;
 				}
 
 				sprintf(settingName, "Umbral_L");
@@ -915,6 +915,17 @@ void SetValidationParams() {
 								valParams->Umbral_L);
 					}
 					valParams->Umbral_L = (float)val;
+				}
+
+				sprintf(settingName, "Umbral_MinArea");
+				if (!config_setting_lookup_int(setting, settingName,
+						&valParams->Umbral_MinArea)) {
+					valParams->Umbral_MinArea = 0;
+					fprintf(
+							stderr,
+							"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+								"Establecer por defecto a %d \n",
+							settingName, valParams->Umbral_MinArea);
 				}
 
 				sprintf(settingName, "MaxIncLTHIters");
@@ -951,7 +962,7 @@ void SetValidationParams() {
 			}
 		}// fin comprobar auto hijos
 	} // fin lectura correcta fichero
-
+	valParams->privateParams = NULL;
 	ShowValParams(settingFather);
 
 	//	ShowStatsParams( settingFather );
@@ -965,10 +976,12 @@ void DefaultValParams() {
 	valParams->UmbralCirc = 0;
 	valParams->Umbral_H = 5; // Establece el tamaño máximo del blob válido en 5 desviaciones típicas de la media
 	valParams->Umbral_L = 5; // Establece el tamaño mínimo del blob válido en 1.5 desviaciones típicas de la media
+	valParams->Umbral_MinArea = 0; // Establece el tamaño mínimo del blob válido en base al área mínima permitida.
 	valParams->MaxDecLTHIters = 15; // número máximo de veces que se podrá decrementar el umbral bajo.
 	valParams->MaxIncLTHIters = 100; // número máximo de veces que se podrá incrementar el umbral bajo
 	valParams->MaxLowTH = 1000; // límite superior para el umbral bajo ( exceso )
 	valParams->MinLowTH = 1; // límite inferior para el umbral bajo ( defecto )
+	valParams->privateParams = NULL;
 
 }
 
@@ -997,7 +1010,7 @@ void PrivateValParams(SHModel* SH, ValParamsPrivate** privateParams) {
 		exit(1);
 	}
 	Params->PxiMax = CalcPxMax(SH, valParams->Umbral_H, NULL ); // establece la máxima probabilidad permitida para defecto.
-	Params->PxiMin = CalcPxMin(SH, valParams->Umbral_L, 10); // establece la mínima probabilidad permitida para exceso.
+	Params->PxiMin = CalcPxMin(SH, valParams->Umbral_L, valParams->Umbral_MinArea); // establece la mínima probabilidad permitida para exceso.
 	Params->HThInicio = ValBGParams->HIGHT_THRESHOLD;
 	Params->LThInicio = ValBGParams->LOW_THRESHOLD;
 	*privateParams = Params;
@@ -1017,8 +1030,9 @@ void ShowValParams(char* Campo) {
 	printf(" -K = %0.6f \n", ValBGParams->K);
 
 	printf(" -UmbralCirc = %d \n", valParams->UmbralCirc);
-	printf(" -BG_Update = %0.1f \n", valParams->Umbral_H);
-	printf(" -Umbral_H = %0.1 \n", valParams->Umbral_L);
+	printf(" -Umbral_H = %0.1f \n", valParams->Umbral_H);
+	printf(" -Umbral_L = %0.1f \n", valParams->Umbral_L);
+	printf(" -Umbral_MinArea = %d \n", valParams->Umbral_MinArea);
 	printf(" -MaxDecLTHIters = %d \n", valParams->MaxDecLTHIters);
 	printf(" -MaxIncLTHIters = %d \n", valParams->MaxIncLTHIters);
 	printf(" -MaxLowTH = %d \n", valParams->MaxLowTH);
