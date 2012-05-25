@@ -44,6 +44,7 @@
 #define TRAKING 13
 
 #define SHOW_STATS_MOV 14
+#define TOTAL_FRAMES 15
 
 #define CENTRAR cvPoint(-1,-1)
 #define CENTRAR_SUP cvPoint(-2, -2 )
@@ -57,6 +58,7 @@
 
 typedef struct {
 	// Public
+	int RecWindow;						/// Switch GENERAL de 0 a 1 para activar la grabación de la ventana de visualización
 	int ShowWindow ; 					/// Switch GENERAL de 0 a 1 para mostrar la ventana de visualización
 											/// NOTA:Los siguientes parámetros no se tendrán en cuenta si no se activa
 	int ShowPresent  ;				/// Switch de 0 a 1 para visualizar presentacion inicial.
@@ -91,9 +93,9 @@ typedef struct {
 	int ShowStatsMov;
 
 	//Private
+	int TotalFrames;
 	bool pause;
 	bool stop;
-	bool RecWindow;
 	bool pasoApaso;
 	int VisualPos;
 	CvSize Resolucion;
@@ -109,11 +111,11 @@ typedef struct {
 /// Crea las ventanas de visualización e iniciar parámetros
 void CreateWindows(IplImage* ImRef);
 
-void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS );
+void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS, int TotalFrames );
 
 void SetDefaultHightGUIParams(  IplImage* ImRef );
 
-void SetPrivatetHightGUIParams(  IplImage* ImRef );
+void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames );
 
 int obtenerVisParam( int type );
 

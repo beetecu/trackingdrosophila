@@ -23,7 +23,7 @@ tlcde* vectorSumFr = NULL;
 STStatFrame* Stats = NULL;
 
 
-void CalcStatsFrame(STFrame* frameDataOut ){
+void CalcStatsFrame(STFrame* frameDataOut, ConvUnits* convUnits ){
 
 	struct timeval ti;
 	float TiempoParcial;
@@ -38,13 +38,15 @@ void CalcStatsFrame(STFrame* frameDataOut ){
 
 #endif
 
-	// Inicializar estadísticas para el nuevo frame
 	 if( statsParams->CalcStatsMov) {
 		 frameDataOut->Stats = InitStatsFrame(  frameDataOut->GStats->fps );
 		 // Blobs en movimiento
 		 statsBloB( frameDataOut );
-		// cálculos estadísticos del movimiento de los blobs en conjunto
+		 // cálculos estadísticos del movimiento de los blobs en conjunto
 		 statsBlobS( frameDataOut );
+		 // Normalizar
+		 normalizeStatsBlobS( convUnits->pfTOmms); // pasar a unidades del sistema internacional
+		 normalizeStatsFlies( frameDataOut->Flies, convUnits );
 	 }
 
 #ifdef MEDIR_TIEMPOS
@@ -86,36 +88,36 @@ STStatFrame* InitStatsFrame(  int fps){
 	Stats->dinamicBlobs= 0; //!< blobs en movimiento en tanto por ciento
 	Stats->TotalBlobs= 0; //!< Número total de blobs.
 
-	Stats-> CMov1SMed = 0;  //!< Cantidad de movimiento medio en los últimos 30 seg.
-	Stats-> CMov1SDes = 0;
-	Stats-> CMov30SMed = 0;  //!< Cantidad de movimiento medio en los últimos 30 seg.
-	Stats-> CMov30SDes = 0;
-	Stats-> CMov1Med = 0;  //!< Cantidad de movimiento medio en el último min.
-	Stats-> CMov1Des = 0;
-	Stats-> CMov5Med = 0;  //!< Cantidad de movimiento medio en los últimos 5 min.
-	Stats-> CMov5Des = 0;
-	Stats-> CMov10Med = 0;  //!< Cantidad de movimiento medio en los últimos 10 min.
-	Stats-> CMov10Des = 0;
-	Stats-> CMov15Med = 0;  //!< Cantidad de movimiento medio en los últimos 15 min.
-	Stats-> CMov15Des = 0;
-	Stats-> CMov30Med = 0;  //!< Cantidad de movimiento medio en los últimos 30 min.
-	Stats-> CMov30Des = 0;
+	Stats->CMov1SMed = 0;  //!< Cantidad de movimiento medio en los últimos 30 seg.
+	Stats->CMov1SDes = 0;
+	Stats->CMov30SMed = 0;  //!< Cantidad de movimiento medio en los últimos 30 seg.
+	Stats->CMov30SDes = 0;
+	Stats->CMov1Med = 0;  //!< Cantidad de movimiento medio en el último min.
+	Stats->CMov1Des = 0;
+	Stats->CMov5Med = 0;  //!< Cantidad de movimiento medio en los últimos 5 min.
+	Stats->CMov5Des = 0;
+	Stats->CMov10Med = 0;  //!< Cantidad de movimiento medio en los últimos 10 min.
+	Stats->CMov10Des = 0;
+	Stats->CMov15Med = 0;  //!< Cantidad de movimiento medio en los últimos 15 min.
+	Stats->CMov15Des = 0;
+	Stats->CMov30Med = 0;  //!< Cantidad de movimiento medio en los últimos 30 min.
+	Stats->CMov30Des = 0;
 	Stats->CMov1HMed = 0;  //!< Cantidad de movimiento medio en la última hora.
-	Stats-> CMov1HDes = 0;
-	Stats-> CMov2HMed = 0;	//!< Cantidad de movimiento medio en  últimas 2 horas.
-	Stats-> CMov2HDes = 0;
+	Stats->CMov1HDes = 0;
+	Stats->CMov2HMed = 0;	//!< Cantidad de movimiento medio en  últimas 2 horas.
+	Stats->CMov2HDes = 0;
 	Stats->CMov4HMed = 0;
-	Stats-> CMov4HDes = 0;
+	Stats->CMov4HDes = 0;
 	Stats->CMov8HMed = 0; //!<//!< Cantidad de movimiento medio en  últimas 2 horas.
-	Stats-> CMov8HDes = 0;
+	Stats->CMov8HDes = 0;
 	Stats->CMov16HMed = 0;
-	Stats-> CMov16HDes = 0;
+	Stats->CMov16HDes = 0;
 	Stats->CMov24HMed = 0;
-	Stats-> CMov24HDes = 0;
+	Stats->CMov24HDes = 0;
 	Stats->CMov48HMed = 0;
-	Stats-> CMov48HDes = 0;
+	Stats->CMov48HDes = 0;
 	Stats->CMovMedio = 0;
-	Stats-> CMovMedioDes = 0;
+	Stats->CMovMedioDes = 0;
 
 	return Stats;
 }
@@ -257,91 +259,91 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 		Stats->CMov1SMed   =  Coef->F1SSum / Coef->F1S; // cálculo de la media
 		Stats->CMov1SDes  =  sqrt( abs(Coef->F1SSum2 / Coef->F1S - Stats->CMov1SMed*Stats->CMov1SMed ) ); // cálculo de la desviación
 	}
-	if(vector->numeroDeElementos > Coef->F30S){
+	if((unsigned)vector->numeroDeElementos > Coef->F30S){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F30S, vectorSumFr );
 		Coef->F30SSum = Coef->F30SSum - valor->sum; // sumatorio para la media
 		Coef->F30SSum2 = Coef->F30SSum2 - (valor->sum*valor->sum);  // sumatorio para la varianza
 		Stats->CMov30SMed  =  Coef->F30SSum / Coef->F30S;
 		Stats->CMov30SDes  =  sqrt( abs(Coef->F30SSum2 / Coef->F30S - Stats->CMov30SMed*Stats->CMov30SMed ));
 	}
-	if(vector->numeroDeElementos > Coef->F1){
+	if((unsigned)vector->numeroDeElementos > Coef->F1){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F1, vectorSumFr );
 		Coef->F1Sum = Coef->F1Sum - valor->sum;
 		Coef->F1Sum2 = Coef->F1Sum2 - (valor->sum*valor->sum);
 		Stats->CMov1Med    =  Coef->F1Sum / Coef->F1;
 		Stats->CMov1Des    =  sqrt( abs(Coef->F1Sum2 / Coef->F1 -  Stats->CMov1Med *Stats->CMov1Med )) ;
 	}
-	if(vector->numeroDeElementos > Coef->F5){
+	if((unsigned)vector->numeroDeElementos > Coef->F5){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F5, vectorSumFr );
 		Coef->F5Sum = Coef->F5Sum - valor->sum;
 		Coef->F5Sum2 = Coef->F5Sum2 - (valor->sum*valor->sum);
 		Stats->CMov5Med    =  Coef->F5Sum / Coef->F5;
 		Stats->CMov5Des    =  sqrt( abs(Coef->F5Sum2 / Coef->F5 - Stats->CMov5Med *Stats->CMov5Med ));
 	}
-	if(vector->numeroDeElementos > Coef->F10){
+	if((unsigned)vector->numeroDeElementos > Coef->F10){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F10, vectorSumFr );
 		Coef->F10Sum = Coef->F10Sum - valor->sum;
 		Coef->F10Sum2 = Coef->F10Sum2 - (valor->sum*valor->sum);
 		Stats->CMov10Med   =  Coef->F10Sum / Coef->F10;
 		Stats->CMov10Des   =  sqrt( abs(Coef->F10Sum2 / Coef->F10 - Stats->CMov10Med*Stats->CMov10Med));
 	}
-	if(vector->numeroDeElementos > Coef->F15){
+	if((unsigned)vector->numeroDeElementos > Coef->F15){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F15, vectorSumFr );
 		Coef->F15Sum = Coef->F15Sum - valor->sum;
 		Coef->F15Sum2 = Coef->F15Sum2 - (valor->sum*valor->sum);
 		Stats->CMov15Med   =  Coef->F15Sum / Coef->F15;
 		Stats->CMov15Des   =  sqrt( abs(Coef->F15Sum2 / Coef->F15 - Stats->CMov15Med*Stats->CMov15Med));
 	}
-	if(vector->numeroDeElementos > Coef->F30){
+	if((unsigned)vector->numeroDeElementos > Coef->F30){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F30, vectorSumFr );
 		Coef->F30Sum = Coef->F30Sum - valor->sum;
 		Coef->F30Sum2 = Coef->F30Sum2- (valor->sum*valor->sum);
 		Stats->CMov30Med   =  Coef->F30Sum / Coef->F30;
 		Stats->CMov30Des   =  sqrt( abs(Coef->F30Sum2 / Coef->F30 - Stats->CMov30Med*Stats->CMov30Med));
 	}
-	if(vector->numeroDeElementos > Coef->F1H){
+	if((unsigned)vector->numeroDeElementos > Coef->F1H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F1H, vectorSumFr );
 		Coef->F1HSum = Coef->F1HSum - valor->sum;
 		Coef->F1HSum2 = Coef->F1HSum2 - (valor->sum*valor->sum);
 		Stats->CMov1HMed   =  Coef->F1HSum / Coef->F1H;
 		Stats->CMov1HDes   =  sqrt( abs(Coef->F1HSum2 / Coef->F1H - Stats->CMov1HMed*Stats->CMov1HMed));
 	}
-	if(vector->numeroDeElementos > Coef->F2H){
+	if((unsigned)vector->numeroDeElementos > Coef->F2H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F2H, vectorSumFr );
 		Coef->F2HSum = Coef->F2HSum - valor->sum;
 		Coef->F2HSum2 = Coef->F2HSum2 - (valor->sum*valor->sum);
 		Stats->CMov2HMed   =  Coef->F2HSum / Coef->F2H;
 		Stats->CMov2HDes   =  sqrt( abs(Coef->F2HSum2 / Coef->F2H - Stats->CMov2HMed*Stats->CMov2HMed));
 	}
-	if(vector->numeroDeElementos > Coef->F4H){
+	if((unsigned)vector->numeroDeElementos > Coef->F4H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F4H, vectorSumFr );
 		Coef->F4HSum = Coef->F4HSum - valor->sum;
 		Coef->F4HSum2 = Coef->F4HSum2- (valor->sum*valor->sum);
 		Stats->CMov4HMed   =  Coef->F4HSum / Coef->F4H;
 		Stats->CMov4HDes   =  sqrt( abs(Coef->F4HSum2 / Coef->F4H - Stats->CMov4HMed*Stats->CMov4HMed));
 	}
-	if(vector->numeroDeElementos > Coef->F8H){
+	if((unsigned)vector->numeroDeElementos > Coef->F8H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F8H, vectorSumFr );
 		Coef->F8HSum = Coef->F48HSum - valor->sum;
 		Coef->F8HSum2 = Coef->F8HSum2 - (valor->sum*valor->sum);
 		Stats->CMov8HMed   = Coef->F8HSum / Coef->F8H;
 		Stats->CMov8HDes   =  sqrt( abs(Coef->F8HSum2 / Coef->F8H - Stats->CMov8HMed*Stats->CMov8HMed));
 	}
-	if(vector->numeroDeElementos > Coef->F16H){
+	if((unsigned)vector->numeroDeElementos > Coef->F16H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F16H, vectorSumFr );
 		Coef->F16HSum = Coef->F16HSum - valor->sum;
 		Coef->F16HSum2 = Coef->F16HSum2 - (valor->sum*valor->sum);
 		Stats->CMov16HMed   = Coef->F16HSum / Coef->F16H;
 		Stats->CMov16HDes  =  sqrt( abs(Coef->F16HSum2 / Coef->F16H - Stats->CMov16HMed*Stats->CMov16HMed));
 	}
-	if(vector->numeroDeElementos > Coef->F24H){
+	if((unsigned)vector->numeroDeElementos > Coef->F24H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F24H, vectorSumFr );
 		Coef->F24HSum = Coef->F24HSum - valor->sum;
 		Coef->F24HSum2 = Coef->F24HSum2 - (valor->sum*valor->sum);
 		Stats->CMov24HMed   = Coef->F24HSum / Coef->F24H;
 		Stats->CMov24HDes  =  sqrt( abs(Coef->F24HSum2 / Coef->F24H - Stats->CMov24HMed*Stats->CMov24HMed));
 	}
-	if(vector->numeroDeElementos > Coef->F48H){
+	if((unsigned)vector->numeroDeElementos > Coef->F48H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F48H, vectorSumFr );
 		Coef->F48HSum = Coef->F48HSum - valor->sum;
 		Coef->F48HSum2 = Coef->F48HSum2 - (valor->sum*valor->sum);
@@ -380,6 +382,62 @@ void iniciarMedias( STStatFrame* Stats, unsigned int valor ){
 	Coef->F16HSum2 = 0;
 	Coef->F24HSum2 = 0;
 	Coef->F48HSum2 = 0;
+
+}
+
+void normalizeStatsBlobS( float k){
+
+
+	Stats->CMov1SMed = Stats->CMov1SMed * k;  //!< Cantidad de movimiento medio en los últimos 30 seg.
+	Stats->CMov1SDes = Stats->CMov1SDes * k;
+	Stats->CMov1SDes = Stats->CMov1SDes * k;  //!< Cantidad de movimiento medio en los últimos 30 seg.
+	Stats->CMov30SDes =Stats->CMov30SDes * k;
+	Stats->CMov1Med = Stats->CMov1Med * k;  //!< Cantidad de movimiento medio en el último min.
+	Stats->CMov1Des = Stats->CMov1Des * k;
+	Stats->CMov5Med = Stats->CMov5Med * k;  //!< Cantidad de movimiento medio en los últimos 5 min.
+	Stats->CMov5Des = Stats->CMov5Des * k;
+	Stats->CMov10Med = Stats->CMov10Med * k;  //!< Cantidad de movimiento medio en los últimos 10 min.
+	Stats->CMov10Des = Stats->CMov10Des * k;
+	Stats->CMov15Med = Stats->CMov15Med * k;  //!< Cantidad de movimiento medio en los últimos 15 min.
+	Stats->CMov15Des = Stats->CMov15Des * k;
+	Stats->CMov30Med = Stats->CMov30Med * k;  //!< Cantidad de movimiento medio en los últimos 30 min.
+	Stats->CMov30Des = Stats->CMov30Des * k;
+	Stats->CMov1HMed = Stats->CMov1HMed * k;  //!< Cantidad de movimiento medio en la última hora.
+	Stats->CMov1HDes = Stats->CMov1HDes * k;
+	Stats->CMov2HMed = Stats->CMov2HMed * k;	//!< Cantidad de movimiento medio en  últimas 2 horas.
+	Stats->CMov2HDes = Stats->CMov2HDes * k;
+	Stats->CMov4HMed = Stats->CMov4HMed * k ;
+	Stats->CMov4HDes = Stats->CMov4HDes * k;
+	Stats->CMov8HMed = Stats->CMov8HMed * k ; //!<//!< Cantidad de movimiento medio en  últimas 2 horas.
+	Stats->CMov8HDes = Stats->CMov8HDes * k;
+	Stats->CMov16HMed = Stats->CMov16HMed * k;
+	Stats->CMov16HDes = Stats->CMov16HDes * k;
+	Stats->CMov24HMed = Stats->CMov24HMed * k;
+	Stats->CMov24HDes = Stats->CMov24HDes * k;
+	Stats->CMov48HMed = Stats->CMov48HMed * k;
+	Stats->CMov48HDes = Stats->CMov48HDes * k;
+	Stats->CMovMedio = Stats->CMovMedio * k;
+	Stats->CMovMedioDes = Stats->CMovMedioDes * k;
+
+}
+
+void normalizeStatsFlies( tlcde* Flies, ConvUnits* convUnits ){
+
+	STFly* Fly;
+
+	if( Flies->numeroDeElementos > 0) irAlPrincipio( Flies );
+	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
+
+		Fly = (STFly*)obtenerActual( Flies );
+		if(Fly->etiqueta>0){
+			Fly->Stats->EstadoBlobCount = Fly->Stats->EstadoBlobCount * convUnits->fTOsec;
+			Fly->Stats->CountActiva = Fly->Stats->CountActiva * convUnits->fTOsec;
+			Fly->Stats->CountPasiva = Fly->Stats->CountPasiva * convUnits->fTOsec;
+			Fly->dstTotal = Fly->dstTotal * convUnits->pixelTOmm / 10;  // a cm
+			Fly->Stats->CMov1SMed =  Fly->Stats->CMov1SMed * convUnits->pfTOmms;
+		}
+		irAlSiguiente( Flies);
+	}
 
 }
 

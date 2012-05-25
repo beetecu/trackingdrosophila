@@ -38,7 +38,7 @@ char nombreVideo[30];
 int main(int argc, char* argv[]) {
 
 	//  CAPTURA  //
-	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
+ 	CvCapture* g_capture = NULL;/// puntero a una estructura de tipo CvCapture
 
 	IplImage* frame;
 
@@ -65,9 +65,8 @@ int main(int argc, char* argv[]) {
 
 	SetPreProcesParams(  );
 	SetProcesParams(  );
-	SetTrackingParams(  );
 	SetStatsParams( (int)GParams->FPS );
-	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS);
+	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS, GParams->TotalFrames);
 
 	////////// PRESENTACIÓN ////////////////
 	DraWWindow( NULL,NULL, NULL, SHOW_PRESENT, 0  );
@@ -75,10 +74,12 @@ int main(int argc, char* argv[]) {
 	//////////  PREPROCESADO   ////////////
 	if (!PreProcesado( argv[1], &BGModel, &Shape) )  Finalizar(&g_capture);
 
+	//////////  CALIBRADO      ////////////
+	GParams->CalParams = calibrado( BGModel->PRadio );
 	/////////	PROCESADO   ///////////////
 	printf("\n\nIniciando procesado...\n");
 	Transicion("Iniciando Tracking...", 1,1000, 50 );
-	//NumFrame = 0;
+	SetTrackingParams( GParams->CalParams );
 
 	/*********** BUCLE PRINCIPAL DEL ALGORITMO ***********/
 	for( int i = 0; i < GParams->InitDelay; i++ )	frame = cvQueryFrame( g_capture );	// retardo al inicio
@@ -107,7 +108,7 @@ int main(int argc, char* argv[]) {
 		FrameDataOut = Tracking( FrameDataIn, 10, BGModel,GParams->FPS );
 
 		////////// ESTADISTICAS //////////
-		CalcStatsFrame( FrameDataOut );
+		CalcStatsFrame( FrameDataOut, GParams->CalParams );
 
 		//////////  VISUALIZAR  //////////
 //			VisualizarFr( FrameDataOut , BGModel, VWriter );
@@ -246,6 +247,7 @@ void SetGlobalConf(  CvCapture* Cap ){
 
 
 	}
+	GParams->CalParams = NULL;
 	ShowParams( settingFather );
 	config_destroy(&cfg);
 }
@@ -261,6 +263,29 @@ int SetDefaultGlobalParams(  CvCapture* Cap ){
 	GParams->InitDelay = 50	;
 	GParams->MedirTiempos = false ;
 	return 1;
+}
+
+ConvUnits* calibrado( int PRadio ){
+
+	ConvUnits* calParams = NULL;
+
+	calParams = ( ConvUnits *) malloc( sizeof( ConvUnits ) );
+	if(!calParams) {error(4); exit(1);}
+
+	if( GParams->MaxFlat){
+		calParams->mmTOpixel = 2*PRadio/GParams->MaxFlat;
+		calParams->pixelTOmm =  GParams->MaxFlat/(2*PRadio);
+	}
+	else {
+		calParams->mmTOpixel = 0;
+		calParams->pixelTOmm = 0;
+	}
+	calParams->FPS = GParams->FPS;
+	calParams->fTOsec = 1/(float)GParams->FPS;
+	calParams->pfTOmms = calParams->FPS*calParams->pixelTOmm; // pixel/frame a mm/s
+	if (calParams->mmTOpixel) calParams->mmsTOpf = calParams->mmTOpixel*calParams->fTOsec ; // la inversa
+	else calParams->mmsTOpf = 0;
+	return calParams;
 }
 
 void ShowParams( char* Campo ){
@@ -279,6 +304,7 @@ void Finalizar(CvCapture **g_capture){
 	CvCapture *capture;
 
 	// liberar parámetros globales de configuración
+	free(GParams->CalParams);
 	free( GParams);
 	// liberar imagenes y datos de preprocesado
 	releaseDataPreProcess();

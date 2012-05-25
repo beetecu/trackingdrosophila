@@ -57,7 +57,9 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	if( frameDataIn->num_frame == 1456 ){
 								printf("hola");
 							}
+
 	asignarIdentidades( lsTracks,frameDataIn->Flies);
+
 	ordenarTracks( lsTracks );
 #ifdef MEDIR_TIEMPOS
 	tiempoParcial= obtenerTiempo( ti, 0);
@@ -68,7 +70,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 
 	/////////////// ELIMIRAR FALSOS TRACKS ///
 	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
-	// y unicas. Si no es así se considera un trackDead:
+	// y unicas. Si no es así será un trackDead originado por ruido:
 	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, trackParams->MaxBlobs, frameDataIn->num_frame );
 
 	/////////////// FILTRO DE KALMAN //////////////
@@ -131,7 +133,7 @@ int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxT
 			// eliminar los tracks creados en t y sin asignación en t+1
 			if( falsoTrack( Track, numFrame ) ){
 				dejarId( Track, identities );
-				reasignarTracks(lsTracks, framesBuf, identities, NULL, i);
+				reasignarTracks(lsTracks, framesBuf, identities, -1, i);
 				deadTrack( lsTracks, i );
 			}
 			// validar tracks.
@@ -228,25 +230,26 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 	// si fuese 0 se pisaría a despertarTrack
 	frameData1 = (STFrame*)obtener(framesBuf->numeroDeElementos-1, framesBuf);
 
-
+//	irAlPrincipio( lsTracks);
 	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 		// obtener Track// de los durmiendo, buscamos asignar en primer lugar el de etiqueta más baja.
 		// damos prioridad a los menores o iguales a maxTrack, como están en orden, recorremos la lista
 		// en orden
+
 		SleepingTrack = (STTrack*)obtener(i, lsTracks);
 //		if( SleepingTrack->Stats->Estado == SLEEPING &&
 //						SleepingTrack->id <= trackParams->MaxBlobs &&
 //						SleepingTrack->EstadoCount == MAX_BUFFER )
 
 		if( SleepingTrack->Stats->Estado == SLEEPING &&
-				SleepingTrack->Stats->EstadoCount == trackParams->MaxBuffer-1 ){
+				SleepingTrack->Stats->EstadoCount >= trackParams->MaxBuffer-1 ){ //todo antes era ==
 			// intentamos asignarle un nuevo track
 			// damos prioridad a los que tengan la menor etiqueta frente a los más altos,
-				// que es lo  mismo que escojer el nuevo track más antiguo
+			// que es lo  mismo que escojer el nuevo track más antiguo
 			int ultimo = 0;
 
 			for( int j = 0;j < lsTracks->numeroDeElementos ; j++){
-				// de los nuevos asignamos el más antiguo
+				// de los nuevos asignaremos el que lleve más tiempo vivo.
 				NewTrack = (STTrack*)obtener(j, lsTracks);
 				tiempoVivo = frameData1->num_frame - NewTrack->Stats->InitTime;
 				if( tiempoVivo < trackParams->MaxBuffer && tiempoVivo > ultimo ){
@@ -320,30 +323,37 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 	int posInit; // posición del buffer desde la que se inicia la correción
 
 	// obtener Track//
+
 	SleepingTrack = (STTrack*)obtener(viejo, lsTracks);
 	if(nuevo != -1) NewTrack= (STTrack*)obtener(nuevo, lsTracks);// Limpiar datos del track y su blob
-	if(NewTrack == NULL){ // en caso de que no haya nuevo track, se trata de eliminar el antiguo y su fly
-		posInit = (framesBuf->numeroDeElementos-1) -  NewTrack->Stats->FrameCount  ;
+	if(NewTrack == NULL){ // en caso de que no haya nuevo track, se trata de eliminar la fly del viejo del buffer
+		posInit = (framesBuf->numeroDeElementos-1) -  SleepingTrack->Stats->FrameCount  ;
 		if(posInit < 0) posInit = 0;
+		// eliminamos del buffer los datos de su fly.
+		irAl( posInit,framesBuf);
 		for( int i = posInit; i < framesBuf->numeroDeElementos; i++ ){
 				// obtener frame
-				frameData1 = (STFrame*)obtener(i, framesBuf);
+				frameData1 = (STFrame*)obtenerActual( framesBuf);
+				//frameData1 = (STFrame*)obtener(i, framesBuf);
+				irAlPrincipio( frameData1->Flies);
 				for( int j = 0;j < frameData1->Flies->numeroDeElementos ; j++){
-					Fly = (STFly*)obtener(j, frameData1->Flies);
+					Fly = (STFly*)obtenerActual( frameData1->Flies);
 					if( Fly->etiqueta == SleepingTrack->id ){
-						borrarEl(j,frameData1->Flies);
+						borrar(frameData1->Flies);
 						if (Fly->Tracks ) free(Fly->Tracks);
 						if (Fly->Stats) free(Fly->Stats);
 						free(Fly); // borrar el área de datos del elemento eliminado
 					}
+					irAlSiguiente( frameData1->Flies);
 				}
+				irAlSiguiente( framesBuf);
 		}
 
 	}
 	else{ // se actualiza el nuevo con los datos del antiguo y se continua con el nuevo
 		// obtener posición desde la que se corrige la id
 		posInit = framesBuf->numeroDeElementos -  NewTrack->Stats->FrameCount ;
-		// corregir buffer
+		// corregir buffer. No se eliminan los datos de la fly, sino que se actualizan
 		if(posInit < 0) posInit = 0;
 		// Usar la etiqueta, no fly sig, ya que sino se pisaría la etiqueta 0 ( KAM_CONTROL )
 		for( int i = posInit; i < framesBuf->numeroDeElementos; i++ ){
@@ -362,7 +372,7 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 		NewTrack->id = SleepingTrack->id;
 		NewTrack->Color = SleepingTrack->Color;
 		NewTrack->Stats->dstTotal = SleepingTrack->Stats->dstTotal + NewTrack->Stats->dstTotal;
-		NewTrack->Stats->FrameCount = SleepingTrack->Stats->FrameCount + NewTrack->Stats->FrameCount;
+		NewTrack->Stats->FrameCount = SleepingTrack->Stats->FrameCount;
 		NewTrack->Stats->InitTime = SleepingTrack->Stats->InitTime;
 		NewTrack->Stats->InitPos = SleepingTrack->Stats->InitPos;
 		NewTrack->Stats->TimeBlobOff = SleepingTrack->Stats->TimeBlobOff + NewTrack->Stats->TimeBlobOff;
@@ -390,7 +400,7 @@ void ordenarTracks( tlcde* lsTracks ){
 	}
 }
 
-void SetTrackingParams(  ){
+void SetTrackingParams( ConvUnits* calParams ){
 
     //init parameters
 	config_t cfg;
@@ -453,6 +463,7 @@ void SetTrackingParams(  ){
 	 * a los valores por defecto.
 	 */
 	else{
+		double val;
 		 /* Get the store name. */
 		sprintf(settingName,"MaxBlobs");
 		if(! config_setting_lookup_int ( setting, settingName, &trackParams->MaxBlobs )  ){
@@ -492,11 +503,27 @@ void SetTrackingParams(  ){
 							"Establecer por defecto a %d \n",settingName,trackParams->NumberOfIdentities);
 		}
 
-		sprintf(settingName,"PeriodoVelMed");
-		if(! config_setting_lookup_int ( setting, settingName, &trackParams->PeriodoVelMed )  ){
-			trackParams->PeriodoVelMed = 15 ;
-			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
-							"Establecer por defecto a %d \n",settingName,trackParams->PeriodoVelMed );
+		sprintf(settingName, "PeriodoVelMed");
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+			trackParams->PeriodoVelMed = 60;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %d \n",
+					settingName, trackParams->PeriodoVelMed);
+
+		} else if(!val	|| val < 0 ){
+
+				trackParams->PeriodoVelMed = 60;
+				fprintf(stderr,
+						"El valor de %s está fuera de límites\n "
+							"Establecer por defecto %s a %0.1f \n",
+						settingName, settingName,
+						trackParams->PeriodoVelMed);
+		}
+		else{
+			trackParams->PeriodoVelMed = cvRound( (float)val * calParams->FPS); // a frames
 		}
 
 		sprintf(settingName,"MediumActivityTh");
@@ -524,9 +551,10 @@ void SetTrackingParams(  ){
 
 	}
 
-	SetPrivateTrackParams(  );
-
+	SetPrivateTrackParams( calParams );
 	ShowTrackParams( settingFather );
+	SetKalmanFilterParams( trackParams );
+
 	config_destroy(&cfg);
 }
 
@@ -537,7 +565,7 @@ void SetDefaultTrackParams(   ){
 	trackParams->MaxTimeSlept = 200;
 	trackParams->MaxBuffer = 50;
 	trackParams->NumberOfIdentities = 100;
-	trackParams->PeriodoVelMed = 15 ;
+	trackParams->PeriodoVelMed = 60 ;
 	trackParams->MediumActivityTh	= 2 ;
 	trackParams->LowActivityTh	= 0.5 ;
 	trackParams->NullActivityTh	= 0.2 ;
@@ -557,7 +585,7 @@ void ShowTrackParams( char* Campo ){
 
 }
 
-void SetPrivateTrackParams(  ){
+void SetPrivateTrackParams( ConvUnits* calParams  ){
 
 	/////////////// Inicializar /////////////////
 
@@ -582,7 +610,12 @@ void SetPrivateTrackParams(  ){
 		iniciarLcde( lsTracks );
 	}
 
-
+	trackParams->fTOsec = calParams->fTOsec;
+	trackParams->mmTOpixel = calParams->mmTOpixel;
+	trackParams->pixelTOmm = calParams->pixelTOmm;
+	trackParams->pfTOmms = calParams->pfTOmms; // s/ mmApixels = s * pixel a mm
+	trackParams->mmsTOpf = calParams->mmsTOpf ; // la inversa
+	trackParams->FPS = calParams->FPS;
 }
 
 void ReleaseDataTrack(  ){

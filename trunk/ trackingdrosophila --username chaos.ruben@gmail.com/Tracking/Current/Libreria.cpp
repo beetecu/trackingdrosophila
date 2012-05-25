@@ -43,6 +43,20 @@ float obtenerTiempo( timeval ti, int unidad ){
 	return tiempo;
 }
 
+void tiempoHMS( float sec , char* hms ){
+
+	int horas;
+	int minutos;
+	int segundos;
+
+	minutos = sec/60;
+	segundos = (int)sec%60;
+	horas = minutos/60;
+	minutos = (int)minutos%60;
+
+	sprintf(hms,"%d:%d:%d", horas,minutos,segundos);
+
+}
 ///////////////////// TRATAMIENTO DE IMAGENES //////////////////////////////
 
 int RetryCap( CvCapture* g_capture, IplImage* frame ){
