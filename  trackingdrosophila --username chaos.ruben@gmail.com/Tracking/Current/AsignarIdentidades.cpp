@@ -303,6 +303,8 @@ int buscarFlies(STFrame* frameData, CvRect MotionRoi, int *p) {
 
 tlcde* sleep_list = NULL;
 
+
+
 int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 
 	CvMat* CoorReal = cvCreateMat(1, 2, CV_32FC1);

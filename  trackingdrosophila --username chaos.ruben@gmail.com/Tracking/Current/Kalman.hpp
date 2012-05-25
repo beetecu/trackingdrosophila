@@ -74,6 +74,21 @@ typedef struct{
 
 				double NullActivityTh ;		// Establece el umbral de velocidad media (en mm/s) a partir de la cual se considerará
 													// que un blob tiene actividad INACTIVO
+				// Private
+
+//				ConvUnits* convUnits;
+				float mmTOpixel;			/// Unidad de conversión de mm a pixels.
+
+				float pixelTOmm;			/// Unidad de conversión de píxels a mm.
+
+				float fTOsec;				/// Unidad de conversión de frames a segundos.
+
+				float FPS;					/// Unidad de conversión de segundos a frames.
+
+				float pfTOmms;				/// Unidad de conversión de pixels/frame a mm/s.
+
+				float mmsTOpf;				/// Unidad de conversión de mm/s a pixels/frame.
+
 }TrackingParams;
 
 typedef struct{
@@ -135,6 +150,62 @@ typedef struct{
 
 }STTrack;
 
+typedef struct{
+
+	int Default; // swich para establecer valores por defecto
+	// componentes del vector Rk de covarianzas. Incertidumbre en la medida inicial : V->N( 0, Rk )
+	float R_x0;
+	float R_y0;
+	float R_Vx0;
+	float R_Vy0;
+	float R_phiZk0;
+	// componentes del vector Rk de covarianzas. Incertidumbre en la medida: V->N( 0, Rk )
+	float R_x;
+	float R_y;
+	float R_Vx;
+	float R_Vy;
+	float R_phiZk;
+}CamParams;
+
+typedef struct{
+	int Default; //
+	float Factor; // Variable que multiplica a la incertidumbre en la medida
+	// componentes del vector Rk de covarianzas. Incertidumbre en la medida: V->N( 0, Rk )
+	float R_x;
+	float R_y;
+	float R_Vx;
+	float R_Vy;
+	float R_phiZk;
+
+}KalParams;
+
+typedef struct{
+
+	float Velocidad;
+	float V_Angular;
+	float MaxJump;
+	int InitTime;
+
+	CamParams* Cam;
+	KalParams* Kal;
+
+	// private
+	// componentes del vector Xk. Predicciones
+	float x_Xk ;
+	float y_Xk ;
+	float vx_Xk ;
+	float vy_Xk ;
+	float phiXk ;
+
+	// variables para establecer la nueva medida
+	CvMat* H ;
+	float Vx ;
+	float Vy ;
+	int Ax; //incremento de x
+	int Ay; //incremento de y
+	float distancia; // sqrt( Ax² + Ay² )
+
+}FilterParams;
 
 /*!\brief En la primera iteración
  *-# Genera un track por cada blob ( un track por cada nueva etiqueta = -1 ) y los introduce en una lista doblemente enlazada
@@ -392,6 +463,14 @@ int deadTrack( tlcde* Tracks, int id );
 void visualizarKalman( STFrame* frameData, tlcde* lsTracks, bool dataOn);
 
 void showKalmanData( STTrack *Track);
+
+void SetKalmanFilterParams( TrackingParams* trackParams );
+
+void SetDefaultKFilterParams( TrackingParams* trackParams  );
+
+void ShowKalmanFilterParams( char* Campo );
+
+void SetPrivateKFilterParams(  );
 
 void DeallocateKalman( tlcde* lista );
 

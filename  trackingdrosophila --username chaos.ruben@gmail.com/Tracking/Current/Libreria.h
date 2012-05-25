@@ -25,6 +25,7 @@ void help();
 
 float obtenerTiempo( timeval ti, int unidad );
 int gettimeofday( struct timeval *tv, struct timezone *tz );
+void tiempoHMS( float sec , char* hms );
 
 #endif //_TIEMPOS_
 

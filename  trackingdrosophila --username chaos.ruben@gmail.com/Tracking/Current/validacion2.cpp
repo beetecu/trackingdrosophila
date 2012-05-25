@@ -172,8 +172,9 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 							FlyData = (STFly *) obtener(j, TempSeg);
 							anyadirAlFinal(FlyData, FrameData->Flies);
 						}
-						printf("\n Lista Flies tras FISION\n");
+
 						if (SHOW_VALIDATION_DATA)
+							printf("\n Lista Flies tras FISION\n");
 							mostrarFliesFrame(FrameData);
 						i--; // decrementar i para no saltarnos un elemento de la lista
 
@@ -1020,7 +1021,6 @@ void ShowValParams(char* Campo) {
 
 	printf(" \nVariables para el campo %s : \n", Campo);
 	printf(" -MODEL_TYPE = %d \n", ValBGParams->MODEL_TYPE);
-	printf(" -BG_Update = %d \n", ValBGParams->BG_Update);
 	printf(" -LOW_THRESHOLD = %d \n", ValBGParams->LOW_THRESHOLD);
 	printf(" -MORFOLOGIA = %d \n", ValBGParams->MORFOLOGIA);
 	printf(" -CVCLOSE_ITR = %d \n", ValBGParams->CVCLOSE_ITR);

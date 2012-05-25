@@ -29,8 +29,9 @@ int Inicializacion( int argc,
 			}
 		}
 		fprintf(stderr,"\nNo se ha especificado nombre para el fichero de video.\n ");
+		// leer de fichero de configuración
 		for( int i = 0; i < 1000; i++ ){
-			sprintf(nombreVideo,"Visual_%d.avi",i);
+			sprintf(nombreVideo,"Tracking_%d.avi",i);
 			if( !existe( nombreVideo) ){
 				fprintf(stderr,"Se estableció por defecto %s",nombreVideo);
 				break;

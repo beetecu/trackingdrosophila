@@ -134,14 +134,14 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 	Delay = 0; // retardo para iniciar la captura. Para descartar los primeros frames
 	count_update = Param->BG_Update-1;
 
-	int totalFrames = 0;
+	int totalFrames = obtenerVisParam( TOTAL_FRAMES );
 	totalFrames = cvGetCaptureProperty( t_capture, CV_CAP_PROP_FRAME_COUNT);
-	if(!totalFrames) totalFrames = getAVIFrames("Drosophila.avi"); // en algun linux no funciona lo anterior
-	int intervalJump = totalFrames/ Param->Jumps; // numero de frames entre cada posición de salto
+
+	int intervalJump = (totalFrames-Param->initDelay)/ (Param->Jumps+1); // numero de frames entre cada posición de salto
 
 	int jumpFrCount = 0; // contador del numero de frames para el salto.
 	int frForJump = 0;
-	if (Param->Jumps > 0 ) frForJump = cvRound(Param->FRAMES_TRAINING / Param->Jumps); // numero de frames por salto
+	frForJump = cvRound(Param->FRAMES_TRAINING / (Param->Jumps+1) ); // numero de frames por salto
 	double Seek = 0 + Param->initDelay ; // puntero a las partes del video donde se saltará
 
 	while( num_frames < Param->FRAMES_TRAINING ){
@@ -403,16 +403,10 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,Cv
 
 	// Se estima la mediana. Se actualiza el fondo usando la máscara.
 	// median(p)
-#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
-#endif
 	updateMedian( ImGray, BGMod, Imaskt, ROI );
 	if( Idesvf != NULL){
 		updateDesv( ImGray, BGMod, Idesvf, Imaskt, ROI, K );
 	}
-#ifdef	MEDIR_TIEMPOS
-	tiempoParcial = obtenerTiempo( ti , NULL);
-	printf("\t\tActualización de mediana: %5.4g ms\n", tiempoParcial);
-#endif
 	if( SHOW_BGMODEL_DATA ){
 		printf("\n\n Imagenes tras actualizar fondo" );
 		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
@@ -545,7 +539,8 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 		//			cvShowImage( "Background",bg_model);
 		//			cvWaitKey(0);
 	}
-#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 #endif
 	if(Param->MODEL_TYPE == MEDIAN || Param->MODEL_TYPE == MEDIAN_S_UP){
 		// Calcular (I(p)-u(p))/0(p) y umbralizar la diferencia
@@ -685,7 +680,6 @@ void FGCleanup( IplImage* FG, IplImage* DES, BGModelParams* Param, CvRect dataro
 		flag = false;
 		if( !DES){
 			for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
-				uchar* ptr0 = (uchar*) ( fgTemp->imageData + y*fgTemp->widthStep + ContROI.x);
 				uchar* ptr1 = (uchar*) ( Idif->imageData + y*Idif->widthStep + ContROI.x);
 				for (int x = 0; x < ContROI.width; x++){
 					if ( ptr1[x] > Param->HIGHT_THRESHOLD ){

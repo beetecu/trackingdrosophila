@@ -112,9 +112,9 @@ void SetPrivateStatsParams( int fps );
 
 void ShowStatsParams( char* Campo );
 
-void CalcStatsFrame( STFrame* frameDataOut );
+void CalcStatsFrame( STFrame* frameDataOut , ConvUnits* convUnits);
 
-STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS  );
+STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS );
 
 STStatFrame* InitStatsFrame(  int fps);
 
@@ -129,6 +129,10 @@ unsigned int sumFrame( tlcde* Flies );
 void mediaMovil(  STStatsCoef* Coef, tlcde* vector,  STStatFrame* Stats );
 
 void iniciarMedias( STStatFrame* Stats, unsigned int valor );
+
+void normalizeStatsBlobS( float k);
+
+void normalizeStatsFlies( tlcde* Flies, ConvUnits* convUnits );
 
 void releaseStats(  );
 

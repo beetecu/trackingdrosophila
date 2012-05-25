@@ -22,15 +22,16 @@
 //#ifndef PROTOTIPOS_DE_FUNCIONES
 //#define PROTOTIPOS_DE_FUNCIONES
 
+
 typedef struct{
 
-	double MaxFlat;	// - Este parámetro se usa para calibrar la cámara
+	double MaxFlat;				// - Este parámetro se usa para calibrar la cámara
 								// En caso de no introducir valor las medidas de las
 								// distacias serán en pixels. Una vez encontrado el
 								// plato, se usará su ancho en píxels y el valor aquí
 								// introducido para establecer los pixels por mm.
 
-	int FPS;		// tasa de frames por segundo del vídeo. Se usa para
+	int FPS;					// tasa de frames por segundo del vídeo. Se usa para
 								// para establecer la unidad de tiempo.
 								// NOTA:  En algunos videos la obtención de la tasa
 								// de frames es errónea, con el consiguiente error
@@ -41,7 +42,9 @@ typedef struct{
 								// observado dicho fallo con archivos *.wmv. Se recomienda
 								// codificar los vídeos con MPEG en cualquiera de sus formatos.
 								// Consultar documentación para mayor detalle.
-	double TotalFrames ;			// Número de frames que contiene el vídeo. Se usa para
+
+
+	double TotalFrames ;		// Número de frames que contiene el vídeo. Se usa para
 								// establecer el progreso y realizar los saltos en
 								// el modelo de fondo.
 
@@ -58,6 +61,11 @@ typedef struct{
 								// estadísticas y visualización)
 
 								// NOTA. Afecta al rendimiento.
+
+	// private params
+
+	ConvUnits* CalParams;		// parámetros de calibración.
+
 
 }GlobalConf;
 
@@ -86,6 +94,8 @@ void onMouse( int event, int x, int y, int, void* );
 void SetGlobalConf(  CvCapture* Cap );
 
 int SetDefaultGlobalParams(  CvCapture* Cap );
+
+ConvUnits* calibrado( int PRadio );
 
 void ShowParams( char* Campo );
 

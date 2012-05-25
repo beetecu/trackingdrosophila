@@ -34,7 +34,7 @@ using namespace std;
 
 // OPCIONES GENERALES DE PROGRAMA
 
-#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
+//#define MEDIR_TIEMPOS 1 // activa la medida de tiempos
 
 //OPCIONES DE VISUALIZACIÓN DE DATOS Y TIEMPOS DE PROCESOS EN CONSOLA
 
@@ -244,6 +244,22 @@ typedef struct {
 	float FlyAreaDes ; //!< Desviación típica de las areas de los blobs que se encuentran en movimiento en cada frame.
 }SHModel;
 
+/// Estructura con las unidades de conversión. Solo si se puede calibrar.
+typedef struct{
+
+	float mmTOpixel;			/// Unidad de conversión de mm a pixels.
+
+	float pixelTOmm;			/// Unidad de conversión de píxels a mm.
+
+	float fTOsec;				/// Unidad de conversión de frames a segundos.
+
+	float FPS;					/// Unidad de conversión de segundos a frames.
+
+	float pfTOmms;				/// Unidad de conversión de pixels/frame a mm/s.
+
+	float mmsTOpf;				/// Unidad de conversión de mm/s a pixels/frame.
+
+}ConvUnits;
 
 #endif /*Estructuras*/
 

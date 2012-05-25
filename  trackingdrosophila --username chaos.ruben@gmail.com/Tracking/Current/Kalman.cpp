@@ -10,7 +10,7 @@
 #include "Kalman.hpp"
 
 
-CvMat* CoordReal;
+
 CvMat* H ;
 
 // componentes del vector Zk con las nuevas medidas
@@ -41,6 +41,8 @@ int Ax; //incremento de x
 int Ay; //incremento de y
 float distancia; // sqrt( Ax² + Ay² )
 
+// Parámetros
+FilterParams* filterParams;
 //Imagenes
 IplImage* ImKalman = NULL;
 
@@ -57,7 +59,7 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 	if( !ImKalman ){
 		ImKalman = cvCreateImage(cvGetSize(frameData->ImKalman),8,3);
 		cvZero(ImKalman);
-		CoordReal = cvCreateMat(2,1,CV_32FC1);
+
 	}
 	cvZero(frameData->ImKalman);
 	if( lsTracks->numeroDeElementos > 0){
@@ -311,7 +313,8 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 		}
 		else{
 			// CORREGIR DIRECCIÓN.
-			//Sumar ó restar n vueltas para que la dif sea siempre <=180
+			//Sumar ó restar n vueltas a la nueva medida para que la dif entre ella
+			// y el valor filtrado sea siempre <=180
 			phiXk = Track->x_k_Pre->data.fl[4]; // valor filtrado de la direccion
 
 			if( abs(phiXk - phiZk ) > 180 ){
@@ -365,12 +368,13 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 	}
 	//1) Varias flies en un mismo blob
 	else if( EstadoTrack == KALMAN_CONTROL ){
-
-		R_x = Track->Flysig->Roi.width/2;
-		R_y = Track->Flysig->Roi.height/2;
-		R_Vx = 2*R_x;
-		R_Vy = 2*R_y;
-		R_phiZk = 1000;
+		if( filterParams->Kal->Default){
+			R_x = Track->Flysig->Roi.width/2;
+			R_y = Track->Flysig->Roi.height/2;
+			R_Vx = 2*R_x;
+			R_Vy = 2*R_y;
+			R_phiZk = 1000;
+		}
 	}
 	// INSERTAR RUIDO en kalman
 	// cargamos el error en la medida en el filtro para calcular la ganancia de kalman
@@ -454,6 +458,288 @@ float corregirTita( float phiXk, float tita ){
 		else tita = tita - 180;
 	}
 	return tita;
+}
+
+
+
+void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams ){
+
+	STTrack* Track;
+
+	if( lsTracks->numeroDeElementos < 1) return;
+	irAlPrincipio( lsTracks);
+	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
+		// obtener Track
+		Track = (STTrack*)obtenerActual( lsTracks);
+		// ACTUALIZAR TRACK
+		// actualizar estadísticas del track en base a su estado
+		updateStatsTrack( Track, trackParams );
+		// ETIQUETAR Y ACTUALIZAR FLY DEL TRACK
+		// en caso de Kalman_control se crea una mosca para simular la posición
+		updateFlyTracked( Track , Flies);
+
+		if ( Track->Stats->Estado == SLEEPING){
+			Track->FlyActual = NULL;
+			Track->Flysig = NULL;
+		}
+		else{
+			// Actualizar fly actual.
+			Track->FlyActual->siguiente = (STFly*)Track->Flysig;
+			// fly actual pasa a ser fly siguiente.
+			Track->FlyActual = Track->Flysig;
+			Track->Flysig = NULL;
+		}
+		irAlSiguiente( lsTracks);
+	}
+}
+
+void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
+
+	valorSumB* valor;
+
+	// actualizar contadores
+	if ( Track->Stats->Estado == SLEEPING){
+		Track->Stats->FrameCount ++;
+		Track->Stats->EstadoCount ++;
+		return;
+	}
+	Track->Stats->EstadoCount ++;
+	Track->Stats->FrameCount ++;
+	// calcular distancia y media movil para la velocidad
+
+	// para el caso kalman control, establecemos la distancia en base a la pos anterior y a la corregida (o a la predicha??)
+	if( Track->Stats->Estado == KALMAN_CONTROL){
+
+		float Ax = Track->x_k_Pos->data.fl[0] - Track->FlyActual->posicion.x;
+		float Ay = Track->x_k_Pos->data.fl[1] - Track->FlyActual->posicion.y;
+
+		//Establecemos la dirección phi y el modulo del vector de desplazamiento
+//		EUDistance( Track->x_k_Pos->data.fl[2], Track->x_k_Pos->data.fl[3], NULL, &Track->VInst );
+
+		EUDistance( Ax, Ay, NULL, &Track->VInst );
+	}
+	Track->Stats->dstTotal = Track->Stats->dstTotal + Track->VInst;
+	// calculamos la velocidad en T seg
+	  // al ser siempre  t = 1 frame, la distancia en pixels coincide con Vt
+	// Obtener el nuevo valor
+	valor =  ( valorSumB *) malloc( sizeof(valorSumB));
+	valor->sum = Track->VInst;
+	anyadirAlFinal( valor, Track->Stats->VectorSumB );
+//	calculo de la velocidad media de los  frames equivalentes al periodo establecido
+	mediaMovilFPS( Track->Stats, trackParams->PeriodoVelMed);
+	// si el vector llega a fps elementos eliminamos el primero.
+	if( Track->Stats->VectorSumB->numeroDeElementos > trackParams->PeriodoVelMed){
+		valor = (valorSumB*)liberarPrimero(  Track->Stats->VectorSumB );
+		free(valor);
+	}
+
+	// en función de la velocidad media anterior establecemos el estado del blob y actualizamos los contadores
+	SetStateBlobTracked( Track, trackParams );
+}
+
+void SetStateBlobTracked( STTrack* Track, TrackingParams* trackParams ){
+
+	float MovMed ;
+	// si se ha calibrado, medidas en mm/s
+	if( trackParams->pfTOmms) MovMed = Track->Stats->CMov1SMed*trackParams->pfTOmms;// de pixels/frame a mm/s
+	else MovMed = Track->Stats->CMov1SMed;
+
+	if( (MovMed >= 0)&&(Track->Stats->CMov1SMed <= trackParams->NullActivityTh) ) {
+		if( Track->Stats->EstadoBlob != 0 ){
+			Track->Stats->EstadoBlobCount = 0;
+		}
+		Track->Stats->TimeBlobOff +=1;
+		Track->Stats->EstadoBlob = 0; // actividad nula
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if( (MovMed > trackParams->NullActivityTh)&&(MovMed <= trackParams->LowActivityTh) ){
+		if( Track->Stats->EstadoBlob != 1 ){
+			Track->Stats->EstadoBlobCount = 0;
+		}
+		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->EstadoBlob = 1;  // actividad baja
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if(( MovMed > trackParams->LowActivityTh)&&(MovMed <= trackParams->MediumActivityTh) ){
+		if( Track->Stats->EstadoBlob != 2 ){
+			Track->Stats->EstadoBlobCount = 0;
+		}
+		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->EstadoBlob = 2;  // actividad Media
+		Track->Stats->EstadoBlobCount += 1;
+	}
+	else if( MovMed > trackParams->MediumActivityTh){
+		if( Track->Stats->EstadoBlob != 3 ){
+			Track->Stats->EstadoBlobCount = 0; // Actividad alta
+		}
+		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->EstadoBlob = 3;
+		Track->Stats->EstadoBlobCount += 1;
+	}
+
+	if( Track->Stats->Estado== KALMAN_CONTROL ){
+		Track->Stats->EstadoBlob = 4; // oclusión
+	}
+
+}
+void updateFlyTracked( STTrack* Track, tlcde* Flies ){
+
+	if( Track->Stats->Estado == CAM_CONTROL ){
+
+		Track->Flysig->etiqueta = Track->id;
+		Track->Flysig->Color = Track->Color;
+
+		Track->Flysig->direccion = Track->z_k->data.fl[4];
+		Track->Flysig->dir_filtered =Track->x_k_Pos->data.fl[4];
+		Track->Flysig->orientacion = corregirTita( Track->Flysig->dir_filtered, Track->Flysig->orientacion );
+		Track->Flysig->VInst = Track->VInst;
+		Track->Flysig->dstTotal = Track->Stats->dstTotal;
+		Track->Flysig->Estado = Track->Stats->EstadoBlob;
+
+		Track->Flysig->Stats->EstadoBlobCount = Track->Stats->EstadoBlobCount;
+		Track->Flysig->Stats->CMov1SMed = Track->Stats->CMov1SMed;
+		Track->Flysig->Stats->EstadoTrack = Track->Stats->Estado;
+		Track->Flysig->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
+		// contadores
+		Track->Flysig->Stats->CountActiva = Track->Stats->TimeBlobOn;
+		Track->Flysig->Stats->CountPasiva = Track->Stats->TimeBlobOff;
+	}
+	if( Track->Stats->Estado ==  KALMAN_CONTROL){
+		// actualizar fly ( Eliminarla??? )
+		Track->Flysig->etiqueta = 0;
+		Track->Flysig->Color = cvScalar( 255, 255, 255);
+
+		Track->Flysig->direccion = Track->Flysig->orientacion;
+		Track->Flysig->dstTotal = 0;
+
+		Track->Flysig->Stats = NULL;  /// todo mirar esto
+
+		generarFly( Track,Flies);
+
+	}
+}
+/*!brief Genera flies ficticias en el buffer para los tracks que están en estado KALMAN_CONTROL ( prediccion )
+ *
+ *
+ * @param lsTracks
+ * @param Flies
+ */
+void generarFly( STTrack* Track, tlcde* Flies ){
+
+		STFly* fly = NULL;
+		fly = ( STFly *) malloc( sizeof( STFly));
+		if ( !fly ) {error(4);	exit(1);}
+		fly->Tracks = NULL;
+		fly->Stats = NULL;
+
+		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
+		if ( !fly->Tracks ) {error(4);	exit(1);}
+		iniciarLcde( fly->Tracks );
+		anyadirAlFinal( Track, fly->Tracks);
+
+		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
+
+		fly->siguiente = NULL;
+
+		fly->etiqueta = Track->id; // Identificación del blob
+		fly->Color = Track->Color; // Color para dibujar el blob
+		fly->a = Track->FlyActual->a; // el tamaño de la actual
+		fly->b = Track->FlyActual->b;
+
+		fly->direccion = Track->x_k_Pos->data.fl[4]; // la dirección es la filtrada
+		fly->dir_filtered = fly->direccion;
+		fly->orientacion = fly->direccion;
+		fly->posicion.x = Track->x_k_Pos->data.fl[0];
+		fly->posicion.y = Track->x_k_Pos->data.fl[1];
+	//		fly->perimetro = cv::arcLength(contorno,0);
+//		fly->Roi = rect;
+		  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1) u oculta (2)
+		fly->num_frame = Track->Flysig->num_frame;
+		fly->salto = false;	//!< Indica que la mosca ha saltado
+
+		fly->Zona = 0; //!< Si se seleccionan zonas de interes en el plato,
+		fly->failSeg = false;
+		fly->flag_seg = false;
+		fly->Px = 0;
+		fly->areaElipse = CV_PI*fly->b*fly->a;
+		// estadisticas
+		fly->dstTotal = Track->Stats->dstTotal;
+		fly->Estado = Track->Stats->EstadoBlob ; //
+		fly->Stats->EstadoTrack = Track->Stats->Estado;
+		fly->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
+		fly->Stats->EstadoBlobCount = Track->Stats->EstadoCount;
+		fly->Stats->CMov1SMed = Track->Stats->CMov1SMed;
+		fly->VInst = Track->VInst;
+
+		fly->Stats->CountActiva = Track->Stats->TimeBlobOn;
+		fly->Stats->CountPasiva = Track->Stats->TimeBlobOff;
+
+		Track->Flysig = fly;
+		anyadirAlFinal(( STFly*) fly, Flies );
+}
+
+
+void mediaMovilFPS( STStatTrack* Stats, int Periodo ){
+
+	valorSumB* valor;
+	valorSumB* valorT;
+
+	// Se suma el nuevo valor
+	irAlFinal(Stats->VectorSumB);
+	valorT = ( valorSumB*)obtenerActual( Stats->VectorSumB );
+	Stats->SumatorioMed = Stats->SumatorioMed + valorT->sum;
+
+	if(Stats->VectorSumB->numeroDeElementos > Periodo){
+	// los que hayan alcanzado el valor máximo restamos al sumatorio el primer valor
+		irAlPrincipio( Stats->VectorSumB);
+		valor = ( valorSumB*)obtenerActual(  Stats->VectorSumB );
+		Stats->SumatorioMed =Stats->SumatorioMed - valor->sum; // sumatorio para la media
+		Stats->CMov1SMed   =  Stats->SumatorioMed / Periodo; // cálculo de la media
+
+	}
+}
+
+void mostrarVMedia( tlcde* Vector){
+
+	valorSumB* valor;
+ 	irAlFinal(Vector);
+ 	printf("\n");
+ 	for(int i = 0; i <Vector->numeroDeElementos ; i++ ){
+ 		valor = (valorSumB*)obtener(i, Vector);
+ 		printf("valor = %0.f\n", valor->sum);
+ 	}
+ }
+
+int deadTrack( tlcde* Tracks, int id ){
+
+	STTrack* Track = NULL;
+
+	valorSumB* val = NULL;
+	Track = (STTrack*)borrarEl( id , Tracks);
+	if(Track) {
+		// matrices de kalman
+		cvReleaseKalman(&Track->kalman);
+		cvReleaseMat( &Track->x_k_Pre_ );
+		cvReleaseMat( &Track->P_k_Pre_ );
+		cvReleaseMat( &Track->Medida );
+		cvReleaseMat(&Track->z_k );
+		cvReleaseMat(&Track->Measurement_noise );
+		if(Track->Stats->VectorSumB->numeroDeElementos > 0){
+			val = (valorSumB *)borrar(Track->Stats->VectorSumB);
+			while (val)
+			{
+				free(val);
+				val = NULL;
+				val = (valorSumB *)borrar(Track->Stats->VectorSumB);
+			}
+		}
+		free( Track->Stats);
+
+		free(Track);
+		Track = NULL;
+		return 1;
+	}
+	else return 0;
 }
 
 void visualizarKalman( STFrame* frameData, tlcde* lsTracks, bool dataOn) {
@@ -568,336 +854,6 @@ void showKalmanData( STTrack *Track){
 			Track->P_k_Pre->data.fl[24]);
 	printf("\n\n");
 }
-//void ReInitTrack( STTrack* Track, STFly* Fly , float dt ){
-//
-//	float Vx=0;// componente X de la velocidad.
-//	float Vy=0;// componente Y de la velociad.
-//	float dist;
-//	float phi;
-//
-//	EUDistance( Fly->posicion.x-Track->z_k->data.fl[0] ,Fly->posicion.x-Track->z_k->data.fl[1], &phi, &dist );
-//
-//	Track->FlyActual = Fly;
-//	Track->Flysig = NULL;
-//	Track->dstTotal = Track->dstTotal + dist;
-//
-//	Fly->etiqueta = Track->id;
-//	Fly->Color = Track->Color;
-//	Fly->dstTotal = Track->dstTotal ;
-//
-//	Track->Stats->Estado = CAM_CONTROL;
-//	Track->EstadoCount = 1;
-//	Track->FrameCount = Track->FrameCount + 1;
-//
-//	Track->EstadoBlob = 0;
-//
-//	Vx= VELOCIDAD*cos(Fly->orientacion*CV_PI/180);
-//	Vy=-VELOCIDAD*sin(Fly->orientacion*CV_PI/180);
-//
-//	const float F[] = {1,0,dt,0,0, 0,1,0,dt,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1}; // Matriz de transición F
-//	// Matriz R inicial. Errores en medidas. ( Rx, Ry,RVx, RVy, Rphi ). Al inicio el error en el angulo es de +-180º
-//	const float R_inicial[] = {1,0,0,0,0, 0,1,0,0,0, 0,0,2,0,0, 0,0,0,2,0, 0,0,0,0,360};//{50,50,50,50,180};
-//	const float X_k[] = { Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion };// Matiz de estado inicial
-//	float initialState[] = {Fly->posicion.x, Fly->posicion.y, Vx, Vy, Fly->orientacion};
-//
-//	CvMat x_k =cvMat(1, 5, CV_32FC1, initialState);
-//
-//	// establecer parámetros
-//	memcpy( Track->kalman->transition_matrix->data.fl, F, sizeof(F)); // F
-//
-//	cvSetIdentity( Track->kalman->measurement_matrix,cvRealScalar(1) ); // H Matriz de medida
-//	cvSetIdentity( Track->kalman->process_noise_cov,cvRealScalar(1 ) ); // error asociado al modelo del sistema Q = f(F,B y H).
-//	cvSetIdentity(Track->kalman->error_cov_pre, cvScalar(1) ); // Incertidumbre en predicción. (P_k' = F P_k-1 Ft) + Q
-//	cvSetIdentity( Track->kalman->error_cov_post,cvRealScalar(1)); // Incertidumbre tras añadir medida. P_k = ( I - K_k H) P_k'
-//
-//	memcpy( Track->kalman->measurement_noise_cov->data.fl, R_inicial, sizeof(R_inicial)); // Incertidumbre en la medida Vk; Vk->N(0,R)
-////	cvSetIdentity( Kalman->error_cov_post,cvRealScalar(1)); // Incertidumbre tras añadir medida. P_k = ( I - K_k H) P_k'
-//	//copyMat(&x_k, Kalman->state_post);
-//	memcpy( Track->kalman->state_post->data.fl, X_k, sizeof(X_k)); // Estado inicial
-//
-//	Track->x_k_Pre = NULL; // es creada por kalman
-//	cvZero(Track->Medida);
-//	cvZero(Track->z_k );
-//	cvZero(Track->x_k_Pre_);
-//	cvZero(Track->P_k_Pre_);
-//}
-void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams ){
-
-	STTrack* Track;
-
-	if( lsTracks->numeroDeElementos < 1) return;
-	irAlPrincipio( lsTracks);
-	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
-		// obtener Track
-		Track = (STTrack*)obtenerActual( lsTracks);
-		// ACTUALIZAR TRACK
-		// actualizar estadísticas del track en base a su estado
-		updateStatsTrack( Track, trackParams );
-		// ETIQUETAR Y ACTUALIZAR FLY DEL TRACK
-		// en caso de Kalman_control se crea una mosca para simular la posición
-		updateFlyTracked( Track , Flies);
-
-		if ( Track->Stats->Estado == SLEEPING){
-			Track->FlyActual = NULL;
-			Track->Flysig = NULL;
-		}
-		else{
-			// Actualizar fly actual.
-			Track->FlyActual->siguiente = (STFly*)Track->Flysig;
-			// fly actual pasa a ser fly siguiente.
-			Track->FlyActual = Track->Flysig;
-			Track->Flysig = NULL;
-		}
-		irAlSiguiente( lsTracks);
-	}
-}
-
-void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
-
-	valorSumB* valor;
-
-	// actualizar contadores
-	if ( Track->Stats->Estado == SLEEPING){
-		Track->Stats->FrameCount +=1;
-		Track->Stats->EstadoCount += 1;
-		return;
-	}
-	Track->Stats->EstadoCount += 1;
-	Track->Stats->FrameCount ++;
-	// calcular distancia y media movil para la velocidad
-
-	// para el caso kalman control, establecemos la distancia en base a la pos anterior y a la corregida ( predicha??)
-	if( Track->Stats->Estado == KALMAN_CONTROL){
-
-		float Ax = Track->x_k_Pos->data.fl[0] - Track->FlyActual->posicion.x;
-		float Ay = Track->x_k_Pos->data.fl[1] - Track->FlyActual->posicion.y;
-
-		//Establecemos la dirección phi y el modulo del vector de desplazamiento
-//		EUDistance( Track->x_k_Pos->data.fl[2], Track->x_k_Pos->data.fl[3], NULL, &Track->VInst );
-
-		EUDistance( Ax, Ay, NULL, &Track->VInst );
-	}
-	Track->Stats->dstTotal = Track->Stats->dstTotal + Track->VInst;
-	// calculamos la velocidad en x seg
-	  // al ser t = 1 la distancia coincide con Vt
-	// Obtener el nuevo valor
-	valor =  ( valorSumB *) malloc( sizeof(valorSumB));
-	valor->sum = Track->VInst;
-	anyadirAlFinal( valor, Track->Stats->VectorSumB );
-//	calculo de la velocidad media de los  frames equivalentes al periodo establecido
-	mediaMovilFPS( Track->Stats, trackParams->PeriodoVelMed );
-	// si el vector llega a fps elementos eliminamos el primero.
-	if( Track->Stats->VectorSumB->numeroDeElementos > trackParams->PeriodoVelMed){
-		valor = (valorSumB*)liberarPrimero(  Track->Stats->VectorSumB );
-		free(valor);
-	}
-
-	// en función de la velocidad media anterior establecemos el estado del blob y actualizamos los contadores
-	SetStateBlobTracked( Track, trackParams );
-}
-
-void SetStateBlobTracked( STTrack* Track, TrackingParams* trackParams ){
-
-	if( Track->Stats->Estado== KALMAN_CONTROL ){
-		Track->Stats->TimeBlobOff +=1;
-		Track->Stats->EstadoBlob = 4; // actividad nula
-		Track->Stats->EstadoBlobCount += 1;
-	}
-	else if( (Track->Stats->CMov1SMed >= 0)&&(Track->Stats->CMov1SMed <= trackParams->NullActivityTh) ) {
-		if( Track->Stats->EstadoBlob != 0 ){
-			Track->Stats->EstadoBlobCount = 0;
-		}
-		Track->Stats->TimeBlobOff +=1;
-		Track->Stats->EstadoBlob = 0; // actividad nula
-		Track->Stats->EstadoBlobCount += 1;
-	}
-	else if( (Track->Stats->CMov1SMed > trackParams->NullActivityTh)&&(Track->Stats->CMov1SMed <= trackParams->LowActivityTh) ){
-		if( Track->Stats->EstadoBlob != 1 ){
-			Track->Stats->EstadoBlobCount = 0;
-		}
-		Track->Stats->TimeBlobOn +=1;
-		Track->Stats->EstadoBlob = 1;  // actividad baja
-		Track->Stats->EstadoBlobCount += 1;
-	}
-	else if(( Track->Stats->CMov1SMed > trackParams->LowActivityTh)&&(Track->Stats->CMov1SMed <= trackParams->MediumActivityTh) ){
-		if( Track->Stats->EstadoBlob != 2 ){
-			Track->Stats->EstadoBlobCount = 0;
-		}
-		Track->Stats->TimeBlobOn +=1;
-		Track->Stats->EstadoBlob = 2;  // actividad Media
-		Track->Stats->EstadoBlobCount += 1;
-	}
-	else if( Track->Stats->CMov1SMed > trackParams->MediumActivityTh){
-		if( Track->Stats->EstadoBlob != 3 ){
-			Track->Stats->EstadoBlobCount = 0; // Actividad alta
-		}
-		Track->Stats->TimeBlobOn +=1;
-		Track->Stats->EstadoBlob = 3;
-		Track->Stats->EstadoBlobCount += 1;
-	}
-
-
-}
-void updateFlyTracked( STTrack* Track, tlcde* Flies ){
-
-	if( Track->Stats->Estado == CAM_CONTROL ){
-
-		Track->Flysig->etiqueta = Track->id;
-		Track->Flysig->Color = Track->Color;
-
-		Track->Flysig->direccion = Track->z_k->data.fl[4];
-		Track->Flysig->dir_filtered =Track->x_k_Pos->data.fl[4];
-		Track->Flysig->orientacion = corregirTita( Track->Flysig->dir_filtered, Track->Flysig->orientacion );
-		Track->Flysig->VInst = Track->VInst;
-		Track->Flysig->dstTotal = Track->Stats->dstTotal;
-		Track->Flysig->Estado = Track->Stats->EstadoBlob;
-
-		Track->Flysig->Stats->EstadoBlobCount = Track->Stats->EstadoBlobCount;
-		Track->Flysig->Stats->CMov1SMed = Track->Stats->CMov1SMed;
-		Track->Flysig->Stats->EstadoTrack = Track->Stats->Estado;
-		Track->Flysig->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
-		// contadores
-		Track->Flysig->Stats->CountActiva = Track->Stats->TimeBlobOn;
-		Track->Flysig->Stats->CountPasiva = Track->Stats->TimeBlobOff;
-	}
-	if( Track->Stats->Estado ==  KALMAN_CONTROL){
-		// actualizar fly ( Eliminarla??? )
-		Track->Flysig->etiqueta = 0;
-		Track->Flysig->Color = cvScalar( 255, 255, 255);
-
-		Track->Flysig->direccion = Track->Flysig->orientacion;
-		Track->Flysig->dstTotal = 0;
-
-		Track->Flysig->Stats = NULL;  /// todo mirar esto
-
-		generarFly( Track,Flies);
-
-	}
-}
-/*!brief Genera flies ficticias en el buffer para los tracks que están en estado KALMAN_CONTROL ( prediccion )
- *
- *
- * @param lsTracks
- * @param Flies
- */
-void generarFly( STTrack* Track, tlcde* Flies ){
-
-		STFly* fly = NULL;
-		fly = ( STFly *) malloc( sizeof( STFly));
-		if ( !fly ) {error(4);	exit(1);}
-		fly->Tracks = NULL;
-		fly->Stats = NULL;
-
-		fly->Tracks = ( tlcde * )malloc( sizeof(tlcde ));
-		if ( !fly->Tracks ) {error(4);	exit(1);}
-		iniciarLcde( fly->Tracks );
-		anyadirAlFinal( Track, fly->Tracks);
-
-		fly->Stats = ( STStatFly * )malloc( sizeof(STStatFly ));
-
-		fly->siguiente = NULL;
-
-		fly->etiqueta = Track->id; // Identificación del blob
-		fly->Color = Track->Color; // Color para dibujar el blob
-		fly->a = Track->FlyActual->a; // el tamaño de la actual
-		fly->b = Track->FlyActual->b;
-
-		fly->direccion = Track->x_k_Pos->data.fl[4]; // la dirección es la filtrada
-		fly->dir_filtered = fly->direccion;
-		fly->orientacion = fly->direccion;
-		fly->posicion.x = Track->x_k_Pos->data.fl[0];
-		fly->posicion.y = Track->x_k_Pos->data.fl[1];
-		fly->dstTotal = Track->Stats->dstTotal;
-	//		fly->perimetro = cv::arcLength(contorno,0);
-//		fly->Roi = rect;
-		  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1) u oculta (2)
-		fly->num_frame = Track->Flysig->num_frame;
-		fly->salto = false;	//!< Indica que la mosca ha saltado
-
-		fly->Zona = 0; //!< Si se seleccionan zonas de interes en el plato,
-		fly->failSeg = false;
-		fly->flag_seg = false;
-		fly->Px = 0;
-		fly->areaElipse = CV_PI*fly->b*fly->a;
-		// estadisticas
-		fly->dstTotal = Track->Stats->dstTotal;
-		fly->Estado = 4 ; //
-		fly->Stats->EstadoTrack = Track->Stats->Estado;
-		fly->Stats->EstadoTrackCount = Track->Stats->EstadoCount;
-		fly->Stats->EstadoBlobCount = Track->Stats->EstadoCount;;
-		fly->Stats->CMov1SMed = Track->Stats->CMov1SMed;
-		fly->VInst = Track->VInst;
-
-		fly->Stats->CountActiva = Track->Stats->TimeBlobOn;
-		fly->Stats->CountPasiva = Track->Stats->TimeBlobOff;
-
-		Track->Flysig = fly;
-		anyadirAlFinal(( STFly*) fly, Flies );
-}
-
-
-void mediaMovilFPS( STStatTrack* Stats, int Max ){
-
-	valorSumB* valor;
-	valorSumB* valorT;
-
-	// Se suma el nuevo valor
-	irAlFinal(Stats->VectorSumB);
-	valorT = ( valorSumB*)obtenerActual( Stats->VectorSumB );
-	Stats->SumatorioMed = Stats->SumatorioMed + valorT->sum;
-
-	if(Stats->VectorSumB->numeroDeElementos > Max){
-	// los que hayan alcanzado el valor máximo restamos al sumatorio el primer valor
-		irAlPrincipio( Stats->VectorSumB);
-		valor = ( valorSumB*)obtenerActual(  Stats->VectorSumB );
-		Stats->SumatorioMed =Stats->SumatorioMed - valor->sum; // sumatorio para la media
-		Stats->CMov1SMed   =  Stats->SumatorioMed / Max; // cálculo de la media
-	}
-}
-
-void mostrarVMedia( tlcde* Vector){
-
-	valorSumB* valor;
- 	irAlFinal(Vector);
- 	printf("\n");
- 	for(int i = 0; i <Vector->numeroDeElementos ; i++ ){
- 		valor = (valorSumB*)obtener(i, Vector);
- 		printf("valor = %0.f\n", valor->sum);
- 	}
- }
-
-int deadTrack( tlcde* Tracks, int id ){
-
-	STTrack* Track = NULL;
-
-	valorSumB* val = NULL;
-	Track = (STTrack*)borrarEl( id , Tracks);
-	if(Track) {
-		// matrices de kalman
-		cvReleaseKalman(&Track->kalman);
-		cvReleaseMat( &Track->x_k_Pre_ );
-		cvReleaseMat( &Track->P_k_Pre_ );
-		cvReleaseMat( &Track->Medida );
-		cvReleaseMat(&Track->z_k );
-		cvReleaseMat(&Track->Measurement_noise );
-		if(Track->Stats->VectorSumB->numeroDeElementos > 0){
-			val = (valorSumB *)borrar(Track->Stats->VectorSumB);
-			while (val)
-			{
-				free(val);
-				val = NULL;
-				val = (valorSumB *)borrar(Track->Stats->VectorSumB);
-			}
-		}
-		free( Track->Stats);
-
-		free(Track);
-		Track = NULL;
-		return 1;
-	}
-	else return 0;
-}
-
 
 void liberarTracks( tlcde* lista){
 	// Borrar todos los elementos de la lista
@@ -927,12 +883,248 @@ void asignarNuevaId( STTrack* Track, tlcde* identities){
 	free(id);
 	id = NULL;
 }
+
+void SetKalmanFilterParams( TrackingParams* trackParams ){
+
+    //init parameters
+	config_t cfg;
+	config_setting_t *setting;
+	char settingName[30];
+	char configFile[30];
+	char settingFather[30];
+
+
+
+	int EXITO;
+	int DEFAULT = false;
+
+	// Reservar memoria
+	if( !filterParams){
+		filterParams = ( FilterParams *) malloc( sizeof( FilterParams) );
+		if(!filterParams) {error(4); return;}
+		filterParams->Cam = ( CamParams *) malloc( sizeof( CamParams) );
+		if(!filterParams->Cam) {error(4); return;}
+		filterParams->Kal = ( KalParams *) malloc( sizeof( KalParams) );
+		if(!filterParams->Kal) {error(4); return;}
+	}
+
+
+
+
+	fprintf(stderr, "\nCargando parámetros del filtro de Kalman...");
+	config_init(&cfg);
+
+	sprintf( configFile, "config.cfg");
+	sprintf( settingFather,"Kalman" );
+	 /* Leer archivo. si hay un error, informar y cargar configuración por defecto */
+	if(! config_read_file(&cfg, configFile))
+	{
+		fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
+				config_error_line(&cfg), config_error_text(&cfg));
+
+		fprintf(stderr, "Error al acceder al fichero de configuración %s .\n"
+						" Estableciendo valores por defecto.\n"
+						,configFile);
+		DEFAULT = true;
+	}
+	else
+	{
+		setting = config_lookup(&cfg, settingFather);
+		/* Si no se se encuentra la setting o bien existe la variable hijo Auto y ésta es true, se establecen TODOS los valores por defecto.*/
+		if(setting != NULL)
+		{
+			sprintf(settingName,"Auto");
+			/* Obtener el valor */
+			EXITO = config_setting_lookup_bool ( setting, settingName, &DEFAULT);
+			if(!EXITO) DEFAULT = true;
+			else if( EXITO && DEFAULT ) fprintf(stderr, "\n Opción Auto activada para el campo %s.\n"
+												" Estableciendo valores por defecto.\n",settingFather);
+			else if( EXITO && !DEFAULT) fprintf(stderr, "\n Opción Auto desactivada para el campo %s.\n"
+												" Estableciendo valores del fichero de configuración.\n",settingFather);
+			// comprobar los hijos
+			sprintf( settingFather,"Kalman.Inicializacion" );
+			setting = config_lookup(&cfg, settingFather);
+			if(setting) {
+				sprintf( settingFather,"Kalman.CamControl" );
+				setting = config_lookup(&cfg, settingFather);
+				if(setting){
+					sprintf( settingFather,"Kalman.KalmanControl" );
+					setting = config_lookup(&cfg, settingFather);
+				}
+			}
+			if( !setting ) {
+				DEFAULT = true;
+				fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+			}
+
+		}
+		else {
+
+			DEFAULT = true;
+			fprintf(stderr, "Error.No se ha podido leer el campo %s.\n"
+							" Estableciendo valores por defecto.\n",settingFather);
+		}
+	}
+
+	if( DEFAULT ) {
+		sprintf( settingFather,"Kalman" );
+		SetDefaultKFilterParams( trackParams );
+	}
+	/* Valores leídos del fichero de configuración. Algunos valores puedes ser establecidos por defecto si se indica
+	 * expresamente en el fichero de configuración. Si el valor es erroneo o no se encuentra la variable, se establecerán
+	 * a los valores por defecto.
+	 */
+	else{
+		double val;
+		 /* Get the store name. */
+		sprintf( settingFather,"Kalman.Inicializacion" );
+		setting = config_lookup(&cfg, settingFather);
+		sprintf(settingName, "Velocidad");
+		// si no se encuentra la setting
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+			// si hay medida de calibración se establece la vel en mm/s y se pasa a pixels frame
+			if( trackParams->mmTOpixel) filterParams->Velocidad = 10.6*trackParams->mmsTOpf ;
+			// si no se establece en pixels/frame
+			else filterParams->Velocidad = 5.6;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.2f \n",
+					settingName, filterParams->Velocidad);
+
+		} // si el valor está fuera de límites
+		else if(!val	|| val < 0 ){
+			// si se ha calibrado se establece la vel en mm/s y se pasa a pixels frame
+			if( trackParams->mmTOpixel) filterParams->Velocidad = 10.6*trackParams->mmsTOpf ;
+			// si no se establece en pixels/frame
+			else filterParams->Velocidad = 5.6;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %0.1f \n",
+					settingName, settingName,
+					filterParams->Velocidad);
+		}
+		// valor correcto
+		else{
+			// si se ha calibrado
+			if( trackParams->mmsTOpf) filterParams->Velocidad = val*trackParams->mmsTOpf; //de mm/s a pixels/frame
+			// en caso contrario
+			else filterParams->Velocidad = (float)val;
+		}
+
+		sprintf(settingName, "V_Angular");
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+			filterParams->V_Angular = 0;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.2f \n",
+					settingName, filterParams->V_Angular);
+
+		} else 	filterParams->V_Angular = (float)val;
+
+		sprintf(settingName, "MaxJump" );
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+			if( trackParams->mmTOpixel) filterParams->MaxJump = cvRound(50*trackParams->mmTOpixel) ; // en mm
+			else filterParams->MaxJump = 50; // en pixels
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.2f \n",
+					settingName, filterParams->MaxJump);
+
+		} else if(!val	|| val < 0 ){
+			if( trackParams->mmTOpixel) filterParams->MaxJump = cvRound(50*trackParams->mmTOpixel) ;
+			else filterParams->MaxJump = 50;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %0.1f \n",
+					settingName, settingName,
+					filterParams->MaxJump);
+		}
+		else{
+			if( trackParams->mmsTOpf) filterParams->MaxJump = cvRound((float)val*trackParams->mmTOpixel) ; //de mm a pixels
+			else filterParams->MaxJump = (float)val;
+		}
+
+		sprintf(settingName, "InitTime");
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+			if( trackParams->mmTOpixel) filterParams->InitTime = cvRound(1*trackParams->FPS) ; // de seg a frames
+			else filterParams->InitTime = 15; // en frames
+
+			filterParams->InitTime = 15;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.2fd \n",
+					settingName, filterParams->InitTime );
+
+		} else if( val < 0 ){
+
+			if( trackParams->mmTOpixel) filterParams->InitTime = cvRound(1*trackParams->FPS) ; // de seg a frames
+			else filterParams->InitTime = 15; // en frames
+				fprintf(stderr,
+						"El valor de %s está fuera de límites\n "
+							"Establecer por defecto %s a %d \n",
+						settingName, settingName,
+						filterParams->InitTime );
+		}
+		else{
+			filterParams->InitTime = cvRound( (float)val * trackParams->FPS); // a frames
+		}
+
+
+	}
+
+	SetPrivateKFilterParams(  );
+
+	ShowKalmanFilterParams( settingFather );
+	config_destroy(&cfg);
+}
+
+void SetDefaultKFilterParams( TrackingParams* trackParams  ){
+
+	// si hay medida de calibración se establece la vel en mm/s y se pasa a pixels frame
+	if( trackParams->mmTOpixel) filterParams->Velocidad = 10.6*trackParams->mmsTOpf;
+	// si no se establece en pixels/frame
+	else filterParams->Velocidad = 5.6;
+	filterParams->V_Angular = 0;
+	if( trackParams->mmTOpixel) filterParams->MaxJump = cvRound(20*trackParams->mmTOpixel) ; // en mm
+	else filterParams->MaxJump = 50; // en pixels
+	if( trackParams->mmTOpixel) filterParams->InitTime = cvRound(1*trackParams->FPS) ; // de seg a frames
+	else filterParams->InitTime = 15; // en frames
+
+}
+
+void ShowKalmanFilterParams( char* Campo ){
+
+	printf(" \nVariables para el campo %s : \n", Campo);
+	printf(" -Velocidad = %0.2f pixels/mm \n", filterParams->Velocidad);
+	printf(" -V_Angular = %0.2f º/frame \n", filterParams->V_Angular);
+	printf(" -MaxJump = %0.1f pixels\n", filterParams->MaxJump);
+	printf(" -InitTime = %d frames \n", filterParams->InitTime);
+
+}
+
+void SetPrivateKFilterParams(  ){
+
+
+
+}
+
 /// Limpia de la memoria las imagenes usadas durante la ejecución
 void DeallocateKalman( tlcde* lista ){
 
 	cvReleaseImage( &ImKalman);
+	free( filterParams->Cam);
+	free( filterParams->Kal);
+	free( filterParams );
 
-	cvReleaseMat( &CoordReal);
 
 	liberarTracks( lista);
 

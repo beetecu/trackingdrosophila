@@ -413,11 +413,11 @@
 #define PENULTIMO 1
 
 
-void SetTrackingParams(  );
+void SetTrackingParams( ConvUnits* calParams );
 
 void SetDefaultTrackParams(   );
 
-void SetPrivateTrackParams(  );
+void SetPrivateTrackParams( ConvUnits* calParams );
 
 void ShowTrackParams( char* Campo );
 
@@ -525,7 +525,7 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
  */
 void ordenarTracks( tlcde* lsTracks );
 
-void SetTrackingParams(  );
+void SetTrackingParams( int FPS, float mmTOpixel );
 
 void AllocateTrackImages( IplImage *I );
 
