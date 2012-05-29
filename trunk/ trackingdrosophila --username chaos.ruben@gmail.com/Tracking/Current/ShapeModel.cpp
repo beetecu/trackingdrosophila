@@ -17,9 +17,8 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 	float Dif=0;
 	float MaxContourArea = 0;
 	float MaxContourPerimeter = 0;
-
-	float areas[ShParams->FramesTraining*15]; // almacena las areas de todos los blobs encontrados
-
+	float Sumatorio = 0;
+	float SumatorioDes = 0;
 	IplImage* frame = NULL;
 
 	STFrame* frameData = NULL;
@@ -38,13 +37,9 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 	Shape = ( SHModel *) malloc( sizeof( SHModel));
 	if ( !Shape ) {error(4);return 0;}
 	Shape->FlyAreaDes = 0;
-	Shape->FlyAreaMed = 0;
 	Shape->FlyAreaMedia=0;
 	//Pone a 0 los valores del vector areas
 
-	for(int i=0;i<ShParams->FramesTraining*15;i++){
-		areas[i]=0;
-	}
 
 	//EXTRACCION DE LOS BLOBS Y CALCULO DE MEDIANA/MEDIA Y DESVIACION TIPICA PARA TODOS LOS FRAMES
 	cvSetCaptureProperty( g_capture,1,BGParams->initDelay ); // establecemos la posición
@@ -84,7 +79,7 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 		cvCopy(  frameData->IDesvf,lastIdes);
 
 		//Obtener los Blobs y excluir aquellos que no interesan por su tamaño
-		cvSetImageROI(  frameData->FG , BGModel->DataFROI);
+//		cvSetImageROI(  frameData->FG , BGModel->DataFROI);
 
 		blobs = CBlobResult( frameData->FG, NULL, 100, true );
 		blobs.Filter( blobs, B_EXCLUDE, CBlobGetArea(),B_GREATER,100);
@@ -94,8 +89,6 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 
 		total_blobs=total_blobs+j; // Contabiliza los blobs encontrados para todos los frames
 
-		// Guardar los Blobs en un archivo txt (OPCIONAL)
-
 		//Recorrer Blob a blob y obtener las caracteristicas del AREA de cada uno de ellos
 
 		for (int i = 0; i < blobs.GetNumBlobs(); i++ ){ //for 1
@@ -103,58 +96,41 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 			currentBlob = blobs.GetBlob(i);
 
 			CBlobGetArea();
-
-			areas[k]=currentBlob->area;// almacenar el valor del area del blob en el vector
-
-			// Mediana de las Areas
-
-			if(currentBlob->area < Shape->FlyAreaMed) Shape->FlyAreaMed=Shape->FlyAreaMed-1;
-			if(currentBlob->area > Shape->FlyAreaMed) Shape->FlyAreaMed=Shape->FlyAreaMed+1;
-
-			//Media de las Areas
-
-			Shape->FlyAreaMedia=Shape->FlyAreaMedia+currentBlob->area;//sumatorio de los valores de las areas
-
 			if(ShParams->SHOW_DATA_AREAS) {
-
-				printf("Area blob %d = %f ",i,currentBlob->area);
+				//printf("Area blob %d = %f ",i,currentBlob->area);
 			}
+			//Estimar la media de las Areas
 
+			Sumatorio = Sumatorio + currentBlob->area;
+			SumatorioDes = SumatorioDes + currentBlob->area*currentBlob->area;
+
+			muestrearAreas( currentBlob->area);
 			currentBlob->FillBlob( Imblob, CV_RGB(255,0,0));
-
-			k++;//incrementar indice del vector que contiene las areas
 
 		}//Fin del For 1
 		if(ShParams->SHOW_DATA_AREAS) printf("\n");
-		num_frames += 1;
-		cvResetImageROI(frameData->FG);
+		Shape->FlyAreaMedia = Sumatorio / total_blobs;
+		Shape->FlyAreaDes = (SumatorioDes / total_blobs) - Shape->FlyAreaMedia*Shape->FlyAreaMedia;
+		if(ShParams->SHOW_DATA_AREAS) {
+			printf("Media =\t %0.1f\t Des =\t %0.1f \n",Shape->FlyAreaMedia, Shape->FlyAreaDes);
+		}
 
+		num_frames += 1;
+//		cvResetImageROI(frameData->FG);
 		DraWWindow(Imblob, frameData, BGModel, SHOW_SHAPE_MODELING, COMPLETO);
 		DraWWindow(Imblob, frameData, BGModel, SHAPE,SIMPLE );
 
 	}
 	desvanecer( NULL, 20);
-	Shape->FlyAreaMedia=Shape->FlyAreaMedia/total_blobs;// Media de las Areas para cada frame
-
-	//Calcular la desvición típica
-
-	for(int l=0;l<ShParams->FramesTraining*15;l++){ // For 2
-
-		Dif=abs(areas[l]-Shape->FlyAreaMed);// valor del area - mediana
-
-		int valor=areas[l];
-
-		if(valor == 0) break;
-
-		if(Dif < Shape->FlyAreaDes) Shape->FlyAreaDes=Shape->FlyAreaDes-1;
-		if(Dif > Shape->FlyAreaDes) Shape->FlyAreaDes=Shape->FlyAreaDes+1;
-
-	} // Fin del For 2
+	Shape->FlyAreaDes = sqrt(abs(Shape->FlyAreaDes) ) ;
+	if( Shape->FlyAreaDes == 0){
+		printf("hola");
+	}
 
 	//Mostrar mediana y media para todos los frames
 
 	if(ShParams->SHOW_DATA_AREAS )
-		printf("\n MEDIANA AREAS: %f \t MEDIA AREAS: %f \t DESVIACION AREAS: %f",Shape->FlyAreaMed,Shape->FlyAreaMedia,Shape->FlyAreaDes);
+		printf("\n MEDIA AREAS: %f \t DESVIACION AREAS: %f",Shape->FlyAreaMedia,Shape->FlyAreaDes);
 
 	free( ShParams);
 	liberarSTFrame( frameData );

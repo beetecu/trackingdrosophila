@@ -48,7 +48,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	if( frameDataIn->num_frame == 433 ){
 							printf("hola");
 						}
-	if( frameDataIn->num_frame == 1424 ){
+	if( frameDataIn->num_frame == 1195 ){
 						printf("hola");
 					}
 	if( frameDataIn->num_frame == 1456 ){
@@ -68,14 +68,12 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	fprintf(stderr,"\t2)Filtro de Kalman\n");
 #endif
 
-	/////////////// ELIMIRAR FALSOS TRACKS ///
-	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
-	// y unicas. Si no es así será un trackDead originado por ruido:
+	/////////////// ELIMIRAR FALSOS TRACKS. APLICACIÓN DE HEURíSTICAS AL FINAL DEL BUFFER ///
 	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, trackParams->MaxBlobs, frameDataIn->num_frame );
 
+//	if( trackParams->CleanGhosts) cleanGhosts( framesBuf, lsTracks,Identities, trackParams->MaxBlobs, frameDataIn->num_frame)
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
-
 	Kalman( frameDataIn , Identities, lsTracks, trackParams);
 
 	frameDataIn->Tracks = lsTracks;
@@ -85,7 +83,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	printf("\t\t-Tiempo: %5.4g ms\n", tiempoParcial);
 #endif
 
-	///////   FASE DE CORRECCIÓN. APLICACION DE HEURISTICAS  /////////
+	///////   FASE DE CORRECCIÓN. APLICACION DE HEURISTICAS AL FRAME DE SALIDA /////////
 
 	despertarTrack(framesBuf, lsTracks, Identities );
 	ordenarTracks( lsTracks );
@@ -123,7 +121,19 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxTracks, int numFrame ){
 
 	STTrack* Track = NULL;
+	STTrack* Track2 = NULL;
+
 	int valCount = 0;
+	Identity* Id;
+
+	// VALIDAR NUEVOS TRACKS
+
+	// únicamente serán validos aquellos tracks que los primeros instantes tengan asignaciones válidas
+	// y unicas. Si no es así será un trackDead originado por ruido:
+	// Un track será válido cuando se verifique que es estable. Un track se considerará estable cuando
+	// transcurran T frames sin pasar a estado KalmanControl desde su nacimiento. Si no es estable será
+	// eliminado. Si se ha eliminado un track prioritario y existe un track de id mayor a max track
+	// a dicho track se le asignará la id del track eliminado.
 
 	if( lsTracks->numeroDeElementos < 1) return 0;
 	irAlPrincipio( lsTracks);
@@ -133,17 +143,59 @@ int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxT
 			// eliminar los tracks creados en t y sin asignación en t+1
 			if( falsoTrack( Track, numFrame ) ){
 				dejarId( Track, identities );
-				reasignarTracks(lsTracks, framesBuf, identities, -1, i);
+				reasignarTracks(lsTracks, framesBuf, identities, -1, i, BORRAR );
 				deadTrack( lsTracks, i );
 			}
-			// validar tracks.
-			if( (Track->Stats->Estado == CAM_CONTROL)&&(Track->Stats->EstadoCount == 200 ) ){
-				Track->validez = true;
-				valCount = valCount +1;
+			// ELIMINAR TRACKS NO VERIFICADOS
+			// Eliminar tracks con alta id que hayan nacido hace menos de max buffer frames y pasen a estado kalmanControl
+			unsigned int tiempoVivo = numFrame - Track->Stats->InitTime ;
+			// Eliminar tracks con alta id que hayan nacido hace menos de T frames y pasen a estado kalmanControl
+			if( (tiempoVivo <= 200) &&(Track->Stats->Estado != CAM_CONTROL)){
+				Track->validez = false;
 			}
-			else Track->validez = false;
+			else {
+				Track->validez = true;
+			}
+			if( !Track->validez )
+			 {
+				// En los primeros MaxBuffer frames, si nos hemos cargado un track de los prioritarios
+				// comprobar si hay tracks con id mayor a MaxTracks y reasignar el de mayor id y CamControl en caso afimativo
+				if (framesBuf->numeroDeElementos< trackParams->MaxBuffer){
+					irAlFinal(lsTracks);
+					for(int j = lsTracks->numeroDeElementos;j > 0 ; j--){
+						unsigned int tiempoVivo = numFrame - Track->Stats->InitTime ;
+						// si se encuentra un track en estado camControl de id mayor, se reasigna. El de mayor id
+						// pasa a tomar la etiqueta del menor y se corrige el buffer,
+						Track2 = (STTrack*)obtener( j,lsTracks);
+						if( ( Track2->id > Track->id )&&(Track2->Stats->Estado == CAM_CONTROL)&&(Track2->Stats->EstadoCount == tiempoVivo )){
+							dejarId( Track2, identities );
+							reasignarTracks( lsTracks, framesBuf, identities, i , j, RE_ETIQUETAR );
+							deadTrack(lsTracks, i );
+							break;
+						}
+						else if(Track2->id == Track->id ){ // si no encuentra uno directamente se elimina
+							dejarId( Track, identities );
+							reasignarTracks(lsTracks, framesBuf, identities,-1, i, BORRAR );
+							deadTrack(lsTracks, i );
+						}
+					}
+				}
+				// Si ya ha transcurrido el periodo inicial, Se elimina (si su id es mayor que maxBlobs ?? )
+				else{
+					if( Track->id > trackParams->MaxBlobs){
+
+						dejarId( Track, identities );
+						reasignarTracks(lsTracks, framesBuf, identities, -1, i, BORRAR);
+						deadTrack( lsTracks, i );
+					}
+				}
+				irAl( i-1, lsTracks);
+			}
+
 			irAlSiguiente( lsTracks);
-	}
+	}//FIN FOR
+
+
 	return valCount;
 
 }
@@ -166,7 +218,7 @@ int falsoTrack( STTrack* Track, int numFrame ){
 
 void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 
-	STFrame* frameData0;
+
 	STFrame* frameData1;
 	STTrack* NewTrack;
 	STTrack* SleepingTrack;
@@ -210,7 +262,7 @@ void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 			//Si se cumple la condición reasignamos
 			if ( menorDistancia <= MAX_JUMP){
 				dejarId( NewTrack, lsIds );
-				reasignarTracks( lsTracks, framesBuf,lsIds,i,masCercano );
+				reasignarTracks( lsTracks, framesBuf,lsIds,i,masCercano, UPDATE_STATS );
 				deadTrack( lsTracks, masCercano );
 			}
 		}
@@ -242,7 +294,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 //						SleepingTrack->EstadoCount == MAX_BUFFER )
 
 		if( SleepingTrack->Stats->Estado == SLEEPING &&
-				SleepingTrack->Stats->EstadoCount >= trackParams->MaxBuffer-1 ){ //todo antes era ==
+				SleepingTrack->Stats->EstadoCount >= (unsigned)trackParams->MaxBuffer-1 ){ //todo antes era ==
 			// intentamos asignarle un nuevo track
 			// damos prioridad a los que tengan la menor etiqueta frente a los más altos,
 			// que es lo  mismo que escojer el nuevo track más antiguo
@@ -259,7 +311,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 			}
 			if( ultimo != 0){
 				dejarId( NewTrack, lsIds );
-				reasignarTracks( lsTracks, framesBuf,lsIds, masAntiguo , i );
+				reasignarTracks( lsTracks, framesBuf,lsIds, masAntiguo , i, UPDATE_STATS );
 				deadTrack( lsTracks, i );
 				continue;
 				// si se ha conseguido asignar continuar al siguiente
@@ -273,7 +325,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 			// , dejar su id y eliminar los datos de la fly que creó.
 			else {
 				dejarId( SleepingTrack, lsIds );
-				reasignarTracks(lsTracks, framesBuf, lsIds, -1, i);
+				reasignarTracks(lsTracks, framesBuf, lsIds, -1, i, UPDATE_STATS);
 				deadTrack( lsTracks, i );
 			}
 		}
@@ -311,25 +363,29 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
  * @param viejo
  * @param framesBuf
  */
-void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo, int viejo){
+void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo, int viejo, int Accion ){
 
 	// obtener posicion del buffer desde la que hay que corregir.
 	STFrame* frameData1 = NULL;
 	STTrack* NewTrack = NULL;
 	STTrack* SleepingTrack = NULL;
 	STFly* Fly = NULL;
-	tlcde* FliesFrame = NULL;
+
 
 	int posInit; // posición del buffer desde la que se inicia la correción
 
 	// obtener Track//
 
 	SleepingTrack = (STTrack*)obtener(viejo, lsTracks);
-	if(nuevo != -1) NewTrack= (STTrack*)obtener(nuevo, lsTracks);// Limpiar datos del track y su blob
-	if(NewTrack == NULL){ // en caso de que no haya nuevo track, se trata de eliminar la fly del viejo del buffer
+	if(Accion != BORRAR) NewTrack= (STTrack*)obtener(nuevo, lsTracks);
+	if(Accion == BORRAR || Accion == RE_ETIQUETAR){ // en caso de que no haya nuevo track,
 		posInit = (framesBuf->numeroDeElementos-1) -  SleepingTrack->Stats->FrameCount  ;
 		if(posInit < 0) posInit = 0;
 		// eliminamos del buffer los datos de su fly.
+		if(Accion == RE_ETIQUETAR){
+			SleepingTrack->id = NewTrack->id;
+			SleepingTrack->Color = NewTrack->Color;
+		}
 		irAl( posInit,framesBuf);
 		for( int i = posInit; i < framesBuf->numeroDeElementos; i++ ){
 				// obtener frame
@@ -338,20 +394,32 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 				irAlPrincipio( frameData1->Flies);
 				for( int j = 0;j < frameData1->Flies->numeroDeElementos ; j++){
 					Fly = (STFly*)obtenerActual( frameData1->Flies);
-					if( Fly->etiqueta == SleepingTrack->id ){
-						borrar(frameData1->Flies);
-						if (Fly->Tracks ) free(Fly->Tracks);
-						if (Fly->Stats) free(Fly->Stats);
-						free(Fly); // borrar el área de datos del elemento eliminado
+					if( Accion == BORRAR){
+						// Limpiar datos del track indicado por la variable viejo y su blob
+						if( Fly->etiqueta == SleepingTrack->id ){
+							borrar(frameData1->Flies);
+							if (Fly->Tracks ) free(Fly->Tracks);
+							if (Fly->Stats) free(Fly->Stats);
+							free(Fly); // borrar el área de datos del elemento eliminado
+						}
+					}// se etiquetan las flies con id del viejo con la id del nuevo. Se continuará con el viejo
+					// re_etiquetado como el nuevo.
+					else if( Accion == RE_ETIQUETAR){
+						Fly = (STFly*)obtenerActual( frameData1->Flies);
+						if( Fly->etiqueta == SleepingTrack->id ){
+							Fly->etiqueta = NewTrack->id;
+							Fly->Color =  NewTrack->Color;
+						}
 					}
-					irAlSiguiente( frameData1->Flies);
+					irAlSiguiente(frameData1->Flies );
 				}
 				irAlSiguiente( framesBuf);
 		}
 
 	}
 	else{ // se actualiza el nuevo con los datos del antiguo y se continua con el nuevo
-		// obtener posición desde la que se corrige la id
+		// obtener posición desde la que se corrige la id.
+
 		posInit = framesBuf->numeroDeElementos -  NewTrack->Stats->FrameCount ;
 		// corregir buffer. No se eliminan los datos de la fly, sino que se actualizan
 		if(posInit < 0) posInit = 0;
@@ -362,21 +430,34 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 			for( int j = 0;j < frameData1->Flies->numeroDeElementos ; j++){
 				Fly = (STFly*)obtener(j, frameData1->Flies);
 				if( Fly->etiqueta == NewTrack->id ){
-					Fly->etiqueta = SleepingTrack->id;
-					Fly->Color = SleepingTrack->Color;
-					Fly->dstTotal = SleepingTrack->Stats->dstTotal + Fly->dstTotal;
+					if( Accion == ONLY_UPDATE_IDS){
+						Fly->etiqueta = SleepingTrack->id;
+						Fly->Color = SleepingTrack->Color;
+					}
+					else{
+						Fly->etiqueta = SleepingTrack->id;
+						Fly->Color = SleepingTrack->Color;
+						Fly->dstTotal = SleepingTrack->Stats->dstTotal + Fly->dstTotal;
+					}
 				}
 			}
+
 		}
 		// ACTUALIZAR TRACK
-		NewTrack->id = SleepingTrack->id;
-		NewTrack->Color = SleepingTrack->Color;
-		NewTrack->Stats->dstTotal = SleepingTrack->Stats->dstTotal + NewTrack->Stats->dstTotal;
-		NewTrack->Stats->FrameCount = SleepingTrack->Stats->FrameCount;
-		NewTrack->Stats->InitTime = SleepingTrack->Stats->InitTime;
-		NewTrack->Stats->InitPos = SleepingTrack->Stats->InitPos;
-		NewTrack->Stats->TimeBlobOff = SleepingTrack->Stats->TimeBlobOff + NewTrack->Stats->TimeBlobOff;
-		NewTrack->Stats->TimeBlobOn = SleepingTrack->Stats->TimeBlobOn + NewTrack->Stats->TimeBlobOn;
+		if( Accion == ONLY_UPDATE_IDS){
+			NewTrack->id = SleepingTrack->id;
+			NewTrack->Color = SleepingTrack->Color;
+
+		}else{
+			NewTrack->id = SleepingTrack->id;
+			NewTrack->Color = SleepingTrack->Color;
+			NewTrack->Stats->dstTotal = SleepingTrack->Stats->dstTotal + NewTrack->Stats->dstTotal;
+			NewTrack->Stats->FrameCount = SleepingTrack->Stats->FrameCount;
+			NewTrack->Stats->InitTime = SleepingTrack->Stats->InitTime;
+			NewTrack->Stats->InitPos = SleepingTrack->Stats->InitPos;
+			NewTrack->Stats->TimeBlobOff = SleepingTrack->Stats->TimeBlobOff + NewTrack->Stats->TimeBlobOff;
+			NewTrack->Stats->TimeBlobOn = SleepingTrack->Stats->TimeBlobOn + NewTrack->Stats->TimeBlobOn;
+		}
 	}
 }
 
@@ -569,6 +650,12 @@ void SetDefaultTrackParams(   ){
 	trackParams->MediumActivityTh	= 2 ;
 	trackParams->LowActivityTh	= 0.5 ;
 	trackParams->NullActivityTh	= 0.2 ;
+	// si se ha calibrado activar limpieza de reflejos ( fantasmas )
+//	if(calParams->pixelTOmm){
+//		trackParams->CleanGhosts = true;
+//		trackParams->ClGhThresh = 20;
+//	}
+
 }
 
 void ShowTrackParams( char* Campo ){

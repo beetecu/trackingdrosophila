@@ -412,6 +412,10 @@
 #define ULTIMO 2
 #define PENULTIMO 1
 
+#define BORRAR 0
+#define RE_ETIQUETAR 1
+#define UPDATE_STATS 2
+#define ONLY_UPDATE_IDS 3
 
 void SetTrackingParams( ConvUnits* calParams );
 
@@ -517,7 +521,7 @@ y este es válido ( OJO con esto. Si no verificamos
  */
 void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds);
 
-void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo, int viejo);
+void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo, int viejo, int Accion );
 
 /*!brief Ordena la lista tracks de forma creciente
  *

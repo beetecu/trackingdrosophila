@@ -386,7 +386,7 @@ void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,Cv
 	}
 	else cvCopy(mask, Imaskt);
 
-	//	muestrearLinea( ImGray,cvPoint( 120, 267 ),	cvPoint( 220, 267 ), 5000);
+
 
 	if( SHOW_BGMODEL_DATA ){
 		printf("\n\n Imagenes antes de actualizar fondo" );

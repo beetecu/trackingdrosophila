@@ -85,13 +85,13 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 		cvCopy( BGModel->IDesvf,lastIdes);
 	}
 
-
 	// Iniciar estructura para datos del nuevo frame
 	frameData = InitNewFrameData( frame );
 	// cargamos las últimas imágenes del frame y del fondo.
 	cvCopy( lastBG, frameData->BGModel);
 	cvCopy( lastIdes, frameData->IDesvf);
 	cvCopy( frame,frameData->Frame);
+	cvCopy( Imagen,frameData->ImGray);
 
 	//// BACKGROUND UPDATE
 	//	obtener la mascara del FG y la lista con los datos de sus blobs.
@@ -135,6 +135,9 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 #endif
 
 	/////// VALIDACIÓN
+	if( frameData->num_frame == 1195 ){
+						printf("hola");
+					}
 
 	Validacion2(Imagen, frameData , Shape, FGMask );
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
@@ -187,18 +190,15 @@ STFrame* InitNewFrameData(IplImage* I ){
 	FrameData->BGModel = cvCreateImage(size,8,1);
 	FrameData->FG = cvCreateImage(size,8,1);
 	FrameData->IDesvf = cvCreateImage(size,IPL_DEPTH_32F,1);
-	FrameData->OldFG = cvCreateImage(size,8,1);
-	FrameData->ImAdd = cvCreateImage(size,8,1);
-	FrameData->ImMotion = cvCreateImage( size, 8, 3 );
-	FrameData->ImMotion->origin = I->origin;
+
+	FrameData->ImGray = cvCreateImage(size,8,1);
 	FrameData->ImKalman = cvCreateImage( size, 8, 3 );
 	cvZero( FrameData->Frame );
 	cvZero( FrameData->BGModel );
 	cvZero( FrameData->FG );
 	cvZero( FrameData->IDesvf );
-	cvZero( FrameData->ImMotion);
 	cvZero( FrameData->ImKalman);
-	cvZero( FrameData->ImAdd);
+	cvZero( FrameData->ImGray);
 	FrameData->Flies = NULL;
 	FrameData->Stats = NULL;
 	FrameData->Tracks = NULL;
