@@ -48,13 +48,17 @@ void tiempoHMS( float sec , char* hms ){
 	int horas;
 	int minutos;
 	int segundos;
+	int centesimas;
 
+	centesimas = cvRound( ( sec - (int)sec) *100 );
 	minutos = sec/60;
 	segundos = (int)sec%60;
 	horas = minutos/60;
 	minutos = (int)minutos%60;
 
-	sprintf(hms,"%d:%d:%d", horas,minutos,segundos);
+	if( centesimas == 0 ) sprintf(hms,"%d:%d:%d:0%d", horas,minutos,segundos,centesimas);
+	else if( centesimas < 10) sprintf(hms,"%d:%d:%d:%d0", horas,minutos,segundos,centesimas);
+	else sprintf(hms,"%d:%d:%d:%d", horas,minutos,segundos,centesimas);
 
 }
 ///////////////////// TRATAMIENTO DE IMAGENES //////////////////////////////
@@ -196,23 +200,25 @@ void verMatrizIm( IplImage* Im, CvRect roi){
 	}
 }
 
-void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
+void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs,int numFrame){
 
 	static int count = 0;
 	int max_buffer;
+	char inicio;
+	char nombreFichero[30];
 
 	CvLineIterator iterator;
 
 	if(!existe("SamplelinesPC.csv")) crearFichero("SamplelinesPC.csv");
-
-	FILE *fptr = fopen("SLine120_220_267_5000.csv","a"); // Store the data here
+	sprintf(nombreFichero,"SLine%d_%d_%d.csv", pt1.y,pt1.x,pt2.x);
+	FILE *fptr = fopen(nombreFichero,"a"); // Store the data here
 
 	// MAIN PROCESSING LOOP:
 	//
 	if( count < num_frs){
 		max_buffer = cvInitLineIterator(rawImage,pt1,pt2,&iterator,8,0);
 		for(int j=0; j<max_buffer; j++){
-			fprintf(fptr,"%d;", iterator.ptr[0]); //Write value
+			fprintf(fptr,"%d;%d;",numFrame, iterator.ptr[0]); //Write value
 			CV_NEXT_LINE_POINT(iterator); //Step to the next pixel
 		}
 		// OUTPUT THE DATA IN ROWS:
@@ -220,6 +226,18 @@ void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs){
 		fprintf(fptr,"\n");
 		count++;
 	}
+	fclose(fptr);
+}
+
+void muestrearAreas( int area){
+
+
+	if(!existe("SampleAreas.csv")) crearFichero("SampleAreas.csv");
+
+	FILE *fptr = fopen("SampleAreas.csv","a"); // Store the data here
+
+	// MAIN PROCESSING LOOP:
+	fprintf(fptr,"%d;\n", area); //Write value
 	fclose(fptr);
 }
 
@@ -786,9 +804,7 @@ void liberarSTFrame( STFrame* frameData ){
 	cvReleaseImage(&frameData->BGModel);
 	cvReleaseImage(&frameData->FG);
 	cvReleaseImage(&frameData->IDesvf);
-	cvReleaseImage(&frameData->OldFG);
-	cvReleaseImage(&frameData->ImAdd);
-	cvReleaseImage(&frameData->ImMotion);
+	cvReleaseImage(&frameData->ImGray);
 	cvReleaseImage(&frameData->ImKalman);
 
 	liberarListaFlies( frameData->Flies);

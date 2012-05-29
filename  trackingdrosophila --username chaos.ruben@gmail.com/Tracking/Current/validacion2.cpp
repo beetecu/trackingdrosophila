@@ -43,6 +43,9 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 	// Establecemos parámetros para los umbrales en la resta de fondo por defecto
 	ValBGParams->LOW_THRESHOLD = valParams->privateParams->LThInicio;
 	ValBGParams->HIGHT_THRESHOLD = valParams->privateParams->HThInicio;
+	if( SH->FlyAreaDes == 0){
+		printf("hola");
+	}
 
 	// almacenar una copia del FG para restaurar el blob en caso de que falle la validación
 	cvCopy(FrameData->FG, Mask);
@@ -137,7 +140,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 					// no se rebasa la pximin.Almacenar la probabilidad mas alta y continuar
 					if (Exceso > -1 && j < valParams->MaxIncLTHIters
 							&& ValBGParams->LOW_THRESHOLD < valParams->MaxLowTH) {
-						if (FlyData->Px > BestPxi) {
+						if (FlyData->Px >= BestPxi) {
 							MejorFly = FlyData;
 							BestPxi = FlyData->Px;
 							Besthres = ValBGParams->LOW_THRESHOLD;
@@ -518,11 +521,11 @@ float CalcPxMin(SHModel* SH, float Umbral_L, int areaMin) {
 	double Pth_L; // Probabilidad correspondiente a dicha area.
 
 	if (!areaMin)
-		area_L = SH->FlyAreaMed - Umbral_L * SH->FlyAreaDes;
+		area_L = SH->FlyAreaMedia - Umbral_L * SH->FlyAreaDes;
 	else
 		area_L = areaMin;
 
-	Pth_L = exp(-abs(area_L - SH->FlyAreaMed) / SH->FlyAreaDes);
+	Pth_L = exp(-abs(area_L - SH->FlyAreaMedia) / SH->FlyAreaDes);
 
 	return Pth_L;
 

@@ -49,6 +49,12 @@ void CalcStatsFrame(STFrame* frameDataOut, ConvUnits* convUnits ){
 		 normalizeStatsFlies( frameDataOut->Flies, convUnits );
 	 }
 
+	if( statsParams->MuestrearLinea ){
+		int Cx = frameDataOut->BGModel->width/2;
+		int Cy = frameDataOut->BGModel->height/2;
+		muestrearLinea( frameDataOut->ImGray,cvPoint( Cx - 50, Cy ),	cvPoint( Cx + 50, Cy ), 1000, frameDataOut->num_frame);
+	}
+
 #ifdef MEDIR_TIEMPOS
 	printf( "Análisis finalizado ...\n" );
 	TiempoParcial = obtenerTiempo( ti , NULL);
@@ -390,7 +396,7 @@ void normalizeStatsBlobS( float k){
 
 	Stats->CMov1SMed = Stats->CMov1SMed * k;  //!< Cantidad de movimiento medio en los últimos 30 seg.
 	Stats->CMov1SDes = Stats->CMov1SDes * k;
-	Stats->CMov1SDes = Stats->CMov1SDes * k;  //!< Cantidad de movimiento medio en los últimos 30 seg.
+	Stats->CMov30SMed = Stats->CMov30SMed * k;  //!< Cantidad de movimiento medio en los últimos 30 seg.
 	Stats->CMov30SDes =Stats->CMov30SDes * k;
 	Stats->CMov1Med = Stats->CMov1Med * k;  //!< Cantidad de movimiento medio en el último min.
 	Stats->CMov1Des = Stats->CMov1Des * k;
@@ -433,7 +439,7 @@ void normalizeStatsFlies( tlcde* Flies, ConvUnits* convUnits ){
 			Fly->Stats->EstadoBlobCount = Fly->Stats->EstadoBlobCount * convUnits->fTOsec;
 			Fly->Stats->CountActiva = Fly->Stats->CountActiva * convUnits->fTOsec;
 			Fly->Stats->CountPasiva = Fly->Stats->CountPasiva * convUnits->fTOsec;
-			Fly->dstTotal = Fly->dstTotal * convUnits->pixelTOmm / 10;  // a cm
+			Fly->dstTotal = Fly->dstTotal * convUnits->pixelTOmm / 1000;  // a m
 			Fly->Stats->CMov1SMed =  Fly->Stats->CMov1SMed * convUnits->pfTOmms;
 		}
 		irAlSiguiente( Flies);
@@ -519,6 +525,14 @@ void SetStatsParams( int FPS ){
 							"Establecer por defecto a %d \n",settingName,statsParams->MaxBufferTime);
 
 		}
+
+		sprintf(settingName,"MuestrearLinea");
+		if(! config_setting_lookup_bool ( setting, settingName, &statsParams->MuestrearLinea  )  ){
+			statsParams->MuestrearLinea = false;
+			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+										"Establecer por defecto a %d \n",settingName,statsParams->CalcStatsMov);
+		}
+
 	}
 
 	SetPrivateStatsParams( FPS );
@@ -531,7 +545,7 @@ void SetDefaultStatsParams(   ){
 
 	statsParams->CalcStatsMov = true; 		// Switch true/false para activar el cálculo de estadísticas de movimiento
 	statsParams->MaxBufferTime = 8;
-
+	statsParams->MuestrearLinea = false;
 }
 
 void ShowStatsParams( char* Campo ){

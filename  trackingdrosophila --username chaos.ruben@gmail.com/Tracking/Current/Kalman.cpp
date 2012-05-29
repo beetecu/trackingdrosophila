@@ -54,6 +54,9 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 
 	// cargar datos del frame
 	Flies=frameData->Flies;
+	if( frameData->num_frame == 530 ){
+						printf("hola");
+					}
 
 	// Inicializar imagenes y parámetros
 	if( !ImKalman ){
@@ -470,6 +473,7 @@ void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams ){
 	irAlPrincipio( lsTracks);
 	for(int i = 0;i < lsTracks->numeroDeElementos ; i++){
 		// obtener Track
+
 		Track = (STTrack*)obtenerActual( lsTracks);
 		// ACTUALIZAR TRACK
 		// actualizar estadísticas del track en base a su estado
@@ -544,41 +548,42 @@ void SetStateBlobTracked( STTrack* Track, TrackingParams* trackParams ){
 	if( trackParams->pfTOmms) MovMed = Track->Stats->CMov1SMed*trackParams->pfTOmms;// de pixels/frame a mm/s
 	else MovMed = Track->Stats->CMov1SMed;
 
-	if( (MovMed >= 0)&&(Track->Stats->CMov1SMed <= trackParams->NullActivityTh) ) {
+	if( (MovMed >= 0)&&(MovMed <= trackParams->NullActivityTh) ) {
 		if( Track->Stats->EstadoBlob != 0 ){
 			Track->Stats->EstadoBlobCount = 0;
 		}
-		Track->Stats->TimeBlobOff +=1;
+		Track->Stats->TimeBlobOff ++;
 		Track->Stats->EstadoBlob = 0; // actividad nula
-		Track->Stats->EstadoBlobCount += 1;
+		Track->Stats->EstadoBlobCount ++;
 	}
 	else if( (MovMed > trackParams->NullActivityTh)&&(MovMed <= trackParams->LowActivityTh) ){
 		if( Track->Stats->EstadoBlob != 1 ){
 			Track->Stats->EstadoBlobCount = 0;
 		}
-		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->TimeBlobOn ++;
 		Track->Stats->EstadoBlob = 1;  // actividad baja
-		Track->Stats->EstadoBlobCount += 1;
+		Track->Stats->EstadoBlobCount ++;
 	}
 	else if(( MovMed > trackParams->LowActivityTh)&&(MovMed <= trackParams->MediumActivityTh) ){
 		if( Track->Stats->EstadoBlob != 2 ){
 			Track->Stats->EstadoBlobCount = 0;
 		}
-		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->TimeBlobOn ++;
 		Track->Stats->EstadoBlob = 2;  // actividad Media
-		Track->Stats->EstadoBlobCount += 1;
+		Track->Stats->EstadoBlobCount ++;
 	}
 	else if( MovMed > trackParams->MediumActivityTh){
 		if( Track->Stats->EstadoBlob != 3 ){
 			Track->Stats->EstadoBlobCount = 0; // Actividad alta
 		}
-		Track->Stats->TimeBlobOn +=1;
+		Track->Stats->TimeBlobOn ++;
 		Track->Stats->EstadoBlob = 3;
-		Track->Stats->EstadoBlobCount += 1;
+		Track->Stats->EstadoBlobCount ++;
 	}
 
 	if( Track->Stats->Estado== KALMAN_CONTROL ){
 		Track->Stats->EstadoBlob = 4; // oclusión
+		Track->Stats->EstadoBlobCount ++;
 	}
 
 }
@@ -693,7 +698,8 @@ void mediaMovilFPS( STStatTrack* Stats, int Periodo ){
 	// los que hayan alcanzado el valor máximo restamos al sumatorio el primer valor
 		irAlPrincipio( Stats->VectorSumB);
 		valor = ( valorSumB*)obtenerActual(  Stats->VectorSumB );
-		Stats->SumatorioMed =Stats->SumatorioMed - valor->sum; // sumatorio para la media
+		Stats->SumatorioMed =abs(Stats->SumatorioMed - valor->sum); // sumatorio para la media
+
 		Stats->CMov1SMed   =  Stats->SumatorioMed / Periodo; // cálculo de la media
 
 	}

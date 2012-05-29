@@ -80,7 +80,7 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 				printf( "\t-Mostrando Background, Foreground, OldBackground... ");
 				cvShowImage("Background", frameData->BGModel);
 				cvShowImage( "Foreground",frameData->FG);
-				//cvShowImage( "OldForeground",frameData->OldFG);
+
 				printf("Hecho\n");
 			}
 
@@ -168,15 +168,10 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 			printf( "\t-Mostrando Background, Foreground, OldBackground... ");
 			cvShowImage("Background", frameData->BGModel);
 			cvShowImage( "Foreground",frameData->FG);
-			//cvShowImage( "OldForeground",frameData->OldFG);
+
 
 			printf("Hecho\n");
 		}
-//		if ( visParams->ShowKalman ){
-//			printf("\t-Mostrando Motion...");
-//			cvShowImage( "Motion",frameData->ImMotion);
-//			printf("Hecho\n");
-//		}
 
 		if(visParams->ShowKalman){
 			printf("\t-Mostrando predicciones del filtro de Kalman...");
@@ -261,6 +256,7 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 						}
 						else  ImScale = ImVisual;
 
+
 						//DIBUJAMOS ELEMENTOS EN VENTANA DE VISUALIZACION DEPENDIENDO DEL TIPO
 						if( type == FLAT || type == BG_MODEL || type  == SHAPE ){
 
@@ -278,10 +274,11 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 						}
 
 						if ( visParams->ShowWindow ) cvShowImage("TrackingDrosophila",Window);
-						else if(visParams->pasoApaso){
+						if(visParams->pasoApaso){
 							cvShowImage("TrackingDrosophila",Window);
 							cvWaitKey(0);
 						}
+
 
 					}// FIN SHOW WINDOW
 
@@ -497,47 +494,50 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 		cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2,( Window->height - 30 - Window->height/64) ),
 							cvPoint( (Window->width-visParams->BPrWidth )/2 + cvRound(x), (Window->height - 30 + Window->height/64) ), CVX_BLUE, -1 );
 	}
-	if(visParams->HightGUIControls){
-		// si se pulsa p ó P  => pause = true
-		if( (cvWaitKey(1) & 255) == 'p' || (cvWaitKey(5) & 255) == 'P' ){
-			visParams->pause = true;
-			fflush( stdin);
+	// si no está activado el modo completo, activamos las opciones de visualización
+//	if(!visParams->ModoCompleto){
+		if(visParams->HightGUIControls){
+			// si se pulsa p ó P  => pause = true
+			if( (cvWaitKey(1) & 255) == 'p' || (cvWaitKey(5) & 255) == 'P' ){
+				visParams->pause = true;
+				fflush( stdin);
+			}
+			if( (cvWaitKey(1) & 255) == 'r' || (cvWaitKey(5) & 255) == 'R' ){
+				visParams->RecWindow = true;
+				fflush( stdin);
+			}
+			if( (cvWaitKey(1) & 255) == 's' || (cvWaitKey(5) & 255) == 'S' ){
+				visParams->RecWindow = false;
+				fflush( stdin);
+			}
+			if( (cvWaitKey(1) & 255) == 'f' || (cvWaitKey(5) & 255) == 'F' ){
+				visParams->pasoApaso = true;
+				fflush( stdin);
+			}
+			if( (cvWaitKey(1) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C')	{
+				visParams->pasoApaso = false;
+				fflush( stdin);
+			}
 		}
-		if( (cvWaitKey(1) & 255) == 'r' || (cvWaitKey(5) & 255) == 'R' ){
-			visParams->RecWindow = true;
-			fflush( stdin);
+		while(visParams->pause){
+			DibujarFondo( );
+			Incrustar( Window, ImScale, Window, visParams->ROITracking);
+			// MOSTRAR datos estadísticos en la ventana de visualización
+			// frame
+			if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
+			// blobs
+			ShowStatDataBlobs( FrameDataOut->Flies , FrameDataOut->Tracks);
+			// si se pulsa c ó C  => pause = false
+			if( (cvWaitKey(5) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C'){
+				visParams->pause = false;
+				fflush( stdin);
+			}
+			if( cvWaitKey(5) == 'g' || cvWaitKey(5) == 'G'){
+				cvSaveImage( "Captura1.jpg", Window );
+				fflush( stdin);
+			}
 		}
-		if( (cvWaitKey(1) & 255) == 's' || (cvWaitKey(5) & 255) == 'S' ){
-			visParams->RecWindow = false;
-			fflush( stdin);
-		}
-		if( (cvWaitKey(1) & 255) == 'f' || (cvWaitKey(5) & 255) == 'F' ){
-			visParams->pasoApaso = true;
-			fflush( stdin);
-		}
-		if( (cvWaitKey(1) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C')	{
-			visParams->pasoApaso = false;
-			fflush( stdin);
-		}
-	}
-	while(visParams->pause){
-		DibujarFondo( );
-		Incrustar( Window, ImScale, Window, visParams->ROITracking);
-		// MOSTRAR datos estadísticos en la ventana de visualización
-		// frame
-		if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
-		// blobs
-		ShowStatDataBlobs( FrameDataOut->Flies , FrameDataOut->Tracks);
-		// si se pulsa c ó C  => pause = false
-		if( (cvWaitKey(5) & 255) == 'c' || (cvWaitKey(5) & 255) == 'C'){
-			visParams->pause = false;
-			fflush( stdin);
-		}
-		if( cvWaitKey(5) == 'g' || cvWaitKey(5) == 'G'){
-			cvSaveImage( "Captura1.jpg", Window );
-			fflush( stdin);
-		}
-	}
+//	}
 }
 
 void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
@@ -619,8 +619,10 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	// margenes y dimensiones( en pixels)
 	unsigned int margenIz = 10; // margen izquierdo
 	unsigned int margenSup = visParams->ROITracking.y + visParams->ROITracking.height/2+5;
+	unsigned int margenSup2 = visParams->ROITracking.y + 5;
 	unsigned int anchoCol = 150; // margen entre columnas
 	unsigned int linea = 15;
+	unsigned int linea2 = 20;
 	unsigned int margenTxt = 10;
 
 	char NFrame[100];
@@ -633,39 +635,42 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	char BlobsDown[50];
 	char TotalBlobs[50];
 
-	char CMov1SMed[50];
-	char CMov1SDes[50];
-	char CMov30SMed[50];
-	char CMov30SDes[50];
-	char CMov1Med[50];
-	char CMov1Des[50];
-	char CMov5Med[50];
-	char CMov5Des[50];
-	char CMov10Med[50];
-	char CMov10Des[50];
-	char CMov15Med[50];
-	char CMov15Des[50];
-	char CMov30Med[50];
-	char CMov30Des[50];
-	char CMov1HMed[50];
-	char CMov1HDes[50];
-	char CMov2HMed[50];
-	char CMov2HDes[50];
-	char CMov4HMed[50];
-	char CMov4HDes[50];
-	char CMov8HMed[50];
-	char CMov8HDes[50];
-	char CMov16HMed[50];
-	char CMov16HDes[50];
-	char CMov24HMed[50];
-	char CMov24HDes[50];
-	char CMov48HMed[50];
-	char CMov48HDes[50];
+	char tiempohms[15];
+
+	static char CMov1SMed[50];
+	static char CMov1SDes[50];
+	static char CMov30SMed[50];
+	static char CMov30SDes[50];
+	static char CMov1Med[50];
+	static char CMov1Des[50];
+	static char CMov5Med[50];
+	static char CMov5Des[50];
+	static char CMov10Med[50];
+	static char CMov10Des[50];
+	static char CMov15Med[50];
+	static char CMov15Des[50];
+	static char CMov30Med[50];
+	static char CMov30Des[50];
+	static char CMov1HMed[50];
+	static char CMov1HDes[50];
+	static char CMov2HMed[50];
+	static char CMov2HDes[50];
+	static char CMov4HMed[50];
+	static char CMov4HDes[50];
+	static char CMov8HMed[50];
+	static char CMov8HDes[50];
+	static char CMov16HMed[50];
+	static char CMov16HDes[50];
+	static char CMov24HMed[50];
+	static char CMov24HDes[50];
+	static char CMov48HMed[50];
+	static char CMov48HDes[50];
 
 	/// ESTADISTICAS FRAME
-	sprintf(NFrame,"Frame %d ",GStats->numFrame);
+	sprintf(NFrame,"Frame %d ",GStats->numFrame );
 	sprintf(TProcesF,"Tiempo de procesado del Frame: %5.4g ms",GStats->TiempoFrame);
-	sprintf(TProces,"Segundos de video procesados: %0.f seg ", GStats->numFrame/GStats->fps);
+	tiempoHMS( (float)((float)GStats->numFrame/(float)GStats->fps), tiempohms );
+	sprintf(TProces,"Tiempo procesado: %s", tiempohms);
 	sprintf(PComplet,"Porcentaje completado: %0.2f %% ",(float)((float)GStats->numFrame/(float)GStats->totalFrames)*100 );
 	sprintf(FPS,"FPS: %.2f ",(1000/GStats->TiempoFrame));
 
@@ -681,15 +686,16 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	CvSize textsize = getTextSize(TProcesF, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 
 	// estadísticas Frame
-	cvPutText( Window, NFrame, cvPoint( 11,32), &fuente1, CVX_BLUE );
-	cvPutText( Window, TProcesF, cvPoint( 11,52), &fuente2, CVX_WHITE );
-	cvPutText( Window, TProces, cvPoint( 11,72), &fuente2, CVX_WHITE);
-	cvPutText( Window, PComplet, cvPoint( 11,92), &fuente2, CVX_WHITE);
-	cvPutText( Window, FPS, cvPoint( 11,112), &fuente1, CVX_RED);
+	cvPutText( Window, NFrame, cvPoint( margenIz,margenSup2 + linea2), &fuente1, CVX_BLUE );
+	cvPutText( Window, FPS, cvPoint( margenIz,margenSup2+ 2*linea2), &fuente1, CVX_RED);
+	cvPutText( Window, TProcesF, cvPoint( margenIz,margenSup2 + 3*linea2 ), &fuente2, CVX_WHITE );
+	cvPutText( Window, TProces, cvPoint( margenIz,margenSup2+ 4*linea2), &fuente2, CVX_WHITE);
+	cvPutText( Window, PComplet, cvPoint( margenIz,margenSup2+ 5*linea2), &fuente2, CVX_WHITE);
 
-	cvPutText( Window, TotalBlobs, cvPoint( 11,132), &fuente1, CVX_WHITE );
-	cvPutText( Window, BlobsUp, cvPoint( 11,152), &fuente1, CVX_WHITE );
-	cvPutText( Window, BlobsDown, cvPoint( 11,172), &fuente1, CVX_WHITE);
+
+	cvPutText( Window, TotalBlobs, cvPoint( margenIz,margenSup2+ 6*linea2), &fuente2, CVX_WHITE );
+	cvPutText( Window, BlobsUp, cvPoint( margenIz,margenSup2+ 7*linea2), &fuente2, CVX_WHITE );
+	cvPutText( Window, BlobsDown, cvPoint( margenIz,margenSup2+ 8*linea2), &fuente2, CVX_WHITE);
 
 	/// ESTADÍSTICAS MOVIMIENTO BLOBS
 	if( visParams->ShowStatsMov && Stats ){
@@ -793,21 +799,29 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 	unsigned int margenFil = 5; // margen entre filas
 	unsigned int alto = 160; // alto rectangulo blob
 	unsigned int ancho= 152; // ancho rectangulo blob
+	unsigned int anchoColN = 100; // ancho columna variables
+	unsigned int anchoColV = 52; // ancho columna nombres
 	unsigned int linea = 15;
 	unsigned int margenTxt = 10;
 	unsigned int margenTxtSup = 10;
 
-	char BlobId[50];
-	char EstadoTrack[50];
-	char T_estadoT[50];
-	char T_Activa[50];
-	char T_Pasiva[50];
-	char EstadoBlob[50];
-	char T_estadoB[50];
-	char dstTotal[50];
-	char Direccion[50];
-	char velocidad[50];
-	char tiempohms[12];
+
+	static char BlobId[50];
+	static char EstadoTrack[50];
+	static char T_estadoT[50];
+	static char T_Activa[50];
+	static char T_ActivaVal[50];
+	static char T_Pasiva[50];
+	static char T_PasivaVal[50];
+	static char EstadoBlob[50];
+	static char T_estadoB[50];
+	static char dstTotal[50];
+	static char dstTotalVal[50];
+	static char Direccion[50];
+	static char DireccionVal[50];
+	static char velocidad[50];
+	static char velocidadVal[50];
+	static char tiempohms[15];
 
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
 	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.9, 0.9, 0, 1, 8);
@@ -860,27 +874,49 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 					else if( Fly->Estado == 4) sprintf(EstadoBlob,"Oclusión");
 					tiempoHMS( Fly->Stats->EstadoBlobCount, tiempohms );
 					sprintf(T_estadoB,"%s", tiempohms);
+
 					tiempoHMS( Fly->Stats->CountActiva,tiempohms );
-					sprintf(T_Activa,"Ton : %s", tiempohms);
+					sprintf(T_Activa,"Ton:");
+					sprintf(T_ActivaVal,"%s", tiempohms);
+
 					tiempoHMS( Fly->Stats->CountPasiva ,tiempohms);
-					sprintf(T_Pasiva,"Toff: %s", tiempohms);
-					sprintf(dstTotal,"Dst: %0.1f cm ",Fly->dstTotal);
-					sprintf(Direccion,"Phi: %0.1f grad ",Fly->dir_filtered);
-					sprintf(velocidad,"Vmed: %0.1f mm/T", Fly->Stats->CMov1SMed );
+					sprintf(T_Pasiva,"Toff:");
+					sprintf(T_PasivaVal,"%s", tiempohms);
+
+					sprintf(dstTotal,"Dst(m):");
+					sprintf(dstTotalVal,"%0.3f", Fly->dstTotal);
+
+					sprintf(Direccion,"Phi(grad):");
+					sprintf(DireccionVal,"%0.1f",Fly->dir_filtered);
+
+					sprintf(velocidad,"V(mm/T):");
+					sprintf(velocidadVal,"%0.3f", abs(Fly->Stats->CMov1SMed ));
 
 					CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-			//		cvPutText( Window, PComplet,  cvPoint(( (ancho-textsize2.width)/2, Window->height/2),
-			//						&fuente2, CVX_WHITE );
 					cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2 , Origen1.y  + linea), &fuente1, CVX_WHITE );
-					textsize = getTextSize(T_estadoT, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+					textsize = getTextSize(EstadoBlob, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
 					cvPutText( Window, EstadoBlob, cvPoint( Origen1.x+ (ancho-textsize.width)/2, Origen1.y + margenTxtSup + 2*linea), &fuente2,CVX_WHITE );
 					textsize = getTextSize(T_estadoB, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
 					cvPutText( Window, T_estadoB, cvPoint( Origen1.x+ (ancho-textsize.width)/2, Origen1.y + margenTxtSup + 3*linea), &fuente2, CVX_WHITE );
+
 					cvPutText( Window, T_Activa, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2, CVX_WHITE );
 					cvPutText( Window, T_Pasiva, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 5*linea), &fuente2, CVX_WHITE );
 					cvPutText( Window, Direccion, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 6*linea), &fuente2, CVX_WHITE );
 					cvPutText( Window, velocidad, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 7*linea), &fuente2, CVX_WHITE );
 					cvPutText( Window, dstTotal, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 8*linea), &fuente2, CVX_WHITE );
+
+
+					textsize = getTextSize(T_ActivaVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+					cvPutText( Window, T_ActivaVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2, CVX_WHITE );
+					textsize = getTextSize(T_PasivaVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+					cvPutText( Window, T_PasivaVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 5*linea), &fuente2, CVX_WHITE );
+					textsize = getTextSize(DireccionVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+					cvPutText( Window, DireccionVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 6*linea), &fuente2, CVX_WHITE );
+					textsize = getTextSize(velocidadVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+					cvPutText( Window, velocidadVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 7*linea), &fuente2, CVX_WHITE );
+					textsize = getTextSize(dstTotalVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+					cvPutText( Window, dstTotalVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 8*linea), &fuente2, CVX_WHITE );
+
 					cvPutText( Window, EstadoTrack, cvPoint( Origen1.x + margenTxt , Origen1.y + margenTxtSup + 9*linea), &fuente2, CVX_WHITE );
 					cvPutText( Window, T_estadoT, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 10*linea), &fuente2, CVX_WHITE );
 
@@ -1403,8 +1439,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 		visParams = ( VisParams *) malloc( sizeof( VisParams) );
 		if(!visParams) {error(4); return;}
 	}
-	fprintf(stderr,"\nIniciando flujo a fichero de video...\n");
-	VWriter = iniciarAvi(  nombreVideo, FPS);
+
 
 	fprintf(stderr,"\nCargando parámetros de visualización...");
 	config_init(&cfg);
@@ -1572,6 +1607,10 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 	}
 
 	SetPrivateHightGUIParams(  ImRef, TotalFrames );
+	if(visParams->RecWindow) {
+		fprintf(stderr,"\nGrabación activada.Iniciando flujo a fichero de video...\n");
+		VWriter = iniciarAvi(  nombreVideo, FPS);
+	}
 	ShowHightGUIParams( settingFather );
 //	ShowParams( settingFather );
 	config_destroy(&cfg);
@@ -1617,6 +1656,7 @@ void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames ){
 			}
 		}
 	}
+
 }
 
 void SetDefaultHightGUIParams(  IplImage* ImRef ){

@@ -60,7 +60,9 @@ void ImPreProcess( IplImage* src,IplImage* dst, IplImage* ImFMask,bool bin, CvRe
 
 void verMatrizIm( IplImage* Im, CvRect roi);
 
-void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs);
+void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frsint,int NumFrame);
+
+void muestrearAreas( int area);
 
 void muestrearPosicion( tlcde* flies, int id );
 

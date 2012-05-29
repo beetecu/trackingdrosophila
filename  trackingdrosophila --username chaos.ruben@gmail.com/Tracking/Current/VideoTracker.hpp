@@ -97,10 +97,10 @@ typedef struct {
 	float CMov1MMed;  //!< Cantidad de movimiento medio.mm/min
 	float CMov1HMed;  //!< Cantidad de movimiento medio.mm/h
 	unsigned int EstadoTrack;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
-	unsigned int EstadoBlobCount;  //!< Tiempo que el blob permanece en un estado
+	float EstadoBlobCount;  //!< Tiempo que el blob permanece en un estado
 	unsigned int EstadoTrackCount;
-	unsigned int CountActiva;
-	unsigned int CountPasiva;
+	float CountActiva;
+	float CountPasiva;
 }STStatFly;
 
 	typedef struct {
@@ -222,13 +222,12 @@ typedef struct {
 	typedef struct {
 		int num_frame; //!< Identificación del Frame procesado.
 		IplImage* Frame;//!< Imagen fuente de 3 canales ( RAW ).
+		IplImage* ImGray;//!< Imagen en escala de grises
 		IplImage* BGModel;//!< Imagen de 8 bits que contiene el  BackGround Model Dinámico.
 		IplImage* IDesvf;//!< Imagen de 32 bits que contiene la Desviación Típica del modelo de fondo dinámico.
-		IplImage* OldFG; //!< Imagen que contiene el OldForeGround ( blobs estáticos ).
 		IplImage* FG;  //!< Imagen que contiene el Foreground ( blobs en movimiento ).
-		IplImage* ImAdd;//!< FG + OldFG
-		IplImage* ImMotion;//!< Imagen que contiene la orientación de moscas.
 		IplImage* ImKalman;
+
 		STStatFrame * Stats;
 		STGlobStatF * GStats;
 		tlcde* Flies; //!< Puntero a lista circular doblemente enlazada (tlcde) con los datos de cada Mosca.
@@ -239,10 +238,10 @@ typedef struct {
 /// Estructura para el modelo de forma de los blobs
 
 	typedef struct {
-	float FlyAreaMed ; //!< Mediana de las areas de los blobs que se encuentran en movimiento en cada frame.
-	float FlyAreaMedia;//!< Media de las areas de los blobs que se encuentran en movimiento en cada frame.
-	float FlyAreaDes ; //!< Desviación típica de las areas de los blobs que se encuentran en movimiento en cada frame.
-}SHModel;
+		float FlyAreaMed ; //!< Mediana de las areas de los blobs que se encuentran en movimiento en cada frame.
+		float FlyAreaMedia;//!< Media de las areas de los blobs que se encuentran en movimiento en cada frame.
+		float FlyAreaDes ; //!< Desviación típica de las areas de los blobs que se encuentran en movimiento en cada frame.
+	}SHModel;
 
 /// Estructura con las unidades de conversión. Solo si se puede calibrar.
 typedef struct{

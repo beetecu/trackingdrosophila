@@ -102,6 +102,11 @@ typedef struct{
 								// ACLARACIÓN: Suponiendo un Frame Rate de 30, un valor de 48 horas supondrá almacenar
 								// en memoria un vector de 7020000 elementos con el consiguiente coste computacional
 								// y de memoria.
+
+	int MuestrearLinea;			// Realiza un muestreo del brillo de los píxels de una línea horizontal durante NumMuestras frames
+								// Su uso está indicado para realizar una calibración precisa del modelo de fondo tras un análisis estadístico
+								// de los datos. Se muestrea una línea horizontal de 100 píxels ( centro +-50 )
+
 }STStatsParams;
 
 void SetStatsParams( int FPS );
@@ -114,7 +119,7 @@ void ShowStatsParams( char* Campo );
 
 void CalcStatsFrame( STFrame* frameDataOut , ConvUnits* convUnits);
 
-STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS );
+STGlobStatF* SetGlobalStats( int NumFrame, timeval tif, timeval tinicio, int TotalFrames, float FPS);
 
 STStatFrame* InitStatsFrame(  int fps);
 
