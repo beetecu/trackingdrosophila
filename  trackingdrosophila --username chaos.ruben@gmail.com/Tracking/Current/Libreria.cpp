@@ -1021,4 +1021,6 @@ void QuitarCR (char *cadena)
 }
 ///!brief inicia la estructura para grabar un video.
 
+///////////////////////////// OTROS //////////////////////////////////7
+
 

@@ -108,12 +108,9 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 			currentBlob->FillBlob( Imblob, CV_RGB(255,0,0));
 
 		}//Fin del For 1
-		if(ShParams->SHOW_DATA_AREAS) printf("\n");
+
 		Shape->FlyAreaMedia = Sumatorio / total_blobs;
 		Shape->FlyAreaDes = (SumatorioDes / total_blobs) - Shape->FlyAreaMedia*Shape->FlyAreaMedia;
-		if(ShParams->SHOW_DATA_AREAS) {
-			printf("Media =\t %0.1f\t Des =\t %0.1f \n",Shape->FlyAreaMedia, Shape->FlyAreaDes);
-		}
 
 		num_frames += 1;
 //		cvResetImageROI(frameData->FG);

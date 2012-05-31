@@ -94,17 +94,22 @@ typedef struct{
 typedef struct{
 	float sum;
 }valorSumB;
+typedef struct{
+	float sum;
+}valorSumVx;
+typedef struct{
+	float sum;
+}valorSumVy;
 
 typedef struct {
 	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
 
-	tlcde* VectorSumB;//!< vector que contiene las velocidades instantáneas en 1800 frames
+	tlcde* VectorSumB;//!< vector que contiene las velocidades instantáneas en T frames
 	float SumatorioMed; //! sumatorio para la velocidad media en 1 seg
-//	float SumatorioDes; //! sumatorio para la desviación en la velocidad
+	float SumatorioDes; //! sumatorio para la desviación en la velocidad
 
-	float CMov1SMed;  //!< Cantidad de movimiento medio pixels/frame.
-	float CMov1MMed;  //!< Cantidad de movimiento medio.pixels/frames1m
-	float CMov1HMed;  //!< Cantidad de movimiento medio.pixels/frames1h
+	float CMovMed;  //!< Cantidad de movimiento medio pixels/frame.
+	float CMovDes;
 	float TOn;  //!< Tiempo en movimiento desde el inicio.
 	float TOff; //!< Tiempo parado desde el inicio.
 
@@ -127,6 +132,14 @@ typedef struct{
 	CvScalar Color;
 	bool validez; // Flag que indica que el track es válido con una alta probabilidad.
 	float VInst; //!< Velocidad instantánea
+	float Vxmed;
+	float Vymed;
+	float Vmed;
+	float PhiMed;
+	tlcde* VectorSumVx;//!< vector que contiene las velocidades instantáneas en T frames
+	float SumatorioVx; //! sumatorio para la velocidad media en 1 seg
+	tlcde* VectorSumVy;//!< vector que contiene las velocidades instantáneas en T frames
+	float SumatorioVy; //! sumatorio para la velocidad media en 1 seg
 
 	CvKalman* kalman ; // Estructura de kalman para la linealizada
 
@@ -154,28 +167,24 @@ typedef struct{
 
 	int Default; // swich para establecer valores por defecto
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida inicial : V->N( 0, Rk )
-	float R_x0;
-	float R_y0;
-	float R_Vx0;
-	float R_Vy0;
-	float R_phiZk0;
+	float alpha_Rk0;
+	int g_slider_alpha_Rk0;
+	float AlphaR_phi0;
+	int g_slider_AlphaR_phi0;
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida: V->N( 0, Rk )
-	float R_x;
-	float R_y;
-	float R_Vx;
-	float R_Vy;
-	float R_phiZk;
+	float alpha_Rk;
+	int g_slider_alpha_Rk;
+	float AlphaR_phi;
+	int g_slider_AlphaR_phi;
 }CamParams;
 
 typedef struct{
 	int Default; //
-	float Factor; // Variable que multiplica a la incertidumbre en la medida
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida: V->N( 0, Rk )
-	float R_x;
-	float R_y;
-	float R_Vx;
-	float R_Vy;
-	float R_phiZk;
+	float alpha_Rk;	// factor que multiplica a la incertidumbre en la medida
+	int g_slider_alpha_Rk;
+	float R_phiZk;	// incertidumbre en la medida de la ángulo
+	int g_slider_R_phiZk;
 
 }KalParams;
 
@@ -185,27 +194,22 @@ typedef struct{
 	float V_Angular;
 	float MaxJump;
 	int InitTime;
+	float Q;	 // factor Q: error asociado al modelo del sistema Wk->N(0,Q): Q = f(F,B y H)
+	int PeriodoVmed;
+	int createTrackbars;
 
 	CamParams* Cam;
 	KalParams* Kal;
 
-	// private
-	// componentes del vector Xk. Predicciones
-	float x_Xk ;
-	float y_Xk ;
-	float vx_Xk ;
-	float vy_Xk ;
-	float phiXk ;
-
-	// variables para establecer la nueva medida
-	CvMat* H ;
-	float Vx ;
-	float Vy ;
-	int Ax; //incremento de x
-	int Ay; //incremento de y
-	float distancia; // sqrt( Ax² + Ay² )
+	// componentes del vector Rk. Ruido en la medida
+	float R_x;
+	float R_y;
+	float R_Vx;
+	float R_Vy;
+	float R_phiZk;
 
 }FilterParams;
+
 
 /*!\brief En la primera iteración
  *-# Genera un track por cada blob ( un track por cada nueva etiqueta = -1 ) y los introduce en una lista doblemente enlazada
@@ -438,6 +442,9 @@ float corregirTita( float phiXk, float tita );
 	  \param EstadoTrack Situación del Track: SLEEPING(0), CAM_CONTROL(1), KALMAN_CONTROL(2)
 
 */
+
+float errorR_PhiZkV( float vx_Zk, float vy_Zk );
+
 void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams );
 
 void updateStatsTrack( STTrack* Track, TrackingParams* trackParams );
@@ -448,9 +455,13 @@ void updateFlyTracked( STTrack* Track, tlcde* Flies );
 
 void generarFly( STTrack* Track, tlcde* Flies);
 
-void mediaMovilFPS( STStatTrack* Stats, int Max );
+void mediaMovilVkalman( STTrack* Track, int Periodo );
+
+void mediaMovilStats( STStatTrack* Stats, int Periodo );
 
 void mostrarVMedia( tlcde* Vector);
+
+
 
 int dejarId( STTrack* Track, tlcde* identities );
 
@@ -471,6 +482,24 @@ void SetDefaultKFilterParams( TrackingParams* trackParams  );
 void ShowKalmanFilterParams( char* Campo );
 
 void SetPrivateKFilterParams(  );
+
+
+void crearTrackBars();
+
+void onTrackbarAlphaRkCam0(int val );
+
+void onTrackbarAlphaRPhiCam0(int val );
+
+void onTrackbarAlphaRkCam(int val );
+
+void onTrackbarAlphaRPhiCam(int val );
+
+void onTrackbarVmed(int val );
+
+void onTrackbarAlphaRkKal(int val );
+
+void onTrackbarRPhiKal(int val );
+
 
 void DeallocateKalman( tlcde* lista );
 
