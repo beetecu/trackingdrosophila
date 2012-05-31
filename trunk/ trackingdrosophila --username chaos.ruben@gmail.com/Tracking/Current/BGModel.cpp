@@ -17,7 +17,7 @@
 //int LOW_THRESHOLD = 10;
 
 
-int g_slider_position = 50;
+
 
 
 // Float 1-Channel

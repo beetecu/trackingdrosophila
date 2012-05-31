@@ -55,7 +55,7 @@ using namespace std;
 
 #define SHOW_KALMAN_DATA 1
 
-#define CREATE_TRACKBARS 0 //!< Switch de 0 a 1 para visualizar trackbars.
+#define CREATE_TRACKBARS 1 //!< Switch de 0 a 1 para visualizar trackbars.
 
 #ifndef _ESTRUCTURAS_
 #define _ESTRUCTURAS_
@@ -93,9 +93,8 @@ using namespace std;
 
 typedef struct {
 
-	float CMov1SMed;  //!< Cantidad de movimiento medio mm/s.
-	float CMov1MMed;  //!< Cantidad de movimiento medio.mm/min
-	float CMov1HMed;  //!< Cantidad de movimiento medio.mm/h
+	float CMovMed;  //!< Cantidad de movimiento medio mm/s.
+	float CMovDes;
 	unsigned int EstadoTrack;  //!< Indica el estado en que se encuentra el track: KALMAN_CONTROL(0) CAMERA_CONTROL (1) o SLEEP (2).
 	float EstadoBlobCount;  //!< Tiempo que el blob permanece en un estado
 	unsigned int EstadoTrackCount;
@@ -130,8 +129,10 @@ typedef struct {
 
 		// Tracking. Dinámica
 		float VInst; //!< Velocidad instantánea
+		float Vmed;  //!< Velocidad media para el filtro.
 		float dstTotal; //!< almacena la distancia total recorrida hasta el momento
 		float direccion; //!<almacena la dirección del desplazamiento
+		float dir_med; //! dirección obtenida con la media movil de la velocidad para el filtro de kalman.
 		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
 
 		unsigned int Estado;
@@ -140,6 +141,7 @@ typedef struct {
 						///este flag indicará si el blob se encuentra en alguna de las regiones marcadas
 
 		void* siguiente;
+		void* anterior;
 		STStatFly* Stats;
 		tlcde* Tracks; //!< Indica los tracks que han sido asignados a este blob
 	}STFly;

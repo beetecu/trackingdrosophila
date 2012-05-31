@@ -440,7 +440,8 @@ void normalizeStatsFlies( tlcde* Flies, ConvUnits* convUnits ){
 			Fly->Stats->CountActiva = Fly->Stats->CountActiva * convUnits->fTOsec;
 			Fly->Stats->CountPasiva = Fly->Stats->CountPasiva * convUnits->fTOsec;
 			Fly->dstTotal = Fly->dstTotal * convUnits->pixelTOmm / 1000;  // a m
-			Fly->Stats->CMov1SMed =  Fly->Stats->CMov1SMed * convUnits->pfTOmms;
+			Fly->Stats->CMovMed =  Fly->Stats->CMovMed * convUnits->pfTOmms;
+			Fly->Stats->CMovDes =  Fly->Stats->CMovDes * convUnits->pfTOmms;
 		}
 		irAlSiguiente( Flies);
 	}
