@@ -253,14 +253,14 @@ void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 					a = NewTrack->Stats->InitPos.x - SleepingTrack->x_k_Pos->data.fl[0];
 					b = NewTrack->Stats->InitPos.y - SleepingTrack->x_k_Pos->data.fl[1];
 					EUDistance( a,b,&direccion, &distancia);
-					if( (distancia < menorDistancia) && (distancia < MAX_JUMP) ){
+					if( (distancia < menorDistancia) && (distancia <  (int)obtenerFilterParam( MAX_JUMP ) ) ){
 						masCercano = j;
 						menorDistancia = distancia;
 					}
 				}
 			}
 			//Si se cumple la condición reasignamos
-			if ( menorDistancia <= MAX_JUMP){
+			if ( menorDistancia <= (int)obtenerFilterParam( MAX_JUMP )){
 				dejarId( NewTrack, lsIds );
 				reasignarTracks( lsTracks, framesBuf,lsIds,i,masCercano, UPDATE_STATS );
 				deadTrack( lsTracks, masCercano );
