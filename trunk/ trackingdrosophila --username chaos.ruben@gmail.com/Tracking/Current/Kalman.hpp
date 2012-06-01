@@ -25,9 +25,10 @@
 //#include "VideoTracker.hpp"
 #include "Tracking.hpp"
 
-#define VELOCIDAD  5.3//10.599 // velocidad del blob en pixeles por frame
-#define V_ANGULAR 2.6//5.2 // velocidad angular del blob en pixeles por frame
-#define MAX_JUMP 100
+// indican qué parametros se desean obtener del filtro.
+#define VELOCIDAD  1
+#define V_ANGULAR 2
+#define MAX_JUMP 3
 
 #define SLEEPING 0
 #define CAM_CONTROL 1
@@ -95,11 +96,9 @@ typedef struct{
 	float sum;
 }valorSumB;
 typedef struct{
-	float sum;
-}valorSumVx;
-typedef struct{
-	float sum;
-}valorSumVy;
+	float Vx;
+	float Vy;
+}valorV;
 
 typedef struct {
 	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
@@ -132,14 +131,23 @@ typedef struct{
 	CvScalar Color;
 	bool validez; // Flag que indica que el track es válido con una alta probabilidad.
 	float VInst; //!< Velocidad instantánea
-	float Vxmed;
-	float Vymed;
-	float Vmed;
+	float VxInst;
+	float VyInst;
+	float PhiInst;
+	float errorPhiInst;
 	float PhiMed;
-	tlcde* VectorSumVx;//!< vector que contiene las velocidades instantáneas en T frames
-	float SumatorioVx; //! sumatorio para la velocidad media en 1 seg
-	tlcde* VectorSumVy;//!< vector que contiene las velocidades instantáneas en T frames
-	float SumatorioVy; //! sumatorio para la velocidad media en 1 seg
+	float errorVPhi;
+	float errorPhidif;
+	float errorPhi;
+
+	tlcde* VectorV;//!< lista que contiene vector con las velocidades instantáneas en T frames y
+	float SumatorioVx; //! sumatorio para la velocidad media en T seg
+	float SumatorioVy; //! sumatorio para la velocidad media en T seg
+	float Vmed;
+	float Vxmed;
+	float errorVx;
+	float Vymed;
+	float errorVy;
 
 	CvKalman* kalman ; // Estructura de kalman para la linealizada
 
@@ -167,11 +175,6 @@ typedef struct{
 
 	int Default; // swich para establecer valores por defecto
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida inicial : V->N( 0, Rk )
-	float alpha_Rk0;
-	int g_slider_alpha_Rk0;
-	float AlphaR_phi0;
-	int g_slider_AlphaR_phi0;
-	// componentes del vector Rk de covarianzas. Incertidumbre en la medida: V->N( 0, Rk )
 	float alpha_Rk;
 	int g_slider_alpha_Rk;
 	float AlphaR_phi;
@@ -193,9 +196,12 @@ typedef struct{
 	float Velocidad;
 	float V_Angular;
 	float MaxJump;
-	int InitTime;
+
+	int MaxBack;
+	int MaxVPhiError;
+	int T_Vmed;
 	float Q;	 // factor Q: error asociado al modelo del sistema Wk->N(0,Q): Q = f(F,B y H)
-	int PeriodoVmed;
+
 	int createTrackbars;
 
 	CamParams* Cam;
@@ -288,7 +294,7 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps );
 
 CvKalman* initKalman( STFly* fly, float dt );
 
-void ReInitTrack( STTrack* Track, STFly* Fly , float fps );
+
 //! \brief Establece el estado en función de si hay o no nueva medida y en caso de que la haya, del tipo que sea.
 //! - 0) Si no hay datos => Estado track = SLEEPING
 //! - 1) Un track apunta a un blob. CAM_CONTROL
@@ -327,6 +333,14 @@ int SetStateTrack( STTrack* Track, STFly* flySig );
 
 void generarMedida( STTrack* Track, int EstadoTrack );
 
+void CalcularVmed(  STTrack* Track, float* VMed, float* Vxmed, float* Vymed, float* errorVx, float* errorVy );
+
+void obtenerDes( tlcde* Vector, float Vxmed, float Vymed,float* errorVx, float* errorVy);
+
+void obtenerDir( STTrack* Track, float *PhiMed, float* errorVPhi );
+
+void corregirDir( float phiXk,float* phiZk );
+
 /*!\brief Incertidumbre en la medida Vk; Vk->N(0,R_Zk).
  * Genera el ruido a partir del estado del track
  * es decir, rellena las variables del vector R_Zk = { R_x, R_y, R_vx, R_vy, RphiZk }.
@@ -351,7 +365,10 @@ void generarMedida( STTrack* Track, int EstadoTrack );
  * @param EstadoTrack Situación del Track: SLEEPING(0), CAM_CONTROL(1), KALMAN_CONTROL(2)
  */
 
+
 void generarRuido( STTrack* Track, int EstadoTrack );
+
+
 
 /*! \brief
 *	-# Haya la distancia euclidea entre dos puntos.
@@ -483,18 +500,19 @@ void ShowKalmanFilterParams( char* Campo );
 
 void SetPrivateKFilterParams(  );
 
+int obtenerFilterParam( int param );
 
 void crearTrackBars();
 
-void onTrackbarAlphaRkCam0(int val );
+void onTrackbarTVmed(int val );
 
-void onTrackbarAlphaRPhiCam0(int val );
+void onTrackbarMaxBack(int val );
+
+void onTrackbarMaxVPhiError(int val );
 
 void onTrackbarAlphaRkCam(int val );
 
 void onTrackbarAlphaRPhiCam(int val );
-
-void onTrackbarVmed(int val );
 
 void onTrackbarAlphaRkKal(int val );
 

@@ -263,19 +263,6 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 
 }
 
-// si el ultimo parámetro no es null indica
-//int enlazarFlies( STFly* flyAnterior, STFly* flyActual,float dt, tlcde* ids ){
-int enlazarFlies(STFly* flyAnterior, STFly* flyActual) {
-	// si la actual ya habia sido etiquetada dejamos su etiqueta
-
-	flyAnterior->siguiente = (STFly*) flyActual;
-	flyActual->etiqueta = flyAnterior->etiqueta;
-	flyActual->Color = flyAnterior->Color;
-
-	return 1;
-}
-
-
 double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 
 	float Matrix_error_cov[] = { Matrix->data.fl[0], Matrix->data.fl[6] };
@@ -303,6 +290,7 @@ double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 
 	ProbKalman = 100 * ProbKalman;
 
+
 	if (ProbKalman < 1 || ProbKalman < 0)
 		ProbKalman = 0;
 
@@ -314,5 +302,28 @@ void releaseAI() {
 	free(sleep_list);
 }
 
+// err( Xpred, Xobs ) = ( xpred - xobs )² + ypred - yobs)² + w(phipred - phiobs)²
+float funcionError( CvPoint posXk, CvPoint posZk, float phiXk, float phiZk  ){
 
+	static float error;
+	static int MaxJump;
+	static float phi ;
+	static float distancia;
+	static float Ax;
+	static float Ay;
+
+
+	MaxJump = obtenerFilterParam( MAX_JUMP );
+	Ax = posXk.x - posZk.x ;
+	Ay = posXk.y - posZk.y ;
+	EUDistance( Ax, Ay, NULL, &distancia );
+	if ( distancia > MaxJump ) error = 100000;
+	else{
+		phi =  phiZk;
+		corregirDir( phiXk, &phi );
+		error = pow( Ax , 2) + pow( Ay , 2) + pow( phiXk - phi,2 );
+	}
+	return error;
+
+}
 
