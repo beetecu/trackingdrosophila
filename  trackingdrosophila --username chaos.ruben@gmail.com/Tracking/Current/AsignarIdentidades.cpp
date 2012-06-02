@@ -15,7 +15,7 @@ tlcde* sleep_list = NULL;
 
 int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 
-	CvMat* CoorReal = cvCreateMat(1, 2, CV_32FC1);
+
 	CvMat* Matrix_Asignation = NULL;
 
 	STTrack* Track = NULL;
@@ -26,6 +26,7 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 	STFly* FlySiguiente = NULL;
 
 	if (!sleep_list) {
+
 		sleep_list = (tlcde *) malloc(sizeof(tlcde));
 		if (!sleep_list) {
 			error(4);
@@ -42,8 +43,7 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 		}
 	}
 
-	double
-			Hungarian_Matrix[lsTraks->numeroDeElementos][Flies->numeroDeElementos];
+	double	Hungarian_Matrix[lsTraks->numeroDeElementos][Flies->numeroDeElementos];
 	int v = 0;
 	int g = 0;
 	int ger = 0;
@@ -57,6 +57,7 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 
 		CvMat* Matrix_Hungarian = cvCreateMat(lsTraks->numeroDeElementos,
 				Flies->numeroDeElementos, CV_32FC1); // Matriz de Pesos
+		CvMat* CoorReal = cvCreateMat(1, 2, CV_32FC1);
 		cvZero(Matrix_Hungarian);
 
 		int p = 0;
@@ -73,6 +74,7 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 
 				CoorReal->data.fl[0] = FlyNext->posicion.x;
 				CoorReal->data.fl[1] = FlyNext->posicion.y;
+
 
 				double Peso = PesosKalman(Track->Measurement_noise_cov,
 						Track->x_k_Pre, CoorReal);
@@ -256,8 +258,11 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 				anyadirAlFinal(Track_list, lsTraks);
 			}
 		}
+		cvReleaseMat( &Matrix_Hungarian);
+		cvReleaseMat( &CoorReal);
 		return 1;
 	}
+
 
 	return 0;
 
@@ -269,8 +274,10 @@ double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 
 	float X = CordReal->data.fl[0];
 	float Y = CordReal->data.fl[1];
+	float phiZk = CordReal->data.fl[4];
 	float EX = Predict->data.fl[0];
 	float EY = Predict->data.fl[1];
+	float phiXk = Predict->data.fl[4];
 	//	float VarX = sqrt(Matrix_error_cov[0]);
 	//	float VarY = sqrt(Matrix_error_cov[1]);
 
@@ -280,6 +287,9 @@ double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 	double ValorX, ValorY;
 	double DIVX, DIVY;
 	double ProbKalman;
+	float error;
+
+	error = funcionError( cvPoint( EX , EY ), cvPoint( X , Y ), phiXk, phiZk );
 
 	ValorX = X - EX;
 	ValorY = Y - EY;
@@ -301,8 +311,19 @@ double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 void releaseAI() {
 	free(sleep_list);
 }
+/*!\brief  Calcula el error en función de la distancia y la diferencia de orientación.
+ * 	Si la distancia supera cierto umbral se establece un valor \n
+ *  si Distancia < Umbral
+ *  	err( Xpred, Xobs ) = ( xpred - xobs )² + (ypred - yobs)² + w(phipred - phiobs)²  con los phi en (-pi/2,pi/2)
+ *  si no error = 100000
+ *
+ * @param posXk Posición predicha por el filtro
+ * @param posZk Posición de la posible asignación
+ * @param phiXk Orientación predicha por el filtro
+ * @param phiZk Orientación de la posible asignación
+ * @return error
+ */
 
-// err( Xpred, Xobs ) = ( xpred - xobs )² + ypred - yobs)² + w(phipred - phiobs)²
 float funcionError( CvPoint posXk, CvPoint posZk, float phiXk, float phiZk  ){
 
 	static float error;
@@ -311,7 +332,7 @@ float funcionError( CvPoint posXk, CvPoint posZk, float phiXk, float phiZk  ){
 	static float distancia;
 	static float Ax;
 	static float Ay;
-
+	const float w = 0.44; // cte. Para dar más peso al error por la distancia que por la dif de ángulos.
 
 	MaxJump = obtenerFilterParam( MAX_JUMP );
 	Ax = posXk.x - posZk.x ;
@@ -320,8 +341,8 @@ float funcionError( CvPoint posXk, CvPoint posZk, float phiXk, float phiZk  ){
 	if ( distancia > MaxJump ) error = 100000;
 	else{
 		phi =  phiZk;
-		corregirDir( phiXk, &phi );
-		error = pow( Ax , 2) + pow( Ay , 2) + pow( phiXk - phi,2 );
+		corregirDir( phiXk, &phi ); // corrige los ángulos para que no difieran en más de pi.
+		error = pow( Ax , 2) + pow( Ay , 2) + w*pow( phiXk - phi,2 );
 	}
 	return error;
 
