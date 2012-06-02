@@ -103,6 +103,9 @@ typedef struct{
 typedef struct {
 	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
 
+	float a; // Tamaño medio del eje menor de la elipse del blob rastreado.
+	float b; // Tamaño medio del eje mayor de la elipse del blob rastreado.
+
 	tlcde* VectorSumB;//!< vector que contiene las velocidades instantáneas en T frames
 	float SumatorioMed; //! sumatorio para la velocidad media en 1 seg
 	float SumatorioDes; //! sumatorio para la desviación en la velocidad
@@ -148,6 +151,7 @@ typedef struct{
 	float errorVx;
 	float Vymed;
 	float errorVy;
+
 
 	CvKalman* kalman ; // Estructura de kalman para la linealizada
 

@@ -124,7 +124,7 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 	printf("\n\t\t-Tiempo total %0.2f s\n", TiempoParcial);
 #endif
 
-	printf("\n\t\t2)Aprendiendo fondo...\n ");
+	printf("\n\t\t2)Modelando fondo...\n ");
 #ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
 #endif
 
