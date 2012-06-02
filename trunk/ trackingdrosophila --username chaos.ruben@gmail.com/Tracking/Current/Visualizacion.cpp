@@ -210,7 +210,7 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 							first = 1;
 						}
 						if( type == SHAPE && first ){
-							 Transicion4("Aprendiendo fondo...", 50);
+							 Transicion4("Modelando fondo...", 50);
 							 first = 0;
 						}
 						if( type == TRAKING && !first  ){
@@ -271,7 +271,7 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 								if( visParams->ShowLearningFlat) cvShowImage( "Buscando Plato...",BGModel->Imed);
 								break;
 							case SHOW_INIT_BACKGROUND:
-								if( visParams->ShowInitBackground ) cvShowImage("Aprendiendo fondo...", BGModel->Imed);
+								if( visParams->ShowInitBackground ) cvShowImage("Modelando fondo...", BGModel->Imed);
 								break;
 							case SHOW_SHAPE_MODELING:
 								if( visParams->ShowShapeModel ){
@@ -1123,12 +1123,12 @@ void IncrustarTxt( int num){
 
 				break;
 			case BG_MODEL:
-				sprintf(Texto,"Aprendiendo fondo...");
+				sprintf(Texto,"Modelando fondo...");
 				textsize = getTextSize(Texto, CV_FONT_HERSHEY_PLAIN, 2, 1, 0);
 				cvPutText( Window, Texto, cvPoint( (Window->width-textsize.width)/2,visParams->ROIPreProces.y + visParams->ROIPreProces.height + 30), &fuente1, CVX_RED );
 				break;
 			case SHAPE:
-				sprintf(Texto,"Aprendiendo forma...");
+				sprintf(Texto,"Modelando forma...");
 				textsize = getTextSize(Texto, CV_FONT_HERSHEY_PLAIN, 2, 1, 0);
 				cvPutText( Window, Texto, cvPoint( (Window->width-textsize.width)/2,visParams->ROIPreProces.y + visParams->ROIPreProces.height + 30), &fuente1, CVX_RED );
 				break;

@@ -567,7 +567,7 @@ void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams ){
 void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
 
 	valorSumB* valor;
-
+	static int contador = 0;
 	// actualizar contadores
 	if ( Track->Stats->Estado == SLEEPING){
 		Track->Stats->FrameCount ++;
@@ -576,7 +576,22 @@ void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
 	}
 	Track->Stats->EstadoCount ++;
 	Track->Stats->FrameCount ++;
-	// calcular distancia y media movil para la velocidad
+
+	// actualizamos datos de areas. Se hayará la media hasta tener mil muestras.
+	if( Track->Stats->Estado == CAM_CONTROL && contador < 1000){
+		if( contador == 0 ){
+			Track->Stats->a = Track->Flysig->a;
+			Track->Stats->b = Track->Flysig->b;
+		}
+
+		if( Track->Flysig->a < Track->Stats->a) Track->Stats->a--;
+		else if( Track->Flysig->a > Track->Stats->a) Track->Stats->a++;
+		if( Track->Flysig->b < Track->Stats->b) Track->Stats->b--;
+		else if( Track->Flysig->b > Track->Stats->b) Track->Stats->b++;
+
+		contador++;
+	}
+
 
 	// para el caso kalman control, establecemos la distancia en base a la pos anterior y a la corregida (o a la predicha??)
 	if( Track->Stats->Estado == KALMAN_CONTROL){
@@ -729,29 +744,17 @@ void generarFly( STTrack* Track, tlcde* Flies ){
 
 		fly->etiqueta = Track->id; // Identificación del blob
 		fly->Color = Track->Color; // Color para dibujar el blob
-		// retrocedemos buscando un estado camControl
-		if( Track->Stats->EstadoCount == 1){
-			flyAnterior = (STFly*)fly->anterior;
-			int Maxb = fly->b;
-			while( flyAnterior){
-				if( flyAnterior->b > Maxb){
-					flyAnterior = (STFly*)flyAnterior->anterior;
-					Maxb = flyAnterior->b;
-				}
-			}
-			fly->a = flyAnterior->a; // la de mayor tamaño de la actual
-			fly->b = flyAnterior->b;
+		// estimación del tamaño medio del blob del blob
+		fly->a = Track->Stats->a;
+		fly->b = Track->Stats->b;
 
-		}
-		else{
-			fly->a = Track->FlyActual->a; // la de mayor tamaño de la actual
-			fly->b = Track->FlyActual->b;
-		}
+
 
 		fly->direccion = Track->x_k_Pos->data.fl[4]; // la dirección es la filtrada
 		fly->dir_filtered = fly->direccion;
 		fly->dir_med = fly->direccion;
 		fly->Vmed = Track->Vmed;
+		fly->VInst = Track->VInst;
 		fly->orientacion = fly->direccion;
 		fly->posicion.x = Track->x_k_Pos->data.fl[0];
 		fly->posicion.y = Track->x_k_Pos->data.fl[1];
@@ -776,15 +779,19 @@ void generarFly( STTrack* Track, tlcde* Flies ){
 		fly->Stats->CMovMed = Track->Stats->CMovMed;
 		fly->Stats->CMovDes = Track->Stats->CMovDes;
 
-		fly->VInst = Track->VInst;
+
 
 		fly->Stats->CountActiva = Track->Stats->TimeBlobOn;
 		fly->Stats->CountPasiva = Track->Stats->TimeBlobOff;
 
+
+		fly->anterior = (STFly*)Track->FlyActual;
+
+		Track->Flysig = fly;
+
 		Track->Flysig->anterior = (STFly*)Track->FlyActual;
 		Track->FlyActual->siguiente = (STFly*)Track->Flysig;
 
-		Track->Flysig = fly;
 		anyadirAlFinal(( STFly*) fly, Flies );
 }
 

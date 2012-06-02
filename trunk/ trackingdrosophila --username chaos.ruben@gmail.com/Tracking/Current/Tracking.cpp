@@ -51,7 +51,7 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	if( frameDataIn->num_frame == 1195 ){
 						printf("hola");
 					}
-	if( frameDataIn->num_frame == 1456 ){
+	if( frameDataIn->num_frame == 1460 ){
 							printf("hola");
 						}
 	if( frameDataIn->num_frame == 1456 ){
