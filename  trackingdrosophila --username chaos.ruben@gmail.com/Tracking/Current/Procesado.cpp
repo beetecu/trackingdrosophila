@@ -139,7 +139,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 						printf("hola");
 					}
 
-	Validacion2(Imagen, frameData , Shape, FGMask );
+//	Validacion2(Imagen, frameData , Shape, FGMask );
 	dibujarBGFG( frameData->Flies,frameData->FG,1);
 
 	DraWWindow( frameData->FG,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );

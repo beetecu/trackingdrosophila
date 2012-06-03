@@ -134,7 +134,7 @@ typedef struct {
 		float direccion; //!<almacena la dirección del desplazamiento
 		float dir_med; //! dirección obtenida con la media movil de la velocidad para el filtro de kalman.
 		float dir_filtered; //!< Dirección del blob tras aplicar el filtro de kalman.
-
+		float w;
 		unsigned int Estado;
 		bool salto;	//!< Indica que la mosca ha saltado
 		int Zona; //!< Si se seleccionan zonas de interes en el plato,

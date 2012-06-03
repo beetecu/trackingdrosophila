@@ -138,10 +138,12 @@ typedef struct{
 	float VyInst;
 	float PhiInst;
 	float errorPhiInst;
+
 	float PhiMed;
 	float errorVPhi;
 	float errorPhidif;
 	float errorPhi;
+	float wPhi;
 
 	tlcde* VectorV;//!< lista que contiene vector con las velocidades instantáneas en T frames y
 	float SumatorioVx; //! sumatorio para la velocidad media en T seg
@@ -216,6 +218,7 @@ typedef struct{
 	float R_y;
 	float R_Vx;
 	float R_Vy;
+	float R_w;
 	float R_phiZk;
 
 }FilterParams;

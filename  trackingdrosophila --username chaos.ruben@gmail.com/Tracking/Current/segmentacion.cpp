@@ -195,6 +195,7 @@ STFly* parametrizarFly( CvRect rect,IplImage* pesos, IplImage* mask, int num_fra
 		fly->VInst = 0;
 		fly->Vmed = 0;
 		fly->dir_med = 0;
+		fly->w = 0;
 	//		fly->perimetro = cv::arcLength(contorno,0);
 		fly->Roi = rect;
 		fly->Estado = 1;  // Flag para indicar que si el blob permanece estático ( 0 ) o en movimiento (1)
