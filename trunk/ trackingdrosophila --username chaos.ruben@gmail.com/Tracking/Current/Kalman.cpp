@@ -155,8 +155,8 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 
 	Track->kalman = initKalman( Fly , fps);
 
-	Track->x_k_Pre_ = cvCreateMat( 5,1, CV_32FC1 );
-	Track->P_k_Pre_ = cvCreateMat( 5,5, CV_32FC1 );
+	Track->x_k_Pre_ = cvCreateMat( 6,1, CV_32FC1 );
+	Track->P_k_Pre_ = cvCreateMat( 6,6, CV_32FC1 );
 	cvZero(Track->x_k_Pre_);
 	cvZero(Track->P_k_Pre_);
 
@@ -166,10 +166,10 @@ STTrack* initTrack( STFly* Fly ,tlcde* ids, float fps ){
 	Track->x_k_Pre = NULL; // es creada por kalman
 	Track->P_k_Pre = Track->kalman->error_cov_pre;
 
-	Track->Medida = cvCreateMat( 5, 1, CV_32FC1 );
-	Track->Measurement_noise = cvCreateMat( 5, 1, CV_32FC1 );
+	Track->Medida = cvCreateMat( 6, 1, CV_32FC1 );
+	Track->Measurement_noise = cvCreateMat( 6, 1, CV_32FC1 );
 	Track->Measurement_noise_cov = Track->kalman->measurement_noise_cov;
-	Track->z_k = cvCreateMat( 5, 1, CV_32FC1 );
+	Track->z_k = cvCreateMat( 6, 1, CV_32FC1 );
 	Track->VInst = 0;
 	Track->Vxmed = 0;
 	Track->Vymed = 0;
@@ -204,7 +204,8 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 
 	// Crear el flitro de Kalman
 
-	CvKalman* Kalman = cvCreateKalman(5,5,0);
+
+	CvKalman* Kalman = cvCreateKalman(6,6,0);
 
 	// Inicializar las matrices parámetros para el filtro de Kalman
 	// en la primera iteración iniciamos la dirección con la orientación
@@ -212,33 +213,46 @@ CvKalman* initKalman( STFly* Fly, float dt ){
 	Vx= filterParams->Velocidad*cos(Fly->orientacion*CV_PI/180);
 	Vy=-filterParams->Velocidad*sin(Fly->orientacion*CV_PI/180);
 
-	// x = x0 + Vx dt
-	const float F[] = {	1,0,dt,0,0,
-						0,1,0,dt,0,
-						0,0,1,0,0,
-						0,0,0,1,0,
-						0,0,0,0,1}; // Matriz de transición F
+	// x = x0 + Vx dt + Wk
+	// y = y0 + Vy dt + Wk
+	// Vx = Vmed*cos(phi) + Wk
+	// Vy = -Vmed*sin(phi) + Wk
+	// phi = phi0 + w dt + Wk
+	// w = wphi0 + Wk;
+	// con Wk->N(0,Q): Q = f(F,B y H).
 
-	filterParams->R_x = 0;	// implementar método de cuantificación del ruido.
-	filterParams->R_y = 0;
+	const float F[] = {	1,0,dt,0,0,0,
+						0,1,0,dt,0,0,
+						0,0,1, 0,0,0,
+						0,0,0, 1,0,0,
+						0,0,0, 0,1,dt,
+						0,0,0, 0,0,1 }; // Matriz de transición F
+
+
+	filterParams->R_x = 10;	// implementar método de cuantificación del ruido.
+	filterParams->R_y = 10;
 
 	//2) Velocidad
-	filterParams->R_Vx = 0;
-	filterParams->R_Vy = 0;
-	filterParams->R_phiZk = 0;
+	filterParams->R_Vx = 20;
+	filterParams->R_Vy = 20;
+	filterParams->R_phiZk = 180;
+	filterParams->R_w = 360 ;
 
 	// Matriz R inicial. Errores en medidas. ( Rx, Ry,RVx, RVy, Rphi ). Al inicio el error en el angulo es de +-180º
-	const float R_inicial[] = {	filterParams->R_x,0,0,0,0,
-								0,filterParams->R_y,0,0,0,
-								0,0,filterParams->R_Vx,0,0,
-								0,0,0,filterParams->R_Vy,0,
-								0,0,0,0,filterParams->R_phiZk};//{50,50,50,50,180};
+	const float R_inicial[] = {	filterParams->R_x,0,0,0,0,0,
+								0,filterParams->R_y,0,0,0,0,
+								0,0,filterParams->R_Vx,0,0,0,
+								0,0,0,filterParams->R_Vy,0,0,
+								0,0,0,0,filterParams->R_phiZk,0,
+								0,0,0,0,0,filterParams->R_w};//{50,50,50,50,180};
 
 	const float X_k[] = {	Fly->posicion.x,
 							Fly->posicion.y,
 							Vx,
 							Vy,
-							Fly->orientacion };// Matiz de estado inicial
+							Fly->orientacion,
+							filterParams->V_Angular};// Matiz de estado inicial
+
 	// establecer parámetros
 	memcpy( Kalman->transition_matrix->data.fl, F, sizeof(F)); // F
 
@@ -294,22 +308,6 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 	if ( EstadoTrack == SLEEPING )	return ;
 	// asumimos que la dirección varia poco de un frame al siguiente
 
-	//Obtener dirección usando las posiciones de los frames anteriores
-	//Se intenta disminuir el error retrasando el origen del vector
-	//velocidad hasta un límite. Se calcula el error debido a la resolución.
-	// si la velocidad es baja, se busca disminuir el error retrasando el origen
-	// del vector velocidad hasta reducir el error por debajo de un punto o
-	// bien alcanzar el número máximo de frames de retroceso.
-	obtenerDir( Track, &Track->PhiMed, &Track->errorVPhi );
-	// si la velocidad es nula
-	corregirDir( Track->x_k_Pre->data.fl[4],&Track->PhiMed );
-	// Media móvil para Velocidad en T seg
-	CalcularVmed( Track, &Track->Vmed,&Track->Vxmed, &Track->Vymed, &Track->errorVx,&Track->errorVy);
-	if( Track->Vmed < 1 ){
-		Track->PhiMed = flyActual->orientacion;
-		Track->errorVPhi = 0;
-	}
-
 	// velocidad instantánea
 	Track->VxInst =  (flySig->posicion.x - flyActual->posicion.x) / 1;
 	Track->VyInst = (flySig->posicion.y - flyActual->posicion.y) / 1;
@@ -317,12 +315,39 @@ void generarMedida( STTrack* Track, int EstadoTrack ){
 	distancia = Track->VInst;
 	if( Track->PhiInst == -1 ) Track->PhiInst = flyActual->orientacion;
 
+	//Obtener dirección usando las posiciones de los frames anteriores
+	//Se intenta disminuir el error retrasando el origen del vector
+	//velocidad hasta un límite. Se calcula el error debido a la resolución.
+	// si la velocidad es baja, se busca disminuir el error retrasando el origen
+	// del vector velocidad hasta reducir el error por debajo de un punto o
+	// bien alcanzar el número máximo de frames de retroceso.
+	obtenerDir( Track, &Track->PhiMed, &Track->errorVPhi );
+
+	corregirDir( Track->x_k_Pre->data.fl[4],&Track->PhiMed );
+	// Media móvil para Velocidad en T seg
+	CalcularVmed( Track, &Track->Vmed,&Track->Vxmed, &Track->Vymed, &Track->errorVx,&Track->errorVy);
+	// si la velocidad es nula
+	if( Track->Vmed < 1 ){
+		Track->PhiMed = flyActual->orientacion;
+		Track->errorVPhi = 0;
+	}
+	// wphi = phi(t) - phi(t-1)
+	Track->wPhi = Track->z_k->data.fl[4] - Track->PhiMed;
+
+	if( Track->Stats->Estado == KALMAN_CONTROL){
+		// Solo dar medida de posición con un error elevado?. el resto establecerlas como constantes
+		// Su valor será el que tenía inmediatamente antes de entrar en kalman control
+//		Track->Vxmed = Track->z_k->data.fl[2];
+//		Track->Vymed = Track->z_k->data.fl[3];
+//		Track->PhiMed = Track->z_k->data.fl[4];
+//		Track->wPhi = Track->z_k->data.fl[5];
+	}
 	// ESTABLECER Z_K
 
-	const float Zk[] = { flySig->posicion.x, flySig->posicion.y, Track->Vxmed, Track->Vymed, Track->PhiMed };
+	const float Zk[] = { flySig->posicion.x, flySig->posicion.y, Track->Vxmed, Track->Vymed, Track->PhiMed, Track->wPhi };
 	memcpy( Track->Medida->data.fl, Zk, sizeof(Zk)); // Medida;
 
-	const float V[] = {0,0,0,0,0}; // media del ruido
+	const float V[] = {0,0,0,0,0,0}; // media del ruido
 	memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
 
 	cvGEMM(Track->kalman->measurement_matrix, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
@@ -428,6 +453,7 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 			filterParams->R_Vx = 	filterParams->Cam->alpha_Rk + Track->errorVx;
 			filterParams->R_Vy = 	filterParams->Cam->alpha_Rk + Track->errorVy;
 			filterParams->R_phiZk = filterParams->Cam->AlphaR_phi * Track->errorVPhi; //errorPhiDif( Track );
+			filterParams->R_w	  = 2*filterParams->R_phiZk;
 	}
 	//1) Varias flies en un mismo blob
 	else if( EstadoTrack == KALMAN_CONTROL ){
@@ -437,15 +463,17 @@ void generarRuido( STTrack* Track, int EstadoTrack ){
 		filterParams->R_Vx 	  = 2*filterParams->R_x;
 		filterParams->R_Vy    = 2*filterParams->R_y;
 		filterParams->R_phiZk = filterParams->Kal->R_phiZk;
+		filterParams->R_w = 2*filterParams->Kal->R_phiZk;
 	}
 
 	// INSERTAR RUIDO en kalman
 	// cargamos el error en la medida en el filtro para calcular la ganancia de kalman
-	const float R[] = { filterParams->R_x,0,0,0,0,
-				  0,filterParams->R_y,0,0,0,
-				  0,0,filterParams->R_Vx,0,0,
-				  0,0,0,filterParams->R_Vy,0,
-				  0,0,0,0,filterParams->R_phiZk};//covarianza del ruido
+	const float R[] = {	filterParams->R_x,0,0,0,0,0,
+								0,filterParams->R_y,0,0,0,0,
+								0,0,filterParams->R_Vx,0,0,0,
+								0,0,0,filterParams->R_Vy,0,0,
+								0,0,0,0,filterParams->R_phiZk,0,
+								0,0,0,0,0,filterParams->R_w};//{50,50,50,50,180};
 	memcpy( Track->kalman->measurement_noise_cov->data.fl, R, sizeof(R)); // V->N(0,R);
 
 	return ;
@@ -577,7 +605,7 @@ void updateStatsTrack( STTrack* Track, TrackingParams* trackParams ){
 	Track->Stats->EstadoCount ++;
 	Track->Stats->FrameCount ++;
 
-	// actualizamos datos de areas. Se hayará la media hasta tener mil muestras.
+	// actualizamos datos de areas. Se estimará la media con mil muestras.
 	if( Track->Stats->Estado == CAM_CONTROL && contador < 1000){
 		if( contador == 0 ){
 			Track->Stats->a = Track->Flysig->a;
@@ -689,6 +717,7 @@ void updateFlyTracked( STTrack* Track, tlcde* Flies ){
 		Track->Flysig->dir_filtered =Track->x_k_Pos->data.fl[4];
 		Track->Flysig->orientacion = corregirTita( Track->Flysig->dir_filtered, Track->Flysig->orientacion );
 		Track->Flysig->VInst = Track->VInst;
+		Track->Flysig->w = Track->wPhi;
 		Track->Flysig->dstTotal = Track->Stats->dstTotal;
 		Track->Flysig->Estado = Track->Stats->EstadoBlob;
 
@@ -727,7 +756,6 @@ void updateFlyTracked( STTrack* Track, tlcde* Flies ){
 void generarFly( STTrack* Track, tlcde* Flies ){
 
 		STFly* fly = NULL;
-		STFly* flyAnterior = NULL;
 		fly = ( STFly *) malloc( sizeof( STFly));
 		if ( !fly ) {error(4);	exit(1);}
 		fly->Tracks = NULL;
@@ -755,6 +783,7 @@ void generarFly( STTrack* Track, tlcde* Flies ){
 		fly->dir_med = fly->direccion;
 		fly->Vmed = Track->Vmed;
 		fly->VInst = Track->VInst;
+		fly->w = Track->wPhi;
 		fly->orientacion = fly->direccion;
 		fly->posicion.x = Track->x_k_Pos->data.fl[0];
 		fly->posicion.y = Track->x_k_Pos->data.fl[1];
@@ -977,6 +1006,7 @@ void showKalmanData( STTrack *Track){
 	printf("\n\t|VMedia|:  %f ",Track->Vmed );
 	printf("\n\tDirección:  %f ",Track->Medida->data.fl[4]);
 	printf("\n\tDirMed:  %f ",Track->PhiMed);
+	printf("\n\tw: %f ", Track->wPhi);
 
 
 
@@ -985,60 +1015,76 @@ void showKalmanData( STTrack *Track){
 	printf("\n\tVelocidad: ( %f , %f )",Track->z_k->data.fl[2],Track->z_k->data.fl[3]);
 	printf("\n\tDirección:  %f ",Track->z_k->data.fl[4]);
 
-	printf("\n Media Measurement noise:\n\n\t%0.f\n\t%0.f\n\t%0.f\n\t%0.f\n\t%0.f",
+
+	printf("\n Media Measurement noise:\n\n\t%0.1f\n\t%0.1f\n\t%0.1f\n\t%0.1f\n\t%0.1f\n\t%0.1f",
 			Track->Measurement_noise->data.fl[0],
 			Track->Measurement_noise->data.fl[1],
 			Track->Measurement_noise->data.fl[2],
 			Track->Measurement_noise->data.fl[3],
-			Track->Measurement_noise->data.fl[4]);
+			Track->Measurement_noise->data.fl[4],
+			Track->Measurement_noise->data.fl[5]);
 
-	printf("\n Error Measurement noise:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+	printf("\n Error Measurement noise:\n\n\t%0.3f\t0\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\t0\n\t0\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t0\t%0.3f",
 			Track->Measurement_noise_cov->data.fl[0],
 			Track->Measurement_noise_cov->data.fl[6],
 			Track->Measurement_noise_cov->data.fl[12],
 			Track->Measurement_noise_cov->data.fl[18],
-			Track->Measurement_noise_cov->data.fl[24]);
+			Track->Measurement_noise_cov->data.fl[24],
+			Track->Measurement_noise_cov->data.fl[30]);
 
-	printf("\n Error Process noise:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+	printf("\n Error Process noise:\n\n\t%0.3f\t0\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\t0\n\t0\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t0\t%0.3f",
 			Track->kalman->process_noise_cov->data.fl[0],
 			Track->kalman->process_noise_cov->data.fl[6],
 			Track->kalman->process_noise_cov->data.fl[12],
 			Track->kalman->process_noise_cov->data.fl[18],
-			Track->kalman->process_noise_cov->data.fl[24]);
+			Track->kalman->process_noise_cov->data.fl[24],
+			Track->kalman->process_noise_cov->data.fl[30]);
 
 
 	printf("\n\n Predicted State t:");
 	printf("\n\tCoordenadas: ( %f , %f )",Track->x_k_Pre_->data.fl[0],Track->x_k_Pre_->data.fl[1]);
 	printf("\n\tVelocidad: ( %f , %f )",Track->x_k_Pre_->data.fl[2],Track->x_k_Pre_->data.fl[3]);
 	printf("\n\tDirección:  %f ",Track->x_k_Pre_->data.fl[4]);
-	printf("\n Error Cov Predicted:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+	printf("\n Error Cov Predicted:\n\n\t%0.3f\t0\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\t0\n\t0\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t0\t%0.3f",
 			Track->P_k_Pre_->data.fl[0],
 			Track->P_k_Pre_->data.fl[6],
 			Track->P_k_Pre_->data.fl[12],
 			Track->P_k_Pre_->data.fl[18],
-			Track->P_k_Pre_->data.fl[24]);
+			Track->P_k_Pre_->data.fl[24],
+			Track->P_k_Pre_->data.fl[30]);
 
 	printf("\n\n Corrected State:" );
 	printf("\n\tCoordenadas: ( %f , %f )",Track->x_k_Pos->data.fl[0],Track->x_k_Pos->data.fl[1]);
 	printf("\n\tVelocidad: ( %f , %f )",Track->x_k_Pos->data.fl[2],Track->x_k_Pos->data.fl[3]);
 	printf("\n\tDirección:  %f ",Track->x_k_Pos->data.fl[4]);
-	printf("\n Error Cov Corrected:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+	printf("\n Error Cov Corrected:\n\n\t%0.3f\t0\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\t0\n\t0\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t0\t%0.3f",
 			Track->P_k_Pos->data.fl[0],
 			Track->P_k_Pos->data.fl[6],
 			Track->P_k_Pos->data.fl[12],
 			Track->P_k_Pos->data.fl[18],
-			Track->P_k_Pos->data.fl[24]);
+			Track->P_k_Pos->data.fl[24],
+			Track->P_k_Pos->data.fl[30]);
 
 	printf("\n\n Predicted State t+1:");
 	printf("\n\tCoordenadas: ( %f , %f )",Track->x_k_Pre->data.fl[0],Track->x_k_Pre->data.fl[1]);
 	printf("\n\tVelocidad: ( %f , %f )",Track->x_k_Pre->data.fl[2],Track->x_k_Pre->data.fl[3]);
 	printf("\n\tDirección:  %f ",Track->x_k_Pre->data.fl[4]);
-	printf("\n Error Cov Predicted:\n\n\t%0.3f\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t%0.3f",
+	printf("\n Error Cov Predicted:\n\n\t%0.3f\t0\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\t0\n\t0\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t0\t%0.3f",
 			Track->P_k_Pre->data.fl[0],
 			Track->P_k_Pre->data.fl[6],
 			Track->P_k_Pre->data.fl[12],
 			Track->P_k_Pre->data.fl[18],
-			Track->P_k_Pre->data.fl[24]);
+			Track->P_k_Pre->data.fl[24],
+			Track->P_k_Pre->data.fl[30]);
+
+	printf("\n Ganancia:\n\n\t%0.3f\t0\t0\t0\t0\t0\n\t0\t%0.3f\t0\t0\t0\t0\n\t0\t0\t%0.3f\t0\t0\t0\n\t0\t0\t0\t%0.3f\t0\t0\n\t0\t0\t0\t0\t%0.3f\t0\n\t0\t0\t0\t0\t0\t%0.3f",
+			Track->kalman->gain->data.fl[0],
+			Track->kalman->gain->data.fl[6],
+			Track->kalman->gain->data.fl[12],
+			Track->kalman->gain->data.fl[18],
+			Track->kalman->gain->data.fl[24],
+			Track->kalman->gain->data.fl[30]);
+
 	printf("\n\n");
 }
 
