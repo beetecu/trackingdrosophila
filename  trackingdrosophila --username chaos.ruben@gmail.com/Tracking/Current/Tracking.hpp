@@ -9,10 +9,9 @@
 
 	1 ) GENERALIDADES ACERCA DEL ALGORITMO DE RASTREO
 
-	Hasta aquí el programa trabaja solo con información espacial, es decir, los datos
- *	del instante t.
- *	En este punto disponemos de la estructura STFrame  ( frameDataIn ) que contiene los datos necesatios del frame t
- *	para poder iniciar el rastreo. Estos son:
+	Hasta este punto se ha trabajado sólo con información espacial, es decir, los datos del instante t.
+ *	En este punto se incorpora la información temporal. Para ello se dispone de un buffer de longitud variable, que contiene
+ *	los datos de los últimos T frames. En dicho buffer se almacenan los datos de cada frame obtenidos tras el procesado, esto es:
 	typedef struct {
 		int num_frame; //!< Identificación del Frame procesado.
 		IplImage* Frame;//!< Imagen fuente de 8 bit de niveles de gris preprocesada.
@@ -26,8 +25,9 @@
 		tlcde* Tracks; //!< Puntero a lista circular doblemente enlazada (tlcde) con cada Trak. Creado por Tracking
 	}STFrame;
 
- *	- La función de rastreo recibe los datos del frame del instante t y lo almacena temporalmente, de forma que se mantendrán en
- *	memoria las estructuras correspondientes a MAX_BUFFER frames ( framesBuff, buffer de datos  ).
+ *	- El módulo tracking recibe los datos del procesado del frame t y lo almacena temporalmente, de forma que se mantendrán en
+ *	memoria las estructuras correspondientes a MAX_BUFFER frames ( framesBuff, buffer de datos  ). Incorporamos de este modo
+ *	la información temporal.
  *	Los buffers son colas FIFO. En este punto ya disponemos de la información temporal.
  *	- Asi mismo se crea una cola FIFO para almacenar los datos de cada track. Habrá un track por cada objeto a rastrear
  *	- Se crea a su vez una cola FIFO para almacenar las identidades ( id y color ), de modo que sean únicas.
@@ -49,40 +49,70 @@
 		1) Tracks válidos: Generados por moscas. LLevan un tiempo rastreando con éxito.
 		2) Tracks "posiblemente" válidos. Serían los nuevos tracks.No se sabe con certeza si han sido generados por moscas.
 		2) Falsos tracks: Tracks generados por espurios o por "fantasmas (ghost)"
-		En tracking se realiza la función de rastreo propiamente dicha. en este punto disponemos de todos los datos necesarios para
-		identificar y seguir a cada mosca, tratando de no perderla.
+		En tracking se realiza la función de rastreo propiamente dicha. En este punto disponemos de todos los datos necesarios para
+		identificar y rastrear a cada blob.
 
-		Una vez hechas las definiciones, se resumen a continuación los principales cometidos del algoritmo de rastreo:
+		Módulo de rastreo realiza las siguientes tareas:
 
 		1) Añadir nuevo elemento al buffer de datos.
 		2) En AsignarIdentidades se validan blobs y se resuelven las asociaciones en base a las predicciones
-		  de kalman mediante el algoritmo Hungaro.
-		3) En validarTracks se eliminan falsos tracks en base al ;
-		- Kalman( frameDataIn , Identities, lsTracks):
-			-  Crea un track para cada blob.
-			-  Inicia un filtro de kalman por cada track.
-			-  Genera nueva medida en base a los datos obtenidos de la camara y de asignar identidades.
-			-  Filtra de la dirección y resuelve ambiguedad en la orientación.
-			-  Actualiza de los parámetros de rastreo: Track y fly (en base a los nuevos datos).
+		  de kalman mediante el algoritmo Hungaro. Se establece la función de error para el algoritmo Húngaro
+		3) En validarTracks se verifican los tracks. Aquellos que no sean válidos serán eliminados.
+		4) Módulo de Kalman.
+			-  Establecer el estado del track en base a los datos generados en asignar identidades.
+			-  Generar e incorporar nueva medida en base al estado del track. Se realiza
+			   un filtrado de la dirección y la velocidad y resuelve ambiguedad en la orientación.
+			-  Creación de nuevos tracks e inicialización de filtro y parámetros.
+			-  Actualiza de los parámetros de rastreo: Track, fly y estadísticas (en base a los nuevos datos).
 			-  Realiza la predicción para t+1.
-		- Aplicación de Heurísticas. Se usa la información temporal del buffer para decidir si eliminar o no tracks.
+		5) Aplicación de Heurísticas. Se usa la información temporal del buffer para decidir si eliminar o no tracks.
+			- Despertar Tracks.
+			- Correción de tracks.
 
-  *
-	 2.1 ) FILTRO DE KALMAN.
 
-		2.1.1) Origenes del filtro de kalman
+	 2.1 ) BÚSQUEDA DE LA ASIGNACIÓN ÓPTIMA
 
-		2.1.2) Qué es el filtro de kalman
+		 Partimos de las siguientes suposiciónes
+		 -# Se ha generado un track por cada blob obteniendo un total de N tracks ( un track por cada nueva etiqueta = -1 )
+			 y se han introducido en una lista doblemente enlazada.
+		 -# Se ha iniciado un filtro de kalman para cada track.
+		 -# Se ha realizado la primera predicción para t+1.
+		 -# Se han obtenido	los datos del frame t+1 con las nuevas medidas
+		 -# Disponemos por lo tanto de N identidades con N predicciones x_k_prex y M posibles asignaciones vx
+		 Con el fin de encontrar la asignación óptima de las N identidades ux y los M elementos detectado en t ,vx, se define una función de error.
+		 Ésta establece el coste de asignación de cada elemento ux con cada elemento vx en base a su distancia y orientación.
+		 La penalización entre la posición predicha por el filtro xpre = ( xk_pre, ykPre, phipre) y la posición observada, xobs = ( x__K, y_k, phi_k)
+		 se calcula como
+		 	err( Xpred, Xobs ) = ( xpred - xobs )² + (ypred - yobs)² + w(phipred - phiobs)²  con phi en (-pi/2,pi/2)
 
-		2.1.3) Ecuaciones
+		 Si se realiza una asignación de la identidad u a la detección  v basándose únicamente en en el coste mínimo, podría darse la situación en
+		 el frame actual de tener varios blobs etiquetados con la misma id y blobs sin ninguna id. Para evitar dicho inconveniente, cada observación
+		 ha de asignarse exactamente a una identidad.
+		 Se puede representar el conjunto de posibles asignaciones como A = {(i1,01),...,(iN,oN)}, donde i
 
-		2.1.4) Aplicación
 
-		Suponemos que ya se ha realizado una iteración de forma que:
+	 2.2 ) FILTRO DE KALMAN.
+
+		2.1.1) Origenes del filtro de kalman.
+
+		2.1.2) Qué es el filtro de kalman.
+
+		2.1.3) Ecuaciones.
+
+		2.1.4) Aplicación.
+
+			2.1.4.1) Inicialización.
+
+				En esta primera fase, se procede a e inicializar los parámetros
+				necesarios En esta primera fase se inician
+
+
+		Para ver como de forma sencilla el funcionamiento del filtro, vamos a suponemos que se ha realizado una primera teración de forma que:
 
 		 -# Se ha generado un track por cada blob ( un track por cada nueva etiqueta = -1 ) y se han introducido en una lista doblemente enlazada
 		 -# Se ha iniciado un filtro de kalman para cada track.
 		 -# Se ha realizado la primera predicción para hacer la primera asignación de identidades.
+		 -# Se han eliminado tracks no válidos, es decir, tracks creados en t y sin medida en t+1
 
 		Tras aplicar asignaridentidades y eliminar aquellos tracks que no sean válidos:
 
@@ -276,12 +306,6 @@
 		 * 		 donde:\n
 		 * 				\f[ Q(i) = f(F,B y H) \f]  Ruido asociado al sistema.\n
 		 * 				\f[ V(i) = N(0, R_Zk(i)) \f]  Ruido asociado a la medida.
-
-
-	 2.2 ) ASIGNACIÓN DE IDENTIDADES
-
-		 2.2.1) ALGORITMO HÚNGARO
-
 
 	 2.3 ) HEURÍSTICAS:
 
