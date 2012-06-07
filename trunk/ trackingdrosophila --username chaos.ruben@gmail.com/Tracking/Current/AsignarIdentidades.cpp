@@ -183,7 +183,7 @@ int asignarIdentidades(tlcde* lsTraks, tlcde *Flies) {
 
 						for (int y = 0; y < Matrix_Hungarian->cols; y++) {
 
-							if (Hungarian_Matrix[n_row][y] > 20
+							if (Hungarian_Matrix[n_row][y] > 0
 									&& Hungarian_Matrix[n_row][y] > valor_max) {
 
 								flag = 1;
@@ -278,11 +278,10 @@ double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 	float EX = Predict->data.fl[0];
 	float EY = Predict->data.fl[1];
 	float phiXk = Predict->data.fl[4];
-	//	float VarX = sqrt(Matrix_error_cov[0]);
-	//	float VarY = sqrt(Matrix_error_cov[1]);
+	float VarX;
+	float VarY;
 
-	float VarX = 10;
-	float VarY = 10;
+
 
 	double ValorX, ValorY;
 	double DIVX, DIVY;
@@ -290,18 +289,23 @@ double PesosKalman(const CvMat* Matrix, const CvMat* Predict, CvMat* CordReal) {
 	float error;
 
 	error = funcionError( cvPoint( EX , EY ), cvPoint( X , Y ), phiXk, phiZk );
-
+	printf("\n Error: %f",error);
+	VarX=15;
+	VarY=15;
 	ValorX = X - EX;
 	ValorY = Y - EY;
 	DIVX = -((ValorX / VarX) * (ValorX / VarX)) / 2;
 	DIVY = -((ValorY / VarY) * (ValorY / VarY)) / 2;
 
-	ProbKalman = exp(-abs(DIVX + DIVY));
+
+
+//	error=0;
+	ProbKalman = exp(-abs(DIVX + DIVY + error));
 
 	ProbKalman = 100 * ProbKalman;
+	printf("\n Probabilidad: %f",ProbKalman);
 
-
-	if (ProbKalman < 1 || ProbKalman < 0)
+	if (ProbKalman < 70 || ProbKalman < 0 );
 		ProbKalman = 0;
 
 	return ProbKalman;
@@ -332,17 +336,20 @@ float funcionError( CvPoint posXk, CvPoint posZk, float phiXk, float phiZk  ){
 	static float distancia;
 	static float Ax;
 	static float Ay;
-	const float w = 0.44; // cte. Para dar más peso al error por la distancia que por la dif de ángulos.
+	const float w = 0.00001; // cte. Para dar más peso al error por la distancia que por la dif de ángulos.
 
 	MaxJump = obtenerFilterParam( MAX_JUMP );
 	Ax = posXk.x - posZk.x ;
 	Ay = posXk.y - posZk.y ;
 	EUDistance( Ax, Ay, NULL, &distancia );
-	if ( distancia > MaxJump ) error = 100000;
+	printf("\n\nDistancia: %f y MaxJump: %d",distancia,MaxJump);
+	if ( distancia > 50 ) error = 10000;
 	else{
 		phi =  phiZk;
 		corregirDir( phiXk, &phi ); // corrige los ángulos para que no difieran en más de pi.
-		error = pow( Ax , 2) + pow( Ay , 2) + w*pow( phiXk - phi,2 );
+//		error = pow( Ax , 2) + pow( Ay , 2) + w*pow( phiXk - phi,2 );
+		error = w*pow( phiXk - phi,2 );
+		printf("\n Angulo: %f",pow( phiXk - phi,2 ) );
 	}
 	return error;
 
