@@ -110,6 +110,7 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 	printf("\t2)Resta de Fondo \n");
 #endif
 	/////// BACKGROUND DIFERENCE. Obtención de la máscara del foreground
+	crearTrackBarsBGModel();
 	BackgroundDifference( Imagen, frameData->BGModel,frameData->IDesvf, frameData->FG ,BGPrParams, BGModel->DataFROI);
 	DraWWindow(frameData->FG ,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );
 	if( SHOW_PROCESS_IMAGES ){
@@ -139,8 +140,8 @@ STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 						printf("hola");
 					}
 
-//	Validacion2(Imagen, frameData , Shape, FGMask );
-	dibujarBGFG( frameData->Flies,frameData->FG,1);
+	Validacion2(Imagen, frameData , Shape, BGModel, FGMask );
+
 
 	DraWWindow( frameData->FG,NULL, NULL, SHOW_PROCESS_IMAGES, COMPLETO  );
 
@@ -439,7 +440,17 @@ void ShowProcesBGParams( char* Campo ){
 	printf(" -K = %0.6f \n", BGPrParams->K);
 
 }
+void crearTrackBarsBGModel(){
 
+	if(obtenerVisParam( MODE )) {
+
+		cvCreateTrackbar( "LowThreshold","Foreground", &BGPrParams->LOW_THRESHOLD, 100);
+		cvCreateTrackbar( "HightThreshold","Foreground", &BGPrParams->HIGHT_THRESHOLD, 100);
+		cvCreateTrackbar( "BG Update","Foreground", &BGPrParams->BG_Update, 100);
+
+	}
+
+}
 void AllocateDataProcess( IplImage *I ) {
 
 	CvSize size = cvGetSize( I );

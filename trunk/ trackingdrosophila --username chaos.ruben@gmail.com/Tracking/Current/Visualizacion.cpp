@@ -74,20 +74,20 @@ void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
 		if ( visParams->ModoCompleto ){
 			// MOSTRAMOS IMAGENES
-			printf( "\t-Mostrando ventana de visualización...");
+
 			cvShowImage( "Visualización", ImVisual );
 			if (visParams->ShowBGremoval){
-				printf( "\t-Mostrando Background, Foreground, OldBackground... ");
+
 				cvShowImage("Background", frameData->BGModel);
 				cvShowImage( "Foreground",frameData->FG);
 
-				printf("Hecho\n");
+
 			}
 
 			if(visParams->ShowKalman){
-				printf("\t-Mostrando predicciones del filtro de Kalman...");
+
 				cvShowImage( "Filtro de Kalman", frameData->ImKalman );
-				printf("Hecho\n");
+
 			}
 			//cvWaitKey(0);
 
@@ -142,21 +142,15 @@ void VisualizarFr( STFrame* frameData, StaticBGModel* Flat ){
 		if(frameData->Stats) ShowStatDataFr( frameData->Stats,frameData->GStats, ImVisual );
 
 		// MOSTRAMOS IMAGENES
-		printf( "\t-Mostrando ventana de visualización...");
+
 		cvShowImage( "Visualización", ImVisual );
 		if (visParams->ShowBGremoval){
-			printf( "\t-Mostrando Background, Foreground, OldBackground... ");
 			cvShowImage("Background", frameData->BGModel);
 			cvShowImage( "Foreground",frameData->FG);
-
-
-			printf("Hecho\n");
 		}
 
 		if(visParams->ShowKalman){
-			printf("\t-Mostrando predicciones del filtro de Kalman...");
 			cvShowImage( "Filtro de Kalman", frameData->ImKalman );
-			printf("Hecho\n");
 		}
 
 	}
@@ -544,7 +538,7 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 				cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
 				if(fly->etiqueta == 11)	cvCircle( Imagen, fly->posicion, 10, fly->Color, 3, CV_AA, 0 );
 
-				double magnitude = 30;
+				double magnitude = 20;
 				cvLine( Imagen,
 						fly->posicion,
 						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
@@ -560,6 +554,14 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 												 CVX_BLUE,
 										1, CV_AA, 0 );
 				}else{
+					// dirección media
+					cvLine( Imagen,
+												fly->posicion,
+												cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_med*CV_PI/180)),
+														 cvRound( fly->posicion.y - magnitude*sin(fly->dir_med*CV_PI/180))  ),
+														 CVX_WHITE,
+												1, CV_AA, 0 );
+
 					cvLine( Imagen,
 							fly->posicion,
 							cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
@@ -567,13 +569,6 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 									 CVX_GREEN,
 							1, CV_AA, 0 );
 				}
-				// dirección media
-				cvLine( Imagen,
-											fly->posicion,
-											cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_med*CV_PI/180)),
-													 cvRound( fly->posicion.y - magnitude*sin(fly->dir_med*CV_PI/180))  ),
-													 CVX_WHITE,
-											1, CV_AA, 0 );
 				visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
 			}
 		}
@@ -673,78 +668,78 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	if( visParams->ShowStatsMov && Stats ){
 		sprintf( CMov1SMed,"MovMed_1s:  %0.1f ",Stats->CMov1SMed);
 		sprintf( CMov1SDes,"MovDes_1s:  %0.1f ",Stats->CMov1SDes);
-		cvPutText( Window,  CMov1SMed, cvPoint( margenIz + margenTxt ,margenSup + linea), &fuente2, CVX_BLUE );
-		cvPutText( Window,  CMov1SDes, cvPoint( margenIz + margenTxt ,margenSup + 2*linea), &fuente2, CVX_BLUE );
+		cvPutText( Window,  CMov1SMed, cvPoint( margenIz + margenTxt ,margenSup + linea), &fuente2, CVX_GREEN2 );
+		cvPutText( Window,  CMov1SDes, cvPoint( margenIz + margenTxt ,margenSup + 2*linea), &fuente2, CVX_GREEN2 );
 
 		sprintf( CMov30SMed,"MovMed_30s:  %0.1f ",Stats->CMov30SMed);
 		sprintf( CMov30SDes,"MovDes_30s:  %0.1f ",Stats->CMov30SDes);
-		cvPutText( Window,  CMov30SMed, cvPoint( margenIz + margenTxt ,margenSup + 3*linea), &fuente2, CVX_BLACK );
-		cvPutText( Window,  CMov30SDes, cvPoint( margenIz + margenTxt ,margenSup + 4*linea), &fuente2, CVX_BLACK );
+		cvPutText( Window,  CMov30SMed, cvPoint( margenIz + margenTxt ,margenSup + 3*linea), &fuente2, CVX_GREEN );
+		cvPutText( Window,  CMov30SDes, cvPoint( margenIz + margenTxt ,margenSup + 4*linea), &fuente2, CVX_GREEN );
 
 		sprintf( CMov1Med,"MovMed_1m:  %0.1f ",Stats->CMov1Med);
 		sprintf( CMov1Des,"MovDes_1m:  %0.1f ",Stats->CMov1Des);
-		cvPutText( Window,  CMov1Med, cvPoint( margenIz + margenTxt ,margenSup + 5*linea), &fuente2, CVX_BLUE );
-		cvPutText( Window,  CMov1Des, cvPoint( margenIz + margenTxt ,margenSup + 6*linea), &fuente2, CVX_BLUE );
+		cvPutText( Window,  CMov1Med, cvPoint( margenIz + margenTxt ,margenSup + 5*linea), &fuente2, CVX_GREEN2 );
+		cvPutText( Window,  CMov1Des, cvPoint( margenIz + margenTxt ,margenSup + 6*linea), &fuente2, CVX_GREEN2);
 
 		sprintf( CMov5Med,"MovMed_5m:  %0.1f ",Stats->CMov5Med);
 		sprintf( CMov5Des,"MovDes_5m:  %0.1f ",Stats->CMov5Des);
-		cvPutText( Window,  CMov5Med, cvPoint( margenIz + margenTxt ,margenSup + 7*linea), &fuente2, CVX_BLACK );
-		cvPutText( Window,  CMov5Des, cvPoint( margenIz + margenTxt ,margenSup + 8*linea), &fuente2, CVX_BLACK );
+		cvPutText( Window,  CMov5Med, cvPoint( margenIz + margenTxt ,margenSup + 7*linea), &fuente2, CVX_GREEN );
+		cvPutText( Window,  CMov5Des, cvPoint( margenIz + margenTxt ,margenSup + 8*linea), &fuente2, CVX_GREEN );
 
 		sprintf( CMov10Med,"MovMed_10m: %0.1f ",Stats->CMov10Med);
 		sprintf( CMov10Des,"MovDes_10m: %0.1f ",Stats->CMov10Des);
-		cvPutText( Window,  CMov10Med, cvPoint( margenIz + margenTxt ,margenSup + 9*linea), &fuente2, CVX_BLUE );
-		cvPutText( Window,  CMov10Des, cvPoint( margenIz + margenTxt ,margenSup + 10*linea), &fuente2, CVX_BLUE );
+		cvPutText( Window,  CMov10Med, cvPoint( margenIz + margenTxt ,margenSup + 9*linea), &fuente2, CVX_GREEN2 );
+		cvPutText( Window,  CMov10Des, cvPoint( margenIz + margenTxt ,margenSup + 10*linea), &fuente2, CVX_GREEN2 );
 
 		sprintf( CMov15Med,"MovMed_15m: %0.1f ",Stats->CMov15Med);
 		sprintf( CMov15Des,"MovDes_15m: %0.1f ",Stats->CMov15Des);
-		cvPutText( Window,  CMov15Med, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + linea), &fuente2, CVX_BLACK  );
-		cvPutText( Window,  CMov15Des, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 2*linea), &fuente2, CVX_BLACK  );
+		cvPutText( Window,  CMov15Med, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + linea), &fuente2, CVX_GREEN  );
+		cvPutText( Window,  CMov15Des, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 2*linea), &fuente2, CVX_GREEN  );
 
 		sprintf( CMov30Med,"MovMed_30m: %0.1f ",Stats->CMov30Med);
 		sprintf( CMov30Des,"MovDes_30m: %0.1f ",Stats->CMov30Des);
-		cvPutText( Window,  CMov30Med, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 3*linea), &fuente2, CVX_BLUE  );
-		cvPutText( Window,  CMov30Des, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 4*linea), &fuente2, CVX_BLUE  );
+		cvPutText( Window,  CMov30Med, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 3*linea), &fuente2, CVX_GREEN2  );
+		cvPutText( Window,  CMov30Des, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 4*linea), &fuente2, CVX_GREEN2  );
 
 		sprintf( CMov1HMed,"MovMed_1h:  %0.1f ",Stats->CMov1HMed);
 		sprintf( CMov1HDes,"MovDes_1h:  %0.1f ",Stats->CMov1HDes);
-		cvPutText( Window,  CMov1HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 5*linea), &fuente2, CVX_BLACK  );
-		cvPutText( Window,  CMov1HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 6*linea), &fuente2, CVX_BLACK  );
+		cvPutText( Window,  CMov1HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 5*linea), &fuente2, CVX_GREEN  );
+		cvPutText( Window,  CMov1HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 6*linea), &fuente2,CVX_GREEN  );
 
 		sprintf( CMov2HMed,"MovMed_2h:  %0.1f ",Stats->CMov2HMed);
 		sprintf( CMov2HDes,"MovDes_2h:  %0.1f ",Stats->CMov2HDes);
-		cvPutText( Window, CMov2HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 7*linea), &fuente2, CVX_BLUE  );
-		cvPutText( Window,  CMov2HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 8*linea), &fuente2, CVX_BLUE   );
+		cvPutText( Window, CMov2HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 7*linea), &fuente2, CVX_GREEN2  );
+		cvPutText( Window,  CMov2HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 8*linea), &fuente2, CVX_GREEN2   );
 
 		sprintf( CMov4HMed,"MovMed_4h:  %0.1f ",Stats->CMov4HMed);
 		sprintf( CMov4HDes,"MovDes_4h:  %0.1f ",Stats->CMov4HDes);
-		cvPutText( Window, CMov4HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 9*linea), &fuente2, CVX_BLACK  );
-		cvPutText( Window,  CMov4HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 10*linea), &fuente2, CVX_BLACK   );
+		cvPutText( Window, CMov4HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 9*linea), &fuente2, CVX_GREEN  );
+		cvPutText( Window,  CMov4HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 10*linea), &fuente2, CVX_GREEN   );
 
 		sprintf( CMov8HMed,"MovMed_8h:  %0.1f ",Stats->CMov8HMed);
 		sprintf( CMov8HDes,"MovDes_8h:  %0.1f ",Stats->CMov8HDes);
-		cvPutText( Window, CMov8HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + linea), &fuente2, CVX_BLUE  );
-		cvPutText( Window, CMov8HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 2*linea), &fuente2, CVX_BLUE   );
+		cvPutText( Window, CMov8HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + linea), &fuente2, CVX_GREEN2  );
+		cvPutText( Window, CMov8HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 2*linea), &fuente2, CVX_GREEN2   );
 
 		sprintf( CMov16HMed,"MovMed_16h: %0.1f ",Stats->CMov16HMed);
 		sprintf( CMov16HDes,"MovDes_16h: %0.1f ",Stats->CMov16HDes);
-		cvPutText( Window, CMov16HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 3*linea), &fuente2, CVX_BLACK  );
-		cvPutText( Window, CMov16HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 4*linea), &fuente2, CVX_BLACK   );
+		cvPutText( Window, CMov16HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 3*linea), &fuente2, CVX_GREEN  );
+		cvPutText( Window, CMov16HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 4*linea), &fuente2, CVX_GREEN   );
 
 		sprintf( CMov24HMed,"MovMed_24h: %0.1f ",Stats->CMov24HMed);
 		sprintf( CMov24HDes,"MovDes_24h: %0.1f ",Stats->CMov24HDes);
-		cvPutText( Window, CMov24HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 5*linea), &fuente2, CVX_BLUE  );
-		cvPutText( Window, CMov24HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 6*linea), &fuente2, CVX_BLUE   );
+		cvPutText( Window, CMov24HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 5*linea), &fuente2,CVX_GREEN2  );
+		cvPutText( Window, CMov24HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 6*linea), &fuente2, CVX_GREEN2   );
 
 		sprintf( CMov48HMed,"MovMed_48h: %0.1f ",Stats->CMov48HMed);
 		sprintf( CMov48HDes,"MovDes_48h: %0.1f ",Stats->CMov48HDes);
-		cvPutText( Window, CMov48HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 7*linea), &fuente2, CVX_BLACK  );
-		cvPutText( Window, CMov48HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 8*linea), &fuente2, CVX_BLACK   );
+		cvPutText( Window, CMov48HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 7*linea), &fuente2, CVX_GREEN  );
+		cvPutText( Window, CMov48HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 8*linea), &fuente2, CVX_GREEN   );
 	}
 	else{
 		sprintf( CMov1SMed,"NO STATS ");
 		CvSize textsize = getTextSize(CMov1SMed, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-		cvPutText( Window,  CMov1SMed, cvPoint( margenIz + margenTxt ,margenSup + linea), &fuente2, CVX_BLUE );
+		cvPutText( Window,  CMov1SMed, cvPoint( margenIz + margenTxt ,margenSup + linea), &fuente2, CVX_GREEN  );
 
 	}
 	// estadísticas Frame
@@ -848,11 +843,11 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 					sprintf(T_estadoB,"%s", tiempohms);
 
 					tiempoHMS( Fly->Stats->CountActiva,tiempohms );
-					sprintf(T_Activa,"Ton\t:");
+					sprintf(T_Activa,"Ton:");
 					sprintf(T_ActivaVal,"%s", tiempohms);
 
 					tiempoHMS( Fly->Stats->CountPasiva ,tiempohms);
-					sprintf(T_Pasiva,"Toff\t:");
+					sprintf(T_Pasiva,"Toff:");
 					sprintf(T_PasivaVal,"%s", tiempohms);
 
 					sprintf(dstTotal,"Dst(m):");
@@ -1064,7 +1059,7 @@ void DibujarFondo( ){
 	cvRectangle( Window, cvPoint(  10,10 ),
 					cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
 	cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
-					cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), 1 );
+					cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), -1 );
 	cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
 					cvPoint(Window->width - 10, Window->height - 65), cvScalar(0, 0, 0), -1 );
 	// progreso
@@ -1305,7 +1300,7 @@ void Transicion3( const char texto[], int delay_up ){
 			cvRectangle( Window, cvPoint(  10,10 ),
 							cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
 			cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
-							cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), 1 );
+							cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), -1 );
 			cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
 							cvPoint(Window->width - 10, Window->height - 65), cvScalar(0, 0, 0), -1 );
 			// progreso
@@ -1591,6 +1586,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 		VWriter = iniciarAvi(  nombreVideo, FPS);
 	}
 	ShowHightGUIParams( settingFather );
+	CreateWindows( ImRef);
 //	ShowParams( settingFather );
 	config_destroy(&cfg);
 }
@@ -1667,21 +1663,21 @@ void SetDefaultHightGUIParams(  IplImage* ImRef ){
 void ShowHightGUIParams( char* Campo  ){
 
 	printf(" \nVariables para el campo %s : \n", Campo);
-	printf(" -ShowWindow = %d \n", visParams->ShowWindow);
-	printf(" -RecWindow = %d \n", visParams->RecWindow);
-	printf(" -ShowPresent = %d \n", visParams->ShowPresent);
-	printf(" -ShowTransition = %d \n",visParams->ShowTransition);
-	printf(" -HightGUIControls = %d \n", visParams->HightGUIControls);
-	printf(" -ModoCompleto = %d \n", visParams->ModoCompleto);
-	printf(" -ShowBGdiffImages = %d \n", visParams->ShowBGdiffImages);
-	printf(" -ShowLearningFlat = %d \n", visParams->ShowLearningFlat);
-	printf(" -ShowInitBackground = %d \n", visParams->ShowInitBackground );
-	printf(" -ShowShapeModel = %d \n", visParams->ShowShapeModel);
-	printf(" -ShowProcessPhases = %d \n", visParams->ShowProcessPhases);
-	printf(" -ShowValidationPhases = %d \n", visParams->ShowValidationPhases);
-	printf(" -ShowBGremoval = %d \n", visParams->ShowBGremoval);
-	printf(" -ShowKalman  = %d \n", visParams->ShowKalman );
-	printf(" -ShowStatsMov = %d \n", visParams->ShowStatsMov);
+	printf(" -ShowWindow \t= %d \n", visParams->ShowWindow);
+	printf(" -RecWindow \t= %d \n", visParams->RecWindow);
+	printf(" -ShowPresent \t= %d \n", visParams->ShowPresent);
+	printf(" -ShowTransition \t= %d \n",visParams->ShowTransition);
+	printf(" -HightGUIControls \t= %d \n", visParams->HightGUIControls);
+	printf(" -ModoCompleto \t= %d \n", visParams->ModoCompleto);
+	printf(" -ShowBGdiffImages \t= %d \n", visParams->ShowBGdiffImages);
+	printf(" -ShowLearningFlat \t= %d \n", visParams->ShowLearningFlat);
+	printf(" -ShowInitBackground \t= %d \n", visParams->ShowInitBackground );
+	printf(" -ShowShapeModel \t= %d \n", visParams->ShowShapeModel);
+	printf(" -ShowProcessPhases \t= %d \n", visParams->ShowProcessPhases);
+	printf(" -ShowValidationPhases \t= %d \n", visParams->ShowValidationPhases);
+	printf(" -ShowBGremoval \t= %d \n", visParams->ShowBGremoval);
+	printf(" -ShowKalman  \t= %d \n", visParams->ShowKalman );
+	printf(" -ShowStatsMov \t= %d \n", visParams->ShowStatsMov);
 
 }
 
@@ -1752,6 +1748,10 @@ void releaseVisParams( ){
 // Creación de ventanas
 void CreateWindows( IplImage* ImRef){
 
+	if( visParams->ModoCompleto){
+		cvNamedWindow( "Tracking Params", CV_WINDOW_AUTOSIZE );
+		cvResizeWindow("Tracking Params", 640, 1);
+	}
 //	cvNamedWindow( "Drosophila.avi", CV_WINDOW_AUTOSIZE );
 //	if (SHOW_BG_REMOVAL == 1){
 //		cvNamedWindow( "Background",CV_WINDOW_AUTOSIZE);
