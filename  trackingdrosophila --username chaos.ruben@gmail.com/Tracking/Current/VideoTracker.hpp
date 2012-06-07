@@ -19,7 +19,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <cvaux.h>
-#include <stdio.h>
 #include <cxcore.h>
 #include <libconfig.h>
 
@@ -29,6 +28,7 @@ using namespace std;
 #define CVX_RED CV_RGB(255,0,0)
 #define CVX_BLUE CV_RGB(0,0,255)
 #define CVX_GREEN CV_RGB(0,255,0)
+#define CVX_GREEN2 CV_RGB(0,200,125)
 #define CVX_WHITE CV_RGB(255,255,255)
 #define CVX_BLACK CV_RGB(0,0,0)
 

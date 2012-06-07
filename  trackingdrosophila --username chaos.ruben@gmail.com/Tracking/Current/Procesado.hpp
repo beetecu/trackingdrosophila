@@ -65,6 +65,7 @@ void SetProcesParams(  );
 
 void ShowProcesBGParams( char* Campo );
 
+void crearTrackBarsBGModel();
 
 void AllocateDataProcess( IplImage *I );
 

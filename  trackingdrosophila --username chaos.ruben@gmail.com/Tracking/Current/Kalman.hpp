@@ -103,6 +103,7 @@ typedef struct{
 typedef struct {
 	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
 
+	int TShape; // contador del periodo de la media
 	float a; // Tamaño medio del eje menor de la elipse del blob rastreado.
 	float b; // Tamaño medio del eje mayor de la elipse del blob rastreado.
 
@@ -154,6 +155,10 @@ typedef struct{
 	float Vymed;
 	float errorVy;
 
+	CvPoint KalInitPos;
+	float KalInitPhi;
+	int TimeToPhase1;	//! contador de tiempo restante para entrar en la fase 1
+
 
 	CvKalman* kalman ; // Estructura de kalman para la linealizada
 
@@ -163,8 +168,8 @@ typedef struct{
     const CvMat* x_k_Pre; // Predicción de k+1 hecha en k
     const CvMat* P_k_Pre; // incertidumbre en la predicción
 
-	const CvMat* x_k_Pos; // Posición tras corrección
-	const CvMat* P_k_Pos; // Incertidumbre en la posición tras corrección
+	CvMat* x_k_Pos; // Posición tras corrección
+	CvMat* P_k_Pos; // Incertidumbre en la posición tras corrección
 
 	CvMat* Measurement_noise; // V->N(0,R) : Incertidumbre en la medida. Lo suponemos de media 0.
 	CvMat* Measurement_noise_cov; // R
@@ -179,7 +184,8 @@ typedef struct{
 
 typedef struct{
 
-	int Default; // swich para establecer valores por defecto
+	float Q;
+	int g_slider_Q;
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida inicial : V->N( 0, Rk )
 	float alpha_Rk;
 	int g_slider_alpha_Rk;
@@ -188,7 +194,11 @@ typedef struct{
 }CamParams;
 
 typedef struct{
-	int Default; //
+	float Q;
+
+	int g_slider_Q;
+	int MaxTimeToPhase1;
+
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida: V->N( 0, Rk )
 	float alpha_Rk;	// factor que multiplica a la incertidumbre en la medida
 	int g_slider_alpha_Rk;
@@ -202,6 +212,7 @@ typedef struct{
 	float Velocidad;
 	float V_Angular;
 	float MaxJump;
+	int w_max;
 
 	int MaxBack;
 	int MaxVPhiError;
@@ -316,29 +327,20 @@ int SetStateTrack( STTrack* Track, STFly* flySig );
 /*!\brief  Establece el vector Z_K con la nueva medida.
  *  Genera la medida a partir de los nuevos datos obtenidos de la cámara ( flySig (t+1) );
  *	es decir, rellena las variables del vector \n Z_k. Z_K = { x_Zk, y_Zk, vx_Zk, vy_Zk, phiZk } \n en función del
- * estado del Track y establece dicho vector.
+ * estado del Track y del blob y establece dicho vector.
  *
  *Se supone que el estrado del trak ha sido establecido previamente de la siguiente forma
  *-# Si no hay datos => Estado track = SLEEPING (0)
  *-# Correspondencia uno a uno entre blob y track. CAM_CONTROL (1)
  *-# Varios tracks que apuntan al mismo blob KALMAN_CONTROL (2).
  *
- *- Para SLEEPING 0: No se hace nada.
- *- En los casos  CAM_CONTROL y KALMAN_CONTROL la velocidad, la dirección y el desplazamiento se establecen a partir del vector posición
- *  mediante la función EUDistance( int, int , float*, float* ).
- *	- Para CAM_CONTROL\n
- * Si la dirección y la predicción difieren en más de 180º, se suma a la dirección tantas
- * vueltas como sean necesarias para que ésta difiera en menos de 180º\n
- * 		- \f[ if|phiXk-phiZk| > PI and phiXk > phiZk => phiZk = phiZk + n2PI \f]
- * 		- \f[ if|phiXk-phiZk| > PI and phiXk < phiZk => phiZk = phiZk - n2PI \f]
- *	- Para KALMAN_CONTROL\n
- * La nueva dirección establece como la orientación del blob. Cuando se genere el ruido, éste será elevado
  *
+ * @param FG
  * @param Track
  * @param EstadoTrack
  */
 
-void generarMedida( STTrack* Track, int EstadoTrack );
+void generarMedida( IplImage* FG,STTrack* Track, int EstadoTrack );
 
 void CalcularVmed(  STTrack* Track, float* VMed, float* Vxmed, float* Vymed, float* errorVx, float* errorVy );
 
@@ -388,7 +390,7 @@ void generarRuido( STTrack* Track, int EstadoTrack );
 	  \param distancia :  módulo del vector desplazamiento sqrt( a² + b² )
 */
 
-void EUDistance( int a, int b, float* direccion, float* distancia);
+void EUDistance( float a, float b, float* direccion, float* distancia);
 
 /*! \brief Calcula el error en la medida del ángulo
  *
@@ -469,6 +471,8 @@ float corregirTita( float phiXk, float tita );
 
 float errorR_PhiZkV( float vx_Zk, float vy_Zk );
 
+int verificarSalida( IplImage* FG, int x, int y);
+
 void updateTracks( tlcde* lsTracks,tlcde* Flies, TrackingParams* trackParams );
 
 void updateStatsTrack( STTrack* Track, TrackingParams* trackParams );
@@ -499,6 +503,10 @@ void visualizarKalman( STFrame* frameData, tlcde* lsTracks, bool dataOn);
 
 void showKalmanData( STTrack *Track);
 
+void verMatriz( CvMat* Mat);
+
+void verVector( CvMat* Mat);
+
 void SetKalmanFilterParams( TrackingParams* trackParams );
 
 void SetDefaultKFilterParams( TrackingParams* trackParams  );
@@ -509,7 +517,7 @@ void SetPrivateKFilterParams(  );
 
 int obtenerFilterParam( int param );
 
-void crearTrackBars();
+void crearTrackBarsTracking();
 
 void onTrackbarTVmed(int val );
 
@@ -517,9 +525,13 @@ void onTrackbarMaxBack(int val );
 
 void onTrackbarMaxVPhiError(int val );
 
+void onTrackbarQCam(int val );
+
 void onTrackbarAlphaRkCam(int val );
 
 void onTrackbarAlphaRPhiCam(int val );
+
+void onTrackbarQKal(int val );
 
 void onTrackbarAlphaRkKal(int val );
 

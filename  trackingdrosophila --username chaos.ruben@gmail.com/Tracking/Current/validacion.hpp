@@ -30,6 +30,8 @@ typedef struct {
 	int MaxDecLTHIters; //!< Número máximo de iteraciones que se incrementará el umbral bajo para aumentar P(xi) ( el área del blob )
 	int MaxLowTH;		 //!< Limite superior para el umbral bajo
 	int MinLowTH;		 //!< Limite inferior para el umbral bajo
+	int CleanGhosts;
+	int umbralCleanGhosts;
 	ValParamsPrivate* privateParams;
 
 }ValParams;
@@ -60,7 +62,14 @@ typedef struct {
  *
  */
 
-void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH ,IplImage* Mask );
+void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,StaticBGModel* BGModel,
+		IplImage* Mask);
+
+void cleanGhosts( IplImage* FG, tlcde* flies );
+
+void onTrackBarClean( int Val);
+
+int verificarBlob( IplImage* FG , STFly* flyData );
 
 tlcde* ValidarBLOB( tlcde* Flies,int posBlob,int numFlies,STFrame* FrameData,SHModel* SH,ValParams* Params	);
 //!\brief Inicializada los Parametros del modelado de fondo.
@@ -74,13 +83,13 @@ void DefaultValParams( );
 void DefaultBGValParams();
 
 
-void PrivateValParams( SHModel*SH, ValParamsPrivate** privateParams );
+void PrivateValParams(SHModel* SH,StaticBGModel* BGModel,ValParamsPrivate** privateParams);
 
 float CalcPxMin( SHModel* SH,float Umbral_L, int areaMin );
 
 float CalcPxMax( SHModel* SH,float Umbral_H, int areaMax );
 
-
+void crearMascaraCGH( StaticBGModel* BGModel );
 
 //!\brief Calcula la probabilidad total de todos los blos detectados en el frame.
 /*!

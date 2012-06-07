@@ -16,10 +16,10 @@
 ///Parámetros Validación para procesado
 ValParams* valParams = NULL;
 BGModelParams* ValBGParams = NULL;
-
+IplImage* maskCleanGhost = NULL;
 ////////////////// VALIDACION /////////////////
 
-void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
+void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,StaticBGModel* BGModel,
 		IplImage* Mask) {
 
 	//Inicializar estructura para almacenar los datos cada mosca
@@ -37,7 +37,7 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 	// establecer los umbrales de resta iniciales
 
 	if (valParams->privateParams == NULL) {
-		PrivateValParams(SH, &valParams->privateParams);
+		PrivateValParams(SH,BGModel, &valParams->privateParams);
 	}
 
 	// Establecemos parámetros para los umbrales en la resta de fondo por defecto
@@ -274,6 +274,13 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,
 		}// FIN DEFECTO
 
 	}//FOR
+	dibujarBGFG( FrameData->Flies,FrameData->FG,1);
+	if (valParams->CleanGhosts){
+		cleanGhosts(FrameData->FG, FrameData->Flies);
+		dibujarBGFG( FrameData->Flies,FrameData->FG,1);
+		cvAdd( FrameData->FG, maskCleanGhost, FrameData->FG);
+	}
+
 
 }//Fin de Validación
 
@@ -649,6 +656,54 @@ void RestaurarElMejor(tlcde* lista, IplImage* Fg, STFly* MejorFly, CvRect Roi,
 	dibujarBlob(MejorFly, Fg);
 }
 
+void cleanGhosts( IplImage* FG, tlcde* flies ){
+
+	STFly* flyData = NULL;
+	cvCreateTrackbar( "Umbral borde plato","Foreground", &valParams->umbralCleanGhosts, 100, onTrackBarClean);
+	int Ghost;
+	if( !flies||flies->numeroDeElementos == 0) return;
+	for (int i = 0; i < flies->numeroDeElementos; i++) {
+		// Almacenar la Roi del blob visitado antes de ser validado
+		flyData = (STFly *) obtener(i, flies);
+		Ghost = verificarBlob(FG, flyData );
+		// si es un reflejo, eliminar
+		if( Ghost ){
+			if (flyData->Tracks ) free(flyData->Tracks);
+			if (flyData->Stats) free(flyData->Stats);
+		    free(flyData); // borrar el área de datos del elemento eliminado
+		    flyData = NULL;
+		    flyData = (STFly *)borrarEl(i,flies);
+		    i--;
+		}
+	}
+
+}
+
+int verificarBlob( IplImage* FG , STFly* flyData ){
+
+	CvRect ContROI = flyData->Roi;
+
+	// si todos los píxels del blob estan dentro del area d fantasmas
+	for (int y = ContROI.y; y< ContROI.y + ContROI.height; y++){
+		uchar* ptr1 = (uchar*) ( FG->imageData + y*FG->widthStep + ContROI.x);
+		uchar* ptr2 = (uchar*) ( maskCleanGhost->imageData + y*maskCleanGhost->widthStep + ContROI.x);
+		for (int x = 0; x < ContROI.width; x++){
+			// Para comprobar solo los píxels del blob ya que en la roi tambien hay píxels de fondo
+			if( ptr1[x] ){
+				// si algún píxel del blob está fuera del área no se considera fantasma
+				if ( ptr1[x]*ptr2[x] == 0) return 0;
+			}
+		}
+	}
+	// si todos los píxels están dentro, reflejo
+	return 1;
+}
+
+void onTrackBarClean( int Val){
+
+	crearMascaraCGH( NULL );
+
+}
 void SetValidationParams() {
 
 	//init parameters
@@ -963,6 +1018,40 @@ void SetValidationParams() {
 							settingName, valParams->MinLowTH);
 				}
 
+				sprintf(settingName, "CleanGhosts");
+				if (!config_setting_lookup_bool(setting, settingName,
+						&valParams->CleanGhosts)) {
+					valParams->CleanGhosts = false; // límite inferior para el umbral bajo ( defecto )
+					fprintf(
+							stderr,
+							"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+								"Establecer por defecto a %d \n",
+							settingName, valParams->CleanGhosts);
+				}
+
+				sprintf(settingName, "umbralCleanGhosts");
+				if (!config_setting_lookup_int(setting, settingName,
+						&valParams->umbralCleanGhosts)) {
+
+					valParams->umbralCleanGhosts = 10;
+					fprintf(
+							stderr,
+							"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+								"Establecer por defecto a %d píxels \n",
+							settingName, valParams->umbralCleanGhosts );
+
+				}
+				else if( valParams->umbralCleanGhosts < 0 ){
+
+					valParams->umbralCleanGhosts = 10;
+					fprintf(stderr,
+							"El valor de %s está fuera de límites\n "
+								"Establecer por defecto %s a %d píxels \n",
+							settingName, settingName,
+							valParams->umbralCleanGhosts );
+				}
+
+
 			}
 		}// fin comprobar auto hijos
 	} // fin lectura correcta fichero
@@ -985,6 +1074,8 @@ void DefaultValParams() {
 	valParams->MaxIncLTHIters = 100; // número máximo de veces que se podrá incrementar el umbral bajo
 	valParams->MaxLowTH = 1000; // límite superior para el umbral bajo ( exceso )
 	valParams->MinLowTH = 1; // límite inferior para el umbral bajo ( defecto )
+	valParams->CleanGhosts = false;
+	valParams->umbralCleanGhosts = 10;
 	valParams->privateParams = NULL;
 
 }
@@ -1003,7 +1094,7 @@ void DefaultBGValParams() {
 
 }
 
-void PrivateValParams(SHModel* SH, ValParamsPrivate** privateParams) {
+void PrivateValParams(SHModel* SH,StaticBGModel* BGModel,ValParamsPrivate** privateParams) {
 
 	ValParamsPrivate* Params;
 
@@ -1017,9 +1108,36 @@ void PrivateValParams(SHModel* SH, ValParamsPrivate** privateParams) {
 	Params->PxiMin = CalcPxMin(SH, valParams->Umbral_L, valParams->Umbral_MinArea); // establece la mínima probabilidad permitida para exceso.
 	Params->HThInicio = ValBGParams->HIGHT_THRESHOLD;
 	Params->LThInicio = ValBGParams->LOW_THRESHOLD;
+	if( valParams->CleanGhosts && BGModel->PRadio ){
+		crearMascaraCGH( BGModel );
+	}
+	else valParams->CleanGhosts = false;
+
 	*privateParams = Params;
 }
 
+void crearMascaraCGH( StaticBGModel* BGModel ){
+
+	static int X ;
+	static int Y;
+	static int Radio;
+
+	if(!maskCleanGhost){
+		CvSize size = cvGetSize( BGModel->ImFMask );
+		maskCleanGhost = cvCreateImage( size ,8,1);
+	}
+	if( BGModel){
+		X = BGModel->PCentroX;
+		Y = BGModel->PCentroY;
+		Radio = BGModel->PRadio;
+	}
+	cvCircle(maskCleanGhost , cvPoint(X,Y ),
+				Radio + valParams->umbralCleanGhosts,
+				cvScalar(200), -1, 8, 0);
+	cvCircle(maskCleanGhost , cvPoint(X,Y ),
+			Radio - valParams->umbralCleanGhosts,
+			CVX_BLACK, -1, 8, 0);
+}
 void ShowValParams(char* Campo) {
 
 	printf(" \nVariables para el campo %s : \n", Campo);
@@ -1040,10 +1158,12 @@ void ShowValParams(char* Campo) {
 	printf(" -MaxIncLTHIters = %d \n", valParams->MaxIncLTHIters);
 	printf(" -MaxLowTH = %d \n", valParams->MaxLowTH);
 	printf(" -MinLowTH= %d \n", valParams->MinLowTH);
-
+	printf(" -CleanGhosts = %d \n", valParams->CleanGhosts);
+	printf(" -UmbralCleanGhosts = %d \n", valParams->umbralCleanGhosts);
 }
 
 void ReleaseDataVal() {
 	free(valParams->privateParams);
 	free(valParams);
+	if(maskCleanGhost) free( maskCleanGhost);
 }
