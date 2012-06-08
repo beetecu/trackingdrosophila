@@ -21,6 +21,8 @@ extern double NumFrame; /// contador de frames absolutos ( incluyendo preprocesa
 IplImage* ImVisual = NULL; // imagen del video en la que si dibujaran los blobs y demas datos
 IplImage* Window = NULL; // ventana de visualización donde se incrustará ImVisual y los datos
 IplImage* ImScale= NULL; // Imagen escalada de ImVisual si ImVisual es menor o igual a 320 de ancho
+IplImage* ImBlob = NULL; // Imagen ampliada del blob rastreado
+IplImage* ImBlobScale = NULL;
 
 // parametros de visualización
 VisParams* visParams = NULL;
@@ -433,8 +435,8 @@ void DrawPreprocesWindow( IplImage* frame){
 	else cvCopy( frame, video );
 
 	// incrustamos las imagenes del preprocesado
-	Incrustar( Window, ImScale, Window, visParams->ROIPreProces);
-	Incrustar( Window, video, Window, rect);
+	Incrustar( Window, ImScale, NULL, visParams->ROIPreProces);
+	Incrustar( Window, video, NULL, rect);
 	// dibujamos sendos rectangulos blancos entorno a cada imagen incrustada
 	cvRectangle( Window,
 												cvPoint(rect.x,rect.y),
@@ -453,7 +455,7 @@ void DrawPreprocesWindow( IplImage* frame){
 void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* BGModel ){
 
 	DibujarFondo( );
-	Incrustar( Window, ImScale, Window, visParams->ROITracking);
+	Incrustar( Window, ImScale, NULL, visParams->ROITracking);
 	// MOSTRAR datos estadísticos en la ventana de visualización
 	// frame
 	if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
@@ -495,7 +497,7 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 		}
 		while(visParams->pause){
 			DibujarFondo( );
-			Incrustar( Window, ImScale, Window, visParams->ROITracking);
+			Incrustar( Window, ImScale,NULL, visParams->ROITracking);
 			// MOSTRAR datos estadísticos en la ventana de visualización
 			// frame
 			if(FrameDataOut->Stats) ShowStatDataFr(FrameDataOut->Stats,FrameDataOut->GStats, Window);
@@ -635,16 +637,16 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 
 	/// ESTADISTICAS FRAME
 	sprintf(NFrame,"Frame %d ",GStats->numFrame );
-	sprintf(TProcesF,"Tiempo de procesado del Frame: %5.4g ms",GStats->TiempoFrame);
+	sprintf(TProcesF,"Tiempo Frame: %5.4g ms",GStats->TiempoFrame);
 	tiempoHMS( (float)((float)GStats->numFrame/(float)GStats->fps), tiempohms );
-	sprintf(TProces,"Tiempo procesado: %s", tiempohms);
+	sprintf(TProces,"Total procesado: %s", tiempohms);
 	sprintf(PComplet,"Porcentaje completado: %0.2f %% ",(float)((float)GStats->numFrame/(float)GStats->totalFrames)*100 );
 	sprintf(FPS,"FPS: %.2f ",(1000/GStats->TiempoFrame));
 
 	if( visParams->ShowStatsMov && Stats) {
-		sprintf(TotalBlobs,"Total Blobs detected: %d ", Stats->TotalBlobs);
-		sprintf(BlobsUp,"Blobs activos: %0.1f %% ", Stats->dinamicBlobs);
-		sprintf(BlobsDown, "Blobs inactivos: %0.1f %%",Stats->staticBlobs);
+		sprintf(TotalBlobs,"Número de objetivos: %d ", Stats->TotalBlobs);
+		sprintf(BlobsUp,"Objetivos activos: %0.1f %% ", Stats->dinamicBlobs);
+		sprintf(BlobsDown, "Objetivos inactivos: %0.1f %%",Stats->staticBlobs);
 	}
 
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
@@ -748,27 +750,27 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 
-	CvFont fuente1;
-	CvFont fuente2;
+	static CvFont fuente1;
+	static CvFont fuente2;
 
-	CvPoint Origen1; // origen para la fila 1
-	CvPoint Origen2; // origen para la fila 2
+	static CvPoint Origen1; // origen para la fila 1
+	static CvPoint Origen2; // origen para la fila 2
 
-	CvPoint Fin;
+	static CvPoint Fin;
 
 	STTrack* Track = NULL;
 	STFly* Fly = NULL;
 
 	// margenes y dimensiones( en pixels)
-	unsigned int margenIz = 12; // margen izquierdo
-	unsigned int margenSup = visParams->ROITracking.y + visParams->ROITracking.height+ 10;
-	unsigned int margenCol = 5; // margen entre columnas
-	unsigned int margenFil = 5; // margen entre filas
-	unsigned int alto = 170; // alto rectangulo blob
-	unsigned int ancho= 152; // ancho rectangulo blob
-	unsigned int linea = 15;
-	unsigned int margenTxt = 10;
-	unsigned int margenTxtSup = 5;//10
+	const int margenIz = 12; // margen izquierdo
+	const int margenSup = visParams->ROITracking.y + visParams->ROITracking.height+ 10;
+	const int margenCol = 5; // margen entre columnas
+	const int margenFil = 5; // margen entre filas
+	const int alto = 170; // alto rectangulo blob
+	const int ancho= 152; // ancho rectangulo blob
+	const int linea = 15;
+	const int margenTxt = 10;
+	const int margenTxtSup = 5;//10
 
 
 	static char BlobId[50];
@@ -789,13 +791,24 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 	static char Vdes[50];
 	static char VdesVal[50];
 	static char tiempohms[15];
-
+	static int countVisIm = 0;
+	static int ventanaBlob;
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
 	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.9, 0.9, 0, 1, 8);
 
 
 	Origen1 = cvPoint(  margenIz, margenSup);
 	Origen2 = cvPoint(  margenIz, margenSup + alto + margenCol );
+
+	if(!ImBlobScale){
+		ImBlobScale= cvCreateImage( cvSize(150, 150),8,3);
+		if(visParams->zoom  == 1) ventanaBlob = 150;
+		else if(visParams->zoom == 2) ventanaBlob = 75;
+		else if(visParams->zoom == 3) ventanaBlob = 50;
+		else if(visParams->zoom == 5) ventanaBlob = 30;
+		else if(visParams->zoom == 6) ventanaBlob = 25;
+	}
+
 	Fin = cvPoint(Window->width - 10, Window->height - 65);
 //for( int i = 0; i < MAX_FILS; i++){
 		// Recorremos todas las posiciones de la matriz ( considerado como un vector de numero de elementos = MAX_ELEMENTS
@@ -826,6 +839,7 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 					if( Fly->etiqueta == Track->id) break;
 					else Fly = NULL;
 				}
+
 				// si se ha encontrado dibujar sus datos
 				if( Fly ){
 					// estadísticas Frame
@@ -920,8 +934,43 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 				sprintf(BlobId,"NO TRACK ");
 				CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 				cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2, Origen1.y  + linea), &fuente1, CVX_WHITE );
+				// dibujar imagen del blob
+				for( countVisIm = countVisIm; countVisIm < Tracks->numeroDeElementos; countVisIm++){
+					Track = (STTrack*)obtener(countVisIm, Tracks);
+					// si se ha encontrado el track de esa posición
+					if(Track->Stats->Estado != SLEEPING){
+						countVisIm++;
+						break;
+					}
+					else Track = NULL;
+				}
+				if( Track ){
+					// obtener fly del track
+					for(int k = 0; k < Flies->numeroDeElementos; k++){
+						Fly =  (STFly*)obtener(k, Flies);
+						if( Fly->etiqueta == Track->id) break;
+						else Fly = NULL;
+					}
+					// obtener centro fly
+					CvRect Roi;
+					if(visParams->ROIPreProces.width)
+					Roi.x = Fly->posicion.x-ventanaBlob/2;
+					Roi.y = Fly->posicion.y-ventanaBlob/2;
+					Roi.width = ventanaBlob;
+					Roi.height = ventanaBlob;
+					// dibujar la imagen
+					cvSetImageROI( ImScale,Roi);
+					cvResize( ImScale, ImBlobScale, CV_INTER_LINEAR);
+					cvResetImageROI(ImScale);
+					Roi.x = Origen1.x + (ancho - ImBlobScale->width)/2;
+					Roi.y = (Origen1.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
+					Roi.width = ImBlobScale->width;
+					Roi.height = ImBlobScale->height;
+					Incrustar( Window, ImBlobScale,NULL, Roi );
+				}
 			}
 		}
+		 countVisIm = 0;
 }
 // Genera una imagen que representa el llenado del buffer
 void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
@@ -1056,8 +1105,13 @@ void DibujarFondo( ){
 			cvPoint(visParams->ROITracking.x + visParams->ROITracking.width+1,visParams->ROITracking.y + visParams->ROITracking.height+1), cvScalar(0, 0, 0), -1 );
 
 	//estadisticas
+	// datos del frame
 	cvRectangle( Window, cvPoint(  10,10 ),
 					cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
+	// datos de los blobs
+	cvRectangle( Window, cvPoint(  10,10 ),
+					cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
+
 	cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
 					cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), -1 );
 	cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
@@ -1086,22 +1140,53 @@ void DibujarFondo( ){
 //						cvPoint(Window->width - 10, Window->height - 65), cvScalar(0, 0, 0), -1 );
 
 }
+/*!\brief Incrusta src2 en src1 en zona indicada por roi
+ *
+ * @param src1
+ * @param src2
+ * @param dst
+ * @param ROI
+ */
+
 void Incrustar( IplImage* src1, IplImage* src2, IplImage* dst, CvRect ROI ){
 
-	int y2 = 0;
-	for (int y = ROI.y; y < ROI.y + src2->height; y++){
-		uchar* ptr1 = (uchar*) ( src1->imageData + y*src1->widthStep + 3*ROI.x);
-		uchar* ptr2 = (uchar*) ( src2->imageData + y2*src2->widthStep );
-		for (int x = 0; x<src2->width; x++){
-			ptr1[3*x ] = ptr2[3*x ];
-			ptr1[3*x +1] = ptr2[3*x + 1 ];
-			ptr1[3*x +2] = ptr2[3*x + 2 ];
+		int y2 = 0;
+		for (int y = ROI.y; y < ROI.y + src2->height; y++){
+			uchar* ptr1 = (uchar*) ( src1->imageData + y*src1->widthStep + 3*ROI.x);
+			uchar* ptr2 = (uchar*) ( src2->imageData + y2*src2->widthStep );
+			for (int x = 0; x<src2->width; x++){
+				ptr1[3*x ] = ptr2[3*x ];
+				ptr1[3*x +1] = ptr2[3*x + 1 ];
+				ptr1[3*x +2] = ptr2[3*x + 2 ];
 
+			}
+			y2++;;
 		}
-		y2++;;
-	}
+
 }
 
+/*!\brief Incrusta zona indicada por roi de src2 en src1. La roi ha de ser de igual tamaño al de la imagen src1
+ *
+ * @param src1
+ * @param src2
+ * @param dst
+ * @param ROI
+ */
+void Incrustar2( IplImage* src1, IplImage* src2, IplImage* dst, CvRect ROI ){
+
+		int y2 = 0;
+		for (int y = ROI.y; y < ROI.y + src2->height; y++){
+			uchar* ptr2 = (uchar*) ( src2->imageData + y*src2->widthStep + 3*ROI.x);
+			uchar* ptr1 = (uchar*) ( src1->imageData + y2*src1->widthStep );
+			for (int x = 0; x<src1->width; x++){
+				ptr1[3*x ] = ptr2[3*x ];
+				ptr1[3*x +1] = ptr2[3*x + 1 ];
+				ptr1[3*x +2] = ptr2[3*x + 2 ];
+			}
+			y2++;;
+		}
+
+}
 void IncrustarTxt( int num){
 	    CvFont fuente1;
 	    CvFont fuente2;
@@ -1157,7 +1242,7 @@ void IncrustarLogo(const char Cad[100] , IplImage* ImLogos, CvPoint Origen,int D
 				Centrar = cvPoint( (ImLogos->width-Logo->width)/2,(( ImLogos->height+Logo->height)/4));
 				Origen = Centrar;
 		}
-	Incrustar( ImLogos, Logo, ImLogos,cvRect(Origen.x,Origen.y,ImLogos->width,ImLogos->height)  );
+	Incrustar( ImLogos, Logo, NULL,cvRect(Origen.x,Origen.y,ImLogos->width,ImLogos->height)  );
 	cvShowImage("TrackingDrosophila",ImLogos);
 	if(visParams->RecWindow){
 		cvWriteFrame( VWriter,Window);
@@ -1578,6 +1663,27 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 							"Establecer por defecto a %d \n",settingName,visParams->ShowStatsMov);
 
 		}
+		sprintf(settingName, "Zoom");
+		if (!config_setting_lookup_int(setting, settingName,
+				&visParams->zoom)) {
+
+			visParams->zoom = 3 ;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %d aumentos \n",
+					settingName, visParams->zoom );
+
+		}
+		else if( visParams->zoom <= 0 ){
+
+			visParams->zoom = 1 ;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %d aumentos \n",
+					settingName, settingName,
+					visParams->zoom );
+		}
 	}
 
 	SetPrivateHightGUIParams(  ImRef, TotalFrames );
@@ -1611,6 +1717,8 @@ void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames ){
 	if( ImRef ){
 		if(!ImVisual) {
 			ImVisual = cvCreateImage( cvGetSize( ImRef ),8,3);
+			ImBlob = cvCreateImage( cvSize(60,60),8,3);
+
 			if( ImRef->width <= 320){
 				CvSize size = cvSize(2*ImRef->width,2*ImRef->height);
 				ImScale = cvCreateImage( size ,8,3);
@@ -1657,6 +1765,7 @@ void SetDefaultHightGUIParams(  IplImage* ImRef ){
 	visParams->ShowBGremoval = true;
 	visParams->ShowKalman = true;
 	visParams->ShowStatsMov = true;
+	visParams->zoom = 3;
 
 }
 
@@ -1678,6 +1787,8 @@ void ShowHightGUIParams( char* Campo  ){
 	printf(" -ShowBGremoval \t= %d \n", visParams->ShowBGremoval);
 	printf(" -ShowKalman  \t= %d \n", visParams->ShowKalman );
 	printf(" -ShowStatsMov \t= %d \n", visParams->ShowStatsMov);
+	printf(" -Zoom \t= %d aumentos\n", visParams->zoom);
+
 
 }
 
@@ -1711,6 +1822,8 @@ void releaseVisParams( ){
 	ImVisual = NULL;
 //	if( ImScale) cvReleaseImage( &ImScale);
 	cvReleaseImage(&Window);
+	cvReleaseImage(&ImBlob);
+	cvReleaseImage(&ImBlobScale);
 	if (VWriter) cvReleaseVideoWriter(&VWriter);
 	cvDestroyAllWindows();
 }

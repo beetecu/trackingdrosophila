@@ -92,6 +92,8 @@ typedef struct {
 	// ventana de tracking
 	int ShowStatsMov;
 
+	int zoom;				/// ampliación de la imagen del blob mostrada en ventanas sin track
+
 	//Private
 	int TotalFrames;
 	bool pause;
@@ -149,7 +151,24 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 
 CvVideoWriter* iniciarAvi(  char* nombreVideo, double fps);
 
+/*!\brief Incrusta src2 en src1 en zona indicada por roi
+ *
+ * @param src1
+ * @param src2
+ * @param dst
+ * @param ROI
+ */
+
 void Incrustar( IplImage* src1, IplImage* src2, IplImage* dst, CvRect ROI );
+
+/*!\brief Incrusta zona indicada por roi de src2 en src1. La roi ha de ser de igual tamaño al de la imagen src1
+ *
+ * @param src1
+ * @param src2
+ * @param dst
+ * @param ROI
+ */
+void Incrustar2( IplImage* src1, IplImage* src2, IplImage* dst, CvRect ROI );
 
 void DibujarFondo( );
 
