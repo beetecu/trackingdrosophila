@@ -26,9 +26,6 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 
 	// cargar datos del frame
 	Flies=frameData->Flies;
-	if( frameData->num_frame == 1562 ){
-						printf("hola");
-					}
 
 	// Inicializar imagenes y parámetros
 	if( !ImKalman ){
@@ -59,8 +56,6 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 		}
 		/////////////// ACTUALIZACIÓN DE TRACKS CON LOS NUEVOS DATOS //////////////
 		updateTracks( lsTracks,frameData->Flies, trackParams );
-		printf( "\nVector Zk tras update:");
-		verVector( Track->z_k );
 
 	}
 
@@ -90,10 +85,6 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 			}
 			// nueva predicción
 			Track->x_k_Pre = cvKalmanPredict( Track->kalman, 0);
-			printf( "\nMatriz de transicion:");
-			verMatriz( Track->kalman->transition_matrix);
-			printf( "\nVector Zk tras prediccion:");
-			verVector( Track->z_k );
 
 		}
 		irAlSiguiente(lsTracks);
@@ -404,11 +395,6 @@ void generarMedida( IplImage* FG, STTrack* Track, int EstadoTrack ){
 		memcpy( Track->Measurement_noise->data.fl, V, sizeof(V));
 
 		cvGEMM(Track->kalman->measurement_matrix, Track->Medida,1, Track->Measurement_noise, 1, Track->z_k,0 ); // Zk = H Medida + V
-		printf( "\nMedida:");
-		verVector( Track->Medida );
-
-		printf( "\nVector Zk:");
-		verVector( Track->z_k );
 
 	}
 	else if( EstadoTrack == SLEEPING){
