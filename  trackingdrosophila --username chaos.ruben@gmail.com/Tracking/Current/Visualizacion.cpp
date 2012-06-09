@@ -27,6 +27,8 @@ IplImage* ImBlobScale = NULL;
 // parametros de visualización
 VisParams* visParams = NULL;
 CvVideoWriter* VWriter = NULL;
+posBlocks* Pos = NULL;
+Fuentes* fuentes = NULL;
 
 void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
@@ -334,7 +336,7 @@ void DraWPresent(  ){
 	cvWaitKey(1000);
 	desvanecer( Window, 10 );
 	cvInitFont( &fuente1, CV_FONT_HERSHEY_COMPLEX, 2, 2, 0, 3, CV_AA);
-//	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.5, 0.5, 0, 1, CV_AA);
+
 	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 	CvSize textsize = getTextSize("Tracking Drosophila", CV_FONT_HERSHEY_COMPLEX, 2, 5, 0);
 	CvSize textsize2 = getTextSize("Presione una tecla para comenzar", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
@@ -1091,40 +1093,34 @@ void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat  ){
 
 void DibujarFondo( ){
 
-	CvFont fuente1;
 
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 	cvPutText( Window, "Progreso:",
 							cvPoint( (Window->width-visParams->BPrWidth )/2-2, Window->height - 50 ),
-							&fuente1,
+							&fuentes->fuente3,
 							CVX_WHITE );
 
 	cvSet(Window,cvScalar(255,255,255) );
+
 	// imagen
-	cvRectangle( Window, cvPoint(visParams->ROITracking.x-1,visParams->ROITracking.y-1),
-			cvPoint(visParams->ROITracking.x + visParams->ROITracking.width+1,visParams->ROITracking.y + visParams->ROITracking.height+1), cvScalar(0, 0, 0), -1 );
-
-	//estadisticas
+	cvRectangle( Window, Pos->OrImage,Pos->FnImage, cvScalar(0, 0, 0), -1 );
 	// datos del frame
-	cvRectangle( Window, cvPoint(  10,10 ),
-					cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
-	// datos de los blobs
-	cvRectangle( Window, cvPoint(  10,10 ),
-					cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
+	cvRectangle( Window,Pos->OrFrameStats,Pos->FnFrameStats, cvScalar(0, 0, 0), -1 );
 
-	cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
-					cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), -1 );
-	cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
-					cvPoint(Window->width - 10, Window->height - 65), cvScalar(0, 0, 0), -1 );
+	// Grafica 1
+	cvRectangle( Window, Pos->OrGraphic1,Pos->FnGraphic1, cvScalar(0, 0, 0), -1 );
+
+	// datos de estadisticas
+	cvRectangle( Window, Pos->OrStats,Pos->FnStats, cvScalar(0, 0, 0), -1 );
+
+	// datos de los tracks
+	cvRectangle( Window, Pos->OrDataTrack,Pos->FnDataTrack, cvScalar(0, 0, 0), -1 );
+
 	// progreso
 	cvPutText( Window, "Progreso:",
 					cvPoint( (Window->width-visParams->BPrWidth )/2-2, Window->height - 50 ),
-					&fuente1,
+					&fuentes->fuente3,
 					cvScalar(0,0,0) );
-	cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2-2,( Window->height - 30 - Window->height/64)-2 ),
-					cvPoint((Window->width + visParams->BPrWidth)/2+2, (Window->height - 30 + Window->height/64)+2 ), cvScalar(0, 0, 0), -1 );
-
-
+	cvRectangle( Window, Pos->OrProgres,Pos->FnProgres, cvScalar(0, 0, 0), -1 );
 
 //	// rectangulo de imagen
 //	cvRectangle( Window, cvPoint(visParams->ROITracking.x-1,visParams->ROITracking.y-1),cvPoint(visParams->ROITracking.x + visParams->ROITracking.width+1,visParams->ROITracking.y + visParams->ROITracking.height+1), CVX_WHITE, -1 );
@@ -1378,23 +1374,22 @@ void Transicion3( const char texto[], int delay_up ){
 			cvRectangle( Window, cvPoint(0,0),
 					cvPoint(visParams->Resolucion.width ,visParams->Resolucion.height), cvScalar(i,i,i), -1 );
 			// imagen
-			cvRectangle( Window, cvPoint(visParams->ROITracking.x-1,visParams->ROITracking.y-1),
-					cvPoint(visParams->ROITracking.x + visParams->ROITracking.width+1,visParams->ROITracking.y + visParams->ROITracking.height+1), cvScalar(0, 0, 0), 1 );
+			cvRectangle( Window, Pos->OrImage,Pos->FnImage, cvScalar(0, 0, 0), 1 );
 
-			//estadisticas
-			cvRectangle( Window, cvPoint(  10,10 ),
-							cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(0, 0, 0), -1 );
-			cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
-							cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(0, 0, 0), -1 );
-			cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
-							cvPoint(Window->width - 10, Window->height - 65), cvScalar(0, 0, 0), -1 );
+			// datos del frame
+			cvRectangle( Window,Pos->OrFrameStats,Pos->FnFrameStats, cvScalar(0, 0, 0), -1 );
+			// grafica 1
+			cvRectangle( Window, Pos->OrGraphic1,Pos->FnGraphic1, cvScalar(0, 0, 0), -1 );
+			// datos de estadisticas
+			cvRectangle( Window, Pos->OrStats,Pos->FnStats, cvScalar(0, 0, 0), -1 );
+			// datos de los tracks
+			cvRectangle( Window, Pos->OrDataTrack,Pos->FnDataTrack, cvScalar(0, 0, 0), -1 );
 			// progreso
 			cvPutText( Window, "Progreso:",
 							cvPoint( (Window->width-visParams->BPrWidth )/2-2, Window->height - 50 ),
-							&fuente2,
-							cvScalar(0, 0, 0) );
-			cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2-2,( Window->height - 30 - Window->height/64)-2 ),
-							cvPoint((Window->width + visParams->BPrWidth)/2+2, (Window->height - 30 + Window->height/64)+2 ), cvScalar(0, 0, 0), -1 );
+							&fuentes->fuente3,
+							cvScalar(255,255,255) );
+			cvRectangle( Window, Pos->OrProgres,Pos->FnProgres, cvScalar(0, 0, 0), -1 );
 
 
 			cvShowImage("TrackingDrosophila", Window);
@@ -1722,26 +1717,80 @@ void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames ){
 			if( ImRef->width <= 320){
 				CvSize size = cvSize(2*ImRef->width,2*ImRef->height);
 				ImScale = cvCreateImage( size ,8,3);
-				visParams->ROITracking = cvRect(visParams->Resolucion.width-(2*ImRef->width + 10),
-						10,2*ImRef->width,
-						2*ImRef->height);
-				visParams->ROIPreProces = cvRect( (Window->width-2*ImRef->width)/2,
-						( Window->height-2*ImRef->height)/2,
-						2*ImRef->width,2*ImRef->height);
 			}
 			else{
 				ImScale = ImVisual;
-				visParams->ROITracking = cvRect(visParams->Resolucion.width-(ImRef->width + 10),10,ImRef->width,ImRef->height);
-				visParams->ROIPreProces = cvRect( (Window->width-ImRef->width)/2,
-													( Window->height-ImRef->height)/1.5,
-													ImRef->width,
-													ImRef->height);
 			}
 		}
 	}
-
+	setFounts();
+	setPosBlocks( ImRef );
 }
 
+void setFounts(){
+
+	fuentes = ( Fuentes * )malloc( sizeof(Fuentes ));
+	if( !fuentes ) {error(4);exit(1);}
+
+	cvInitFont( &fuentes->fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
+	cvInitFont( &fuentes->fuente2, CV_FONT_HERSHEY_PLAIN, 0.9, 0.9, 0, 1, 8);
+	cvInitFont( &fuentes->fuente3, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
+	cvInitFont( &fuentes->fuente4, CV_FONT_HERSHEY_PLAIN, 2, 2, 0, 1, 8);
+
+
+}
+void setPosBlocks( IplImage * ImRef){
+
+
+
+	Pos = ( posBlocks * )malloc( sizeof(posBlocks ));
+	if( !Pos ) {error(4);exit(1);}
+
+
+
+	Pos->margenBorde = 10;
+	Pos->margenSup = 10;
+	Pos->margenInterno = 5;
+
+	if( ImRef->width <= 320){
+		visParams->ROITracking = cvRect(visParams->Resolucion.width-(2*ImRef->width + Pos->margenBorde),
+				Pos->margenSup,2*ImRef->width,
+				2*ImRef->height);
+		visParams->ROIPreProces = cvRect( (Window->width-2*ImRef->width)/2,
+				( Window->height-2*ImRef->height)/2,
+				2*ImRef->width,2*ImRef->height);
+	}
+	else{
+		visParams->ROITracking = cvRect(visParams->Resolucion.width-(ImRef->width + Pos->margenBorde),Pos->margenBorde,ImRef->width,ImRef->height);
+		visParams->ROIPreProces = cvRect( (Window->width-ImRef->width)/2,
+											( Window->height-ImRef->height)/1.5,
+											ImRef->width,
+											ImRef->height);
+	}
+
+
+	Pos->OrImage =  cvPoint(visParams->ROITracking.x,visParams->ROITracking.y);
+	Pos->FnImage = cvPoint(visParams->ROITracking.x + visParams->ROITracking.width,
+							visParams->ROITracking.y + visParams->ROITracking.height);
+
+	Pos->OrFrameStats= cvPoint(  Pos->margenBorde, Pos->margenBorde);
+	Pos->FnFrameStats =cvPoint( Pos->OrFrameStats.x + 250, Pos->margenBorde + Pos->FnImage.y/2- Pos->margenInterno) ;
+
+	Pos->OrStats = cvPoint(  Pos->margenBorde, Pos->FnFrameStats.y + Pos->margenBorde );
+	Pos->FnStats = cvPoint(  Pos->OrImage.x - Pos->margenBorde, Pos->FnImage.y );
+
+	Pos->OrGraphic1 = cvPoint(  Pos->FnFrameStats.x + Pos->margenBorde, Pos->OrImage.y );
+	Pos->FnGraphic1 = cvPoint(  Pos->OrImage.x - Pos->margenBorde, Pos->FnFrameStats.y  );
+
+	Pos->OrDataTrack = cvPoint(  Pos->margenBorde ,Pos->FnImage.y + Pos->margenBorde);
+	Pos->FnDataTrack = cvPoint(  Pos->FnImage.x ,Window->height - 65);
+
+	Pos->OrProgres = cvPoint(  (Window->width-visParams->BPrWidth )/2-2,( Window->height - 30 - Window->height/64)-2 );
+	Pos->FnProgres = cvPoint((Window->width + visParams->BPrWidth)/2+2, (Window->height - 30 + Window->height/64)+2 );
+
+
+
+}
 void SetDefaultHightGUIParams(  IplImage* ImRef ){
 
 	visParams->RecWindow = true;
@@ -1817,6 +1866,8 @@ CvVideoWriter* iniciarAvi(  char* nombreVideo, double fps){
 
 void releaseVisParams( ){
 
+	free( fuentes);
+	free( Pos);
 	free( visParams);
 	if(ImVisual) cvReleaseImage(&ImVisual);
 	ImVisual = NULL;
