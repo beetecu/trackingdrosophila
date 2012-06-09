@@ -57,6 +57,38 @@
 #define MAX_ELEMENTS MAX_COLS*MAX_FILS // número máximo de tracks a visualizar
 
 typedef struct {
+
+
+	int margenBorde;
+	int margenSup;
+	int margenInterno;
+
+
+	CvPoint OrProgres;
+	CvPoint FnProgres;
+	CvPoint OrImage;
+	CvPoint OrFrameStats;
+	CvPoint OrStats;
+	CvPoint OrGraphic1;
+	CvPoint FnGraphic1;
+	CvPoint OrGraphic2;
+	CvPoint FnGraphic2;
+	CvPoint OrDataTrack;
+	CvPoint FnImage;
+	CvPoint FnFrameStats;
+	CvPoint FnStats;
+	CvPoint FnDataTrack;
+
+}posBlocks;
+
+typedef struct founts{
+	CvFont fuente1; // statdataframe y statDatablobs
+	CvFont fuente2;
+	CvFont fuente3; // se usan en las transiciones y en incrustar txt
+	CvFont fuente4;
+}Fuentes;
+
+typedef struct {
 	// Public
 	int RecWindow;						/// Switch GENERAL de 0 a 1 para activar la grabación de la ventana de visualización
 	int ShowWindow ; 					/// Switch GENERAL de 0 a 1 para mostrar la ventana de visualización
@@ -108,6 +140,8 @@ typedef struct {
 	int DelayDown;
 	int DelayTr;
 	int BPrWidth; // ancho de la barra de progeso
+
+
 }VisParams;
 
 /// Crea las ventanas de visualización e iniciar parámetros
@@ -183,6 +217,9 @@ void dibujarBlobs( IplImage* Imagen,tlcde* lista_blobs );
 
 void IncrustarTxt( int num );
 
+void setFounts();
+
+void setPosBlocks( IplImage * ImRef);
 
 //!\brief ShowstatDataFr: Imprime en la visualización del frame los datos correspondientes a su procesado.
 /*!
