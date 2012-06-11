@@ -31,7 +31,7 @@ CvVideoWriter* VWriter = NULL;
 posBlocks* Pos = NULL;
 Fuentes* fuentes = NULL;
 graphMovParams* graph2;
-
+graphBarsParams* graph1;
 void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
 	struct timeval tif;
@@ -202,11 +202,11 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 						// DIBUJAMOS LAS ANIMACIONES DE INICIO Y FIN DE ETAPAS
 						if( type == FLAT && first ){
 							Transicion("Iniciando preprocesado...", 1,1000, 50 );
-							Transicion2( "Buscando plato...",50); // desaparece la ventana y hace aparecer
+							Transicion2( "Localizando plato...",50); // desaparece la ventana y hace aparecer
 							first = 0;
 						}
 						if( type == BG_MODEL && !first){
-							Transicion4("Buscando plato...", 50);
+							Transicion4("Localizando plato...", 50);
 							first = 1;
 						}
 						if( type == SHAPE && first ){
@@ -219,11 +219,8 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 						}
 						//DIBUJAMOS ELEMENTOS EN VENTANA DE VIDEO
 						// DIBUJAR PLATO
-						if( BGModel->PRadio > 0 ){
+						if( BGModel->PRadio > 0 )	cvCircle( ImVisual, cvPoint(cvRound( BGModel->PCentroX),cvRound( BGModel->PCentroY ) ), cvRound( BGModel->PRadio ), CVX_BLUE, 1, 8, 0);
 
-							//cvCircle( ImVisual, cvPoint(BGModel->PCentroX,BGModel->PCentroY ),BGModel->PRadio, CVX_RED, 1, 8, 0);
-							cvCircle( ImVisual, cvPoint(cvRound( BGModel->PCentroX),cvRound( BGModel->PCentroY ) ), cvRound( BGModel->PRadio ), CVX_BLUE, 1, 8, 0);
-						}
 						// DIBUJAR BLOBS Y DIRECCIÓN DE DESPLAZAMIENTO
 						if( flies && flies->numeroDeElementos>0 ) dibujarBlobs( ImVisual, flies );
 
@@ -231,27 +228,17 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 
 						//REESCALAR
 						// si la imagen es de 320 o menos la escalamos al doble
-						if(ImVisual->width <= 320){
-							cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
-						}
+						if(ImVisual->width <= 320)	cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
 						else  ImScale = ImVisual;
 
-
 						//DIBUJAMOS ELEMENTOS EN VENTANA DE VISUALIZACION DEPENDIENDO DEL TIPO
-						if( type == FLAT || type == BG_MODEL || type  == SHAPE ){
+						if( type == FLAT || type == BG_MODEL || type  == SHAPE )DrawPreprocesWindow( frame );
+						else if (type == TRAKING)	DrawTrackingWindow( frame, FrameDataOut,  BGModel);
 
-							DrawPreprocesWindow( frame );
-
-						}
-						else if (type == TRAKING){
-
-							DrawTrackingWindow( frame, FrameDataOut,  BGModel);
-						}
 						IncrustarTxt( type );
 						// GUARDAR VISUALIZACION
-						if(visParams->RecWindow){
-							cvWriteFrame( VWriter,Window);
-						}
+						if(visParams->RecWindow) cvWriteFrame( VWriter,Window);
+
 
 						if ( visParams->ShowWindow ) cvShowImage("TrackingDrosophila",Window);
 						if(visParams->pasoApaso){
@@ -393,21 +380,7 @@ void DraWPresent(  ){
 	}
 
 
-//	IncrustarLogo("logo_subversion_.png", ImLogos, cvPoint( 0,0 ),visParams->DelayLogo,true);
 
-//	CvSize textsize = getTextSize("OpenCV forever!", CV_FONT_HERSHEY_COMPLEX, 3, 5, 0);
-//	CvPoint org((width - textsize.width)/2, (height - textsize.height)/2);
-//	Mat image2;
-//	for( i = 0; i < 255; i += 2 )
-//	{
-//		image2 = Window  - Scalar::all(i);
-//		putText(image2, "Tracking Drosophila", org, CV_FONT_HERSHEY_COMPLEX, 3,
-//				Scalar(i, i, i), 5, lineType);
-//
-//		imshow("TrackingDrosophila", image2);
-//		if(waitKey(5) >= 0)
-//			return 0;
-//	}
 
 }
 
@@ -474,8 +447,8 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 		cvRectangle( Window, Pos->OrProgres,
 							cvPoint( Pos->OrProgres.x + 2 + cvRound(x), Pos->OrProgres.y ), CVX_BLUE, -1 );
 	}
-	// si no está activado el modo completo, activamos las opciones de visualización
-//	if(!visParams->ModoCompleto){
+	//opciones de visualización
+
 		if(visParams->HightGUIControls){
 			// si se pulsa p ó P  => pause = true
 			if( (cvWaitKey(1) & 255) == 'p' || (cvWaitKey(5) & 255) == 'P' ){
@@ -517,66 +490,72 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 				fflush( stdin);
 			}
 		}
-//	}
 }
+
+//Representamos los blobs mediante triangulos isosceles
+// dibujamos triangulo isosceles de altura el eje mayor de la elipse, formando el segmento
+// (A,mcb), y de anchura el eje menor dando lugar al segmento (B,C), perpendicular
+// a (A,mcb) cuyo centro es mcb. La unión de A,B,C dará el triangulo resultante.
 
 void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 
 	STFly* fly;
 
 	if(flies!= NULL && flies->numeroDeElementos>0) {
+		irAlPrincipio( flies );
 		for( int i = 0; i <  flies->numeroDeElementos; i++ ){
 			// obtener lista de blobs.
-			fly = (STFly*)obtener(i, flies);
-			if( fly->etiqueta){
-				// Dibujar un trianguno isósceles que representa el blob
-				CvPoint A   = cvPoint( cvRound( fly->posicion.x + fly->a*cos(fly->orientacion*CV_PI/180) ),
-									   cvRound( fly->posicion.y - fly->a*sin(fly->orientacion*CV_PI/180)));
-				CvPoint Mcb = cvPoint( cvRound( fly->posicion.x - fly->a*cos(fly->orientacion*CV_PI/180)),
-									   cvRound( fly->posicion.y + fly->a*sin(fly->orientacion*CV_PI/180)));
-				CvPoint B =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion+90)*CV_PI/180) ),
-									   cvRound( Mcb.y - fly->b*sin( (fly->orientacion+90)*CV_PI/180)));
-				CvPoint C =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion-90)*CV_PI/180) ),
-									   cvRound( Mcb.y - fly->b*sin( (fly->orientacion-90)*CV_PI/180)));
+			fly = (STFly*)obtenerActual( flies);
 
-				cvLine( Imagen,A,B,fly->Color,1,CV_AA, 0 );
-				cvLine( Imagen,B,C,fly->Color,1,CV_AA, 0 );
-				cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
-				if(fly->etiqueta == 11)	cvCircle( Imagen, fly->posicion, 10, fly->Color, 3, CV_AA, 0 );
+			// Dibujar un trianguno isósceles que representa el blob
+			CvPoint A   = cvPoint( cvRound( fly->posicion.x + fly->a*cos(fly->orientacion*CV_PI/180) ),
+								   cvRound( fly->posicion.y - fly->a*sin(fly->orientacion*CV_PI/180)));
+			CvPoint Mcb = cvPoint( cvRound( fly->posicion.x - fly->a*cos(fly->orientacion*CV_PI/180)),
+								   cvRound( fly->posicion.y + fly->a*sin(fly->orientacion*CV_PI/180)));
+			CvPoint B =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion+90)*CV_PI/180) ),
+								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion+90)*CV_PI/180)));
+			CvPoint C =   cvPoint( cvRound( Mcb.x + fly->b*cos( (fly->orientacion-90)*CV_PI/180) ),
+								   cvRound( Mcb.y - fly->b*sin( (fly->orientacion-90)*CV_PI/180)));
 
-				double magnitude = 20;
+			cvLine( Imagen,A,B,fly->Color,1,CV_AA, 0 );
+			cvLine( Imagen,B,C,fly->Color,1,CV_AA, 0 );
+			cvLine( Imagen,C,A,fly->Color,1,CV_AA, 0 );
+			//if(fly->etiqueta == 11)	cvCircle( Imagen, fly->posicion, 10, fly->Color, 3, CV_AA, 0 );
+
+			double magnitude = 20;
+			cvLine( Imagen,
+					fly->posicion,
+					cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
+							 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
+					CVX_RED,
+					1, CV_AA, 0 );
+			// dirección de kalman
+			if(fly->Estado == 4){
+				cvLine( Imagen,
+									fly->posicion,
+									cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
+											 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
+											 CVX_BLUE,
+									1, CV_AA, 0 );
+			}else{
+				// dirección media
+				cvLine( Imagen,
+											fly->posicion,
+											cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_med*CV_PI/180)),
+													 cvRound( fly->posicion.y - magnitude*sin(fly->dir_med*CV_PI/180))  ),
+													 CVX_WHITE,
+											1, CV_AA, 0 );
+
 				cvLine( Imagen,
 						fly->posicion,
-						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->direccion*CV_PI/180)),
-								 cvRound( fly->posicion.y - magnitude*sin(fly->direccion*CV_PI/180))  ),
-						CVX_RED,
+						cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
+								 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
+								 CVX_GREEN,
 						1, CV_AA, 0 );
-				// dirección de kalman
-				if(fly->Estado == 4){
-					cvLine( Imagen,
-										fly->posicion,
-										cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
-												 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
-												 CVX_BLUE,
-										1, CV_AA, 0 );
-				}else{
-					// dirección media
-					cvLine( Imagen,
-												fly->posicion,
-												cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_med*CV_PI/180)),
-														 cvRound( fly->posicion.y - magnitude*sin(fly->dir_med*CV_PI/180))  ),
-														 CVX_WHITE,
-												1, CV_AA, 0 );
-
-					cvLine( Imagen,
-							fly->posicion,
-							cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
-									 cvRound( fly->posicion.y - magnitude*sin(fly->dir_filtered*CV_PI/180))  ),
-									 CVX_GREEN,
-							1, CV_AA, 0 );
-				}
-				visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
 			}
+			visualizarId( Imagen,fly->posicion, fly->etiqueta, fly->Color);
+
+			irAlSiguiente( flies);
 		}
 	}
 	else return;
@@ -590,7 +569,7 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	CvFont fuente2;
 
 	// margenes y dimensiones( en pixels)
-	const int margenIz = Pos->margenBorde; // margen izquierdo
+	const int margenIz = Pos->OrFrameStats.x + Pos->margenBorde; // margen izquierdo
 
 	const int margenSup = visParams->ROITracking.y + visParams->ROITracking.height/2+5;
 	const int margenSup2 = visParams->ROITracking.y + 5;
@@ -623,11 +602,11 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	sprintf(TProcesF,"Tiempo Frame: %5.4g ms",GStats->TiempoFrame);
 	tiempoHMS( (float)((float)GStats->numFrame/(float)GStats->fps), tiempohms );
 	sprintf(TProces,"Total procesado: %s", tiempohms);
-	sprintf(PComplet,"Porcentaje completado: %0.2f %% ",(float)((float)GStats->numFrame/(float)GStats->totalFrames)*100 );
+	sprintf(PComplet,"Total completado: %0.2f %% ",(float)((float)GStats->numFrame/(float)GStats->totalFrames)*100 );
 	sprintf(FPS,"FPS: %.2f ",(1000/GStats->TiempoFrame));
 
 	if( visParams->ShowStatsMov && Stats) {
-		sprintf(TotalBlobs,"Número de objetivos: %d ", Stats->TotalBlobs);
+		sprintf(TotalBlobs,"Objetivos detectados:%d de %d ", Stats->TotalBlobs, (int)obtenerTrackParam( MAX_BLOBS ));
 		sprintf(BlobsUp,"Objetivos activos: %0.1f %% ", Stats->dinamicBlobs);
 		sprintf(BlobsDown, "Objetivos inactivos: %0.1f %%",Stats->staticBlobs);
 	}
@@ -750,6 +729,122 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 
 }
 
+// gŕafica de barras
+void dibujarGrafica1(  tlcde* Flies ){
+
+
+	static int ValorY;
+	CvSize textsize;
+	static char num[20];
+	STFly* Fly = NULL;
+
+	if( !Flies || Flies->numeroDeElementos <= 0) return;
+	if( graph1->Max == 0){
+		graph1->Max = 0;
+		graph1->umbral1 = cvRound( (float)graph1->escalaY *obtenerTrackParam( UMBRAL_ALTO) );
+		graph1->umbral2 = cvRound( (float)graph1->escalaY *obtenerTrackParam( UMBRAL_MEDIO) );
+		graph1->umbral3 = cvRound( (float)graph1->escalaY *obtenerTrackParam( UMBRAL_BAJO) );
+	}
+
+	graph1->anchoCol =  (graph1->puntosX - (graph1->margenCol * Flies->numeroDeElementos + 1) ) / Flies->numeroDeElementos ;
+	// dibujar ejes
+	// eje x
+	cvLine( Window,cvPoint(graph1->Origen.x-1, graph1->Origen.y+1),cvPoint(graph1->fin.x, graph1->Origen.y+1),CVX_WHITE,2,CV_AA, 0 );
+	// eje y
+	cvLine( Window,cvPoint(graph1->Origen.x-1, graph1->Origen.y+1) ,cvPoint(graph1->Origen.x-1,graph1->Origen.y+1 - graph1->puntosY ),CVX_WHITE,2,CV_AA, 0 );
+	// dibujar rectángulos
+
+	irAlPrincipio( Flies );
+	for(int k = 0; k < Flies->numeroDeElementos; k++){
+
+		Fly =  (STFly*)obtenerActual( Flies);
+		// obtener valor
+
+		// aplicar escala para valor de eje y
+		ValorY = cvRound( graph1->escalaY*Fly->Stats->CMovMed );
+
+		sprintf( num,"%d",k + 1);
+		cvPutText( Window,  num, cvPoint(graph1->Origen.x + (k+1)*graph1->margenCol + k*graph1->anchoCol  ,graph1->Origen.y + Pos->linea), &fuentes->fuente2, Fly->Color );
+
+		if( ValorY > graph1->puntosY ){
+			ValorY = graph1->puntosY;
+			// dibujar rectángulo de altura valor eje, en la posición de x indicada por k y de anchura el ancho de columna.
+			cvRectangle( Window, cvPoint( graph1->Origen.x + (k+1)*graph1->margenCol + k*graph1->anchoCol, graph1->Origen.y - ValorY  ),
+								 cvPoint( graph1->Origen.x + (k+1)*graph1->margenCol + k*graph1->anchoCol + graph1->anchoCol, graph1->Origen.y )	,CVX_RED, -1 );
+
+			graph1->MaxReal = Fly->Stats->CMovMed;
+		}
+		else{
+		// dibujar rectángulo de altura valor eje, en la posición de x indicada por k y de anchura el ancho de columna.
+		cvRectangle( Window, cvPoint( graph1->Origen.x + (k+1)*graph1->margenCol + k*graph1->anchoCol, graph1->Origen.y - ValorY  ),
+							 cvPoint( graph1->Origen.x + (k+1)*graph1->margenCol + k*graph1->anchoCol + graph1->anchoCol, graph1->Origen.y )	,Fly->Color, -1 );
+		}
+		if(graph1->Max < ValorY){
+			graph1->Max = ValorY;
+			graph1->MaxReal = Fly->Stats->CMovMed;
+		}
+		irAlSiguiente( Flies);
+
+	}
+	// nombre eje y
+	sprintf( num,"Nivel de Actividad");
+	cvPutText( Window,  num, cvPoint(graph1->Origen.x ,
+									graph1->Origen.y - graph1->puntosY - 5),
+									&fuentes->fuente2, CVX_WHITE );
+
+
+	//línea de máximo
+	cvLine( Window,cvPoint(graph1->Origen.x-1 , graph1->Origen.y - graph1->Max ),
+			       cvPoint(graph1->fin.x, graph1->Origen.y - graph1->Max),CVX_RED,1,CV_AA, 0 );
+	sprintf( num,"%0.1f",graph1->MaxReal);
+	textsize = getTextSize(num, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  num, cvPoint(graph1->Origen.x + ( graph1->puntosX - textsize.width),
+									graph1->Origen.y - graph1->Max - 5),
+									&fuentes->fuente2, CVX_RED );
+
+	// dibujar líneas de umbrales
+	cvLine( Window,cvPoint(graph1->Origen.x-1 , graph1->Origen.y - graph1->umbral1 ),
+				   cvPoint(graph1->fin.x, graph1->Origen.y - graph1->umbral1),CVX_ORANGE,1,CV_AA, 0 );
+	sprintf( num,"%0.1f",obtenerTrackParam( UMBRAL_ALTO));
+	textsize = getTextSize(num, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  num, cvPoint(graph1->Origen.x + ( graph1->puntosX - textsize.width),
+									graph1->Origen.y - graph1->umbral1 - 5),
+									&fuentes->fuente2, CVX_ORANGE );
+
+	cvLine( Window,cvPoint(graph1->Origen.x-1 , graph1->Origen.y - graph1->umbral2 ),
+				   cvPoint(graph1->fin.x, graph1->Origen.y - graph1->umbral2),CVX_YELLOW,1,CV_AA, 0 );
+	sprintf( num,"%0.1f",obtenerTrackParam( UMBRAL_MEDIO));
+	textsize = getTextSize(num, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  num, cvPoint(graph1->Origen.x + ( graph1->puntosX - textsize.width),
+									graph1->Origen.y - graph1->umbral2 - 5),
+									&fuentes->fuente2, CVX_YELLOW );
+
+	cvLine( Window,cvPoint(graph1->Origen.x-1 , graph1->Origen.y - graph1->umbral3 ),
+			       cvPoint(graph1->fin.x, graph1->Origen.y - graph1->umbral3),CVX_GREEN,1,CV_AA, 0 );
+	sprintf( num,"%0.1f",obtenerTrackParam( UMBRAL_BAJO));
+	textsize = getTextSize(num, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  num, cvPoint(graph1->Origen.x + ( graph1->puntosX - textsize.width),
+									graph1->Origen.y - graph1->umbral3 - 5),
+									&fuentes->fuente2, CVX_GREEN );
+
+
+
+}
+
+void setGraph1(  ){
+
+	graph1 = ( graphBarsParams * )malloc( sizeof(graphBarsParams ));
+	if( !graph1 ) {error(4);exit(1);}
+
+	graph1->margenCol = 10;
+	graph1->Origen = cvPoint( Pos->OrGraphic1.x + Pos->margenBorde, Pos->FnGraphic1.y - 2 * Pos->margenBorde );
+	graph1->fin = cvPoint( Pos->FnGraphic1.x - Pos->margenBorde, Pos->FnGraphic1.y - 2 * Pos->margenBorde );
+	graph1->puntosX = graph1->fin.x - graph1->Origen.x   ;
+	graph1->puntosY =  graph1->fin.y - (Pos->OrGraphic1.y + 2*Pos->margenBorde);
+	graph1->escalaY = 6;
+	graph1->Max = 0;
+
+}
 void dibujarGrafica2(  STStatFrame* Stats ){
 
 	static int Tcount = 1;
@@ -765,7 +860,7 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 
 	Tcount --;
 
-	if( Tcount == 0){
+	if( Tcount == 0 && !visParams->pause){
 		valor = ( valGraph2 * )malloc( sizeof(valGraph2 ));
 		if( !valor ) {error(4);exit(1);}
 		RAWval = cogerValor( Stats );
@@ -792,7 +887,7 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	tiempo = (graph2->periodoSec * graph2->puntosX);
 	tiempoHMS( tiempo , tihms );
 	sprintf( ti,"t-%s",tihms);
-	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_GREEN2 );
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_WHITE );
 
 	tiempo = tiempo/2;
 	tiempoHMS( tiempo , tihms );
@@ -800,15 +895,15 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width)/2 ,
 									graph2->Origen.y + Pos->linea),
-									&fuentes->fuente2, CVX_GREEN2 );
-	cvLine( Window,cvPoint(graph2->Origen.x + graph2->puntosX/2, graph2->Origen.y) ,cvPoint(graph2->Origen.x + graph2->puntosX/2, graph2->Origen.y + 3  ),CVX_GREEN2,1,CV_AA, 0 );
+									&fuentes->fuente2, CVX_WHITE );
+	cvLine( Window,cvPoint(graph2->Origen.x + graph2->puntosX/2, graph2->Origen.y) ,cvPoint(graph2->Origen.x + graph2->puntosX/2, graph2->Origen.y + 3  ),CVX_WHITE,1,CV_AA, 0 );
 
 
 	sprintf( ti,"t");
-	cvPutText( Window,  ti, cvPoint(graph2->fin.x -5 ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_GREEN2 );
+	cvPutText( Window,  ti, cvPoint(graph2->fin.x -5 ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_WHITE );
 
 	sprintf( ti,"CMoV. Elemento:%d; Escala y:%d; Muestreo:%0.1f Seg",graph2->graficarEl,graph2->escalaY, graph2->periodoSec);
-	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y - graph2->puntosY ), &fuentes->fuente2, CVX_GREEN2 );
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y - graph2->puntosY ), &fuentes->fuente2, CVX_WHITE );
 
 	sprintf( ti,"Max = %0.1f", max);
 	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
@@ -817,9 +912,9 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 									&fuentes->fuente2, CVX_RED );
 
 	// eje x
-	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1),cvPoint(graph2->fin.x, graph2->Origen.y+1),CVX_GREEN2,1,CV_AA, 0 );
+	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1),cvPoint(graph2->fin.x, graph2->Origen.y+1),CVX_WHITE,2,CV_AA, 0 );
 	// eje y
-	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1) ,cvPoint(graph2->Origen.x-1,graph2->Origen.y+1 - graph2->puntosY ),CVX_GREEN2,1,CV_AA, 0 );
+	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1) ,cvPoint(graph2->Origen.x-1,graph2->Origen.y+1 - graph2->puntosY ),CVX_WHITE,2,CV_AA, 0 );
 	// máximo
 	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - maxLine ),cvPoint(graph2->fin.x, graph2->Origen.y - maxLine),CVX_RED,1,CV_AA, 0 );
 
@@ -858,10 +953,11 @@ void setGraph2( double FPS ){
 
 }
 
+
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 
-	static CvFont fuente1;
-	static CvFont fuente2;
+	const CvFont fuente1 = fuentes->fuente1 ;
+	const CvFont fuente2 = fuentes->fuente2;
 
 	static CvPoint Origen1; // origen para la fila 1
 	static CvPoint Origen2; // origen para la fila 2
@@ -903,8 +999,6 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 	static char tiempohms[15];
 	static int countVisIm = 0;
 	static int ventanaBlob;
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
-	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.9, 0.9, 0, 1, 8);
 
 
 	Origen1 = cvPoint(  margenIz, margenSup);
@@ -918,6 +1012,8 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 		else if(visParams->zoom == 5) ventanaBlob = 30;
 		else if(visParams->zoom == 6) ventanaBlob = 25;
 	}
+
+	dibujarGrafica1(  Flies );
 
 	Fin = cvPoint(Window->width - 10, Window->height - 65);
 //for( int i = 0; i < MAX_FILS; i++){
@@ -944,6 +1040,7 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 
 				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,Track->Color, -1 );
 				// obtener fly con la id del track.
+
 				for(int k = 0; k < Flies->numeroDeElementos; k++){
 					Fly =  (STFly*)obtener(k, Flies);
 					if( Fly->etiqueta == Track->id) break;
@@ -1040,7 +1137,7 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 			else{
 				// si esa posición no tiene track, dibujar rectangulo negro sin rellenar y escribir NO TRACK y pasar a la siguiente posición
 				// dibujar recuadro
-				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,cvScalar(255,255,255), 1 );
+//				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,cvScalar(255,255,255), 1 );
 				sprintf(BlobId,"NO TRACK ");
 				CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 				cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2, Origen1.y  + linea), &fuente1, CVX_WHITE );
@@ -1070,7 +1167,7 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 						Roi.height = ventanaBlob;
 						// dibujar la imagen
 						cvSetImageROI( ImScale,Roi);
-						cvResize( ImScale, ImBlobScale, CV_INTER_LINEAR);
+						cvResize( ImScale, ImBlobScale, CV_INTER_CUBIC);
 						cvResetImageROI(ImScale);
 						Roi.x = Origen1.x + (ancho - ImBlobScale->width)/2;
 						Roi.y = (Origen1.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
@@ -1087,9 +1184,9 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
 	static int count = 0 ;
 	static float anchoBuf; // longitud en pixels del ancho del buffer
-	char PComplet[100];
-	CvFont fuente2;
-	float porcentaje;
+	static char PComplet[100];
+	CvFont fuente2 = fuentes->fuente4;
+	static float porcentaje;
 
 	if( visParams->ShowWindow || visParams->ModoCompleto) {
 
@@ -1109,15 +1206,8 @@ void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
 		}
 		cvRectangle( Window, cvPoint( (Window->width-anchoBuf)/2,Window->height/2 + 60 - Window->height/64 ),
 		cvPoint( (Window->width-anchoBuf)/2 + count, Window->height/2 + 60 + Window->height/64) , CVX_GREEN, -1 );
-		// rectangulo imagen
-//		cvRectangle( Window, cvPoint(params->ROIPreProces.x,params->ROIPreProces.y),cvPoint(params->ROIPreProces.x + params->ROIPreProces.width,params->ROIPreProces.y + params->ROIPreProces.height), CVX_WHITE, 1 );
-//		contadorX = contadorX + (visParams->BPrWidth*Stats->numFrame/ Stats->totalFrames);
-//				x =  contadorX ;
-
 		sprintf(PComplet," %.0f %% ",porcentaje );
-	//	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 
-		cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 2, 2, 0, 1, 8);
 		CvSize textsize1;
 		CvSize textsize2;
 		textsize1 = getTextSize("Llenando Buffer...", CV_FONT_HERSHEY_PLAIN, 2, 2, 0);
@@ -1143,11 +1233,6 @@ void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
 }
 
 
-
-//Representamos los blobs mediante triangulos isosceles
-// dibujamos triangulo isosceles de altura el eje mayor de la elipse, formando el segmento
-// (A,mcb), y de anchura el eje menor dando lugar al segmento (B,C), perpendicular
-// a (A,mcb) cuyo centro es mcb. La unión de A,B,C dará el triangulo resultante.
 
 
 void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat  ){
@@ -1231,19 +1316,6 @@ void DibujarFondo( ){
 					cvScalar(0,0,0) );
 	cvRectangle( Window, Pos->OrProgres,Pos->FnProgres, cvScalar(0, 0, 0), -1 );
 
-//	// rectangulo de imagen
-//	cvRectangle( Window, cvPoint(visParams->ROITracking.x-1,visParams->ROITracking.y-1),cvPoint(visParams->ROITracking.x + visParams->ROITracking.width+1,visParams->ROITracking.y + visParams->ROITracking.height+1), CVX_WHITE, -1 );
-//	// rectangulo de barra progreso
-//	cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2-2,( Window->height - 30 - Window->height/64)-2 ),
-//							cvPoint((Window->width + visParams->BPrWidth)/2+2, (Window->height - 30 + Window->height/64)+2 ), CVX_WHITE, 1 );
-//	// rectangulos de datos estadisticos
-//	cvRectangle( Window, cvPoint(  10,10 ),
-//						cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(109, 109, 109), -1 );
-//	cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
-//						cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(109, 109, 109), -1 );
-//	cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
-//						cvPoint(Window->width - 10, Window->height - 65), cvScalar(0, 0, 0), -1 );
-
 }
 /*!\brief Incrusta src2 en src1 en zona indicada por roi
  *
@@ -1302,7 +1374,7 @@ void IncrustarTxt( int num){
 		CvSize textsize ;
 		switch( num ){
 			case FLAT:
-				sprintf(Texto,"Buscando plato...");
+				sprintf(Texto,"Localizando plato...");
 					textsize = getTextSize(Texto, CV_FONT_HERSHEY_PLAIN, 2, 1, 0);
 					cvPutText( Window, Texto, cvPoint( (Window->width-textsize.width)/2,visParams->ROIPreProces.y + visParams->ROIPreProces.height + 30), &fuente1, CVX_RED );
 
@@ -1509,44 +1581,7 @@ void Transicion3( const char texto[], int delay_up ){
 			cvWaitKey(delay_up);
 		}
 
-//	// dibujar rectángulo de la imagen
-//	for( int i = 0; i < 255; i += 4 )
-//		{
-//		cvRectangle( Window, cvPoint(visParams->ROITracking.x-1,visParams->ROITracking.y-1),
-//				cvPoint(visParams->ROITracking.x + visParams->ROITracking.width+1,visParams->ROITracking.y + visParams->ROITracking.height+1), cvScalar(i,i,i), 1 );
-//
-//		cvShowImage("TrackingDrosophila", Window);
-//		cvWaitKey(delay_up);
-//		}
 
-	// Dibujar rectangulo exterior de la barra de progreso y rectangulos de estadísticas
-//	for( int i = 0; i < 255; i += 2 )
-//		{
-//		cvPutText( Window, "Progreso:",
-//						cvPoint( (Window->width-visParams->BPrWidth )/2-2, Window->height - 50 ),
-//						&fuente2,
-//						cvScalar(i,i,i) );
-//		cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2-2,( Window->height - 30 - Window->height/64)-2 ),
-//						cvPoint((Window->width + visParams->BPrWidth)/2+2, (Window->height - 30 + Window->height/64)+2 ), cvScalar(i,i,i), 1 );
-//
-//		cvShowImage("TrackingDrosophila", Window);
-//		cvWaitKey(delay_up);
-//
-//		}
-//	for( int i = 0; i < 105; i += 2 )
-//	{
-//		//
-//		cvRectangle( Window, cvPoint(  10,10 ),
-//						cvPoint( visParams->ROITracking.x-10-1, (visParams->ROITracking.y + visParams->ROITracking.height)/2-5), cvScalar(i, i, i), -1 );
-//		cvRectangle( Window, cvPoint(  10,(visParams->ROITracking.y + visParams->ROITracking.height)/2+5 ),
-//						cvPoint(visParams->ROITracking.x-10-1, visParams->ROITracking.y + visParams->ROITracking.height+1 ), cvScalar(i, i, i), -1 );
-//		cvRectangle( Window, cvPoint(  10,visParams->ROITracking.y + visParams->ROITracking.height+1+ 10),
-//						cvPoint(Window->width - 10, Window->height - 65), cvScalar(i, i, i), -1 );
-
-//		cvShowImage("TrackingDrosophila", Window);
-//		cvWaitKey(delay_up);
-//
-//	}
 	// Texto de estado
 	for( int i = 255; i > 0; i -= 2 )
 	{
@@ -1836,6 +1871,7 @@ void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames, double FPS ){
 	setFounts();
 	setPosBlocks( ImRef );
 	setGraph2( FPS );
+	setGraph1( );
 }
 
 

@@ -38,6 +38,11 @@
 #define IN_FG 1
 #define MISSED 2
 
+#define UMBRAL_ALTO 1
+#define UMBRAL_MEDIO 2
+#define UMBRAL_BAJO 3
+#define MAX_BLOBS 4
+
 typedef struct{
 
 				int ShowKalmanData; 	// Muesta por consola los resultados de cada filtro de kalman en cada frame
@@ -99,6 +104,7 @@ typedef struct{
 	float Vx;
 	float Vy;
 }valorV;
+
 
 typedef struct {
 	float dstTotal; // distancia total recorrida por el blob que está siendo rastreado
@@ -514,6 +520,8 @@ void SetDefaultKFilterParams( TrackingParams* trackParams  );
 void ShowKalmanFilterParams( char* Campo );
 
 void SetPrivateKFilterParams(  );
+
+
 
 int obtenerFilterParam( int param );
 
