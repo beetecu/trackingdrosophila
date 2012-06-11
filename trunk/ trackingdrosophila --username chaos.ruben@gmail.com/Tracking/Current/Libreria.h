@@ -262,6 +262,10 @@ void mostrarFliesFrame(STFrame *frameData);
  */
 void liberarListaFlies(tlcde *lista);
 
+void deadFly(STFly* flydata);
+
+void ordenarListaFlies( tlcde* lsFlies );
+
 tlcde* fusionarListas(tlcde* FGFlies,tlcde* OldFGFlies );
 
 #endif //_FLIES_

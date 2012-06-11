@@ -50,11 +50,15 @@
 #define CENTRAR_SUP cvPoint(-2, -2 )
 #define CENTRAR_INF cvPoint(-3, -3 )
 
+
 // parametros para visualizar estadisticas de blobs
 
 #define MAX_COLS 8 // numero maximo de columnas
 #define MAX_FILS 2 // número máximo de filas
 #define MAX_ELEMENTS MAX_COLS*MAX_FILS // número máximo de tracks a visualizar
+
+
+
 
 typedef struct {
 
@@ -62,6 +66,7 @@ typedef struct {
 	int margenBorde;
 	int margenSup;
 	int margenInterno;
+	int linea;
 
 
 	CvPoint OrProgres;
@@ -87,6 +92,24 @@ typedef struct founts{
 	CvFont fuente3; // se usan en las transiciones y en incrustar txt
 	CvFont fuente4;
 }Fuentes;
+
+typedef struct valGraph2{
+	unsigned int val;
+}valGraph2;
+
+typedef struct graphMovParams{
+
+	tlcde* Valores;
+	float periodoSec;	// periodo de muestreo.
+	int periodoFr;
+	CvPoint Origen;
+	CvPoint fin;
+	int escalaY;
+	int puntosY;
+	int puntosX;
+	int maxYval;
+	int graficarEl;
+}graphMovParams;
 
 typedef struct {
 	// Public
@@ -121,9 +144,11 @@ typedef struct {
 	int	ShowBGremoval ; 				/// Switch true/false para visualizar el Background y Foreground.
 	int	ShowKalman ;
 
-	// ventana de tracking
+	// ventana de tracking. Estadisticas de movimiento
 	int ShowStatsMov;
 
+
+	// Estadísticas de cada blob.
 	int zoom;				/// ampliación de la imagen del blob mostrada en ventanas sin track
 
 	//Private
@@ -151,7 +176,9 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS, int Tota
 
 void SetDefaultHightGUIParams(  IplImage* ImRef );
 
-void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames );
+void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames , double FPS);
+
+void setGraph2( double FPS );
 
 int obtenerVisParam( int type );
 
@@ -230,6 +257,12 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats, IplImage* ImVisual)
 
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks );
 
+void dibujarGrafica2(  STStatFrame* Stats );
+
+float cogerValor( STStatFrame* Stats);
+
+
+
 void VerEstadoBuffer( IplImage* Imagen,int num, int max );
 
 void VerEstadoBGModel( IplImage* Imagen );
@@ -255,6 +288,7 @@ void visualizarBuffer( tlcde* Buffer,StaticBGModel* Flat );
 /// LIBERAR MEMORIA ///
 
 void releaseVisParams( );
+void liberarValoresGrafica2(tlcde* Valores);
 void DestroyWindows( );
 
 #endif /* VISUALIZACION_HPP_ */

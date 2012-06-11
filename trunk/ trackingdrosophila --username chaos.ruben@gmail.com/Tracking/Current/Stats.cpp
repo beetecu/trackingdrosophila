@@ -22,6 +22,8 @@ STStatsCoef* Coef = NULL;
 tlcde* vectorSumFr = NULL;
 STStatFrame* Stats = NULL;
 
+StatsCoefs* Val = NULL;
+
 
 void CalcStatsFrame(STFrame* frameDataOut, ConvUnits* convUnits ){
 
@@ -169,6 +171,7 @@ void statsBlobS( STFrame* frameDataOut ){
 		iniciarMedias( frameDataOut->Stats, valor->sum );
 		return;
 	}
+
 	// movimiento global. Calculo de medias y desviaciones
 	mediaMovil( Coef, vectorSumFr, frameDataOut->Stats );
 
@@ -181,6 +184,7 @@ void statsBlobS( STFrame* frameDataOut ){
 }
 // Calcula los coeficientes para hayar las medias y desviaciones de la serie temporal
 void calcCoef( int FPS ){
+
 
 	Coef->SumFrame = 0;
 
@@ -225,8 +229,12 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 	valorSum* valor;
 	valorSum* valorT;
 
+	StatsCoefs* Val;
+
 	// Se suma el nuevo valor
 	valorT = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 , vectorSumFr );
+
+
 	Coef->F1SSum = Coef->F1SSum + valorT->sum;
 	Coef->F1SSum2 = Coef->F1SSum2 + valorT->sum*valorT->sum;
 
@@ -427,6 +435,8 @@ void normalizeStatsBlobS( float k){
 
 }
 
+
+
 void normalizeStatsFlies( tlcde* Flies, ConvUnits* convUnits ){
 
 	STFly* Fly;
@@ -576,6 +586,11 @@ void SetPrivateStatsParams( int fps ){
 			Coef =  ( STStatsCoef *) malloc( sizeof(STStatsCoef));
 			calcCoef( fps );
 		}
+//		if(!Val){
+//			Val = ( tlcde * )malloc( sizeof(tlcde ));
+//			if( !Val ) {error(4);exit(1);}
+//			iniciarLcde( Val );
+//		}
 	}
 
 }

@@ -14,6 +14,16 @@ typedef struct{
 	unsigned int sum;
 }valorSum;
 // coeficientes
+
+typedef struct{
+	float Sum;
+	float Sum2;
+	int frames;
+	char periodo;
+}StatsCoefs;
+
+
+
 typedef struct{
 
 	float SumFrame; //!< Suma del total de velocidad del frame
