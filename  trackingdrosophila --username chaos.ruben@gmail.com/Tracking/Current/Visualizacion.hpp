@@ -93,6 +93,25 @@ typedef struct founts{
 	CvFont fuente4;
 }Fuentes;
 
+
+typedef struct graphBarsParams{
+
+	CvPoint Origen;
+	CvPoint fin;
+	int escalaY;
+	int puntosY;
+	int puntosX;
+	int maxYval;
+	int umbral1;
+	int umbral2;
+	int umbral3;
+	int anchoCol;
+	int margenCol;
+	int Max;
+	float MaxReal;
+
+}graphBarsParams;
+
 typedef struct valGraph2{
 	unsigned int val;
 }valGraph2;
@@ -178,6 +197,8 @@ void SetDefaultHightGUIParams(  IplImage* ImRef );
 
 void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames , double FPS);
 
+void setGraph1(  );
+
 void setGraph2( double FPS );
 
 int obtenerVisParam( int type );
@@ -256,6 +277,9 @@ void setPosBlocks( IplImage * ImRef);
 void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats, IplImage* ImVisual);
 
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks );
+
+void dibujarGrafica1(  tlcde* Flies );
+
 
 void dibujarGrafica2(  STStatFrame* Stats );
 

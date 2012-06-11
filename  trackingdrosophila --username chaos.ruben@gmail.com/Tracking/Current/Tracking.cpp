@@ -705,6 +705,17 @@ void SetPrivateTrackParams( ConvUnits* calParams  ){
 	trackParams->FPS = calParams->FPS;
 }
 
+float obtenerTrackParam( int type ){
+
+	if ( type == UMBRAL_ALTO ) return trackParams->MediumActivityTh;
+	else if ( type == UMBRAL_MEDIO ) return  trackParams->LowActivityTh;
+	else if( type == UMBRAL_BAJO ) return  trackParams->NullActivityTh;
+	else if( type == MAX_BLOBS ) return trackParams->MaxBlobs;
+	else return 0;
+
+}
+
+
 void ReleaseDataTrack(  ){
 
 	if(Identities){

@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
 
 		FrameDataIn->GStats = SetGlobalStats( NumFrame, tif, tinicio, GParams->TotalFrames, GParams->FPS );
 
-		printf("\n//////////////////////////////////////////////////\n");
+
 		printf("\nTiempo de procesado del  Frame %.0f : %5.4g ms\n",NumFrame, FrameDataIn->GStats->TiempoFrame);
 		printf("Segundos de video procesados: %0.f seg \n", FrameDataIn->GStats->TiempoGlobal);
 		printf("Porcentaje completado: %.2f %% \n",((NumFrame-1)/GParams->TotalFrames)*100 );

@@ -31,6 +31,7 @@
 #define UPDATE_STATS 2
 #define ONLY_UPDATE_IDS 3
 
+
 void SetTrackingParams( ConvUnits* calParams );
 
 void SetDefaultTrackParams(   );
@@ -149,7 +150,7 @@ void AllocateTrackImages( IplImage *I );
 
 void ReleaseDataTrack( );
 
-
+float obtenerTrackParam( int type );
 
 typedef struct{
 	int etiqueta;
