@@ -717,6 +717,34 @@ void mostrarFliesFrame(STFrame *frameData)
 
 }
 
+void ordenarListaFlies( tlcde* lsFlies ){
+
+	STFly* Fly1;
+	STFly* Fly2;
+	int permutacion = 1;
+
+	while( permutacion){
+		permutacion = 0;
+		for( int i = 1; i < lsFlies->numeroDeElementos; i++){
+			Fly1 = (STFly*)obtener(i-1, lsFlies);
+			Fly2 = (STFly*)obtener(i, lsFlies);
+			if( Fly1->etiqueta > Fly2->etiqueta   ){
+				permutacion = 1;
+				Fly1 = (STFly*)borrarEl(i-1, lsFlies); // borra el elemento i-1. Actual apunta al sig (i)
+				insertar( (STFly*)Fly1,lsFlies); // se inserta el track 1 a continuación del actual(i)
+			}
+		}
+	}
+}
+
+void deadFly(STFly* flydata){
+
+	if (flydata->Tracks ) free(flydata->Tracks);
+	if (flydata->Stats) free(flydata->Stats);
+    free(flydata); // borrar el área de datos del elemento eliminado
+    flydata = NULL;
+
+}
 void liberarListaFlies(tlcde *lista)
 {
   // Borrar todos los elementos de la lista
@@ -737,6 +765,7 @@ void liberarListaFlies(tlcde *lista)
     flydata = (STFly *)borrar(lista);
   }
 }
+
 
 
 

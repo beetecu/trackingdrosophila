@@ -60,7 +60,7 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 	}
 
 
-	// CREAR NUEVOS TRACKS, si es necesario.
+	// CREAR NUEVOS TRACKS si es necesario y limpiar lista flies
 	// si hay mosca/s sin asignar a un track/s (id = -1), se crea un nuevo track para esa mosca
 	if( Flies->numeroDeElementos > 0) irAlPrincipio( Flies );
 	for(int i = 0; i< Flies->numeroDeElementos ;i++ ){
@@ -69,8 +69,14 @@ void Kalman(STFrame* frameData, tlcde* lsIds,tlcde* lsTracks, TrackingParams* tr
 			Track = initTrack( Fly, lsIds , 1 );
 			anyadirAlFinal( Track , lsTracks );
 		}
+		if( Fly->etiqueta == 0){
+			Fly = (STFly*) borrar( Flies );
+			deadFly( Fly );
+			irAlAnterior( Flies);
+		}
 		irAlSiguiente( Flies);
 	}
+	ordenarListaFlies( Flies );
 
 	////////////////////// FASE DE PREDICCION ////////////////////////
 	//Recorremos cada track y hacemos la predicción para el siguiente frame
@@ -795,15 +801,10 @@ void updateFlyTracked( STTrack* Track, tlcde* Flies ){
 		Track->FlyActual->siguiente = (STFly*)Track->Flysig;
 	}
 	if( Track->Stats->Estado ==  KALMAN_CONTROL){
-		// actualizar fly ( Eliminarla??? )
+		// Etiquetar como 0 para su posterior eliminación
 		Track->Flysig->etiqueta = 0;
 		Track->Flysig->Color = cvScalar( 255, 255, 255);
-
-		Track->Flysig->direccion = Track->Flysig->orientacion;
-		Track->Flysig->dstTotal = 0;
-
-		Track->Flysig->Stats = NULL;  /// todo mirar esto
-
+		// generar fly
 		generarFly( Track,Flies);
 
 	}
@@ -1165,10 +1166,12 @@ void verVector( CvMat* Vec ){
 void liberarTracks( tlcde* lista){
 	// Borrar todos los elementos de la lista
 	// Comprobar si hay elementos
-	int track;
+	int tracks;
 	if(lista == NULL || lista->numeroDeElementos<1)  return;
-	track = deadTrack( lista, 0);
-	while( track) track = deadTrack( lista, 0);
+	tracks = deadTrack( lista, 0);
+	while( tracks){
+		tracks = deadTrack( lista, 0);
+	}
 
 }
 

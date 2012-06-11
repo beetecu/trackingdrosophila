@@ -24,11 +24,13 @@ IplImage* ImScale= NULL; // Imagen escalada de ImVisual si ImVisual es menor o i
 IplImage* ImBlob = NULL; // Imagen ampliada del blob rastreado
 IplImage* ImBlobScale = NULL;
 
+
 // parametros de visualización
 VisParams* visParams = NULL;
 CvVideoWriter* VWriter = NULL;
 posBlocks* Pos = NULL;
 Fuentes* fuentes = NULL;
+graphMovParams* graph2;
 
 void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
@@ -469,8 +471,8 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 	if( FrameDataOut->GStats->totalFrames > 0){
 		contadorX = contadorX + (visParams->BPrWidth*FrameDataOut->GStats->numFrame/ FrameDataOut->GStats->totalFrames);
 		x =  contadorX ;
-		cvRectangle( Window, cvPoint(  (Window->width-visParams->BPrWidth )/2,( Window->height - 30 - Window->height/64) ),
-							cvPoint( (Window->width-visParams->BPrWidth )/2 + cvRound(x), (Window->height - 30 + Window->height/64) ), CVX_BLUE, -1 );
+		cvRectangle( Window, Pos->OrProgres,
+							cvPoint( Pos->OrProgres.x + 2 + cvRound(x), Pos->OrProgres.y ), CVX_BLUE, -1 );
 	}
 	// si no está activado el modo completo, activamos las opciones de visualización
 //	if(!visParams->ModoCompleto){
@@ -588,13 +590,19 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	CvFont fuente2;
 
 	// margenes y dimensiones( en pixels)
-	unsigned int margenIz = 10; // margen izquierdo
-	unsigned int margenSup = visParams->ROITracking.y + visParams->ROITracking.height/2+5;
-	unsigned int margenSup2 = visParams->ROITracking.y + 5;
-	unsigned int anchoCol = 150; // margen entre columnas
-	unsigned int linea = 15;
-	unsigned int linea2 = 20;
-	unsigned int margenTxt = 10;
+	const int margenIz = Pos->margenBorde; // margen izquierdo
+
+	const int margenSup = visParams->ROITracking.y + visParams->ROITracking.height/2+5;
+	const int margenSup2 = visParams->ROITracking.y + 5;
+	const int anchoCol = 50; // margen entre columnas
+	const int linea = 15;
+	const int linea2 = 20;
+	const int margenTxt = 10;
+	const int margen = Pos->margenBorde + margenTxt;
+
+	const int Fila1 = Pos->FnStats.y - 3*linea;
+	const int Fila2 = Pos->FnStats.y - 2*linea;
+	const int Fila3 =Pos->FnStats.y - 1*linea;
 
 	char NFrame[100];
 	char TProcesF[100];
@@ -609,33 +617,6 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	char tiempohms[15];
 
 	static char CMov1SMed[50];
-	static char CMov1SDes[50];
-	static char CMov30SMed[50];
-	static char CMov30SDes[50];
-	static char CMov1Med[50];
-	static char CMov1Des[50];
-	static char CMov5Med[50];
-	static char CMov5Des[50];
-	static char CMov10Med[50];
-	static char CMov10Des[50];
-	static char CMov15Med[50];
-	static char CMov15Des[50];
-	static char CMov30Med[50];
-	static char CMov30Des[50];
-	static char CMov1HMed[50];
-	static char CMov1HDes[50];
-	static char CMov2HMed[50];
-	static char CMov2HDes[50];
-	static char CMov4HMed[50];
-	static char CMov4HDes[50];
-	static char CMov8HMed[50];
-	static char CMov8HDes[50];
-	static char CMov16HMed[50];
-	static char CMov16HDes[50];
-	static char CMov24HMed[50];
-	static char CMov24HDes[50];
-	static char CMov48HMed[50];
-	static char CMov48HDes[50];
 
 	/// ESTADISTICAS FRAME
 	sprintf(NFrame,"Frame %d ",GStats->numFrame );
@@ -651,8 +632,8 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 		sprintf(BlobsDown, "Objetivos inactivos: %0.1f %%",Stats->staticBlobs);
 	}
 
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_PLAIN, 1.1, 1.1, 0, 1, 8);
-	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 0.9, 0.9, 0, 1, 8);
+	fuente1 = fuentes->fuente1;
+	fuente2 = fuentes->fuente2;
 
 	CvSize textsize = getTextSize(TProcesF, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 
@@ -668,77 +649,96 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	cvPutText( Window, BlobsUp, cvPoint( margenIz,margenSup2+ 7*linea2), &fuente2, CVX_WHITE );
 	cvPutText( Window, BlobsDown, cvPoint( margenIz,margenSup2+ 8*linea2), &fuente2, CVX_WHITE);
 
+
 	/// ESTADÍSTICAS MOVIMIENTO BLOBS
 	if( visParams->ShowStatsMov && Stats ){
-		sprintf( CMov1SMed,"MovMed_1s:  %0.1f ",Stats->CMov1SMed);
-		sprintf( CMov1SDes,"MovDes_1s:  %0.1f ",Stats->CMov1SDes);
-		cvPutText( Window,  CMov1SMed, cvPoint( margenIz + margenTxt ,margenSup + linea), &fuente2, CVX_GREEN2 );
-		cvPutText( Window,  CMov1SDes, cvPoint( margenIz + margenTxt ,margenSup + 2*linea), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov30SMed,"MovMed_30s:  %0.1f ",Stats->CMov30SMed);
-		sprintf( CMov30SDes,"MovDes_30s:  %0.1f ",Stats->CMov30SDes);
-		cvPutText( Window,  CMov30SMed, cvPoint( margenIz + margenTxt ,margenSup + 3*linea), &fuente2, CVX_GREEN );
-		cvPutText( Window,  CMov30SDes, cvPoint( margenIz + margenTxt ,margenSup + 4*linea), &fuente2, CVX_GREEN );
+		dibujarGrafica2( Stats );
 
-		sprintf( CMov1Med,"MovMed_1m:  %0.1f ",Stats->CMov1Med);
-		sprintf( CMov1Des,"MovDes_1m:  %0.1f ",Stats->CMov1Des);
-		cvPutText( Window,  CMov1Med, cvPoint( margenIz + margenTxt ,margenSup + 5*linea), &fuente2, CVX_GREEN2 );
-		cvPutText( Window,  CMov1Des, cvPoint( margenIz + margenTxt ,margenSup + 6*linea), &fuente2, CVX_GREEN2);
+		sprintf( CMov1SMed,"T");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"Media");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen ,Fila2), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"Desv");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen ,Fila3), &fuente2, CVX_GREEN );
 
-		sprintf( CMov5Med,"MovMed_5m:  %0.1f ",Stats->CMov5Med);
-		sprintf( CMov5Des,"MovDes_5m:  %0.1f ",Stats->CMov5Des);
-		cvPutText( Window,  CMov5Med, cvPoint( margenIz + margenTxt ,margenSup + 7*linea), &fuente2, CVX_GREEN );
-		cvPutText( Window,  CMov5Des, cvPoint( margenIz + margenTxt ,margenSup + 8*linea), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"1s");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov1SMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov1SDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov10Med,"MovMed_10m: %0.1f ",Stats->CMov10Med);
-		sprintf( CMov10Des,"MovDes_10m: %0.1f ",Stats->CMov10Des);
-		cvPutText( Window,  CMov10Med, cvPoint( margenIz + margenTxt ,margenSup + 9*linea), &fuente2, CVX_GREEN2 );
-		cvPutText( Window,  CMov10Des, cvPoint( margenIz + margenTxt ,margenSup + 10*linea), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"30s");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 2*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov30SMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 2*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov30SDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 2*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov15Med,"MovMed_15m: %0.1f ",Stats->CMov15Med);
-		sprintf( CMov15Des,"MovDes_15m: %0.1f ",Stats->CMov15Des);
-		cvPutText( Window,  CMov15Med, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + linea), &fuente2, CVX_GREEN  );
-		cvPutText( Window,  CMov15Des, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 2*linea), &fuente2, CVX_GREEN  );
+		sprintf( CMov1SMed,"1m");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 3*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov1Med);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 3*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov1Des);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 3*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov30Med,"MovMed_30m: %0.1f ",Stats->CMov30Med);
-		sprintf( CMov30Des,"MovDes_30m: %0.1f ",Stats->CMov30Des);
-		cvPutText( Window,  CMov30Med, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 3*linea), &fuente2, CVX_GREEN2  );
-		cvPutText( Window,  CMov30Des, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 4*linea), &fuente2, CVX_GREEN2  );
+		sprintf( CMov1SMed,"10m");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 4*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov10Med);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 4*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov10Des);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 4*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov1HMed,"MovMed_1h:  %0.1f ",Stats->CMov1HMed);
-		sprintf( CMov1HDes,"MovDes_1h:  %0.1f ",Stats->CMov1HDes);
-		cvPutText( Window,  CMov1HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 5*linea), &fuente2, CVX_GREEN  );
-		cvPutText( Window,  CMov1HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 6*linea), &fuente2,CVX_GREEN  );
+		sprintf( CMov1SMed,"1H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 5*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov1HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 5*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov1HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 5*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov2HMed,"MovMed_2h:  %0.1f ",Stats->CMov2HMed);
-		sprintf( CMov2HDes,"MovDes_2h:  %0.1f ",Stats->CMov2HDes);
-		cvPutText( Window, CMov2HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 7*linea), &fuente2, CVX_GREEN2  );
-		cvPutText( Window,  CMov2HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 8*linea), &fuente2, CVX_GREEN2   );
+		sprintf( CMov1SMed,"2H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 6*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov2HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 6*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov2HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 6*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov4HMed,"MovMed_4h:  %0.1f ",Stats->CMov4HMed);
-		sprintf( CMov4HDes,"MovDes_4h:  %0.1f ",Stats->CMov4HDes);
-		cvPutText( Window, CMov4HMed, cvPoint( margenIz + margenTxt + anchoCol ,margenSup + 9*linea), &fuente2, CVX_GREEN  );
-		cvPutText( Window,  CMov4HDes, cvPoint( margenIz + margenTxt + anchoCol,margenSup + 10*linea), &fuente2, CVX_GREEN   );
+		sprintf( CMov1SMed,"4H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 7*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov4HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 7*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov4HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 7*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov8HMed,"MovMed_8h:  %0.1f ",Stats->CMov8HMed);
-		sprintf( CMov8HDes,"MovDes_8h:  %0.1f ",Stats->CMov8HDes);
-		cvPutText( Window, CMov8HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + linea), &fuente2, CVX_GREEN2  );
-		cvPutText( Window, CMov8HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 2*linea), &fuente2, CVX_GREEN2   );
+		sprintf( CMov1SMed,"8H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 8*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov8HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 8*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov8HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 8*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov16HMed,"MovMed_16h: %0.1f ",Stats->CMov16HMed);
-		sprintf( CMov16HDes,"MovDes_16h: %0.1f ",Stats->CMov16HDes);
-		cvPutText( Window, CMov16HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 3*linea), &fuente2, CVX_GREEN  );
-		cvPutText( Window, CMov16HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 4*linea), &fuente2, CVX_GREEN   );
+		sprintf( CMov1SMed,"16H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 9*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov16HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 9*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov16HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 9*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov24HMed,"MovMed_24h: %0.1f ",Stats->CMov24HMed);
-		sprintf( CMov24HDes,"MovDes_24h: %0.1f ",Stats->CMov24HDes);
-		cvPutText( Window, CMov24HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 5*linea), &fuente2,CVX_GREEN2  );
-		cvPutText( Window, CMov24HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 6*linea), &fuente2, CVX_GREEN2   );
+		sprintf( CMov1SMed,"24H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 10*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov24HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 10*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov24HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 10*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
 
-		sprintf( CMov48HMed,"MovMed_48h: %0.1f ",Stats->CMov48HMed);
-		sprintf( CMov48HDes,"MovDes_48h: %0.1f ",Stats->CMov48HDes);
-		cvPutText( Window, CMov48HMed, cvPoint( margenIz + margenTxt + 2*anchoCol ,margenSup + 7*linea), &fuente2, CVX_GREEN  );
-		cvPutText( Window, CMov48HDes, cvPoint( margenIz + margenTxt + 2*anchoCol,margenSup + 8*linea), &fuente2, CVX_GREEN   );
+		sprintf( CMov1SMed,"48H");
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 11*anchoCol ,Fila1), &fuente2, CVX_GREEN );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov48HMed);
+		cvPutText( Window,  CMov1SMed, cvPoint(margen + 11*anchoCol ,Fila2), &fuente2, CVX_GREEN2 );
+		sprintf( CMov1SMed,"%0.1f ",Stats->CMov48HDes);
+		cvPutText( Window,  CMov1SMed, cvPoint( margen + 11*anchoCol ,Fila3), &fuente2, CVX_GREEN2 );
+
 	}
 	else{
 		sprintf( CMov1SMed,"NO STATS ");
@@ -747,6 +747,114 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 
 	}
 	// estadísticas Frame
+
+}
+
+void dibujarGrafica2(  STStatFrame* Stats ){
+
+	static int Tcount = 1;
+	static float tiempo;
+	static float max = 0;
+	static char tihms[15];
+	static float RAWval;
+	static int maxLine = 0;
+	CvSize textsize;
+	valGraph2* valor;
+	static char ti[10];
+
+
+	Tcount --;
+
+	if( Tcount == 0){
+		valor = ( valGraph2 * )malloc( sizeof(valGraph2 ));
+		if( !valor ) {error(4);exit(1);}
+		RAWval = cogerValor( Stats );
+		valor->val = cvRound( graph2->escalaY*RAWval  );
+		if( valor->val > (unsigned)graph2->puntosY) valor->val = graph2->puntosY-2;
+		if( max < RAWval){
+			max = RAWval;
+			maxLine = valor->val;
+		}
+		anyadirAlFinal( valor,graph2->Valores);
+		irAlPrincipio(graph2->Valores );
+		if(graph2->Valores->numeroDeElementos == graph2->puntosX + 1 ){
+			valor = (valGraph2*)borrar( graph2->Valores);
+			free(valor);
+		}
+		Tcount = graph2->periodoFr;
+	}
+	irAlFinal(graph2->Valores );
+	for( int i=0; i < graph2->Valores->numeroDeElementos; i++){
+		valor = (valGraph2*)obtenerActual( graph2->Valores);
+		cvLine( Window,cvPoint(graph2->Origen.x + graph2->puntosX - i, graph2->fin.y - valor->val),cvPoint(graph2->Origen.x + graph2->puntosX - i, graph2->Origen.y),CVX_GREEN,1,CV_AA, 0 );
+		irAlAnterior( graph2->Valores );
+	}
+	tiempo = (graph2->periodoSec * graph2->puntosX);
+	tiempoHMS( tiempo , tihms );
+	sprintf( ti,"t-%s",tihms);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_GREEN2 );
+
+	tiempo = tiempo/2;
+	tiempoHMS( tiempo , tihms );
+	sprintf( ti,"t-%s",tihms);
+	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width)/2 ,
+									graph2->Origen.y + Pos->linea),
+									&fuentes->fuente2, CVX_GREEN2 );
+	cvLine( Window,cvPoint(graph2->Origen.x + graph2->puntosX/2, graph2->Origen.y) ,cvPoint(graph2->Origen.x + graph2->puntosX/2, graph2->Origen.y + 3  ),CVX_GREEN2,1,CV_AA, 0 );
+
+
+	sprintf( ti,"t");
+	cvPutText( Window,  ti, cvPoint(graph2->fin.x -5 ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_GREEN2 );
+
+	sprintf( ti,"CMoV. Elemento:%d; Escala y:%d; Muestreo:%0.1f Seg",graph2->graficarEl,graph2->escalaY, graph2->periodoSec);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y - graph2->puntosY ), &fuentes->fuente2, CVX_GREEN2 );
+
+	sprintf( ti,"Max = %0.1f", max);
+	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
+									graph2->Origen.y - max - 5),
+									&fuentes->fuente2, CVX_RED );
+
+	// eje x
+	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1),cvPoint(graph2->fin.x, graph2->Origen.y+1),CVX_GREEN2,1,CV_AA, 0 );
+	// eje y
+	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1) ,cvPoint(graph2->Origen.x-1,graph2->Origen.y+1 - graph2->puntosY ),CVX_GREEN2,1,CV_AA, 0 );
+	// máximo
+	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - maxLine ),cvPoint(graph2->fin.x, graph2->Origen.y - maxLine),CVX_RED,1,CV_AA, 0 );
+
+}
+float cogerValor( STStatFrame* Stats){
+
+	if( graph2->graficarEl == 1 ) return Stats->CMov1SMed;
+	else if(  graph2->graficarEl == 2) return Stats->CMov30SMed;
+	else if(  graph2->graficarEl == 3) return Stats->CMov1Med;
+	else if(  graph2->graficarEl == 4) return Stats->CMov10Med;
+	else if(  graph2->graficarEl == 5) return Stats->CMov1HMed;
+	else if(  graph2->graficarEl == 6) return Stats->CMov2HMed;
+	else if(  graph2->graficarEl == 7) return Stats->CMov4HMed;
+	else if(  graph2->graficarEl == 8) return Stats->CMov8HMed;
+	else if(  graph2->graficarEl == 9) return Stats->CMov16HMed;
+	else if(  graph2->graficarEl == 10) return Stats->CMov24HMed;
+	else if(  graph2->graficarEl == 11) return Stats->CMov48HMed;
+	else return 0;
+}
+void setGraph2( double FPS ){
+
+	graph2 = ( graphMovParams * )malloc( sizeof(graphMovParams ));
+	if( !graph2 ) {error(4);exit(1);}
+	graph2->Valores = ( tlcde * )malloc( sizeof(tlcde ));
+	if( !graph2->Valores ) {error(4);exit(1);}
+	iniciarLcde(graph2->Valores );
+
+	graph2->periodoSec = 0.1;
+	graph2->periodoFr = cvRound( FPS* graph2->periodoSec);
+	graph2->Origen = cvPoint( Pos->OrStats.x + Pos->margenBorde, Pos->FnStats.y - 5* Pos->linea );
+	graph2->fin = cvPoint( Pos->FnStats.x - Pos->margenBorde, Pos->FnStats.y - 5* Pos->linea );
+	graph2->puntosX = graph2->fin.x - graph2->Origen.x   ;
+	graph2->puntosY =  graph2->fin.y- (Pos->OrStats.y + Pos->margenBorde);
+	graph2->escalaY = 1;
+	graph2->graficarEl = 1;
 
 }
 
@@ -827,7 +935,7 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 			for( int j = 0; j < Tracks->numeroDeElementos; j++){
 				Track = (STTrack*)obtener(j, Tracks);
 				// si se ha encontrado el track de esa posición
-				if(Track->id == i + 1) break;
+				if(Track->id == i + 1 && Track->id < 9) break;
 				else Track = NULL;
 			}
 			if( Track ){
@@ -954,21 +1062,22 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 						else Fly = NULL;
 					}
 					// obtener centro fly
-					CvRect Roi;
-					if(visParams->ROIPreProces.width)
-					Roi.x = Fly->posicion.x-ventanaBlob/2;
-					Roi.y = Fly->posicion.y-ventanaBlob/2;
-					Roi.width = ventanaBlob;
-					Roi.height = ventanaBlob;
-					// dibujar la imagen
-					cvSetImageROI( ImScale,Roi);
-					cvResize( ImScale, ImBlobScale, CV_INTER_LINEAR);
-					cvResetImageROI(ImScale);
-					Roi.x = Origen1.x + (ancho - ImBlobScale->width)/2;
-					Roi.y = (Origen1.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
-					Roi.width = ImBlobScale->width;
-					Roi.height = ImBlobScale->height;
-					Incrustar( Window, ImBlobScale,NULL, Roi );
+					if( Fly){
+						CvRect Roi;
+						Roi.x = Fly->posicion.x-ventanaBlob/2;
+						Roi.y = Fly->posicion.y-ventanaBlob/2;
+						Roi.width = ventanaBlob;
+						Roi.height = ventanaBlob;
+						// dibujar la imagen
+						cvSetImageROI( ImScale,Roi);
+						cvResize( ImScale, ImBlobScale, CV_INTER_LINEAR);
+						cvResetImageROI(ImScale);
+						Roi.x = Origen1.x + (ancho - ImBlobScale->width)/2;
+						Roi.y = (Origen1.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
+						Roi.width = ImBlobScale->width;
+						Roi.height = ImBlobScale->height;
+						Incrustar( Window, ImBlobScale,NULL, Roi );
+					}
 				}
 			}
 		}
@@ -1681,7 +1790,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 		}
 	}
 
-	SetPrivateHightGUIParams(  ImRef, TotalFrames );
+	SetPrivateHightGUIParams(  ImRef, TotalFrames, FPS );
 	if(visParams->RecWindow) {
 		fprintf(stderr,"\nGrabación activada.Iniciando flujo a fichero de video...\n");
 		VWriter = iniciarAvi(  nombreVideo, FPS);
@@ -1692,7 +1801,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 	config_destroy(&cfg);
 }
 
-void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames ){
+void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames, double FPS ){
 
 	// Parametros no configurables
 	visParams->TotalFrames = TotalFrames;
@@ -1723,9 +1832,12 @@ void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames ){
 			}
 		}
 	}
+
 	setFounts();
 	setPosBlocks( ImRef );
+	setGraph2( FPS );
 }
+
 
 void setFounts(){
 
@@ -1746,11 +1858,10 @@ void setPosBlocks( IplImage * ImRef){
 	Pos = ( posBlocks * )malloc( sizeof(posBlocks ));
 	if( !Pos ) {error(4);exit(1);}
 
-
-
 	Pos->margenBorde = 10;
 	Pos->margenSup = 10;
 	Pos->margenInterno = 5;
+	Pos->linea = 15;
 
 	if( ImRef->width <= 320){
 		visParams->ROITracking = cvRect(visParams->Resolucion.width-(2*ImRef->width + Pos->margenBorde),
@@ -1868,6 +1979,8 @@ void releaseVisParams( ){
 
 	free( fuentes);
 	free( Pos);
+	liberarValoresGrafica2( graph2->Valores);
+	free( graph2);
 	free( visParams);
 	if(ImVisual) cvReleaseImage(&ImVisual);
 	ImVisual = NULL;
@@ -1878,6 +1991,22 @@ void releaseVisParams( ){
 	if (VWriter) cvReleaseVideoWriter(&VWriter);
 	cvDestroyAllWindows();
 }
+
+void liberarValoresGrafica2(tlcde* Valores){
+	  // Borrar todos los elementos de la lista
+	valGraph2* valor;
+	  // Comprobar si hay elementos
+	  if (Valores->numeroDeElementos == 0 ) return;
+	  // borrar: borra siempre el elemento actual
+	  irAlPrincipio( Valores );
+	  valor = (valGraph2 *)borrar(Valores);
+	  while( valor ){
+		  free (valor);
+		  valor = NULL;
+		  valor = (valGraph2  *)borrar(Valores);
+	  }
+}
+
 //void VerEstadoSHModel( IplImage* Imagen,int num ){
 //
 //}
