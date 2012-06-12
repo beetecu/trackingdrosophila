@@ -194,14 +194,8 @@ typedef struct {
 		float CMov30SDes;
 		float CMov1Med;
 		float CMov1Des;
-		float CMov5Med;
-		float CMov5Des;
 		float CMov10Med;
 		float CMov10Des;
-		float CMov15Med;
-		float CMov15Des;
-		float CMov30Med;  //!< Cantidad de movimiento medio en los últimos 30 min.
-		float CMov30Des;
 		float CMov1HMed;  //!< Cantidad de movimiento medio en la última hora.
 		float CMov1HDes;
 		float CMov2HMed;	//!< Cantidad de movimiento medio en  últimas 2 horas.
@@ -216,8 +210,8 @@ typedef struct {
 		float CMov24HDes;
 		float CMov48HMed;
 		float CMov48HDes;
-		float CMovMedio; //!< Cantidad de movimiento medio desde el comienzo.
-		float CMovMedioDes;
+		float CMovMed; //!< Cantidad de movimiento medio desde el comienzo.
+		float CMovDes;
 	}STStatFrame;
 
 /// Estructura que almacena las capas del frame, los datos para realizar calculos estadisticos simples en

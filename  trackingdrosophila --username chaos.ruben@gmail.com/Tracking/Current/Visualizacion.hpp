@@ -98,7 +98,7 @@ typedef struct graphBarsParams{
 
 	CvPoint Origen;
 	CvPoint fin;
-	int escalaY;
+	float escalaY;
 	int puntosY;
 	int puntosX;
 	int maxYval;
@@ -123,7 +123,7 @@ typedef struct graphMovParams{
 	int periodoFr;
 	CvPoint Origen;
 	CvPoint fin;
-	int escalaY;
+	float escalaY;
 	int puntosY;
 	int puntosX;
 	int maxYval;

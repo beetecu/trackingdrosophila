@@ -1165,5 +1165,5 @@ void ShowValParams(char* Campo) {
 void ReleaseDataVal() {
 	free(valParams->privateParams);
 	free(valParams);
-	if(maskCleanGhost) free( maskCleanGhost);
+	if(maskCleanGhost) cvReleaseImage( &maskCleanGhost);
 }

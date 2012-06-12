@@ -42,27 +42,14 @@ typedef struct{
 	float F1Sum2;
 	unsigned int F1;
 
-	float F5Sum;
-	float F5Sum2;
-	unsigned int F5;
 
 	float F10Sum;
 	float F10Sum2;
 	unsigned int F10;
 
-	float F15Sum;
-	float F15Sum2;
-	unsigned int F15;
-
-
-	float F30Sum;
-	float F30Sum2;
-	unsigned int F30;
-
 	float F1HSum;
 	float F1HSum2;
 	unsigned int F1H;
-
 
 	float F2HSum;
 	float F2HSum2;
@@ -89,6 +76,10 @@ typedef struct{
 	float F48HSum;
 	float F48HSum2;
 	unsigned int F48H;
+
+	float MediaSum;
+	float MediaSum2;
+	unsigned int FTot;
 
 
 }STStatsCoef;
