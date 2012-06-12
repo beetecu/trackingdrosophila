@@ -1567,9 +1567,9 @@ void SetKalmanFilterParams( TrackingParams* trackParams ){
 		} else if( val <= 0 ){
 
 			if( trackParams->mmTOpixel) {
-				if( trackParams->FPS == 15)	filterParams->T_Vmed = cvRound(0.2*trackParams->FPS) ; // de seg a frames
-				else if( trackParams->FPS == 30 ) 	filterParams->T_Vmed = cvRound(0.4*trackParams->FPS) ;
-				else filterParams->T_Vmed = 5 ;
+				if( trackParams->FPS == 15)	filterParams->Kal->MaxTimeToPhase1 = cvRound(0.2*trackParams->FPS) ; // de seg a frames
+				else if( trackParams->FPS == 30 ) 	filterParams->Kal->MaxTimeToPhase1 = cvRound(0.4*trackParams->FPS) ;
+				else filterParams->Kal->MaxTimeToPhase1 = 5 ;
 			}
 			else{
 				if( trackParams->FPS == 15)	filterParams->Kal->MaxTimeToPhase1 = 5 ; // de seg a frames

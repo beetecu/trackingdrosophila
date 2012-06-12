@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 
+
 void DeallocateImages( void );
 void DestroyWindows( );
 
@@ -56,3 +57,16 @@ void error(int err){
 			break;
 	}
 }
+
+//void errorCfg( void* val, int type ){
+//	float* fval;
+//	int* ival;
+//
+//	if( type == _float){
+//		fval = (float*) val;
+//
+//	}
+//	else if( type == _int){
+//		ival = (int*) val;
+//	}
+//}

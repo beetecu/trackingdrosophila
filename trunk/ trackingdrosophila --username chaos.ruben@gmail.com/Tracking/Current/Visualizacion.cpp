@@ -34,8 +34,7 @@ graphMovParams* graph2;
 graphBarsParams* graph1;
 void VisualizarEl( tlcde* frameBuf, int pos,  StaticBGModel* Flat ){
 
-	struct timeval tif;
-	float TiempoParcial;
+
 	STFrame* frameData;
 	tlcde* flies;
 
@@ -303,11 +302,11 @@ void DraWPresent(  ){
 	CvFont fuente2;
 
 		//CreateWindows( ImVisual );
-	IncrustarLogo("logos.jpg", Window , CENTRAR ,visParams->DelayLogo,false);
-	if(visParams->RecWindow){
-		for( int i =0; i < 60;i++) cvWriteFrame( VWriter,Window);
-	}
-	desvanecer( Window, 10 );
+//	IncrustarLogo("logos.jpg", Window , CENTRAR ,visParams->DelayLogo,false);
+//	if(visParams->RecWindow){
+//		for( int i =0; i < 60;i++) cvWriteFrame( VWriter,Window);
+//	}
+//	desvanecer( Window, 10 );
 	IncrustarLogo("logo-opencv.jpg", Window , CENTRAR ,visParams->DelayLogo,false);
 	if(visParams->RecWindow){
 		for( int i =0; i < 60;i++) cvWriteFrame( VWriter,Window);
@@ -445,7 +444,7 @@ void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* 
 		contadorX = contadorX + (visParams->BPrWidth*FrameDataOut->GStats->numFrame/ FrameDataOut->GStats->totalFrames);
 		x =  contadorX ;
 		cvRectangle( Window, Pos->OrProgres,
-							cvPoint( Pos->OrProgres.x + 2 + cvRound(x), Pos->OrProgres.y ), CVX_BLUE, -1 );
+							cvPoint( Pos->OrProgres.x + 2 + cvRound(x), Pos->FnProgres.y ), CVX_BLUE, -1 );
 	}
 	//opciones de visualización
 
@@ -831,25 +830,13 @@ void dibujarGrafica1(  tlcde* Flies ){
 
 }
 
-void setGraph1(  ){
 
-	graph1 = ( graphBarsParams * )malloc( sizeof(graphBarsParams ));
-	if( !graph1 ) {error(4);exit(1);}
-
-	graph1->margenCol = 10;
-	graph1->Origen = cvPoint( Pos->OrGraphic1.x + Pos->margenBorde, Pos->FnGraphic1.y - 2 * Pos->margenBorde );
-	graph1->fin = cvPoint( Pos->FnGraphic1.x - Pos->margenBorde, Pos->FnGraphic1.y - 2 * Pos->margenBorde );
-	graph1->puntosX = graph1->fin.x - graph1->Origen.x   ;
-	graph1->puntosY =  graph1->fin.y - (Pos->OrGraphic1.y + 2*Pos->margenBorde);
-	graph1->escalaY = 6;
-	graph1->Max = 0;
-
-}
 void dibujarGrafica2(  STStatFrame* Stats ){
 
 	static int Tcount = 1;
 	static float tiempo;
 	static float max = 0;
+	static int medLine = 0;
 	static char tihms[15];
 	static float RAWval;
 	static int maxLine = 0;
@@ -902,7 +889,7 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	sprintf( ti,"t");
 	cvPutText( Window,  ti, cvPoint(graph2->fin.x -5 ,graph2->Origen.y + Pos->linea), &fuentes->fuente2, CVX_WHITE );
 
-	sprintf( ti,"CMoV. Elemento:%d; Escala y:%d; Muestreo:%0.1f Seg",graph2->graficarEl,graph2->escalaY, graph2->periodoSec);
+	sprintf( ti,"Graficando Elemento %d Factor de escala Y %0.1f Muestreo de %0.1f Seg",graph2->graficarEl,graph2->escalaY, graph2->periodoSec);
 	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y - graph2->puntosY ), &fuentes->fuente2, CVX_WHITE );
 
 	sprintf( ti,"Max = %0.1f", max);
@@ -910,6 +897,13 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
 									graph2->Origen.y - max - 5),
 									&fuentes->fuente2, CVX_RED );
+	// media
+	medLine = cvRound( graph2->escalaY*Stats->CMovMed  );
+	sprintf( ti,"Med = %0.1f", Stats->CMovMed);
+	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
+									graph2->Origen.y - medLine - 5),
+									&fuentes->fuente2, CVX_GREEN2 );
 
 	// eje x
 	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1),cvPoint(graph2->fin.x, graph2->Origen.y+1),CVX_WHITE,2,CV_AA, 0 );
@@ -917,6 +911,8 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1) ,cvPoint(graph2->Origen.x-1,graph2->Origen.y+1 - graph2->puntosY ),CVX_WHITE,2,CV_AA, 0 );
 	// máximo
 	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - maxLine ),cvPoint(graph2->fin.x, graph2->Origen.y - maxLine),CVX_RED,1,CV_AA, 0 );
+	// media
+	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - medLine ),cvPoint(graph2->fin.x, graph2->Origen.y - medLine),CVX_GREEN2,1,CV_AA, 0 );
 
 }
 float cogerValor( STStatFrame* Stats){
@@ -934,24 +930,7 @@ float cogerValor( STStatFrame* Stats){
 	else if(  graph2->graficarEl == 11) return Stats->CMov48HMed;
 	else return 0;
 }
-void setGraph2( double FPS ){
 
-	graph2 = ( graphMovParams * )malloc( sizeof(graphMovParams ));
-	if( !graph2 ) {error(4);exit(1);}
-	graph2->Valores = ( tlcde * )malloc( sizeof(tlcde ));
-	if( !graph2->Valores ) {error(4);exit(1);}
-	iniciarLcde(graph2->Valores );
-
-	graph2->periodoSec = 0.1;
-	graph2->periodoFr = cvRound( FPS* graph2->periodoSec);
-	graph2->Origen = cvPoint( Pos->OrStats.x + Pos->margenBorde, Pos->FnStats.y - 5* Pos->linea );
-	graph2->fin = cvPoint( Pos->FnStats.x - Pos->margenBorde, Pos->FnStats.y - 5* Pos->linea );
-	graph2->puntosX = graph2->fin.x - graph2->Origen.x   ;
-	graph2->puntosY =  graph2->fin.y- (Pos->OrStats.y + Pos->margenBorde);
-	graph2->escalaY = 1;
-	graph2->graficarEl = 1;
-
-}
 
 
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
@@ -1638,6 +1617,14 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 		if(!visParams) {error(4); return;}
 	}
 
+	graph1 = ( graphBarsParams * )malloc( sizeof(graphBarsParams ));
+	if( !graph1 ) {error(4);exit(1);}
+
+	graph2 = ( graphMovParams * )malloc( sizeof(graphMovParams ));
+	if( !graph2 ) {error(4);exit(1);}
+	graph2->Valores = ( tlcde * )malloc( sizeof(tlcde ));
+	if( !graph2->Valores ) {error(4);exit(1);}
+	iniciarLcde(graph2->Valores );
 
 	fprintf(stderr,"\nCargando parámetros de visualización...");
 	config_init(&cfg);
@@ -1684,6 +1671,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 	 * a los valores por defecto.
 	 */
 	else{
+		double val;
 		 /* Get the store name. */
 		sprintf(settingName,"RecWindow");
 		if(! config_setting_lookup_bool( setting, settingName, &visParams->RecWindow )  ){
@@ -1823,7 +1811,111 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 					settingName, settingName,
 					visParams->zoom );
 		}
+
+		// Gráfica 1
+
+		sprintf(settingName, "G1escalaY");
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+
+			graph1->escalaY = 6.0;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.1f  \n",
+					settingName, graph1->escalaY );
+
+		}
+		else if( val <= 0 ){
+
+			graph1->escalaY = 6.0;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %0.1f  \n",
+					settingName, settingName,
+					 graph1->escalaY );
+		}
+		else graph1->escalaY = val;
+
+		// Gráfica 2
+		sprintf(settingName, "PeriodoSec");
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+
+			if( FPS == 15)	graph2->periodoSec = 0.1 ; // de seg a frames
+			else if( FPS == 30 ) 	graph2->periodoSec = 0.2 ;
+			else graph2->periodoSec = 0.1;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.1g segundos \n",
+					settingName, graph2->periodoSec );
+
+		} else if( val <= 0 ){
+
+			if( FPS == 15)				graph2->periodoSec = 0.1 ; // de seg a frames
+			else if( FPS == 30 ) 		graph2->periodoSec = 0.2 ;
+			else 	graph2->periodoSec = 0.1 ;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %0.1f segundos \n",
+					settingName, settingName,
+					graph2->periodoSec );
+		}
+		else{
+			graph2->periodoSec  =val; // a frames
+		}
+
+		sprintf(settingName, "G2escalaY");
+		if (!config_setting_lookup_float(setting, settingName,
+				&val)) {
+
+			graph2->escalaY = 1.0;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto a %0.1f  \n",
+					settingName, graph2->escalaY );
+
+		}
+		else if( val <= 0 ){
+
+			graph2->escalaY = 1.0;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s a %0.1f  \n",
+					settingName, settingName,
+					 graph2->escalaY );
+		}
+		else graph2->escalaY = val;
+
+		sprintf(settingName, "graficarEl");
+		if (!config_setting_lookup_int(setting, settingName,
+				&graph2->graficarEl)) {
+
+			graph2->graficarEl = 1;
+			fprintf(
+					stderr,
+					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
+						"Establecer por defecto el %d \n",
+					settingName, graph2->graficarEl );
+
+		}
+		else if( graph2->graficarEl <= 0 || graph2->graficarEl > 11 ){
+
+			graph2->graficarEl = 1;
+			fprintf(stderr,
+					"El valor de %s está fuera de límites\n "
+						"Establecer por defecto %s el %d \n",
+					settingName, settingName,
+					graph2->graficarEl );
+		}
+
 	}
+
+
+	// Gráfica 2
+
 
 	SetPrivateHightGUIParams(  ImRef, TotalFrames, FPS );
 	if(visParams->RecWindow) {
@@ -1889,8 +1981,6 @@ void setFounts(){
 }
 void setPosBlocks( IplImage * ImRef){
 
-
-
 	Pos = ( posBlocks * )malloc( sizeof(posBlocks ));
 	if( !Pos ) {error(4);exit(1);}
 
@@ -1938,6 +2028,32 @@ void setPosBlocks( IplImage * ImRef){
 
 
 }
+
+void setGraph1(  ){
+
+
+	graph1->margenCol = 10;
+	graph1->Origen = cvPoint( Pos->OrGraphic1.x + Pos->margenBorde, Pos->FnGraphic1.y - 2 * Pos->margenBorde );
+	graph1->fin = cvPoint( Pos->FnGraphic1.x - Pos->margenBorde, Pos->FnGraphic1.y - 2 * Pos->margenBorde );
+	graph1->puntosX = graph1->fin.x - graph1->Origen.x   ;
+	graph1->puntosY =  graph1->fin.y - (Pos->OrGraphic1.y + 2*Pos->margenBorde);
+
+	graph1->Max = 0;
+
+}
+
+void setGraph2( double FPS ){
+
+
+
+	graph2->periodoFr = cvRound( FPS* graph2->periodoSec);
+	graph2->Origen = cvPoint( Pos->OrStats.x + Pos->margenBorde, Pos->FnStats.y - 5* Pos->linea );
+	graph2->fin = cvPoint( Pos->FnStats.x - Pos->margenBorde, Pos->FnStats.y - 5* Pos->linea );
+	graph2->puntosX = graph2->fin.x - graph2->Origen.x   ;
+	graph2->puntosY =  graph2->fin.y- (Pos->OrStats.y + Pos->margenBorde);
+
+}
+
 void SetDefaultHightGUIParams(  IplImage* ImRef ){
 
 	visParams->RecWindow = true;
@@ -1963,6 +2079,14 @@ void SetDefaultHightGUIParams(  IplImage* ImRef ){
 	visParams->ShowStatsMov = true;
 	visParams->zoom = 3;
 
+	// Gráfica 1
+	graph1->escalaY = 6;
+	// Gráfica 2
+
+	graph2->periodoSec = 0.1;
+	graph2->escalaY = 1;
+	graph2->graficarEl = 1;
+
 }
 
 void ShowHightGUIParams( char* Campo  ){
@@ -1984,8 +2108,10 @@ void ShowHightGUIParams( char* Campo  ){
 	printf(" -ShowKalman  \t= %d \n", visParams->ShowKalman );
 	printf(" -ShowStatsMov \t= %d \n", visParams->ShowStatsMov);
 	printf(" -Zoom \t= %d aumentos\n", visParams->zoom);
-
-
+	printf(" -Escala Y gráfica 1: \t= %0.1f \n", graph1->escalaY);
+	printf(" -Escala Y gráfica 2: \t= %0.1f \n", graph2->escalaY);
+	printf(" -Periodo muestreo gráfica 2: \t= %0.1f \n", graph2->periodoSec);
+	printf(" -Graficar elemento %d\n", graph2->graficarEl);
 }
 
 int obtenerVisParam( int type ){

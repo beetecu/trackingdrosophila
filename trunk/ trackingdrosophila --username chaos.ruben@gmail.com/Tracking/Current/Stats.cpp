@@ -102,14 +102,8 @@ STStatFrame* InitStatsFrame(  int fps){
 	Stats->CMov30SDes = 0;
 	Stats->CMov1Med = 0;  //!< Cantidad de movimiento medio en el último min.
 	Stats->CMov1Des = 0;
-	Stats->CMov5Med = 0;  //!< Cantidad de movimiento medio en los últimos 5 min.
-	Stats->CMov5Des = 0;
 	Stats->CMov10Med = 0;  //!< Cantidad de movimiento medio en los últimos 10 min.
 	Stats->CMov10Des = 0;
-	Stats->CMov15Med = 0;  //!< Cantidad de movimiento medio en los últimos 15 min.
-	Stats->CMov15Des = 0;
-	Stats->CMov30Med = 0;  //!< Cantidad de movimiento medio en los últimos 30 min.
-	Stats->CMov30Des = 0;
 	Stats->CMov1HMed = 0;  //!< Cantidad de movimiento medio en la última hora.
 	Stats->CMov1HDes = 0;
 	Stats->CMov2HMed = 0;	//!< Cantidad de movimiento medio en  últimas 2 horas.
@@ -124,8 +118,8 @@ STStatFrame* InitStatsFrame(  int fps){
 	Stats->CMov24HDes = 0;
 	Stats->CMov48HMed = 0;
 	Stats->CMov48HDes = 0;
-	Stats->CMovMedio = 0;
-	Stats->CMovMedioDes = 0;
+	Stats->CMovMed = 0;
+	Stats->CMovDes = 0;
 
 	return Stats;
 }
@@ -191,10 +185,7 @@ void calcCoef( int FPS ){
 	Coef->F1S = FPS ;
 	Coef->F30S = 30*FPS ;	//!< frames para calcular la media de 30 s
 	Coef->F1  =  60*FPS;
-	Coef->F5  = 300*FPS;
 	Coef->F10 = 600*FPS;
-	Coef->F15 = 900*FPS;
-	Coef->F30 = 1800*FPS;
 	Coef->F1H = 3600*FPS;
 	Coef->F2H = 7200*FPS;
 	Coef->F4H = 14400*FPS;
@@ -202,6 +193,7 @@ void calcCoef( int FPS ){
 	Coef->F16H = 57600*FPS;
 	Coef->F24H = 115200*FPS;
 	Coef->F48H = 234000*FPS;
+	Coef->FTot = 0;
 	if( statsParams->MaxBufferTime == 0) statsParams->MaxBufferTime = 234000;
 	Coef->FMax = statsParams->MaxBufferTime*FPS;
 }
@@ -244,14 +236,8 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 	Coef->F1Sum = Coef->F1Sum + valorT->sum;
 	Coef->F1Sum2 = Coef->F1Sum + valorT->sum*valorT->sum;
 
-	Coef->F5Sum = Coef->F5Sum + valorT->sum;
-	Coef->F5Sum2 = Coef->F5Sum2 + valorT->sum*valorT->sum;
-
 	Coef->F10Sum = Coef->F10Sum + valorT->sum;
 	Coef->F10Sum2 = Coef->F10Sum2 +valorT->sum*valorT->sum;
-
-	Coef->F30Sum = Coef->F30Sum + valorT->sum;
-	Coef->F30Sum2 = Coef->F30Sum2 + valorT->sum*valorT->sum;
 
 	Coef->F1HSum = Coef->F1HSum + valorT->sum;
 	Coef->F1HSum2 = Coef->F1HSum2 + valorT->sum*valorT->sum;
@@ -264,6 +250,14 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 
 	Coef->F8HSum = Coef->F48HSum + valorT->sum;
 	Coef->F8HSum2 = Coef->F48HSum2 + valorT->sum*valorT->sum;
+
+	Coef->MediaSum = Coef->MediaSum + valorT->sum;
+	Coef->MediaSum2 = Coef->MediaSum2 + valorT->sum*valorT->sum;
+
+	Coef->FTot++;
+	Stats->CMovMed   =  Coef->MediaSum / vectorSumFr->numeroDeElementos; // cálculo de la media
+	Stats->CMovDes  =  sqrt( abs(Coef->MediaSum2 / vectorSumFr->numeroDeElementos - Coef->MediaSum*Coef->MediaSum ) ); // cálculo de la desviación
+
 
 	if((unsigned)vector->numeroDeElementos > Coef->F1S){
 	// los que hayan alcanzado el valor máximo restamos al sumatorio el primer valor
@@ -287,33 +281,12 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 		Stats->CMov1Med    =  Coef->F1Sum / Coef->F1;
 		Stats->CMov1Des    =  sqrt( abs(Coef->F1Sum2 / Coef->F1 -  Stats->CMov1Med *Stats->CMov1Med )) ;
 	}
-	if((unsigned)vector->numeroDeElementos > Coef->F5){
-		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F5, vectorSumFr );
-		Coef->F5Sum = Coef->F5Sum - valor->sum;
-		Coef->F5Sum2 = Coef->F5Sum2 - (valor->sum*valor->sum);
-		Stats->CMov5Med    =  Coef->F5Sum / Coef->F5;
-		Stats->CMov5Des    =  sqrt( abs(Coef->F5Sum2 / Coef->F5 - Stats->CMov5Med *Stats->CMov5Med ));
-	}
 	if((unsigned)vector->numeroDeElementos > Coef->F10){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F10, vectorSumFr );
 		Coef->F10Sum = Coef->F10Sum - valor->sum;
 		Coef->F10Sum2 = Coef->F10Sum2 - (valor->sum*valor->sum);
 		Stats->CMov10Med   =  Coef->F10Sum / Coef->F10;
 		Stats->CMov10Des   =  sqrt( abs(Coef->F10Sum2 / Coef->F10 - Stats->CMov10Med*Stats->CMov10Med));
-	}
-	if((unsigned)vector->numeroDeElementos > Coef->F15){
-		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F15, vectorSumFr );
-		Coef->F15Sum = Coef->F15Sum - valor->sum;
-		Coef->F15Sum2 = Coef->F15Sum2 - (valor->sum*valor->sum);
-		Stats->CMov15Med   =  Coef->F15Sum / Coef->F15;
-		Stats->CMov15Des   =  sqrt( abs(Coef->F15Sum2 / Coef->F15 - Stats->CMov15Med*Stats->CMov15Med));
-	}
-	if((unsigned)vector->numeroDeElementos > Coef->F30){
-		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F30, vectorSumFr );
-		Coef->F30Sum = Coef->F30Sum - valor->sum;
-		Coef->F30Sum2 = Coef->F30Sum2- (valor->sum*valor->sum);
-		Stats->CMov30Med   =  Coef->F30Sum / Coef->F30;
-		Stats->CMov30Des   =  sqrt( abs(Coef->F30Sum2 / Coef->F30 - Stats->CMov30Med*Stats->CMov30Med));
 	}
 	if((unsigned)vector->numeroDeElementos > Coef->F1H){
 		valor = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 - Coef->F1H, vectorSumFr );
@@ -371,10 +344,7 @@ void iniciarMedias( STStatFrame* Stats, unsigned int valor ){
 
 	Coef->F30SSum = 0;
 	Coef->F1Sum   = 0;
-	Coef->F5Sum   = 0;
 	Coef->F10Sum  = 0;
-	Coef->F15Sum  = 0;
-	Coef->F30Sum  = 0;
 	Coef->F1HSum  = 0;
 	Coef->F2HSum  = 0;
 	Coef->F4HSum  = 0;
@@ -382,13 +352,9 @@ void iniciarMedias( STStatFrame* Stats, unsigned int valor ){
 	Coef->F16HSum = 0;
 	Coef->F24HSum = 0;
 	Coef->F48HSum = 0;
-
 	Coef->F30SSum2 = 0;
 	Coef->F1Sum2   = 0;
-	Coef->F5Sum2   = 0;
 	Coef->F10Sum2  = 0;
-	Coef->F15Sum2  = 0;
-	Coef->F30Sum2  = 0;
 	Coef->F1HSum2  = 0;
 	Coef->F2HSum2  = 0;
 	Coef->F4HSum2  = 0;
@@ -396,6 +362,8 @@ void iniciarMedias( STStatFrame* Stats, unsigned int valor ){
 	Coef->F16HSum2 = 0;
 	Coef->F24HSum2 = 0;
 	Coef->F48HSum2 = 0;
+	Coef->MediaSum = 0;
+	Coef->MediaSum2 = 0;
 
 }
 
@@ -408,14 +376,8 @@ void normalizeStatsBlobS( float k){
 	Stats->CMov30SDes =Stats->CMov30SDes * k;
 	Stats->CMov1Med = Stats->CMov1Med * k;  //!< Cantidad de movimiento medio en el último min.
 	Stats->CMov1Des = Stats->CMov1Des * k;
-	Stats->CMov5Med = Stats->CMov5Med * k;  //!< Cantidad de movimiento medio en los últimos 5 min.
-	Stats->CMov5Des = Stats->CMov5Des * k;
 	Stats->CMov10Med = Stats->CMov10Med * k;  //!< Cantidad de movimiento medio en los últimos 10 min.
 	Stats->CMov10Des = Stats->CMov10Des * k;
-	Stats->CMov15Med = Stats->CMov15Med * k;  //!< Cantidad de movimiento medio en los últimos 15 min.
-	Stats->CMov15Des = Stats->CMov15Des * k;
-	Stats->CMov30Med = Stats->CMov30Med * k;  //!< Cantidad de movimiento medio en los últimos 30 min.
-	Stats->CMov30Des = Stats->CMov30Des * k;
 	Stats->CMov1HMed = Stats->CMov1HMed * k;  //!< Cantidad de movimiento medio en la última hora.
 	Stats->CMov1HDes = Stats->CMov1HDes * k;
 	Stats->CMov2HMed = Stats->CMov2HMed * k;	//!< Cantidad de movimiento medio en  últimas 2 horas.
@@ -430,8 +392,8 @@ void normalizeStatsBlobS( float k){
 	Stats->CMov24HDes = Stats->CMov24HDes * k;
 	Stats->CMov48HMed = Stats->CMov48HMed * k;
 	Stats->CMov48HDes = Stats->CMov48HDes * k;
-	Stats->CMovMedio = Stats->CMovMedio * k;
-	Stats->CMovMedioDes = Stats->CMovMedioDes * k;
+	Stats->CMovMed = Stats->CMovMed * k;
+	Stats->CMovDes = Stats->CMovDes * k;
 
 }
 
