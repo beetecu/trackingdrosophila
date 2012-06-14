@@ -109,6 +109,7 @@ typedef struct graphBarsParams{
 	int margenCol;
 	int Max;
 	float MaxReal;
+	float PeriodoVmed;
 
 }graphBarsParams;
 

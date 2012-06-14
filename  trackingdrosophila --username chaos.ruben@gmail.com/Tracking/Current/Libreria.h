@@ -143,7 +143,7 @@ void *borrar(tlcde *lcde);
 
 
 
-void *sustituirEl( void *e, tlcde *lcde, int i);
+int sustituirEl( void *e, tlcde *lcde, int i);
 
 //!\brief Borra el elemento apuntado de la posición posición i.
 //! Devuelve un puntero al área de datos del objeto borrado

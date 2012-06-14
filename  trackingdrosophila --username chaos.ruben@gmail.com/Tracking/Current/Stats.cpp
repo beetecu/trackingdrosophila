@@ -27,9 +27,6 @@ StatsCoefs* Val = NULL;
 
 void CalcStatsFrame(STFrame* frameDataOut, ConvUnits* convUnits ){
 
-	struct timeval ti;
-	float TiempoParcial;
-	static int init = 1;
 
 	if( !frameDataOut) return;
 #ifdef MEDIR_TIEMPOS
@@ -149,7 +146,7 @@ void statsBloB(STFrame* frameDataOut ){
  */
 void statsBlobS( STFrame* frameDataOut ){
 
-	STFly* flyOut = NULL;
+
 
 	valorSum* valor = NULL;
 
@@ -221,8 +218,6 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 	valorSum* valor;
 	valorSum* valorT;
 
-	StatsCoefs* Val;
-
 	// Se suma el nuevo valor
 	valorT = ( valorSum*)obtener( vectorSumFr->numeroDeElementos-1 , vectorSumFr );
 
@@ -255,8 +250,8 @@ void mediaMovil(  STStatsCoef* Coef, tlcde* vector, STStatFrame* Stats ){
 	Coef->MediaSum2 = Coef->MediaSum2 + valorT->sum*valorT->sum;
 
 	Coef->FTot++;
-	Stats->CMovMed   =  Coef->MediaSum / vectorSumFr->numeroDeElementos; // cálculo de la media
-	Stats->CMovDes  =  sqrt( abs(Coef->MediaSum2 / vectorSumFr->numeroDeElementos - Coef->MediaSum*Coef->MediaSum ) ); // cálculo de la desviación
+	Stats->CMovMed   =  Coef->MediaSum / Coef->FTot; // cálculo de la media
+	Stats->CMovDes  =  sqrt( abs(Coef->MediaSum2 / Coef->FTot - Stats->CMovMed*Stats->CMovMed ) ); // cálculo de la desviación
 
 
 	if((unsigned)vector->numeroDeElementos > Coef->F1S){

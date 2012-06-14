@@ -42,8 +42,6 @@ CvSeq* first_contour;
 tlcde* segmentacion2( IplImage *Brillo, IplImage* BGModel, IplImage* FG ,CvRect Roi,IplImage* Mask){
 
 	extern double NumFrame;
-	struct timeval ti, tf; // iniciamos la estructura
-	float tiempoParcial;
 	//Iniciar lista para almacenar las moscas
 	tlcde* flies = NULL;
 	flies = ( tlcde * )malloc( sizeof(tlcde ));

@@ -204,7 +204,7 @@ void muestrearLinea( IplImage* rawImage, CvPoint pt1,CvPoint pt2, int num_frs,in
 
 	static int count = 0;
 	int max_buffer;
-	char inicio;
+
 	char nombreFichero[30];
 
 	CvLineIterator iterator;
@@ -344,7 +344,7 @@ void insertar(void *e, tlcde *lcde)
   lcde->posicion = posicion;
 }
 
-void *sustituirEl( void *e, tlcde *lcde, int i){
+int sustituirEl( void *e, tlcde *lcde, int i){
 	irAl( i, lcde);
 	insertar( e, lcde );
 	irAlAnterior( lcde );
@@ -626,7 +626,7 @@ void dibujarBlob( STFly* blob, IplImage* dst ){
 void mostrarListaFlies(int pos,tlcde *lista)
 {
 	int n;
-	tlcde* flies;
+
 	STFrame* frameData;
 	int pos_act;
 	pos_act = lista->posicion;
@@ -646,7 +646,7 @@ void mostrarListaFlies(int pos,tlcde *lista)
 
 void mostrarFliesFrame(STFrame *frameData)
 {
-	int n;
+
 	tlcde* flies;
 	flies = frameData->Flies;
 	if(!flies || flies->numeroDeElementos < 1 ) return;
@@ -1020,7 +1020,6 @@ int GuardarSTFrame( STFrame* frameData , char *nombreFichero){
 		fclose(pf);
 		return 1;
 	}
-	int i = 0, tam = Flies->numeroDeElementos;
 
 	// cuando haya una con etiqueta 0 no se computarán, se almacenará la posición de la fly con la id del track
 	for( int i= 1; i <= Flies->numeroDeElementos; i++){ //etiquetas

@@ -33,15 +33,16 @@
 #define SLEEPING 0
 #define CAM_CONTROL 1
 #define KALMAN_CONTROL 2
+#define MISSED 3
 
 #define IN_BG 0
 #define IN_FG 1
-#define MISSED 2
 
 #define UMBRAL_ALTO 1
 #define UMBRAL_MEDIO 2
 #define UMBRAL_BAJO 3
 #define MAX_BLOBS 4
+#define PERIODO_V_MED 5
 
 typedef struct{
 
@@ -191,6 +192,7 @@ typedef struct{
 typedef struct{
 
 	float Q;
+	CvMat* H;
 	int g_slider_Q;
 	// componentes del vector Rk de covarianzas. Incertidumbre en la medida inicial : V->N( 0, Rk )
 	float alpha_Rk;
@@ -200,7 +202,9 @@ typedef struct{
 }CamParams;
 
 typedef struct{
+
 	float Q;
+	CvMat* H;
 
 	int g_slider_Q;
 	int MaxTimeToPhase1;
@@ -288,6 +292,12 @@ typedef struct{
 
 void Kalman(STFrame* frameData,tlcde* lsIds,tlcde* lsTracks, TrackingParams* trackParams);
 
+int crearTracks( tlcde* lsTracks, tlcde* Flies, tlcde* lsIds );
+
+void correctionPhase( tlcde* lsTracks, STFrame* frameData, TrackingParams* trackParams);
+
+void PredictionPhase( tlcde* lsTracks );
+
 /*! \brief Reserva memoria e inicializa un track: Le asigna una id, un color e inicia el filtro de kalman
  * Se le asigna al blob la id del track y se establece éste como fly Actual.
 *
@@ -348,11 +358,12 @@ int SetStateTrack( STTrack* Track, STFly* flySig );
 
 void generarMedida( IplImage* FG,STTrack* Track, int EstadoTrack );
 
-void CalcularVmed(  STTrack* Track, float* VMed, float* Vxmed, float* Vymed, float* errorVx, float* errorVy );
+void CalcularVmed( STTrack* Track, int Vx, int Vy  );
 
 void obtenerDes( tlcde* Vector, float Vxmed, float Vymed,float* errorVx, float* errorVy);
 
-void obtenerDir( STTrack* Track, float *PhiMed, float* errorVPhi );
+void obtenerDir( STTrack* Track, int posFinX, int posFinY, float *PhiMed, float* errorVPhi );
+
 
 void corregirDir( float phiXk,float* phiZk );
 

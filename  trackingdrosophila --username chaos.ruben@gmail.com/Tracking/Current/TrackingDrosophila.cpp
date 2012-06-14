@@ -215,7 +215,7 @@ void SetGlobalConf(  CvCapture* Cap ){
 		if(! EXITO || GParams->FPS == 0 ){
 			GParams->FPS = cvGetCaptureProperty( Cap, 5 );
 			if( !EXITO) fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
-										"Establecido por defecto a %0.1f \n",settingName,GParams->FPS);
+										"Establecido por defecto a %d FPS\n",settingName,GParams->FPS);
 			if( GParams->FPS == 0 ) fprintf(stderr, "Establecer %s por defecto a %0.1f \n",settingName,GParams->TotalFrames);
 		}
 
