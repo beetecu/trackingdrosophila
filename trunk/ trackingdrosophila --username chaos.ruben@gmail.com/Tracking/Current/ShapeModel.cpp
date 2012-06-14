@@ -13,10 +13,6 @@ SHModel* ShapeModel( CvCapture* g_capture,StaticBGModel* BGModel , BGModelParams
 
 	int num_frames = 0;
 	int total_blobs=0;
-	int k=0;
-	float Dif=0;
-	float MaxContourArea = 0;
-	float MaxContourPerimeter = 0;
 	float Sumatorio = 0;
 	float SumatorioDes = 0;
 	IplImage* frame = NULL;
@@ -263,7 +259,7 @@ void SetShapeParams(  BGModelParams* BGParams ){
 		if(! config_setting_lookup_int ( setting, settingName, &BGParams->HIGHT_THRESHOLD )  ){
 			BGParams->HIGHT_THRESHOLD = 20;
 			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
-							"Establecer por defecto a %0.1f \n",settingName,BGParams->HIGHT_THRESHOLD);
+							"Establecer por defecto a %d \n",settingName,BGParams->HIGHT_THRESHOLD);
 
 		}
 		else {

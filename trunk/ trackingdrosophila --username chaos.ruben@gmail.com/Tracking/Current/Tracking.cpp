@@ -42,21 +42,6 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	// resolver las asociaciones usando las predicciones de kalman mediante el algoritmo Hungaro
 	// Si varias dan a la misma etiquetarla como 0. Enlazar flies.
 	// Se trabaja en las posiciones frame MAX_BUFFER - 1 y MAX_BUFFER -2.
-	if( frameDataIn->num_frame == 424 ){
-						printf("hola");
-					}
-	if( frameDataIn->num_frame == 433 ){
-							printf("hola");
-						}
-	if( frameDataIn->num_frame == 1195 ){
-						printf("hola");
-					}
-	if( frameDataIn->num_frame == 1460 ){
-							printf("hola");
-						}
-	if( frameDataIn->num_frame == 1456 ){
-								printf("hola");
-							}
 
 	asignarIdentidades( lsTracks,frameDataIn->Flies);
 
@@ -71,7 +56,6 @@ STFrame* Tracking( STFrame* frameDataIn, int MaxTracks,StaticBGModel* BGModel, i
 	/////////////// ELIMIRAR FALSOS TRACKS. APLICACIÓN DE HEURíSTICAS AL FINAL DEL BUFFER ///
 	frameDataIn->numTracks = validarTracks( framesBuf, lsTracks,Identities, trackParams->MaxBlobs, frameDataIn->num_frame );
 
-//	if( trackParams->CleanGhosts) cleanGhosts( framesBuf, lsTracks,Identities, trackParams->MaxBlobs, frameDataIn->num_frame)
 	/////////////// FILTRO DE KALMAN //////////////
 	// El filtro de kalman trabaja en la posicion MAX_BUFFER -1. Ultimo elemento anyadido.
 	Kalman( frameDataIn , Identities, lsTracks, trackParams);
@@ -124,7 +108,6 @@ int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxT
 	STTrack* Track2 = NULL;
 
 	int valCount = 0;
-	Identity* Id;
 
 	// VALIDAR NUEVOS TRACKS
 
@@ -162,7 +145,7 @@ int validarTracks(tlcde* framesBuf, tlcde* lsTracks, tlcde* identities, int MaxT
 				// comprobar si hay tracks con id mayor a MaxTracks y reasignar el de mayor id y CamControl en caso afimativo
 				if (framesBuf->numeroDeElementos< trackParams->MaxBuffer){
 					irAlFinal(lsTracks);
-					for(int j = lsTracks->numeroDeElementos;j > 0 ; j--){
+					for(int j = lsTracks->numeroDeElementos - 1; j = 0 ; j--){
 						unsigned int tiempoVivo = numFrame - Track->Stats->InitTime ;
 						// si se encuentra un track en estado camControl de id mayor, se reasigna. El de mayor id
 						// pasa a tomar la etiqueta del menor y se corrige el buffer,
@@ -271,7 +254,7 @@ void despertarTrack( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds ){
 
 void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 
-	STFrame* frameData0;
+
 	STFrame* frameData1;
 	STTrack* NewTrack;
 	STTrack* SleepingTrack;
@@ -329,21 +312,6 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 				deadTrack( lsTracks, i );
 			}
 		}
-		// limpieza
-
-		//comprobar si hay dos tracks siguiendo a una fly durante un periodo mas o menos largo ( del buffer). Si es así,
-		// si uno de ellos es un nuevo track  y su id es mayor de MAXTracks, eliminarlo, si su id es menor o igual
-		// , poner el más jóven en estado SLEEP.
-
-		// eliminar tracks que,  aunque sean válidos, tengan una id alta
-		// y permanezcan largo tiempo inmóviles
-		//
-		// Si hay 2 tracks siguiendo a una fly en movimiento durante x frames.
-		//	1) Comprobar si se ha creado recientemente un nuevo track.
-		// 	   si es así, de los dos tracks, asignamos el más reciente a la fly del  nuevo track y lo eliminamos y reasignamos id
-		// 	2) si el nuevo track es más antiguo que cualquiera de los dos o bien no se ha creado recientemente uno nuevo, lo eliminamos
-		//  y reasignamos ids.
-
 
 	}
 
@@ -457,6 +425,7 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 			NewTrack->Stats->InitPos = SleepingTrack->Stats->InitPos;
 			NewTrack->Stats->TimeBlobOff = SleepingTrack->Stats->TimeBlobOff + NewTrack->Stats->TimeBlobOff;
 			NewTrack->Stats->TimeBlobOn = SleepingTrack->Stats->TimeBlobOn + NewTrack->Stats->TimeBlobOn;
+
 		}
 	}
 }
@@ -591,7 +560,7 @@ void SetTrackingParams( ConvUnits* calParams ){
 			fprintf(
 					stderr,
 					"No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
-						"Establecer por defecto a %d \n",
+						"Establecer por defecto a %d frames\n",
 					settingName, trackParams->PeriodoVelMed);
 
 		} else if(!val	|| val < 0 ){
@@ -599,7 +568,7 @@ void SetTrackingParams( ConvUnits* calParams ){
 				trackParams->PeriodoVelMed = 60;
 				fprintf(stderr,
 						"El valor de %s está fuera de límites\n "
-							"Establecer por defecto %s a %0.1f \n",
+							"Establecer por defecto %s a %d frames \n",
 						settingName, settingName,
 						trackParams->PeriodoVelMed);
 		}
@@ -711,6 +680,9 @@ float obtenerTrackParam( int type ){
 	else if ( type == UMBRAL_MEDIO ) return  trackParams->LowActivityTh;
 	else if( type == UMBRAL_BAJO ) return  trackParams->NullActivityTh;
 	else if( type == MAX_BLOBS ) return trackParams->MaxBlobs;
+	else if( type == PERIODO_V_MED ){
+		return trackParams->PeriodoVelMed * trackParams->fTOsec;
+	}
 	else return 0;
 
 }

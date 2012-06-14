@@ -227,8 +227,9 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 
 						//REESCALAR
 						// si la imagen es de 320 o menos la escalamos al doble
-						if(ImVisual->width <= 320)	cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
-						else  ImScale = ImVisual;
+						cvResize( ImVisual, ImScale);
+//						if(ImVisual->width <= 320)	cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
+//						else  ImScale = ImVisual;
 
 						//DIBUJAMOS ELEMENTOS EN VENTANA DE VISUALIZACION DEPENDIENDO DEL TIPO
 						if( type == FLAT || type == BG_MODEL || type  == SHAPE )DrawPreprocesWindow( frame );
@@ -387,28 +388,29 @@ void DrawPreprocesWindow( IplImage* frame){
 	// incrustamos el video en pequeño en la parte superior
 	IplImage* video;
 
-	CvSize size = cvSize(320,240 );
-	if(frame->width == 640) size = cvSize(frame->width/2,frame->height/2 );
-	if(frame->width == 1280) size = cvSize(frame->width/4,frame->height/4 );
-	if(frame->width == 1280) size = cvSize(frame->width,frame->height);
+	CvSize size = cvSize(320,180 );
+//	if(frame->width == 640) size = cvSize(frame->width/2,frame->height/2 );
+//	if(frame->width == 1280) size = cvSize(frame->width/4,frame->height/4 );
+//	if(frame->width == 1280) size = cvSize(frame->width,frame->height);
 	video = cvCreateImage( size,8,3);
 	CvRect rect = cvRect( (Window->width-video->width)/2,
-							( Window->height-video->height)/8,
+							( visParams->ROIPreProces.y-video->height)/2,
 							video->width,
 							video->height);
 	// Reescalar video
-	if(frame->width == 640){
-		 cvPyrDown( frame, video,IPL_GAUSSIAN_5x5);
-	}
-	else if(frame->width == 1280){
-		IplImage* video1;
-		CvSize size = cvSize(640,480 );
-		video1 = cvCreateImage( cvSize(frame->width/2,frame->height/2 ),8,3);
-		cvPyrDown( frame, video1,IPL_GAUSSIAN_5x5);
-		cvPyrDown( video1, video,IPL_GAUSSIAN_5x5);
-		cvReleaseImage(&video1);
-	}
-	else cvCopy( frame, video );
+	cvResize( frame, video);
+////	if(frame->width == 640){
+////		 cvPyrDown( frame, video,IPL_GAUSSIAN_5x5);
+////	}
+//	else if(frame->width == 1280){
+//		IplImage* video1;
+//		CvSize size = cvSize(640,480 );
+//		video1 = cvCreateImage( cvSize(frame->width/2,frame->height/2 ),8,3);
+//		cvPyrDown( frame, video1,IPL_GAUSSIAN_5x5);
+//		cvPyrDown( video1, video,IPL_GAUSSIAN_5x5);
+//		cvReleaseImage(&video1);
+//	}
+//	else cvCopy( frame, video );
 
 	// incrustamos las imagenes del preprocesado
 	Incrustar( Window, ImScale, NULL, visParams->ROIPreProces);
@@ -529,7 +531,7 @@ void dibujarBlobs( IplImage* Imagen,tlcde* flies ){
 					CVX_RED,
 					1, CV_AA, 0 );
 			// dirección de kalman
-			if(fly->Estado == 4){
+			if(fly->Estado == 4 || fly->Estado == 5 ){
 				cvLine( Imagen,
 									fly->posicion,
 									cvPoint( cvRound( fly->posicion.x + magnitude*cos(fly->dir_filtered*CV_PI/180)),
@@ -743,6 +745,7 @@ void dibujarGrafica1(  tlcde* Flies ){
 		graph1->umbral1 = cvRound( (float)graph1->escalaY *obtenerTrackParam( UMBRAL_ALTO) );
 		graph1->umbral2 = cvRound( (float)graph1->escalaY *obtenerTrackParam( UMBRAL_MEDIO) );
 		graph1->umbral3 = cvRound( (float)graph1->escalaY *obtenerTrackParam( UMBRAL_BAJO) );
+		graph1->PeriodoVmed = obtenerTrackParam( PERIODO_V_MED );
 	}
 
 	graph1->anchoCol =  (graph1->puntosX - (graph1->margenCol * Flies->numeroDeElementos + 1) ) / Flies->numeroDeElementos ;
@@ -786,7 +789,7 @@ void dibujarGrafica1(  tlcde* Flies ){
 
 	}
 	// nombre eje y
-	sprintf( num,"Nivel de Actividad");
+	sprintf( num,"Nivel de Actividad  T Vmed: %0.1f seg", graph1->PeriodoVmed);
 	cvPutText( Window,  num, cvPoint(graph1->Origen.x ,
 									graph1->Origen.y - graph1->puntosY - 5),
 									&fuentes->fuente2, CVX_WHITE );
@@ -837,6 +840,8 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	static float tiempo;
 	static float max = 0;
 	static int medLine = 0;
+	static int desSupLine = 0;
+	static int desInfLine = 0;
 	static char tihms[15];
 	static float RAWval;
 	static int maxLine = 0;
@@ -852,7 +857,9 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 		if( !valor ) {error(4);exit(1);}
 		RAWval = cogerValor( Stats );
 		valor->val = cvRound( graph2->escalaY*RAWval  );
-		if( valor->val > (unsigned)graph2->puntosY) valor->val = graph2->puntosY-2;
+		if( valor->val > (unsigned)graph2->puntosY){
+			valor->val = graph2->puntosY-2;
+		}
 		if( max < RAWval){
 			max = RAWval;
 			maxLine = valor->val;
@@ -895,15 +902,28 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	sprintf( ti,"Max = %0.1f", max);
 	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
-									graph2->Origen.y - max - 5),
+									graph2->Origen.y - maxLine - 5),
 									&fuentes->fuente2, CVX_RED );
 	// media
 	medLine = cvRound( graph2->escalaY*Stats->CMovMed  );
+	desSupLine = cvRound(medLine + graph2->escalaY*Stats->CMovDes  );
+	if(desSupLine > maxLine ) desSupLine = maxLine;
+	desInfLine =  cvRound( medLine - graph2->escalaY*Stats->CMovDes );
+	if( desInfLine < 0) desInfLine = 0;
 	sprintf( ti,"Med = %0.1f", Stats->CMovMed);
 	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
 	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
 									graph2->Origen.y - medLine - 5),
-									&fuentes->fuente2, CVX_GREEN2 );
+									&fuentes->fuente2, CVX_YELLOW );
+
+	// desviación
+	if( desSupLine){
+		cvSetImageROI( Window, cvRect( graph2->Origen.x, graph2->Origen.y - desSupLine , graph2->puntosX, desSupLine- desInfLine  ));
+		cvAddS( Window, cvScalar( 0,-55,0), Window);
+		cvResetImageROI(Window);
+		cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - desSupLine ),cvPoint(graph2->fin.x, graph2->Origen.y - desSupLine),CVX_GREEN2,1,CV_AA, 0 );
+		cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - desInfLine ),cvPoint(graph2->fin.x, graph2->Origen.y - desInfLine),CVX_GREEN2,1,CV_AA, 0 );
+	}
 
 	// eje x
 	cvLine( Window,cvPoint(graph2->Origen.x-1, graph2->Origen.y+1),cvPoint(graph2->fin.x, graph2->Origen.y+1),CVX_WHITE,2,CV_AA, 0 );
@@ -912,8 +932,7 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	// máximo
 	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - maxLine ),cvPoint(graph2->fin.x, graph2->Origen.y - maxLine),CVX_RED,1,CV_AA, 0 );
 	// media
-	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - medLine ),cvPoint(graph2->fin.x, graph2->Origen.y - medLine),CVX_GREEN2,1,CV_AA, 0 );
-
+	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - medLine ),cvPoint(graph2->fin.x, graph2->Origen.y - medLine),CVX_YELLOW,1,CV_AA, 0 );
 }
 float cogerValor( STStatFrame* Stats){
 
@@ -1145,9 +1164,9 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 						Roi.width = ventanaBlob;
 						Roi.height = ventanaBlob;
 						// dibujar la imagen
-						cvSetImageROI( ImScale,Roi);
-						cvResize( ImScale, ImBlobScale, CV_INTER_CUBIC);
-						cvResetImageROI(ImScale);
+						cvSetImageROI( ImVisual,Roi);
+						cvResize( ImVisual, ImBlobScale, CV_INTER_CUBIC);
+						cvResetImageROI(ImVisual);
 						Roi.x = Origen1.x + (ancho - ImBlobScale->width)/2;
 						Roi.y = (Origen1.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
 						Roi.width = ImBlobScale->width;
@@ -1950,13 +1969,8 @@ void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames, double FPS ){
 			ImVisual = cvCreateImage( cvGetSize( ImRef ),8,3);
 			ImBlob = cvCreateImage( cvSize(60,60),8,3);
 
-			if( ImRef->width <= 320){
-				CvSize size = cvSize(2*ImRef->width,2*ImRef->height);
-				ImScale = cvCreateImage( size ,8,3);
-			}
-			else{
-				ImScale = ImVisual;
-			}
+			CvSize size = cvSize(640,360);
+			ImScale = cvCreateImage( size ,8,3);
 		}
 	}
 
@@ -1989,21 +2003,21 @@ void setPosBlocks( IplImage * ImRef){
 	Pos->margenInterno = 5;
 	Pos->linea = 15;
 
-	if( ImRef->width <= 320){
-		visParams->ROITracking = cvRect(visParams->Resolucion.width-(2*ImRef->width + Pos->margenBorde),
-				Pos->margenSup,2*ImRef->width,
-				2*ImRef->height);
-		visParams->ROIPreProces = cvRect( (Window->width-2*ImRef->width)/2,
-				( Window->height-2*ImRef->height)/2,
-				2*ImRef->width,2*ImRef->height);
-	}
-	else{
-		visParams->ROITracking = cvRect(visParams->Resolucion.width-(ImRef->width + Pos->margenBorde),Pos->margenBorde,ImRef->width,ImRef->height);
-		visParams->ROIPreProces = cvRect( (Window->width-ImRef->width)/2,
-											( Window->height-ImRef->height)/1.5,
-											ImRef->width,
-											ImRef->height);
-	}
+//	if( ImRef->width <= 320){
+//		visParams->ROITracking = cvRect(visParams->Resolucion.width-(2*ImRef->width + Pos->margenBorde),
+//				Pos->margenSup,2*ImRef->width,
+//				2*ImRef->height);
+//		visParams->ROIPreProces = cvRect( (Window->width-2*ImRef->width)/2,
+//				( Window->height-2*ImRef->height)/2,
+//				2*ImRef->width,2*ImRef->height);
+//	}
+//	else{
+		visParams->ROITracking = cvRect(visParams->Resolucion.width-(ImScale->width + Pos->margenBorde),Pos->margenBorde,ImScale->width,ImScale->height);
+		visParams->ROIPreProces = cvRect( (Window->width-ImScale->width)/2,
+											( Window->height-ImScale->height)/1.5,
+											ImScale->width,
+											ImScale->height);
+//	}
 
 
 	Pos->OrImage =  cvPoint(visParams->ROITracking.x,visParams->ROITracking.y);
@@ -2146,7 +2160,7 @@ void releaseVisParams( ){
 	free( visParams);
 	if(ImVisual) cvReleaseImage(&ImVisual);
 	ImVisual = NULL;
-//	if( ImScale) cvReleaseImage( &ImScale);
+	cvReleaseImage( &ImScale);
 	cvReleaseImage(&Window);
 	cvReleaseImage(&ImBlob);
 	cvReleaseImage(&ImBlobScale);

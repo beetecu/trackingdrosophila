@@ -53,18 +53,9 @@ BGModelParams *BGPrParams = NULL;
 
 STFrame* Procesado( IplImage* frame, StaticBGModel* BGModel,SHModel* Shape ){
 
-	extern double NumFrame;
-	struct timeval ti, tif; // iniciamos la estructura
-	float tiempoParcial;
 	static int update_count = 0;
 	// otros parámetros
-	int fr = 0;
-
-
 	STFrame* frameData = NULL;
-	tlcde* OldFGFlies = NULL;
-	tlcde* FGFlies = NULL;
-
 
 #ifdef	MEDIR_TIEMPOS
 	gettimeofday(&tif, NULL);
@@ -372,7 +363,7 @@ void SetProcesParams(  ){
 		if(! config_setting_lookup_int ( setting, settingName, &BGPrParams->HIGHT_THRESHOLD )  ){
 			BGPrParams->HIGHT_THRESHOLD = 20;
 			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
-							"Establecer por defecto a %0.1f \n",settingName,BGPrParams->HIGHT_THRESHOLD);
+							"Establecer por defecto a %d \n",settingName,BGPrParams->HIGHT_THRESHOLD);
 
 		}
 		else {

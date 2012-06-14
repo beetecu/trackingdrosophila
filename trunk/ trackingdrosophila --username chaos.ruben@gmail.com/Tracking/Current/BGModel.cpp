@@ -38,8 +38,6 @@ IplImage *desTemp = NULL;
  * 																	*
  ********************************************************************/
 StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
-	struct timeval ti; // iniciamos la estructura
-	float TiempoParcial;
 	int num_frames = 0;
 	static int count_update;
 	static int Delay = 0;
@@ -71,7 +69,8 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 
 	/////// BUSCAR PLATO Y OBTENER MÁSCARA /////
 
-#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 #endif
 
 
@@ -125,7 +124,8 @@ StaticBGModel* initBGModel(  CvCapture* t_capture, BGModelParams* Param){
 #endif
 
 	printf("\n\t\t2)Modelando fondo...\n ");
-#ifdef	MEDIR_TIEMPOS gettimeofday(&ti, NULL);
+#ifdef	MEDIR_TIEMPOS
+	gettimeofday(&ti, NULL);
 #endif
 
 	///// APRENDER FONDO /////
@@ -379,8 +379,6 @@ void MascaraPlato(CvCapture* t_capture,
 void accumulateBackground( IplImage* ImGray, IplImage* BGMod,IplImage *Idesvf,CvRect ROI , float K, IplImage* mask = NULL ) {
 	// si la máscara es null(POR DEFECTO), se crea una inicializada a 0, lo que implicará
 	// la actualización de todos los pixeles del background
-	struct timeval ti; // iniciamos la estructura
-	double tiempoParcial;
 	if (mask == NULL){
 		cvZero( Imaskt);
 	}
@@ -521,9 +519,6 @@ void UpdateBGModel( IplImage* tmp_frame, IplImage* BGModel,IplImage* ImDesv, BGM
 }
 
 void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf,IplImage* fg,BGModelParams* Param, CvRect ROI){
-
-	struct timeval ti; // iniciamos la estructura
-	double tiempoParcial;
 
 
 	if( SHOW_BGMODEL_DATA ){

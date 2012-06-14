@@ -176,9 +176,10 @@ void Validacion2(IplImage *Imagen, STFrame* FrameData, SHModel* SH,StaticBGModel
 							anyadirAlFinal(FlyData, FrameData->Flies);
 						}
 
-						if (SHOW_VALIDATION_DATA)
+						if (SHOW_VALIDATION_DATA){
 							printf("\n Lista Flies tras FISION\n");
 							mostrarFliesFrame(FrameData);
+						}
 						i--; // decrementar i para no saltarnos un elemento de la lista
 
 						break; // salir del while
