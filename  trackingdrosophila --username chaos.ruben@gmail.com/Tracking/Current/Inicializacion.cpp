@@ -124,7 +124,7 @@ int Inicializacion( int argc,
 		fprintf(stderr," No se ha especificado nombre para el fichero de video.\n ");
 
 		for( int i = 0; i < 1000; i++ ){
-			sprintf(nombreVideo,"Visual_%d.avi",i);
+			sprintf(nombreVideo,"Tracking_%d.avi",i);
 			fprintf(stderr,"Se estableció por defecto %s",nombreVideo);
 			if( !existe( nombreVideo) )  break;
 		}
@@ -256,7 +256,7 @@ int Inicializacion( int argc,
 					if (strlen(nombreVideo)<5) {// nombre por defecto
 						fprintf(stderr,"\nNombre por defecto: ");
 						for( int i = 0; i < 1000; i++ ){
-							sprintf(nombreVideo,"Video_%d.avi ",i);
+							sprintf(nombreVideo,"Tracking_%d.avi",i);
 							if( !existe( nombreVideo) ) {
 								printf("%s",nombreVideo);
 								break;

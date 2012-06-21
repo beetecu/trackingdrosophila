@@ -66,7 +66,14 @@ int main(int argc, char* argv[]) {
 	SetPreProcesParams(  );
 	SetProcesParams(  );
 	SetStatsParams( (int)GParams->FPS );
-	SetHightGUIParams( cvQueryFrame( g_capture ) , nombreVideo, (double)GParams->FPS, GParams->TotalFrames);
+	frame = cvQueryFrame( g_capture );
+   	if( !frame  ){
+    		NumFrame = NumFrame + RetryCap( g_capture, frame );
+    		if( !frame )  exit (1);//Finalizar(&g_capture, &VWriter);
+    		//NumFrame = cvGetCaptureProperty( g_capture, 1 );
+    	}
+
+	SetHightGUIParams( frame , nombreVideo, (double)GParams->FPS, GParams->TotalFrames);
 
 	////////// PRESENTACIÓN ////////////////
 	DraWWindow( NULL,NULL, NULL, SHOW_PRESENT, 0  );
@@ -332,7 +339,6 @@ void Finalizar(CvCapture **g_capture){
 	capture = *g_capture;
 
 	if (capture) cvReleaseCapture(&capture);
-
 
 	exit (1);
 }

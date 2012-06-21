@@ -206,7 +206,7 @@ unsigned int sumFrame( tlcde* Flies ){
 	else{
 		for(int i = 0; i< Flies->numeroDeElementos ; i++){
 			flyOut = (STFly*)obtener(i,Flies);
-			sumatorio = flyOut->VInst + sumatorio;
+			sumatorio = flyOut->Vmed + sumatorio;
 		}
 	}
 	sumUint = ( unsigned int)cvRound(sumatorio);
