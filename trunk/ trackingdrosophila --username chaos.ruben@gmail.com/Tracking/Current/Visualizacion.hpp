@@ -172,6 +172,7 @@ typedef struct {
 	int zoom;				/// ampliación de la imagen del blob mostrada en ventanas sin track
 
 	//Private
+	float ratio;
 	int TotalFrames;
 	bool pause;
 	bool stop;
@@ -278,6 +279,8 @@ void setPosBlocks( IplImage * ImRef);
 void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats, IplImage* ImVisual);
 
 void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks );
+void mostrarDatosBlob( STFly* Fly, CvPoint Origen1, int margenTxtSup, int margenTxt, int linea, int ancho);
+
 
 void dibujarGrafica1(  tlcde* Flies );
 

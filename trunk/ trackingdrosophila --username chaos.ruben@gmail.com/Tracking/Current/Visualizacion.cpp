@@ -228,6 +228,8 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 						//REESCALAR
 						// si la imagen es de 320 o menos la escalamos al doble
 						cvResize( ImVisual, ImScale);
+						cvShowImage("escalada", ImScale);
+//						cvWaitKey(0);
 //						if(ImVisual->width <= 320)	cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
 //						else  ImScale = ImVisual;
 
@@ -386,35 +388,54 @@ void DraWPresent(  ){
 
 void DrawPreprocesWindow( IplImage* frame){
 	// incrustamos el video en pequeño en la parte superior
-	IplImage* video;
+	IplImage* videoP;
 
 	CvSize size = cvSize(320,180 );
+	// 4:3 VGA, PAL , SVGA, XGA
+	if( (frame->width == 640 && frame->height == 480)||
+		(frame->width == 748 && frame->height == 576)||
+		(frame->width == 800 && frame->height == 600)||
+		(frame->width == 1024 && frame->height == 768)||
+		(frame->width == 1280 && frame->height == 960)   ){
+		size = cvSize(320,240);
+	}
+	// 16:9
+	else if( (frame->width == 640 && frame->height == 360 )||
+			 (frame->width == 320 && frame->height == 240 )||
+			 (frame->width == 1280 && frame->height == 720 )  ) {
+			  size = cvSize(320,180);
+	}
+
+	else {
+		size = cvSize(320,180);
+	}
+
 //	if(frame->width == 640) size = cvSize(frame->width/2,frame->height/2 );
 //	if(frame->width == 1280) size = cvSize(frame->width/4,frame->height/4 );
 //	if(frame->width == 1280) size = cvSize(frame->width,frame->height);
-	video = cvCreateImage( size,8,3);
-	CvRect rect = cvRect( (Window->width-video->width)/2,
-							( visParams->ROIPreProces.y-video->height)/2,
-							video->width,
-							video->height);
-	// Reescalar video
-	cvResize( frame, video);
+	videoP = cvCreateImage( size,8,3);
+	CvRect rect = cvRect( (Window->width-videoP->width)/2,
+							( visParams->ROIPreProces.y-videoP->height)/2,
+							videoP->width,
+							videoP->height);
+	// Reescalar videoP
+	cvResize( frame, videoP);
 ////	if(frame->width == 640){
-////		 cvPyrDown( frame, video,IPL_GAUSSIAN_5x5);
+////		 cvPyrDown( frame, videoP,IPL_GAUSSIAN_5x5);
 ////	}
 //	else if(frame->width == 1280){
-//		IplImage* video1;
+//		IplImage* videoP1;
 //		CvSize size = cvSize(640,480 );
-//		video1 = cvCreateImage( cvSize(frame->width/2,frame->height/2 ),8,3);
-//		cvPyrDown( frame, video1,IPL_GAUSSIAN_5x5);
-//		cvPyrDown( video1, video,IPL_GAUSSIAN_5x5);
-//		cvReleaseImage(&video1);
+//		videoP1 = cvCreateImage( cvSize(frame->width/2,frame->height/2 ),8,3);
+//		cvPyrDown( frame, videoP1,IPL_GAUSSIAN_5x5);
+//		cvPyrDown( videoP1, videoP,IPL_GAUSSIAN_5x5);
+//		cvReleaseImage(&videoP1);
 //	}
-//	else cvCopy( frame, video );
+//	else cvCopy( frame, videoP );
 
 	// incrustamos las imagenes del preprocesado
 	Incrustar( Window, ImScale, NULL, visParams->ROIPreProces);
-	Incrustar( Window, video, NULL, rect);
+	Incrustar( Window, videoP, NULL, rect);
 	// dibujamos sendos rectangulos blancos entorno a cada imagen incrustada
 	cvRectangle( Window,
 												cvPoint(rect.x,rect.y),
@@ -427,7 +448,7 @@ void DrawPreprocesWindow( IplImage* frame){
 					visParams->ROIPreProces.y +visParams->ROIPreProces.height),
 			CVX_WHITE, 1 );
 
-	cvReleaseImage(&video);
+	cvReleaseImage(&videoP);
 }
 
 void DrawTrackingWindow( IplImage* frame, STFrame* FrameDataOut, StaticBGModel* BGModel ){
@@ -572,8 +593,9 @@ void ShowStatDataFr( STStatFrame* Stats,STGlobStatF* GStats,IplImage* Window ){
 	// margenes y dimensiones( en pixels)
 	const int margenIz = Pos->OrFrameStats.x + Pos->margenBorde; // margen izquierdo
 
-	const int margenSup = visParams->ROITracking.y + visParams->ROITracking.height/2+5;
-	const int margenSup2 = visParams->ROITracking.y + 5;
+	const int margenSup = Pos->OrImage.y + (Pos->FnImage.y-Pos->OrImage.y)/2+5;
+
+	const int margenSup2 = Pos->OrImage.y + 5;
 	const int anchoCol = 50; // margen entre columnas
 	const int linea = 15;
 	const int linea2 = 20;
@@ -899,22 +921,12 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	sprintf( ti,"Graficando Elemento %d Factor de escala Y %0.1f Muestreo de %0.1f Seg",graph2->graficarEl,graph2->escalaY, graph2->periodoSec);
 	cvPutText( Window,  ti, cvPoint(graph2->Origen.x  ,graph2->Origen.y - graph2->puntosY ), &fuentes->fuente2, CVX_WHITE );
 
-	sprintf( ti,"Max = %0.1f", max);
-	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
-									graph2->Origen.y - maxLine - 5),
-									&fuentes->fuente2, CVX_RED );
 	// media
 	medLine = cvRound( graph2->escalaY*Stats->CMovMed  );
 	desSupLine = cvRound(medLine + graph2->escalaY*Stats->CMovDes  );
 	if(desSupLine > maxLine ) desSupLine = maxLine;
 	desInfLine =  cvRound( medLine - graph2->escalaY*Stats->CMovDes );
 	if( desInfLine < 0) desInfLine = 0;
-	sprintf( ti,"Med = %0.1f", Stats->CMovMed);
-	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
-									graph2->Origen.y - medLine - 5),
-									&fuentes->fuente2, CVX_YELLOW );
 
 	// desviación
 	if( desSupLine){
@@ -933,6 +945,18 @@ void dibujarGrafica2(  STStatFrame* Stats ){
 	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - maxLine ),cvPoint(graph2->fin.x, graph2->Origen.y - maxLine),CVX_RED,1,CV_AA, 0 );
 	// media
 	cvLine( Window,cvPoint(graph2->Origen.x-1 , graph2->Origen.y - medLine ),cvPoint(graph2->fin.x, graph2->Origen.y - medLine),CVX_YELLOW,1,CV_AA, 0 );
+	// Máximo
+	sprintf( ti,"Max = %0.1f", max);
+	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + Pos->margenBorde,
+									graph2->Origen.y - maxLine + Pos->margenBorde),
+									&fuentes->fuente2, CVX_RED );
+	sprintf( ti,"Med = %0.1f", Stats->CMovMed);
+	textsize = getTextSize(ti, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window,  ti, cvPoint(graph2->Origen.x + ( graph2->puntosX - textsize.width),
+									graph2->Origen.y - medLine - 5),
+									&fuentes->fuente2, CVX_YELLOW );
+
 }
 float cogerValor( STStatFrame* Stats){
 
@@ -961,13 +985,14 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 	static CvPoint Origen2; // origen para la fila 2
 
 	static CvPoint Fin;
+	CvSize textsize;
 
 	STTrack* Track = NULL;
 	STFly* Fly = NULL;
 
 	// margenes y dimensiones( en pixels)
 	const int margenIz = 12; // margen izquierdo
-	const int margenSup = visParams->ROITracking.y + visParams->ROITracking.height+ 10;
+	const int margenSup = Pos->OrImage.y + (Pos->FnImage.y-Pos->OrImage.y)+ 10;
 	const int margenCol = 5; // margen entre columnas
 	const int margenFil = 5; // margen entre filas
 	const int alto = 170; // alto rectangulo blob
@@ -976,6 +1001,119 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 	const int margenTxt = 10;
 	const int margenTxtSup = 5;//10
 
+
+	static int ventanaBlob;
+	static char BlobId[50];
+
+	Origen1 = cvPoint(  margenIz, margenSup); // fila 1
+	Origen2 = cvPoint(  margenIz, margenSup + alto + margenCol ); // fila 2
+
+	if(!ImBlobScale){
+		ImBlobScale= cvCreateImage( cvSize(150, 150),8,3);
+		if(visParams->zoom  == 1) ventanaBlob = 150;
+		else if(visParams->zoom == 2) ventanaBlob = 75;
+		else if(visParams->zoom == 3) ventanaBlob = 50;
+		else if(visParams->zoom == 5) ventanaBlob = 30;
+		else if(visParams->zoom == 6) ventanaBlob = 25;
+	}
+
+	dibujarGrafica1(  Flies );
+
+	Fin = cvPoint(Window->width - 10, Window->height - 65);
+//for( int i = 0; i < MAX_FILS; i++){
+		// Recorremos todas las posiciones de la matriz ( considerado como un vector de numero de elementos = MAX_ELEMENTS
+		for( int i = 0; i <  MAX_COLS ; i++ ){
+			// establecer origen
+
+			Origen1 =  cvPoint(  margenIz + i* ( ancho + margenCol), margenSup ); // desplazarse por columnas
+			Origen2 = cvPoint(  margenIz + i*( ancho + margenCol), margenSup + alto + margenFil); //desplazarse por columnas
+
+			// obtener track de esa posición
+			for( int j = 0; j < Tracks->numeroDeElementos; j++){
+				Track = (STTrack*)obtener(j, Tracks);
+				// si se ha encontrado el track de esa posición
+				if(Track->id == i + 1 && Track->id < 9) break;
+				else Track = NULL;
+			}
+			if( Track ){
+
+				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,Track->Color, -1 );
+				// obtener fly con la id del track.
+
+				for(int k = 0; k < Flies->numeroDeElementos; k++){
+					Fly =  (STFly*)obtener(k, Flies);
+					if( Fly->etiqueta == Track->id) break;
+					else Fly = NULL;
+				}
+
+				// si se ha encontrado dibujar sus datos
+				if( Fly ){
+					// estadísticas Frame
+					mostrarDatosBlob(Fly, Origen1, margenTxtSup, margenTxt, linea, ancho );
+					// ZOOM AL BLOB
+					CvRect Roi;
+					Roi.x = Fly->posicion.x-ventanaBlob/2;
+					Roi.y = Fly->posicion.y-ventanaBlob/2;
+					Roi.width = ventanaBlob;
+					Roi.height = ventanaBlob;
+					// dibujar la imagen
+					cvSetImageROI( ImVisual,Roi);
+					cvResize( ImVisual, ImBlobScale, CV_INTER_CUBIC);
+					cvResetImageROI(ImVisual);
+					Roi.x = Origen2.x + (ancho - ImBlobScale->width)/2;
+					Roi.y = (Origen2.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
+					Roi.width = ImBlobScale->width;
+					Roi.height = ImBlobScale->height;
+					Incrustar( Window, ImBlobScale,NULL, Roi );
+					sprintf(BlobId,"Blob %d", Fly->etiqueta);
+					CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+					cvPutText( Window, BlobId, cvPoint( Origen2.x + (ancho-textsize.width)/2, Origen2.y  + linea), &fuente1, Fly->Color );
+
+				}
+				else{ // si no se ha encontrado
+					sprintf(BlobId,"Track %d ",Track->id);
+					textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+					cvPutText( Window, BlobId,cvPoint( Origen1.x + (ancho-textsize.width)/2 , Origen1.y + linea ), &fuente1, CVX_WHITE );
+
+					sprintf(BlobId,"Track: Durmiendo ");
+					cvPutText( Window, BlobId, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 2*linea), &fuente2, CVX_WHITE );
+
+					sprintf(BlobId,"Frames: %d", Track->Stats->EstadoCount);
+					cvPutText( Window, BlobId, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 3*linea), &fuente2, CVX_WHITE );
+
+					sprintf(BlobId,"Fly: Perdida ");
+					cvPutText( Window, BlobId, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2,CVX_WHITE );
+					sprintf(BlobId,"PERDIDO", Track->id);
+					textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+					cvPutText( Window, BlobId, cvPoint( Origen2.x + (ancho-textsize.width)/2, Origen2.y  + linea), &fuente1, Track->Color );
+					cvRectangle( Window, cvPoint(Origen2.x , Origen2.y + margenTxtSup + linea ),cvPoint( Origen2.x + ancho, Origen2.y + alto )	,Track->Color, -1 );
+
+				}
+
+			}
+			else{
+				// si esa posición no tiene track, dibujar rectangulo negro sin rellenar y escribir NO TRACK y pasar a la siguiente posición
+				// dibujar recuadro
+				sprintf(BlobId,"NO TRACK");
+				textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+				cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2, Origen1.y  + linea), &fuente1, cvScalar(255,255,255) );
+
+				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,cvScalar(255,255,255), 1 );
+				// dibujar imagen del blob
+				sprintf(BlobId,"NO BLOB");
+				textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+				cvPutText( Window, BlobId, cvPoint( Origen2.x + (ancho-textsize.width)/2, Origen2.y  + linea), &fuente1, cvScalar(255,255,255) );
+				cvRectangle( Window, cvPoint(Origen2.x , Origen2.y + margenTxtSup + linea ),cvPoint( Origen2.x + ancho, Origen2.y + alto )	,cvScalar(255,255,255), 1 );
+
+			}
+		}
+
+}
+
+void mostrarDatosBlob( STFly* Fly, CvPoint Origen1, int margenTxtSup, int margenTxt, int linea, int ancho){
+
+	const CvFont fuente1 = fuentes->fuente1 ;
+	const CvFont fuente2 = fuentes->fuente2;
 
 	static char BlobId[50];
 	static char EstadoTrack[50];
@@ -995,188 +1133,73 @@ void ShowStatDataBlobs( tlcde* Flies, tlcde* Tracks ){
 	static char Vdes[50];
 	static char VdesVal[50];
 	static char tiempohms[15];
-	static int countVisIm = 0;
-	static int ventanaBlob;
 
 
-	Origen1 = cvPoint(  margenIz, margenSup);
-	Origen2 = cvPoint(  margenIz, margenSup + alto + margenCol );
+	sprintf(BlobId,"Track %d ",Fly->etiqueta);
 
-	if(!ImBlobScale){
-		ImBlobScale= cvCreateImage( cvSize(150, 150),8,3);
-		if(visParams->zoom  == 1) ventanaBlob = 150;
-		else if(visParams->zoom == 2) ventanaBlob = 75;
-		else if(visParams->zoom == 3) ventanaBlob = 50;
-		else if(visParams->zoom == 5) ventanaBlob = 30;
-		else if(visParams->zoom == 6) ventanaBlob = 25;
-	}
+	sprintf(EstadoTrack,"Track: Activo ");
+	sprintf(T_estadoT,"Frames: %d", Fly->Stats->EstadoTrackCount);
 
-	dibujarGrafica1(  Flies );
+	if( Fly->Estado == 0) sprintf(EstadoBlob,"Actividad Nula");
+	else if( Fly->Estado == 1) sprintf(EstadoBlob,"Actividad Baja");
+	else if( Fly->Estado == 2) sprintf(EstadoBlob,"Actividad Media");
+	else if( Fly->Estado == 3) sprintf(EstadoBlob,"Actividad Alta");
+	else if( Fly->Estado == 4) sprintf(EstadoBlob,"Oculto");
+	tiempoHMS( Fly->Stats->EstadoBlobCount, tiempohms );
+	sprintf(T_estadoB,"%s", tiempohms);
 
-	Fin = cvPoint(Window->width - 10, Window->height - 65);
-//for( int i = 0; i < MAX_FILS; i++){
-		// Recorremos todas las posiciones de la matriz ( considerado como un vector de numero de elementos = MAX_ELEMENTS
-		for( int i = 0; i <  MAX_ELEMENTS ; i++ ){
-			// establecer origen
-			if( i < MAX_COLS ){ // primera fila
-				Origen1 =  cvPoint(  margenIz + i* ( ancho + margenCol), margenSup ); // desplazarse por columnas
-			}
-			else if( i >= MAX_COLS && i < MAX_ELEMENTS ){ // siguiente fila
-				Origen1 = cvPoint(  margenIz + (i-MAX_COLS)*( ancho + margenCol), margenSup + alto + margenFil); //desplazarse por columnas
-			}
-			else break;
-			// obtener track de esa posición
-			for( int j = 0; j < Tracks->numeroDeElementos; j++){
-				Track = (STTrack*)obtener(j, Tracks);
-				// si se ha encontrado el track de esa posición
-				if(Track->id == i + 1 && Track->id < 9) break;
-				else Track = NULL;
-			}
-			if( Track ){
-				// dibujar recuadro
-		//		cvRectangle( Window, cvPoint(Origen1.x , Origen1.y ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,cvScalar(0,0,0), -1 );
+	tiempoHMS( Fly->Stats->CountActiva,tiempohms );
+	sprintf(T_Activa,"Ton:");
+	sprintf(T_ActivaVal,"%s", tiempohms);
 
-				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,Track->Color, -1 );
-				// obtener fly con la id del track.
+	tiempoHMS( Fly->Stats->CountPasiva ,tiempohms);
+	sprintf(T_Pasiva,"Toff:");
+	sprintf(T_PasivaVal,"%s", tiempohms);
 
-				for(int k = 0; k < Flies->numeroDeElementos; k++){
-					Fly =  (STFly*)obtener(k, Flies);
-					if( Fly->etiqueta == Track->id) break;
-					else Fly = NULL;
-				}
+	sprintf(dstTotal,"Dst(m):");
+	sprintf(dstTotalVal,"%0.3f", Fly->dstTotal);
 
-				// si se ha encontrado dibujar sus datos
-				if( Fly ){
-					// estadísticas Frame
-					sprintf(BlobId,"Blob %d ",Fly->etiqueta);
+	sprintf(Direccion,"Phi(grad):");
+	sprintf(DireccionVal,"%0.1f",Fly->dir_filtered);
 
-					sprintf(EstadoTrack,"Track: Activo ");
-					sprintf(T_estadoT,"Frames: %d", Fly->Stats->EstadoTrackCount);
-
-					if( Fly->Estado == 0) sprintf(EstadoBlob,"Actividad Nula");
-					else if( Fly->Estado == 1) sprintf(EstadoBlob,"Actividad Baja");
-					else if( Fly->Estado == 2) sprintf(EstadoBlob,"Actividad Media");
-					else if( Fly->Estado == 3) sprintf(EstadoBlob,"Actividad Alta");
-					else if( Fly->Estado == 4) sprintf(EstadoBlob,"Oculto");
-					tiempoHMS( Fly->Stats->EstadoBlobCount, tiempohms );
-					sprintf(T_estadoB,"%s", tiempohms);
-
-					tiempoHMS( Fly->Stats->CountActiva,tiempohms );
-					sprintf(T_Activa,"Ton:");
-					sprintf(T_ActivaVal,"%s", tiempohms);
-
-					tiempoHMS( Fly->Stats->CountPasiva ,tiempohms);
-					sprintf(T_Pasiva,"Toff:");
-					sprintf(T_PasivaVal,"%s", tiempohms);
-
-					sprintf(dstTotal,"Dst(m):");
-					sprintf(dstTotalVal,"%0.3f", Fly->dstTotal);
-
-					sprintf(Direccion,"Phi(grad):");
-					sprintf(DireccionVal,"%0.1f",Fly->dir_filtered);
-
-					sprintf(velocidad,"V(mm/T):");
-					sprintf(velocidadVal,"%0.3f", abs(Fly->Stats->CMovMed ));
-					sprintf(Vdes,"Vdes:");
-					sprintf(VdesVal,"%0.3f", abs(Fly->Stats->CMovDes ));
+	sprintf(velocidad,"V(mm/T):");
+	sprintf(velocidadVal,"%0.3f", abs(Fly->Stats->CMovMed ));
+	sprintf(Vdes,"Vdes:");
+	sprintf(VdesVal,"%0.3f", abs(Fly->Stats->CMovDes ));
 
 
-					CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-					cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2 , Origen1.y  + linea), &fuente1, CVX_WHITE );
-					textsize = getTextSize(EstadoBlob, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, EstadoBlob, cvPoint( Origen1.x+ (ancho-textsize.width)/2, Origen1.y + margenTxtSup + 2*linea), &fuente2,CVX_WHITE );
-					textsize = getTextSize(T_estadoB, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, T_estadoB, cvPoint( Origen1.x+ (ancho-textsize.width)/2, Origen1.y + margenTxtSup + 3*linea), &fuente2, CVX_WHITE );
+	CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
+	cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2 , Origen1.y  + linea), &fuente1, CVX_WHITE );
+	textsize = getTextSize(EstadoBlob, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, EstadoBlob, cvPoint( Origen1.x+ (ancho-textsize.width)/2, Origen1.y + margenTxtSup + 2*linea), &fuente2,CVX_WHITE );
+	textsize = getTextSize(T_estadoB, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, T_estadoB, cvPoint( Origen1.x+ (ancho-textsize.width)/2, Origen1.y + margenTxtSup + 3*linea), &fuente2, CVX_WHITE );
 
-					cvPutText( Window, T_Activa,  cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, T_Pasiva,  cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 5*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, Direccion, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 6*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, velocidad, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 7*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, Vdes, 	  cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 8*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, dstTotal,  cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 9*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, T_Activa,  cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, T_Pasiva,  cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 5*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, Direccion, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 6*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, velocidad, cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 7*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, Vdes, 	  cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 8*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, dstTotal,  cvPoint( Origen1.x+ margenTxt, Origen1.y + margenTxtSup + 9*linea), &fuente2, CVX_WHITE );
 
 
-					textsize = getTextSize(T_ActivaVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, T_ActivaVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2, CVX_WHITE );
-					textsize = getTextSize(T_PasivaVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, T_PasivaVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 5*linea), &fuente2, CVX_WHITE );
-					textsize = getTextSize(DireccionVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, DireccionVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 6*linea), &fuente2, CVX_WHITE );
-					textsize = getTextSize(velocidadVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, velocidadVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 7*linea), &fuente2, CVX_WHITE );
-					textsize = getTextSize(VdesVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, VdesVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 8*linea), &fuente2, CVX_WHITE );
+	textsize = getTextSize(T_ActivaVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, T_ActivaVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2, CVX_WHITE );
+	textsize = getTextSize(T_PasivaVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, T_PasivaVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 5*linea), &fuente2, CVX_WHITE );
+	textsize = getTextSize(DireccionVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, DireccionVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 6*linea), &fuente2, CVX_WHITE );
+	textsize = getTextSize(velocidadVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, velocidadVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 7*linea), &fuente2, CVX_WHITE );
+	textsize = getTextSize(VdesVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, VdesVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 8*linea), &fuente2, CVX_WHITE );
 
-					textsize = getTextSize(dstTotalVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
-					cvPutText( Window, dstTotalVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 9*linea), &fuente2, CVX_WHITE );
+	textsize = getTextSize(dstTotalVal, CV_FONT_HERSHEY_PLAIN, 0.9, 1, 0);
+	cvPutText( Window, dstTotalVal, cvPoint( Origen1.x + ancho - textsize.width- margenTxt, Origen1.y + margenTxtSup + 9*linea), &fuente2, CVX_WHITE );
 
-					cvPutText( Window, EstadoTrack, cvPoint( Origen1.x + margenTxt , Origen1.y + margenTxtSup + 10*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, T_estadoT, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 11*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, EstadoTrack, cvPoint( Origen1.x + margenTxt , Origen1.y + margenTxtSup + 10*linea), &fuente2, CVX_WHITE );
+	cvPutText( Window, T_estadoT, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 11*linea), &fuente2, CVX_WHITE );
 
-				}
-				else{ // si no se ha encontrado
-					sprintf(BlobId,"Blob %d ",Track->id);
-
-					sprintf(EstadoTrack,"Track: Durmiendo ");
-					sprintf(T_estadoT,"Frames: %d", Track->Stats->EstadoCount);
-
-					sprintf(EstadoBlob,"Fly: Perdida ");
-
-					CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-			//		cvPutText( Window, PComplet,  cvPoint((Window->width-textsize2.width)/2, Window->height/2),
-			//						&fuente2, CVX_WHITE );
-					cvPutText( Window, BlobId,cvPoint( Origen1.x + (ancho-textsize.width)/2 , Origen1.y + linea ), &fuente1, CVX_WHITE );
-					cvPutText( Window, EstadoTrack, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 2*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, T_estadoT, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 3*linea), &fuente2, CVX_WHITE );
-					cvPutText( Window, EstadoBlob, cvPoint( Origen1.x + margenTxt, Origen1.y + margenTxtSup + 4*linea), &fuente2,CVX_WHITE );
-				}
-
-			}
-			else{
-				// si esa posición no tiene track, dibujar rectangulo negro sin rellenar y escribir NO TRACK y pasar a la siguiente posición
-				// dibujar recuadro
-//				cvRectangle( Window, cvPoint(Origen1.x , Origen1.y + margenTxtSup + linea ),cvPoint( Origen1.x + ancho, Origen1.y + alto )	,cvScalar(255,255,255), 1 );
-				sprintf(BlobId,"NO TRACK ");
-				CvSize textsize = getTextSize(BlobId, CV_FONT_HERSHEY_PLAIN, 1.1, 1, 0);
-				cvPutText( Window, BlobId, cvPoint( Origen1.x + (ancho-textsize.width)/2, Origen1.y  + linea), &fuente1, CVX_WHITE );
-				// dibujar imagen del blob
-				for( countVisIm = countVisIm; countVisIm < Tracks->numeroDeElementos; countVisIm++){
-					Track = (STTrack*)obtener(countVisIm, Tracks);
-					// si se ha encontrado el track de esa posición
-					if(Track->Stats->Estado != SLEEPING){
-						countVisIm++;
-						break;
-					}
-					else Track = NULL;
-				}
-				if( Track ){
-					// obtener fly del track
-					for(int k = 0; k < Flies->numeroDeElementos; k++){
-						Fly =  (STFly*)obtener(k, Flies);
-						if( Fly->etiqueta == Track->id) break;
-						else Fly = NULL;
-					}
-					// obtener centro fly
-					if( Fly){
-						CvRect Roi;
-						Roi.x = Fly->posicion.x-ventanaBlob/2;
-						Roi.y = Fly->posicion.y-ventanaBlob/2;
-						Roi.width = ventanaBlob;
-						Roi.height = ventanaBlob;
-						// dibujar la imagen
-						cvSetImageROI( ImVisual,Roi);
-						cvResize( ImVisual, ImBlobScale, CV_INTER_CUBIC);
-						cvResetImageROI(ImVisual);
-						Roi.x = Origen1.x + (ancho - ImBlobScale->width)/2;
-						Roi.y = (Origen1.y + linea )+ (alto - linea + margenTxtSup - ImBlobScale->height)/2;
-						Roi.width = ImBlobScale->width;
-						Roi.height = ImBlobScale->height;
-						Incrustar( Window, ImBlobScale,NULL, Roi );
-					}
-				}
-			}
-		}
-		 countVisIm = 0;
 }
 // Genera una imagen que representa el llenado del buffer
 void VerEstadoBuffer( IplImage* Imagen,int num,int max ){
@@ -1584,7 +1607,7 @@ void Transicion3( const char texto[], int delay_up ){
 	for( int i = 255; i > 0; i -= 2 )
 	{
 		cvPutText( Window, texto,
-				cvPoint( (Window->width-textsize.width)/2,visParams->ROITracking.y + visParams->ROITracking.height + 30),
+				cvPoint( (Window->width-textsize.width)/2,Pos->OrImage.y + (Pos->FnImage.y -Pos->OrImage.y) + 30),
 				&fuente1,
 				cvScalar(i,i,i) );
 		cvShowImage("TrackingDrosophila", Window);
@@ -1783,7 +1806,7 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 		if(! config_setting_lookup_bool ( setting, settingName, &visParams->ShowValidationPhases )  ){
 			visParams->ShowValidationPhases = false;
 			fprintf(stderr, "No se encuentra la variable %s en el archivo de configuración o el tipo de dato es incorrecto.\n "
-							"Establecer por defecto a %d \n",settingName,visParams->ShowValidationPhases);
+ 							"Establecer por defecto a %d \n",settingName,visParams->ShowValidationPhases);
 
 		}
 
@@ -1949,31 +1972,54 @@ void SetHightGUIParams(  IplImage* ImRef,char* nombreVideo, double FPS , int Tot
 
 void SetPrivateHightGUIParams(  IplImage* ImRef, int TotalFrames, double FPS ){
 
+	CvSize size;
 	// Parametros no configurables
 	visParams->TotalFrames = TotalFrames;
 	visParams->pause = false;
 	visParams->stop = false;
 	visParams->pasoApaso = false;
 	visParams->VisualPos = -1;
-	visParams->Resolucion = cvSize(1280,800 );
+
 	visParams->DelayLogo = 2000;
 	visParams->DelayDown = 20;
 	visParams->DelayUp = 20 ;
 	visParams->DelayTr = 20;	
-	visParams->BPrWidth = visParams->Resolucion.width - 20;
 
-	if(!Window)	Window = cvCreateImage( visParams->Resolucion,8,3);
+	visParams->ratio = ImRef->width/ImRef->height;
+
+
 	cvZero(Window);
 	if( ImRef ){
 		if(!ImVisual) {
 			ImVisual = cvCreateImage( cvGetSize( ImRef ),8,3);
 			ImBlob = cvCreateImage( cvSize(60,60),8,3);
+			// 4:3 VGA, PAL , SVGA, XGA
+			if( (ImRef->width == 640 && ImRef->height == 480)||
+				(ImRef->width == 748 && ImRef->height == 576)||
+				(ImRef->width == 800 && ImRef->height == 600)||
+				(ImRef->width == 1024 && ImRef->height == 768)||
+				(ImRef->width == 1280 && ImRef->height == 960)   ){
+				size = cvSize(480,360);
+				visParams->Resolucion = cvSize(1280,800 );
+			}
+			// 16:9
+			else if( (ImRef->width == 640 && ImRef->height == 360 )||
+					 (ImRef->width == 320 && ImRef->height == 240 )||
+					 (ImRef->width == 1280 && ImRef->height == 720 )  ) {
+					  size = cvSize(640,360);
+					  visParams->Resolucion = cvSize(1280,800 );
+			}
 
-			CvSize size = cvSize(640,360);
+			else {
+				size = cvSize(640,360);
+				visParams->Resolucion = cvSize(1280,800 );
+			}
 			ImScale = cvCreateImage( size ,8,3);
 		}
 	}
-
+	visParams->Resolucion = cvSize(1280,800 );
+	visParams->BPrWidth = visParams->Resolucion.width - 20;
+	if(!Window)	Window = cvCreateImage( visParams->Resolucion,8,3);
 	setFounts();
 	setPosBlocks( ImRef );
 	setGraph2( FPS );
@@ -2012,18 +2058,18 @@ void setPosBlocks( IplImage * ImRef){
 //				2*ImRef->width,2*ImRef->height);
 //	}
 //	else{
-		visParams->ROITracking = cvRect(visParams->Resolucion.width-(ImScale->width + Pos->margenBorde),Pos->margenBorde,ImScale->width,ImScale->height);
 		visParams->ROIPreProces = cvRect( (Window->width-ImScale->width)/2,
-											( Window->height-ImScale->height)/1.5,
+											( Window->height-ImScale->height)/1.2,
 											ImScale->width,
 											ImScale->height);
 //	}
 
 
-	Pos->OrImage =  cvPoint(visParams->ROITracking.x,visParams->ROITracking.y);
-	Pos->FnImage = cvPoint(visParams->ROITracking.x + visParams->ROITracking.width,
-							visParams->ROITracking.y + visParams->ROITracking.height);
+	Pos->OrImage =  cvPoint(visParams->Resolucion.width-(640 + Pos->margenBorde),Pos->margenBorde);
+	Pos->FnImage = cvPoint(Pos->OrImage.x + 640, Pos->OrImage.y +360 );
 
+	visParams->ROITracking = cvRect( Pos->OrImage.x + (( Pos->FnImage.x - Pos->OrImage.x) - (ImScale->width))/2 ,Pos->OrImage.y ,ImScale->width,ImScale->height);
+//+ 640- (ImScale->width)/2  + 360 - (ImScale->height)/2
 	Pos->OrFrameStats= cvPoint(  Pos->margenBorde, Pos->margenBorde);
 	Pos->FnFrameStats =cvPoint( Pos->OrFrameStats.x + 250, Pos->margenBorde + Pos->FnImage.y/2- Pos->margenInterno) ;
 
@@ -2143,10 +2189,10 @@ CvVideoWriter* iniciarAvi(  char* nombreVideo, double fps){
 	fps = 30;
 	writer = cvCreateVideoWriter(
 							nombreVideo,
-							CV_FOURCC('P','I','M','1'),
+							CV_FOURCC('X','v','i','D'),
 							fps,
 							size
-							);//'F', 'M', 'P', '4';'M', 'J', 'P', 'G';'D','I','V','X';'P','I','M','1'
+							);//'F', 'M', 'P', '4';'M', 'J', 'P', 'G';'D','I','V','X';'P','I','M','1';'M','P','G','4'
 
 	return writer;
 }

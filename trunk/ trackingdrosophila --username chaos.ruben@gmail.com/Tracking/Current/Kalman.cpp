@@ -4,17 +4,7 @@
  *  Created on: 18/11/2011
  *      Authores: Rubén Chao Chao, Germán Garcia Vázquez
  *
- *Estable. Beta
-	Mejoras:
-	- En el estado KALMAN_CONTROL se entregan  como medidas las predicciones del filtro para el frame actual.
-
-	- Además de los estados CAM_CONTROL, KALMAN_CONTROL y SLEEPING se ha añadido el estado MISSED. Cuando un blob desaparece, bien por un error en el pre-procesado o bien por que se ha perdido un frame o éste es inservible ( parpadeo en la iluminación por ejemplo) , el track, antes de pasar al estado SLEEPING, donde esperará inactivo el nuevo dato, pasará por el estado MISSED. En dicho estado se actúa, durante unos instantes, del mismo modo que en KALMAN_CONTROL. Si no ha aparecido el blob durante ese tiempo, se pasará al estado SLEEPING.( en kalman control, sin embargo, se regresa el track al centro del blob).
-
-	- Se ha añadido la visualización de la media y desviación en la gráfica 2.
-	Bugs:
-	- Corregidos varios bugs que provocaban fallos en la visualización y en el filtro al cambiar la resolución la de imagen de entrada.
-	- Al establecer la velocidad angular no se corregía la dirección previa lo que provocaba que en algunos casos la velocidad angular aumentase sin control.
-	- En el cálculo de la Vmed que se entrega al filtro y a las estadísticas del blob ahora se excluyen valores aberrantes.
+ *
  */
 
 

@@ -308,7 +308,7 @@ void corregirTracks( tlcde* framesBuf, tlcde* lsTracks, tlcde* lsIds){
 			// , dejar su id y eliminar los datos de la fly que creó.
 			else {
 				dejarId( SleepingTrack, lsIds );
-				reasignarTracks(lsTracks, framesBuf, lsIds, -1, i, UPDATE_STATS);
+				reasignarTracks(lsTracks, framesBuf, lsIds, -1, i, BORRAR);
 				deadTrack( lsTracks, i );
 			}
 		}
@@ -345,7 +345,7 @@ void reasignarTracks( tlcde* lsTracks,tlcde* framesBuf, tlcde* lsIds , int nuevo
 	// obtener Track//
 
 	SleepingTrack = (STTrack*)obtener(viejo, lsTracks);
-	if(Accion != BORRAR) NewTrack= (STTrack*)obtener(nuevo, lsTracks);
+	if(Accion != BORRAR ) NewTrack= (STTrack*)obtener(nuevo, lsTracks);
 	if(Accion == BORRAR || Accion == RE_ETIQUETAR){ // en caso de que no haya nuevo track,
 		posInit = (framesBuf->numeroDeElementos-1) -  SleepingTrack->Stats->FrameCount  ;
 		if(posInit < 0) posInit = 0;
