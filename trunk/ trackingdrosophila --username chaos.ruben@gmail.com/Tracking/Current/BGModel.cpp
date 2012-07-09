@@ -278,8 +278,8 @@ void MascaraPlato(CvCapture* t_capture,
 //		cvShowImage( "Foreground",Im);
 //		cvWaitKey(0);
 
-		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,4,Im->height/4,200,100, minRadio,
-				cvRound( Im->height )/2 + 20);
+		circles = cvHoughCircles(Im, storage,CV_HOUGH_GRADIENT,2,Im->height/4,100,100, 50,
+				cvRound( Im->height )/2 );
 		int i;
 		for (i = 0; i < circles->total; i++)
 		{
@@ -329,11 +329,11 @@ void MascaraPlato(CvCapture* t_capture,
 		cvClearMemStorage( storage);
 	}
 	cvReleaseMemStorage( &storage );
-	if (Flat->PRadio>0){
-		Flat->PRadio = medR;
-		Flat->PCentroX = medX;
-		Flat->PCentroY = medY;
-	}
+//	if (Flat->PRadio>0){
+//		Flat->PRadio = medR;
+//		Flat->PCentroX = medX;
+//		Flat->PCentroY = medY;
+//	}
 
 	printf("\t\t-Plato localizado. Estableciendo parámetros :\n ");
 	printf("\t\t\t-Centro x : %d \n\t\t\t-Centro y %d \n\t\t\t-Radio: %d \n"
@@ -547,7 +547,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 			for (int x = 0; x<ROI.width; x++){
 				// si (I(p) - Me(p)) >= 0 Idif(p) = 0 => pixel de bg mas oscuro que fg ( fantasma ). lo eliminamos
 				if ( (ptr1[x]-ptr2[x]) > 0 ) ptr3[x] = 0;
-				// sino Idif = |I(p) - Me(p)|
+				// sino Idif = |I(p) - Me(p)|p
 				else ptr3[x] = abs( ptr1[x]-ptr2[x]);
 				// Si Idif(p) > LowT => Al FG sino al BG
 				if ( ptr3[x] > (Param->LOW_THRESHOLD) ) ptr4[x] = 255; //Normal: (Param->LOW_THRESHOLD)*ptr4[i*step4+j]
@@ -588,7 +588,7 @@ void BackgroundDifference( IplImage* ImGray, IplImage* bg_model,IplImage* Idesvf
 #endif
 	if( SHOW_BGMODEL_DATA ){
 		printf("\n\nTRAS resta de fondo");
-		CvRect ventana = cvRect(137,261,30,14);	// 321,113,17,14
+		CvRect ventana = cvRect(270,213,10,10);	// 321,113,17,14
 		printf("\n\n Matriz Brillo ");verMatrizIm(ImGray, ventana);
 		printf("\n\n Matriz BGModel ");verMatrizIm(bg_model, ventana);
 

@@ -228,10 +228,6 @@ void DraWWindow( IplImage* frame,STFrame* FrameDataOut, StaticBGModel* BGModel, 
 						//REESCALAR
 						// si la imagen es de 320 o menos la escalamos al doble
 						cvResize( ImVisual, ImScale);
-						cvShowImage("escalada", ImScale);
-//						cvWaitKey(0);
-//						if(ImVisual->width <= 320)	cvPyrUp( ImVisual, ImScale,IPL_GAUSSIAN_5x5);
-//						else  ImScale = ImVisual;
 
 						//DIBUJAMOS ELEMENTOS EN VENTANA DE VISUALIZACION DEPENDIENDO DEL TIPO
 						if( type == FLAT || type == BG_MODEL || type  == SHAPE )DrawPreprocesWindow( frame );
@@ -303,6 +299,12 @@ void DraWPresent(  ){
 
 	CvFont fuente1;
 	CvFont fuente2;
+	CvFont fuente3;
+	CvFont fuente4;
+	CvSize textsize2;
+	CvSize textsize;
+	int CentroX;
+	int CentroY;
 
 		//CreateWindows( ImVisual );
 //	IncrustarLogo("logos.jpg", Window , CENTRAR ,visParams->DelayLogo,false);
@@ -315,28 +317,38 @@ void DraWPresent(  ){
 		for( int i =0; i < 60;i++) cvWriteFrame( VWriter,Window);
 	}
 	desvanecer( Window, 10 );
-	IncrustarLogo("Logo_IBGM.png", Window , CENTRAR_INF,visParams->DelayLogo,false);
+//	IncrustarLogo("Logo_IBGM.png", Window , CENTRAR_INF,visParams->DelayLogo,false);
+//	if(visParams->RecWindow){
+//		for( int i =0; i < 60;i++) cvWriteFrame( VWriter,Window);
+//	}
+//	desvanecer( Window, 10 );
+	IncrustarLogo("LogosUVA.jpg", Window , CENTRAR,visParams->DelayLogo,false);
 	if(visParams->RecWindow){
-		for( int i =0; i < 60;i++) cvWriteFrame( VWriter,Window);
-	}
-	desvanecer( Window, 10 );
-	IncrustarLogo("LogoUVAnegro.jpg", Window , CENTRAR,visParams->DelayLogo,false);
-	if(visParams->RecWindow){
-		for( int i =0; i < 60;i++)cvWriteFrame( VWriter,Window);
+		for( int i =0; i < 160;i++) {
+			cvShowImage("TrackingDrosophila", Window);
+			cvWriteFrame( VWriter,Window);
+		}
 	}
 	cvWaitKey(1000);
 	desvanecer( Window, 10 );
-	cvInitFont( &fuente1, CV_FONT_HERSHEY_COMPLEX, 2, 2, 0, 3, CV_AA);
+	cvInitFont( &fuente1, CV_FONT_HERSHEY_COMPLEX, 3, 3, 0, 4, CV_AA);
+	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 1.5, 1.5, 0, 1, 8);
+	cvInitFont( &fuente3, CV_FONT_HERSHEY_COMPLEX, 2, 2, 0, 2, 8);
+	cvInitFont( &fuente4, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
 
-	cvInitFont( &fuente2, CV_FONT_HERSHEY_PLAIN, 1, 1, 0, 1, 8);
-	CvSize textsize = getTextSize("Tracking Drosophila", CV_FONT_HERSHEY_COMPLEX, 2, 5, 0);
-	CvSize textsize2 = getTextSize("Presione una tecla para comenzar", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+	textsize = getTextSize("D-Track", CV_FONT_HERSHEY_COMPLEX, 3, 4, 0);
+	textsize2 = getTextSize("Tracking Drosophila", CV_FONT_HERSHEY_COMPLEX, 2, 2, 0);
 
 	for( int i = 0; i < 255; i += 2 )
 	{
-		cvPutText( Window, "Tracking Drosophila",
-				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize.height)/2),
+		cvPutText( Window, "D-Track",
+				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize.height)/2-140),
 				&fuente1,
+				cvScalar(i,i,i) );
+
+		cvPutText( Window, "Tracking Drosophila",
+				cvPoint( (Window->width-textsize2.width)/2,( Window->height-textsize2.height)/2 - 50),
+				&fuente3,
 				cvScalar(i,i,i) );
 		cvShowImage("TrackingDrosophila", Window);
 		if(visParams->RecWindow){
@@ -344,11 +356,85 @@ void DraWPresent(  ){
 		}
 		cvWaitKey(5);
 	}
+	textsize2 = getTextSize("SISTEMA DE SEGUIMIENTO AUTOMATICO DE GRUPOS DE DROSOPHILAS", CV_FONT_HERSHEY_PLAIN, 1.5, 1.5, 0);
+
+	for( int i = 0; i < 255; i += 2 )
+	{
+		cvPutText( Window, "SISTEMA DE SEGUIMIENTO AUTOMATICO DE GRUPOS DE DROSOPHILAS",
+				cvPoint( (Window->width-textsize2.width)/2,( Window->height-textsize2.height)/2 ),
+				&fuente2,
+				cvScalar(i,i,i) );
+		cvShowImage("TrackingDrosophila", Window);
+		if(visParams->RecWindow){
+			cvWriteFrame( VWriter,Window);
+		}
+		cvWaitKey(5);
+	}
+	IplImage* Authors = cvLoadImage( "Authors.jpg" ,1);
+	Incrustar( Window,Authors,Window, cvRect((Window->width-Authors->width)/2 , Window->height/2+80, Authors->width,Authors->height ) );
+//	textsize = getTextSize("Rubén Chao Chao <chaos.ruben@gmail.com>", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//
+//	for( int i = 0; i < 255; i += 2 )
+//	{
+//		textsize = getTextSize("Desarrollado por:", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//		cvPutText( Window, "Desarrollado por:",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize.height)/2+80),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("Ruben Chao Chao <chaos.ruben@gmail.com>", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//		cvPutText( Window, "Ruben Chao Chao <chaos.ruben@gmail.com>",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize.height)/2+110),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("German Macia Vazquez <g.macia.vazquez@gmail.com>", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//		cvPutText( Window, "German Macia Vazquez <g.macia.vazquez@gmail.com>",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize2.height)/2+130),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("Tutelado por:", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//		cvPutText( Window, "Tutelado por:",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize2.height)/2+160),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("Eduardo Zalama <ezalama@eis.uva.es>", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//
+//		cvPutText( Window, "Eduardo Zalama <ezalama@eis.uva.es>",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize2.height)/2+190),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("Jaime Gomez Garcia-Bermejo <jaigom@eis.uva.es>", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//
+//		cvPutText( Window, "Jaime Gomez Garcia-Bermejo <jaigom@eis.uva.es>",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize2.height)/2+210),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("Con la colaboracion de:", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//
+//		cvPutText( Window, "Con la colaboracion de:",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize2.height)/2+240),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//		textsize = getTextSize("Diego Sanchez <lazarill@ibgm.uva.es>", CV_FONT_HERSHEY_PLAIN, 1, 1, 0);
+//
+//		cvPutText( Window, "Diego Sanchez <lazarill@ibgm.uva.es>",
+//				cvPoint( (Window->width-textsize.width)/2,( Window->height-textsize2.height)/2+270),
+//				&fuente4,
+//				cvScalar(i,i,i) );
+//
+//
+//		cvShowImage("TrackingDrosophila", Window);
+//		if(visParams->RecWindow){
+//			cvWriteFrame( VWriter,Window);
+//		}
+//		cvWaitKey(5);
+//	}
+
 	int comenzar = 0;
+	textsize2 = getTextSize("Presione una tecla para comenzar", CV_FONT_HERSHEY_PLAIN, 1.5, 1.5, 0);
 	for( int i = 0; i < 255; i += 5 )
 	{
 		cvPutText( Window, "Presione una tecla para comenzar...",
-				cvPoint( (Window->width-textsize2.width)/2,( Window->height-textsize2.height)/2+ 50),
+				cvPoint( (Window->width-textsize2.width)/2,( Window->height-textsize2.height)/1.05),
 				&fuente2,
 				cvScalar(i,i,i) );
 		cvShowImage("TrackingDrosophila", Window);
@@ -364,7 +450,7 @@ void DraWPresent(  ){
 			for( i = 250 ; i > 0; i -= 5 )
 			{
 				cvPutText( Window, "Presione una tecla para comenzar...",
-				cvPoint( (Window->width-textsize2.width)/2,( Window->height-textsize2.height)/2+ 50),
+				cvPoint( (Window->width-textsize2.width)/2,( Window->height-textsize2.height)/1.05),
 				&fuente2,
 				cvScalar(i,i,i) );
 				cvShowImage("TrackingDrosophila", Window);
@@ -381,7 +467,7 @@ void DraWPresent(  ){
 		if(comenzar) break;
 	}
 
-
+	cvReleaseImage(&Authors);
 
 
 }
